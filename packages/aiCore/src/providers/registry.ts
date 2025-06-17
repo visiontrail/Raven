@@ -1,3 +1,5 @@
+import type { LanguageModelV1Middleware } from 'ai'
+
 /**
  * AI Provider 注册表
  * 统一管理所有 AI SDK Providers 的动态导入和工厂函数
@@ -11,6 +13,10 @@ export interface ProviderConfig {
   import: () => Promise<any>
   // 创建函数名称
   creatorFunctionName: string
+  // 是否支持图片生成
+  supportsImageGeneration?: boolean
+  // AI SDK 原生中间件
+  aiSdkMiddlewares?: LanguageModelV1Middleware[]
 }
 
 /**
@@ -43,115 +49,134 @@ export class AiProviderRegistry {
         id: 'openai',
         name: 'OpenAI',
         import: () => import('@ai-sdk/openai'),
-        creatorFunctionName: 'createOpenAI'
+        creatorFunctionName: 'createOpenAI',
+        supportsImageGeneration: true
       },
       {
         id: 'anthropic',
         name: 'Anthropic',
         import: () => import('@ai-sdk/anthropic'),
-        creatorFunctionName: 'createAnthropic'
+        creatorFunctionName: 'createAnthropic',
+        supportsImageGeneration: false
       },
       {
         id: 'google',
         name: 'Google Generative AI',
         import: () => import('@ai-sdk/google'),
-        creatorFunctionName: 'createGoogleGenerativeAI'
+        creatorFunctionName: 'createGoogleGenerativeAI',
+        supportsImageGeneration: true
       },
       {
         id: 'google-vertex',
         name: 'Google Vertex AI',
         import: () => import('@ai-sdk/google-vertex'),
-        creatorFunctionName: 'createVertex'
+        creatorFunctionName: 'createVertex',
+        supportsImageGeneration: true
       },
       {
         id: 'mistral',
         name: 'Mistral AI',
         import: () => import('@ai-sdk/mistral'),
-        creatorFunctionName: 'createMistral'
+        creatorFunctionName: 'createMistral',
+        supportsImageGeneration: false
       },
       {
         id: 'xai',
         name: 'xAI (Grok)',
         import: () => import('@ai-sdk/xai'),
-        creatorFunctionName: 'createXai'
+        creatorFunctionName: 'createXai',
+        supportsImageGeneration: true
       },
       {
         id: 'azure',
         name: 'Azure OpenAI',
         import: () => import('@ai-sdk/azure'),
-        creatorFunctionName: 'createAzure'
+        creatorFunctionName: 'createAzure',
+        supportsImageGeneration: true
       },
       {
         id: 'bedrock',
         name: 'Amazon Bedrock',
         import: () => import('@ai-sdk/amazon-bedrock'),
-        creatorFunctionName: 'createAmazonBedrock'
+        creatorFunctionName: 'createAmazonBedrock',
+        supportsImageGeneration: false
       },
       {
         id: 'cohere',
         name: 'Cohere',
         import: () => import('@ai-sdk/cohere'),
-        creatorFunctionName: 'createCohere'
+        creatorFunctionName: 'createCohere',
+        supportsImageGeneration: false
       },
       {
         id: 'groq',
         name: 'Groq',
         import: () => import('@ai-sdk/groq'),
-        creatorFunctionName: 'createGroq'
+        creatorFunctionName: 'createGroq',
+        supportsImageGeneration: false
       },
       {
         id: 'together',
         name: 'Together.ai',
         import: () => import('@ai-sdk/togetherai'),
-        creatorFunctionName: 'createTogetherAI'
+        creatorFunctionName: 'createTogetherAI',
+        supportsImageGeneration: true
       },
       {
         id: 'fireworks',
         name: 'Fireworks',
         import: () => import('@ai-sdk/fireworks'),
-        creatorFunctionName: 'createFireworks'
+        creatorFunctionName: 'createFireworks',
+        supportsImageGeneration: true
       },
       {
         id: 'deepseek',
         name: 'DeepSeek',
         import: () => import('@ai-sdk/deepseek'),
-        creatorFunctionName: 'createDeepSeek'
+        creatorFunctionName: 'createDeepSeek',
+        supportsImageGeneration: false
       },
       {
         id: 'cerebras',
         name: 'Cerebras',
         import: () => import('@ai-sdk/cerebras'),
-        creatorFunctionName: 'createCerebras'
+        creatorFunctionName: 'createCerebras',
+        supportsImageGeneration: false
       },
       {
         id: 'deepinfra',
         name: 'DeepInfra',
         import: () => import('@ai-sdk/deepinfra'),
-        creatorFunctionName: 'createDeepInfra'
+        creatorFunctionName: 'createDeepInfra',
+        supportsImageGeneration: false
       },
       {
         id: 'replicate',
         name: 'Replicate',
         import: () => import('@ai-sdk/replicate'),
-        creatorFunctionName: 'createReplicate'
+        creatorFunctionName: 'createReplicate',
+        supportsImageGeneration: true
       },
       {
         id: 'perplexity',
         name: 'Perplexity',
         import: () => import('@ai-sdk/perplexity'),
-        creatorFunctionName: 'createPerplexity'
+        creatorFunctionName: 'createPerplexity',
+        supportsImageGeneration: false
       },
       {
         id: 'fal',
         name: 'Fal AI',
         import: () => import('@ai-sdk/fal'),
-        creatorFunctionName: 'createFal'
+        creatorFunctionName: 'createFal',
+        supportsImageGeneration: false
       },
       {
         id: 'vercel',
         name: 'Vercel',
         import: () => import('@ai-sdk/vercel'),
-        creatorFunctionName: 'createVercel'
+        creatorFunctionName: 'createVercel',
+        supportsImageGeneration: false
       }
     ]
 
@@ -161,25 +186,36 @@ export class AiProviderRegistry {
         id: 'ollama',
         name: 'Ollama',
         import: () => import('ollama-ai-provider'),
-        creatorFunctionName: 'createOllama'
+        creatorFunctionName: 'createOllama',
+        supportsImageGeneration: false
       },
       {
         id: 'qwen',
         name: 'Qwen',
         import: () => import('qwen-ai-provider'),
-        creatorFunctionName: 'createQwen'
+        creatorFunctionName: 'createQwen',
+        supportsImageGeneration: false
       },
       {
         id: 'zhipu',
         name: 'Zhipu AI',
         import: () => import('zhipu-ai-provider'),
-        creatorFunctionName: 'createZhipu'
+        creatorFunctionName: 'createZhipu',
+        supportsImageGeneration: false
       },
       {
         id: 'anthropic-vertex',
         name: 'Anthropic Vertex AI',
         import: () => import('anthropic-vertex-ai'),
-        creatorFunctionName: 'createAnthropicVertex'
+        creatorFunctionName: 'createAnthropicVertex',
+        supportsImageGeneration: false
+      },
+      {
+        id: 'openrouter',
+        name: 'OpenRouter',
+        import: () => import('@openrouter/ai-sdk-provider'),
+        creatorFunctionName: 'createOpenRouter',
+        supportsImageGeneration: false
       }
     ]
 

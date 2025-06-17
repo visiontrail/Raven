@@ -1,4 +1,4 @@
-import type { TextStreamPart, ToolSet } from 'ai'
+import type { LanguageModelV1Middleware, TextStreamPart, ToolSet } from 'ai'
 
 /**
  * AI 请求上下文
@@ -37,6 +37,9 @@ export interface AiPlugin {
     tools?: TOOLS
     stopStream: () => void
   }) => TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>
+
+  // AI SDK 原生中间件
+  aiSdkMiddlewares?: LanguageModelV1Middleware[]
 }
 
 /**

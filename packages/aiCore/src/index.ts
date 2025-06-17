@@ -5,6 +5,7 @@
 
 // 导入内部使用的类和函数
 import { ApiClientFactory } from './clients/ApiClientFactory'
+import { ProviderOptions } from './clients/types'
 import { createUniversalClient } from './clients/UniversalAiSdkClient'
 import { aiProviderRegistry, isProviderSupported } from './providers/registry'
 
@@ -61,19 +62,23 @@ export const AiCore = {
 }
 
 // 便捷的预配置clients创建函数
-export const createOpenAIClient = (options: { apiKey: string; baseURL?: string }) => {
+export const createOpenAIClient = (options: ProviderOptions) => {
   return createUniversalClient('openai', options)
 }
 
-export const createAnthropicClient = (options: { apiKey: string; baseURL?: string }) => {
+export const createOpenAICompatibleClient = (options: ProviderOptions) => {
+  return createUniversalClient('openai-compatible', options)
+}
+
+export const createAnthropicClient = (options: ProviderOptions) => {
   return createUniversalClient('anthropic', options)
 }
 
-export const createGoogleClient = (options: { apiKey: string; baseURL?: string }) => {
+export const createGoogleClient = (options: ProviderOptions) => {
   return createUniversalClient('google', options)
 }
 
-export const createXAIClient = (options: { apiKey: string; baseURL?: string }) => {
+export const createXAIClient = (options: ProviderOptions) => {
   return createUniversalClient('xai', options)
 }
 

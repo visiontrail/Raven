@@ -3,7 +3,7 @@
  * 统一的AI SDK客户端实现
  */
 
-import { generateObject, generateText, streamObject, streamText } from 'ai'
+import { experimental_generateImage as generateImage, generateObject, generateText, streamObject, streamText } from 'ai'
 
 import { ApiClientFactory } from './ApiClientFactory'
 
@@ -65,6 +65,17 @@ export class UniversalAiSdkClient {
     })
   }
 
+  async generateImage(
+    modelId: string,
+    params: Omit<Parameters<typeof generateImage>[0], 'model'>
+  ): Promise<ReturnType<typeof generateImage>> {
+    const model = await ApiClientFactory.createImageClient(this.providerId, modelId, this.options)
+    return generateImage({
+      model,
+      ...params
+    })
+  }
+
   /**
    * 获取客户端信息
    */
@@ -76,6 +87,6 @@ export class UniversalAiSdkClient {
 /**
  * 创建客户端实例的工厂函数
  */
-export function createUniversalClient(providerId: string, options: any = {}): UniversalAiSdkClient {
+export function createUniversalClient(providerId: string, options: ProviderOptions): UniversalAiSdkClient {
   return new UniversalAiSdkClient(providerId, options)
 }
