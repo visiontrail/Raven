@@ -155,8 +155,37 @@ export class AiProviderRegistry {
       }
     ]
 
-    // 初始化注册表
-    providers.forEach((config) => {
+    // 社区提供的 Providers
+    const communityProviders: ProviderConfig[] = [
+      {
+        id: 'ollama',
+        name: 'Ollama',
+        import: () => import('ollama-ai-provider'),
+        creatorFunctionName: 'createOllama'
+      },
+      {
+        id: 'qwen',
+        name: 'Qwen',
+        import: () => import('qwen-ai-provider'),
+        creatorFunctionName: 'createQwen'
+      },
+      {
+        id: 'zhipu',
+        name: 'Zhipu AI',
+        import: () => import('zhipu-ai-provider'),
+        creatorFunctionName: 'createZhipu'
+      },
+      {
+        id: 'anthropic-vertex',
+        name: 'Anthropic Vertex AI',
+        import: () => import('anthropic-vertex-ai'),
+        creatorFunctionName: 'createAnthropicVertex'
+      }
+    ]
+
+    // 注册所有 providers（官方 + 社区）
+    const allProviders = [...providers, ...communityProviders]
+    allProviders.forEach((config) => {
       this.registry.set(config.id, config)
     })
   }
