@@ -1,6 +1,29 @@
 import type { LanguageModelV1Middleware, TextStreamPart, ToolSet } from 'ai'
 
 /**
+ * 生命周期阶段定义
+ */
+export enum LifecycleStage {
+  PRE_REQUEST = 'pre-request', // 请求预处理
+  REQUEST_EXECUTION = 'execution', // 请求执行
+  STREAM_PROCESSING = 'stream', // 流式处理（仅流模式）
+  POST_RESPONSE = 'post-response', // 响应后处理
+  ERROR_HANDLING = 'error' // 错误处理
+}
+
+/**
+ * 生命周期上下文
+ */
+export interface LifecycleContext {
+  currentStage: LifecycleStage
+  startTime: number
+  stageStartTime: number
+  completedStages: Set<LifecycleStage>
+  stageDurations: Map<LifecycleStage, number>
+  metadata: Record<string, any>
+}
+
+/**
  * AI 请求上下文
  */
 export interface AiRequestContext {

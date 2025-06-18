@@ -15,6 +15,7 @@ Cherry Studio AI Core 是一个基于 Vercel AI SDK 的统一 AI Provider 接口
 基于 [AI SDK 官方支持的 providers](https://ai-sdk.dev/providers/ai-sdk-providers)：
 
 **核心 Providers:**
+
 - OpenAI
 - Anthropic
 - Google Generative AI
@@ -25,6 +26,7 @@ Cherry Studio AI Core 是一个基于 Vercel AI SDK 的统一 AI Provider 接口
 - Amazon Bedrock
 
 **扩展 Providers:**
+
 - Cohere
 - Groq
 - Together.ai
@@ -64,17 +66,13 @@ const client = await createAiSdkClient('openai', {
 // 流式生成
 const result = await client.stream({
   modelId: 'gpt-4',
-  messages: [
-    { role: 'user', content: 'Hello!' }
-  ]
+  messages: [{ role: 'user', content: 'Hello!' }]
 })
 
 // 非流式生成
 const response = await client.generate({
   modelId: 'gpt-4',
-  messages: [
-    { role: 'user', content: 'Hello!' }
-  ]
+  messages: [{ role: 'user', content: 'Hello!' }]
 })
 ```
 
@@ -89,12 +87,9 @@ const client = await createOpenAIClient({
 })
 
 // 便捷流式生成
-const result = await streamGeneration(
-  'openai',
-  'gpt-4',
-  [{ role: 'user', content: 'Hello!' }],
-  { apiKey: 'your-api-key' }
-)
+const result = await streamGeneration('openai', 'gpt-4', [{ role: 'user', content: 'Hello!' }], {
+  apiKey: 'your-api-key'
+})
 ```
 
 ### 多 Provider 支持
@@ -111,4 +106,4 @@ const xaiClient = await createAiSdkClient('xai', { apiKey: 'xai-key' })
 
 ## License
 
-MIT 
+MIT

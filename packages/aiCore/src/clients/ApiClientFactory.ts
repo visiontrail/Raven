@@ -7,6 +7,7 @@ import type { ImageModelV1 } from '@ai-sdk/provider'
 import { type LanguageModelV1, wrapLanguageModel } from 'ai'
 
 import { aiProviderRegistry } from '../providers/registry'
+import { type ProviderId, type ProviderSettingsMap } from './types'
 
 // 客户端配置接口
 export interface ClientConfig {
@@ -33,23 +34,29 @@ export class ClientFactoryError extends Error {
 export class ApiClientFactory {
   /**
    * 创建 AI SDK 模型实例
-   * 直接返回 LanguageModelV1 实例用于 streamText/generateText
+   * 对于已知的 Provider 使用严格类型检查，未知的 Provider 默认使用 openai-compatible
    */
+  static async createClient<T extends ProviderId>(
+    providerId: T,
+    modelId: string,
+    options: ProviderSettingsMap[T]
+  ): Promise<LanguageModelV1>
+
   static async createClient(
     providerId: string,
-    modelId: string = 'default',
-    options: any = {}
-  ): Promise<LanguageModelV1> {
+    modelId: string,
+    options: ProviderSettingsMap['openai-compatible']
+  ): Promise<LanguageModelV1>
+
+  static async createClient(providerId: string, modelId: string = 'default', options: any): Promise<LanguageModelV1> {
     try {
-      // 验证provider是否支持
-      if (!aiProviderRegistry.isSupported(providerId)) {
-        throw new ClientFactoryError(`Provider "${providerId}" is not supported`, providerId)
-      }
+      // 对于不在注册表中的 provider，默认使用 openai-compatible
+      const effectiveProviderId = aiProviderRegistry.isSupported(providerId) ? providerId : 'openai-compatible'
 
       // 获取Provider配置
-      const providerConfig = aiProviderRegistry.getProvider(providerId)
+      const providerConfig = aiProviderRegistry.getProvider(effectiveProviderId)
       if (!providerConfig) {
-        throw new ClientFactoryError(`Provider "${providerId}" is not registered`, providerId)
+        throw new ClientFactoryError(`Provider "${effectiveProviderId}" is not registered`, providerId)
       }
 
       // 动态导入模块
@@ -60,10 +67,9 @@ export class ApiClientFactory {
 
       if (typeof creatorFunction !== 'function') {
         throw new ClientFactoryError(
-          `Creator function "${providerConfig.creatorFunctionName}" not found in the imported module for provider "${providerId}"`
+          `Creator function "${providerConfig.creatorFunctionName}" not found in the imported module for provider "${effectiveProviderId}"`
         )
       }
-
       // 创建provider实例
       const provider = creatorFunction(options)
 
@@ -81,7 +87,7 @@ export class ApiClientFactory {
 
         return model
       } else {
-        throw new ClientFactoryError(`Unknown model access pattern for provider "${providerId}"`)
+        throw new ClientFactoryError(`Unknown model access pattern for provider "${effectiveProviderId}"`)
       }
     } catch (error) {
       if (error instanceof ClientFactoryError) {
@@ -163,19 +169,36 @@ export class ApiClientFactory {
     id: string
     name: string
     isSupported: boolean
+    effectiveProvider: string
   } {
-    const provider = aiProviderRegistry.getProvider(providerId)
+    const effectiveProviderId = aiProviderRegistry.isSupported(providerId) ? providerId : 'openai-compatible'
+    const provider = aiProviderRegistry.getProvider(effectiveProviderId)
+
     return {
       id: providerId,
       name: provider?.name || providerId,
-      isSupported: aiProviderRegistry.isSupported(providerId)
+      isSupported: aiProviderRegistry.isSupported(providerId),
+      effectiveProvider: effectiveProviderId
     }
   }
 }
 
 // 便捷导出函数
-export const createClient = (providerId: string, modelId?: string, options?: any) =>
-  ApiClientFactory.createClient(providerId, modelId, options)
+export function createClient<T extends ProviderId>(
+  providerId: T,
+  modelId: string,
+  options: ProviderSettingsMap[T]
+): Promise<LanguageModelV1>
+
+export function createClient(
+  providerId: string,
+  modelId: string,
+  options: ProviderSettingsMap['openai-compatible']
+): Promise<LanguageModelV1>
+
+export function createClient(providerId: string, modelId: string = 'default', options: any): Promise<LanguageModelV1> {
+  return ApiClientFactory.createClient(providerId, modelId, options)
+}
 
 export const getSupportedProviders = () => ApiClientFactory.getSupportedProviders()
 

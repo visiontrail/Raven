@@ -5,43 +5,96 @@
 
 // 导入内部使用的类和函数
 import { ApiClientFactory } from './clients/ApiClientFactory'
-import { ProviderOptions } from './clients/types'
+import { createClient } from './clients/PluginEnabledAiClient'
+import { type ProviderSettingsMap } from './clients/types'
 import { createUniversalClient } from './clients/UniversalAiSdkClient'
 import { aiProviderRegistry, isProviderSupported } from './providers/registry'
 
-// 核心导出
+// ==================== 主要客户端接口 ====================
+// 默认使用集成插件系统的客户端
+export {
+  PluginEnabledAiClient as AiClient,
+  createClient,
+  createCompatibleClient
+} from './clients/PluginEnabledAiClient'
+
+// 为了向后兼容，也导出原名称
+export { PluginEnabledAiClient } from './clients/PluginEnabledAiClient'
+
+// ==================== 插件系统 ====================
+export type { AiPlugin, AiRequestContext, HookResult, HookType, PluginManagerConfig } from './plugins'
+export { createContext, definePlugin, PluginManager } from './plugins'
+
+// ==================== 底层客户端（高级用法） ====================
+// 不带插件系统的基础客户端，用于需要绕过插件系统的场景
+export {
+  createOpenAICompatibleClient as createBasicOpenAICompatibleClient,
+  createUniversalClient,
+  UniversalAiSdkClient
+} from './clients/UniversalAiSdkClient'
+
+// ==================== 低级 API ====================
 export { ApiClientFactory } from './clients/ApiClientFactory'
-export { createUniversalClient, UniversalAiSdkClient } from './clients/UniversalAiSdkClient'
 export { aiProviderRegistry } from './providers/registry'
 
-// 类型导出
+// ==================== 类型定义 ====================
 export type { ClientFactoryError } from './clients/ApiClientFactory'
+export type { BaseProviderSettings, ProviderSettings } from './clients/types'
 export type { ProviderConfig } from './providers/registry'
 export type { ProviderError } from './providers/types'
 
-// 便捷函数导出
-export { createClient, getClientInfo, getSupportedProviders } from './clients/ApiClientFactory'
+// 重新导出所有 Provider Settings 类型
+export type {
+  AmazonBedrockProviderSettings,
+  AnthropicProviderSettings,
+  AnthropicVertexProviderSettings,
+  AzureOpenAIProviderSettings,
+  CerebrasProviderSettings,
+  CohereProviderSettings,
+  DeepInfraProviderSettings,
+  DeepSeekProviderSettings,
+  FalProviderSettings,
+  FireworksProviderSettings,
+  GoogleGenerativeAIProviderSettings,
+  GoogleVertexProviderSettings,
+  GroqProviderSettings,
+  MistralProviderSettings,
+  OllamaProviderSettings,
+  OpenAICompatibleProviderSettings,
+  OpenAIProviderSettings,
+  OpenRouterProviderSettings,
+  PerplexityProviderSettings,
+  ProviderId,
+  ProviderSettingsMap,
+  QwenProviderSettings,
+  ReplicateProviderSettings,
+  TogetherAIProviderSettings,
+  VercelProviderSettings,
+  XaiProviderSettings,
+  ZhipuProviderSettings
+} from './clients/types'
+
+// ==================== 工具函数 ====================
+export { createClient as createApiClient, getClientInfo, getSupportedProviders } from './clients/ApiClientFactory'
 export { getAllProviders, getProvider, isProviderSupported, registerProvider } from './providers/registry'
 
-// 默认导出 - 主要的工厂类
-export { ApiClientFactory as default } from './clients/ApiClientFactory'
-
-// 包信息
+// ==================== 包信息 ====================
 export const AI_CORE_VERSION = '1.0.0'
 export const AI_CORE_NAME = '@cherry-studio/ai-core'
 
-// 包配置和实用工具
+// ==================== 便捷 API ====================
+// 主要的便捷工厂类
 export const AiCore = {
   version: AI_CORE_VERSION,
   name: AI_CORE_NAME,
 
-  // 快速创建客户端
-  async createClient(providerId: string, modelId: string = 'default', options: any = {}) {
-    return ApiClientFactory.createClient(providerId, modelId, options)
+  // 创建主要客户端（默认带插件系统）
+  create(providerId: string, options: any = {}, plugins: any[] = []) {
+    return createClient(providerId, options, plugins)
   },
 
-  // 创建通用客户端
-  createUniversalClient(providerId: string, options: any = {}) {
+  // 创建基础客户端（不带插件系统）
+  createBasic(providerId: string, options: any = {}) {
     return createUniversalClient(providerId, options)
   },
 
@@ -61,28 +114,23 @@ export const AiCore = {
   }
 }
 
-// 便捷的预配置clients创建函数
-export const createOpenAIClient = (options: ProviderOptions) => {
-  return createUniversalClient('openai', options)
+export const createOpenAIClient = (options: ProviderSettingsMap['openai'], plugins?: any[]) => {
+  return createClient('openai', options, plugins)
 }
 
-export const createOpenAICompatibleClient = (options: ProviderOptions) => {
-  return createUniversalClient('openai-compatible', options)
+export const createAnthropicClient = (options: ProviderSettingsMap['anthropic'], plugins?: any[]) => {
+  return createClient('anthropic', options, plugins)
 }
 
-export const createAnthropicClient = (options: ProviderOptions) => {
-  return createUniversalClient('anthropic', options)
+export const createGoogleClient = (options: ProviderSettingsMap['google'], plugins?: any[]) => {
+  return createClient('google', options, plugins)
 }
 
-export const createGoogleClient = (options: ProviderOptions) => {
-  return createUniversalClient('google', options)
+export const createXAIClient = (options: ProviderSettingsMap['xai'], plugins?: any[]) => {
+  return createClient('xai', options, plugins)
 }
 
-export const createXAIClient = (options: ProviderOptions) => {
-  return createUniversalClient('xai', options)
-}
-
-// 调试和开发工具
+// ==================== 调试和开发工具 ====================
 export const DevTools = {
   // 列出所有注册的providers
   listProviders() {
@@ -95,7 +143,7 @@ export const DevTools = {
   // 测试provider连接
   async testProvider(providerId: string, options: any) {
     try {
-      const client = createUniversalClient(providerId, options)
+      const client = createClient(providerId, options)
       const info = client.getClientInfo()
       return {
         success: true,

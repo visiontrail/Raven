@@ -2,10 +2,68 @@ import type { LanguageModelV1Middleware } from 'ai'
 
 /**
  * AI Provider 注册表
- * 统一管理所有 AI SDK Providers 的动态导入和工厂函数
+ * 静态类型 + 动态导入模式：所有类型静态导入，所有实现动态导入
  */
 
-// Provider 配置接口（简化版）
+// 静态导入所有 AI SDK 类型
+import { type AmazonBedrockProviderSettings } from '@ai-sdk/amazon-bedrock'
+import { type AnthropicProviderSettings } from '@ai-sdk/anthropic'
+import { type AzureOpenAIProviderSettings } from '@ai-sdk/azure'
+import { type CerebrasProviderSettings } from '@ai-sdk/cerebras'
+import { type CohereProviderSettings } from '@ai-sdk/cohere'
+import { type DeepInfraProviderSettings } from '@ai-sdk/deepinfra'
+import { type DeepSeekProviderSettings } from '@ai-sdk/deepseek'
+import { type FalProviderSettings } from '@ai-sdk/fal'
+import { type FireworksProviderSettings } from '@ai-sdk/fireworks'
+import { type GoogleGenerativeAIProviderSettings } from '@ai-sdk/google'
+import { type GoogleVertexProviderSettings } from '@ai-sdk/google-vertex'
+import { type GroqProviderSettings } from '@ai-sdk/groq'
+import { type MistralProviderSettings } from '@ai-sdk/mistral'
+import { type OpenAIProviderSettings } from '@ai-sdk/openai'
+import { type OpenAICompatibleProviderSettings } from '@ai-sdk/openai-compatible'
+import { type PerplexityProviderSettings } from '@ai-sdk/perplexity'
+import { type ReplicateProviderSettings } from '@ai-sdk/replicate'
+import { type TogetherAIProviderSettings } from '@ai-sdk/togetherai'
+import { type VercelProviderSettings } from '@ai-sdk/vercel'
+import { type XaiProviderSettings } from '@ai-sdk/xai'
+import { type OpenRouterProviderSettings } from '@openrouter/ai-sdk-provider'
+import { type AnthropicVertexProviderSettings } from 'anthropic-vertex-ai'
+import { type OllamaProviderSettings } from 'ollama-ai-provider'
+import { type QwenProviderSettings } from 'qwen-ai-provider'
+import { type ZhipuProviderSettings } from 'zhipu-ai-provider'
+
+// 类型安全的 Provider Settings 映射
+export type ProviderSettingsMap = {
+  openai: OpenAIProviderSettings
+  'openai-compatible': OpenAICompatibleProviderSettings
+  anthropic: AnthropicProviderSettings
+  google: GoogleGenerativeAIProviderSettings
+  'google-vertex': GoogleVertexProviderSettings
+  mistral: MistralProviderSettings
+  xai: XaiProviderSettings
+  azure: AzureOpenAIProviderSettings
+  bedrock: AmazonBedrockProviderSettings
+  cohere: CohereProviderSettings
+  groq: GroqProviderSettings
+  together: TogetherAIProviderSettings
+  fireworks: FireworksProviderSettings
+  deepseek: DeepSeekProviderSettings
+  cerebras: CerebrasProviderSettings
+  deepinfra: DeepInfraProviderSettings
+  replicate: ReplicateProviderSettings
+  perplexity: PerplexityProviderSettings
+  fal: FalProviderSettings
+  vercel: VercelProviderSettings
+  ollama: OllamaProviderSettings
+  qwen: QwenProviderSettings
+  zhipu: ZhipuProviderSettings
+  'anthropic-vertex': AnthropicVertexProviderSettings
+  openrouter: OpenRouterProviderSettings
+}
+
+export type ProviderId = keyof ProviderSettingsMap
+
+// 统一的 Provider 配置接口（所有都使用动态导入）
 export interface ProviderConfig {
   id: string
   name: string
@@ -44,7 +102,7 @@ export class AiProviderRegistry {
    */
   private initializeProviders(): void {
     const providers: ProviderConfig[] = [
-      // 核心 AI SDK Providers
+      // 官方 AI SDK Providers (19个)
       {
         id: 'openai',
         name: 'OpenAI',
@@ -175,13 +233,10 @@ export class AiProviderRegistry {
         id: 'vercel',
         name: 'Vercel',
         import: () => import('@ai-sdk/vercel'),
-        creatorFunctionName: 'createVercel',
-        supportsImageGeneration: false
-      }
-    ]
+        creatorFunctionName: 'createVercel'
+      },
 
-    // 社区提供的 Providers
-    const communityProviders: ProviderConfig[] = [
+      // 社区 Providers (5个)
       {
         id: 'ollama',
         name: 'Ollama',
@@ -219,9 +274,8 @@ export class AiProviderRegistry {
       }
     ]
 
-    // 注册所有 providers（官方 + 社区）
-    const allProviders = [...providers, ...communityProviders]
-    allProviders.forEach((config) => {
+    // 注册所有 providers (总计24个)
+    providers.forEach((config) => {
       this.registry.set(config.id, config)
     })
   }
@@ -289,3 +343,32 @@ export const registerProvider = (config: ProviderConfig) => aiProviderRegistry.r
 
 // 兼容现有实现的导出
 export const PROVIDER_REGISTRY = aiProviderRegistry.getCompatibleRegistry()
+
+// 重新导出所有类型供外部使用
+export type {
+  AmazonBedrockProviderSettings,
+  AnthropicProviderSettings,
+  AnthropicVertexProviderSettings,
+  AzureOpenAIProviderSettings,
+  CerebrasProviderSettings,
+  CohereProviderSettings,
+  DeepInfraProviderSettings,
+  DeepSeekProviderSettings,
+  FalProviderSettings,
+  FireworksProviderSettings,
+  GoogleGenerativeAIProviderSettings,
+  GoogleVertexProviderSettings,
+  GroqProviderSettings,
+  MistralProviderSettings,
+  OllamaProviderSettings,
+  OpenAICompatibleProviderSettings,
+  OpenAIProviderSettings,
+  OpenRouterProviderSettings,
+  PerplexityProviderSettings,
+  QwenProviderSettings,
+  ReplicateProviderSettings,
+  TogetherAIProviderSettings,
+  VercelProviderSettings,
+  XaiProviderSettings,
+  ZhipuProviderSettings
+}
