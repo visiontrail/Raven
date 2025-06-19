@@ -1,4 +1,4 @@
-import type { TextStreamPart, ToolSet } from 'ai'
+import type { LanguageModelV1Middleware, TextStreamPart, ToolSet } from 'ai'
 
 import { AiPlugin, AiRequestContext } from './types'
 
@@ -133,6 +133,13 @@ export class PluginManager {
         stopStream: () => void
       }) => TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>
     >
+  }
+
+  /**
+   * 收集所有 AI SDK 原生中间件
+   */
+  collectAiSdkMiddlewares(): LanguageModelV1Middleware[] {
+    return this.plugins.flatMap((plugin) => plugin.aiSdkMiddlewares || [])
   }
 
   /**

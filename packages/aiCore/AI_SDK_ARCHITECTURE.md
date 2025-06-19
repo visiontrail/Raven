@@ -317,7 +317,7 @@ export class AiCoreService {
 ### 5.1 多 Provider 支持
 
 ```typescript
-import { createAiSdkClient, AiCore } from '@cherry-studio/ai-core'
+import { createAiSdkClient, AiCore } from '@cherrystudio/ai-core'
 
 // 检查支持的 providers
 const providers = AiCore.getSupportedProviders()
@@ -339,7 +339,7 @@ const xai = await createAiSdkClient('xai', { apiKey: 'xai-key' })
 // const anthropicClient = new AnthropicApiClient(config)
 
 // 现在：
-import { createAiSdkClient } from '@cherry-studio/ai-core'
+import { createAiSdkClient } from '@cherrystudio/ai-core'
 
 const createProviderClient = async (provider: CherryProvider) => {
   return await createAiSdkClient(provider.id, {
@@ -359,7 +359,7 @@ import {
   PreRequestMiddleware,
   StreamProcessingMiddleware,
   PostResponseMiddleware
-} from '@cherry-studio/ai-core'
+} from '@cherrystudio/ai-core'
 
 // 创建完整的工作流
 const createEnhancedAiService = async () => {

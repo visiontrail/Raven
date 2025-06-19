@@ -5,7 +5,7 @@
  * ## 使用方式
  *
  * ```typescript
- * import { AiClient } from '@cherry-studio/ai-core'
+ * import { AiClient } from '@cherrystudio/ai-core'
  *
  * // 创建客户端（默认带插件系统）
  * const client = AiClient.create('openai', {
@@ -19,7 +19,14 @@
  * })
  * ```
  */
-import { generateObject, generateText, streamObject, streamText } from 'ai'
+import {
+  generateObject,
+  generateText,
+  LanguageModelV1Middleware,
+  simulateStreamingMiddleware,
+  streamObject,
+  streamText
+} from 'ai'
 
 import { AiPlugin, createContext, PluginManager } from '../plugins'
 import { isProviderSupported } from '../providers/registry'
@@ -34,6 +41,7 @@ import { UniversalAiSdkClient } from './UniversalAiSdkClient'
 export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
   private pluginManager: PluginManager
   private baseClient: UniversalAiSdkClient<T>
+  private middlewares: LanguageModelV1Middleware[] = []
 
   constructor(
     private readonly providerId: T,
@@ -42,6 +50,7 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
   ) {
     this.pluginManager = new PluginManager(plugins)
     this.baseClient = UniversalAiSdkClient.create(providerId, options)
+    this.updateMiddlewares()
   }
 
   /**
@@ -49,6 +58,7 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
    */
   use(plugin: AiPlugin): this {
     this.pluginManager.use(plugin)
+    this.updateMiddlewares()
     return this
   }
 
@@ -57,6 +67,7 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
    */
   usePlugins(plugins: AiPlugin[]): this {
     plugins.forEach((plugin) => this.pluginManager.use(plugin))
+    this.updateMiddlewares()
     return this
   }
 
@@ -65,7 +76,17 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
    */
   removePlugin(pluginName: string): this {
     this.pluginManager.remove(pluginName)
+    this.updateMiddlewares()
     return this
+  }
+
+  /**
+   * 重新计算并更新中间件列表
+   * 这是一个原子操作，以确保中间件列表总是最新的
+   */
+  private updateMiddlewares(): void {
+    const pluginMiddlewares = this.pluginManager.collectAiSdkMiddlewares()
+    this.middlewares = pluginMiddlewares
   }
 
   /**
@@ -165,6 +186,21 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
   }
 
   /**
+   * 获取注入了中间件的 AI SDK 模型实例
+   * 这是应用原生中间件的关键
+   */
+  private async getModelWithMiddlewares(modelId: string) {
+    const middlewares = this.middlewares
+    // 3. 如果有中间件，创建一个新的、注入了中间件的客户端实例
+    return await ApiClientFactory.createClient(
+      this.providerId,
+      modelId,
+      this.options,
+      middlewares.length > 0 ? middlewares : [simulateStreamingMiddleware()] //TODO: 这里需要改成非流时调用simulateStreamingMiddleware()，这里先随便传一个
+    )
+  }
+
+  /**
    * 流式文本生成 - 集成插件系统
    */
   async streamText(
@@ -176,8 +212,7 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
       modelId,
       params,
       async (finalModelId, transformedParams, streamTransforms) => {
-        // 对于流式调用，需要直接调用 AI SDK 以支持流转换器
-        const model = await ApiClientFactory.createClient(this.providerId, finalModelId, this.options)
+        const model = await this.getModelWithMiddlewares(finalModelId)
         return await streamText({
           model,
           ...transformedParams,
@@ -189,13 +224,15 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
 
   /**
    * 生成文本 - 集成插件系统
+   * 可能不需要了，因为内置模拟非流中间件
    */
   async generateText(
     modelId: string,
     params: Omit<Parameters<typeof generateText>[0], 'model'>
   ): Promise<ReturnType<typeof generateText>> {
     return this.executeWithPlugins('generateText', modelId, params, async (finalModelId, transformedParams) => {
-      return await this.baseClient.generateText(finalModelId, transformedParams)
+      const model = await this.getModelWithMiddlewares(finalModelId)
+      return await generateText({ model, ...transformedParams })
     })
   }
 
@@ -207,7 +244,8 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
     params: Omit<Parameters<typeof generateObject>[0], 'model'>
   ): Promise<ReturnType<typeof generateObject>> {
     return this.executeWithPlugins('generateObject', modelId, params, async (finalModelId, transformedParams) => {
-      return await this.baseClient.generateObject(finalModelId, transformedParams)
+      const model = await this.getModelWithMiddlewares(finalModelId)
+      return await generateObject({ model, ...transformedParams })
     })
   }
 

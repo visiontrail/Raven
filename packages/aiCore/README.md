@@ -1,4 +1,4 @@
-# @cherry-studio/ai-core
+# @cherrystudio/ai-core
 
 Cherry Studio AI Core 是一个基于 Vercel AI SDK 的统一 AI Provider 接口包。
 
@@ -42,7 +42,7 @@ Cherry Studio AI Core 是一个基于 Vercel AI SDK 的统一 AI Provider 接口
 ## 安装
 
 ```bash
-npm install @cherry-studio/ai-core ai
+npm install @cherrystudio/ai-core ai
 ```
 
 还需要安装你要使用的 AI SDK provider:
@@ -56,7 +56,7 @@ npm install @ai-sdk/openai @ai-sdk/anthropic @ai-sdk/google
 ### 基础用法
 
 ```typescript
-import { createAiSdkClient } from '@cherry-studio/ai-core'
+import { createAiSdkClient } from '@cherrystudio/ai-core'
 
 // 创建 OpenAI 客户端
 const client = await createAiSdkClient('openai', {
@@ -79,7 +79,7 @@ const response = await client.generate({
 ### 便捷函数
 
 ```typescript
-import { createOpenAIClient, streamGeneration } from '@cherry-studio/ai-core'
+import { createOpenAIClient, streamGeneration } from '@cherrystudio/ai-core'
 
 // 快速创建 OpenAI 客户端
 const client = await createOpenAIClient({
@@ -95,7 +95,7 @@ const result = await streamGeneration('openai', 'gpt-4', [{ role: 'user', conten
 ### 多 Provider 支持
 
 ```typescript
-import { createAiSdkClient } from '@cherry-studio/ai-core'
+import { createAiSdkClient } from '@cherrystudio/ai-core'
 
 // 支持多种 AI providers
 const openaiClient = await createAiSdkClient('openai', { apiKey: 'openai-key' })

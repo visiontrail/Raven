@@ -6,7 +6,7 @@
  *
  * ### 1. 官方提供商
  * ```typescript
- * import { UniversalAiSdkClient } from '@cherry-studio/ai-core'
+ * import { UniversalAiSdkClient } from '@cherrystudio/ai-core'
  *
  * // OpenAI
  * const openai = UniversalAiSdkClient.create('openai', {

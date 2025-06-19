@@ -1,6 +1,6 @@
 /**
  * Cherry Studio AI Core - 新版本入口
- * 集成 @cherry-studio/ai-core 库的渐进式重构方案
+ * 集成 @cherrystudio/ai-core 库的渐进式重构方案
  *
  * 融合方案：简化实现，专注于核心功能
  * 1. 优先使用新AI SDK
@@ -13,20 +13,20 @@ import {
   AiCore,
   createClient,
   type OpenAICompatibleProviderSettings,
-  type ProviderId
-} from '@cherry-studio/ai-core'
+  type ProviderId,
+  StreamTextParams
+} from '@cherrystudio/ai-core'
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
-import { Chunk, ChunkType } from '@renderer/types/chunk'
-import { RequestOptions } from '@renderer/types/sdk'
+import { Chunk } from '@renderer/types/chunk'
 
 // 引入适配器
 import AiSdkToChunkAdapter from './AiSdkToChunkAdapter'
 // 引入原有的AiProvider作为fallback
 import LegacyAiProvider from './index'
-import { CompletionsParams, CompletionsResult } from './middleware/schemas'
+import thinkingTimeMiddleware from './middleware/aisdk/ThinkingTimeMiddleware'
+import { CompletionsResult } from './middleware/schemas'
 // 引入参数转换模块
-import { buildStreamTextParams } from './transformParameters'
 
 /**
  * 将现有 Provider 类型映射到 AI SDK 的 Provider ID
@@ -108,21 +108,30 @@ export default class ModernAiProvider {
   private legacyProvider: LegacyAiProvider
   private provider: Provider
 
-  constructor(provider: Provider) {
+  constructor(provider: Provider, onChunk?: (chunk: Chunk) => void) {
     this.provider = provider
     this.legacyProvider = new LegacyAiProvider(provider)
 
     const config = providerToAiSdkConfig(provider)
-    this.modernClient = createClient(config.providerId, config.options)
+    this.modernClient = createClient(
+      config.providerId,
+      config.options,
+      onChunk ? [{ name: 'thinking-time', aiSdkMiddlewares: [thinkingTimeMiddleware(onChunk)] }] : undefined
+    )
   }
 
-  public async completions(params: CompletionsParams, options?: RequestOptions): Promise<CompletionsResult> {
+  public async completions(
+    modelId: string,
+    params: StreamTextParams,
+    onChunk?: (chunk: Chunk) => void
+  ): Promise<CompletionsResult> {
     // const model = params.assistant.model
 
     // 检查是否应该使用现代化客户端
     // if (this.modernClient && model && isModernSdkSupported(this.provider, model)) {
     // try {
-    return await this.modernCompletions(params, options)
+    console.log('completions', modelId, params, onChunk)
+    return await this.modernCompletions(modelId, params, onChunk)
     // } catch (error) {
     // console.warn('Modern client failed, falling back to legacy:', error)
     // fallback到原有实现
@@ -137,65 +146,32 @@ export default class ModernAiProvider {
    * 使用现代化AI SDK的completions实现
    * 使用 AiSdkUtils 工具模块进行参数构建
    */
-  private async modernCompletions(params: CompletionsParams, options?: RequestOptions): Promise<CompletionsResult> {
-    if (!this.modernClient || !params.assistant.model) {
-      throw new Error('Modern client not available')
+  private async modernCompletions(
+    modelId: string,
+    params: StreamTextParams,
+    onChunk?: (chunk: Chunk) => void
+  ): Promise<CompletionsResult> {
+    if (!this.modernClient) {
+      throw new Error('Modern AI SDK client not initialized')
     }
-
-    console.log('Modern completions with params:', params, 'options:', options)
-
-    const model = params.assistant.model
-    const assistant = params.assistant
-
-    // 检查 messages 类型并转换
-    const messages = Array.isArray(params.messages) ? params.messages : []
-    if (typeof params.messages === 'string') {
-      console.warn('Messages is string, using empty array')
-    }
-
-    // 使用 transformParameters 模块构建参数
-    const aiSdkParams = await buildStreamTextParams(messages, assistant, model, {
-      maxTokens: params.maxTokens,
-      mcpTools: params.mcpTools
-    })
-
-    console.log('Built AI SDK params:', aiSdkParams)
-    const chunks: Chunk[] = []
 
     try {
-      if (params.streamOutput && params.onChunk) {
+      if (onChunk) {
         // 流式处理 - 使用适配器
-        const adapter = new AiSdkToChunkAdapter(params.onChunk)
-        const streamResult = await this.modernClient.streamText(model.id, aiSdkParams)
+        const adapter = new AiSdkToChunkAdapter(onChunk)
+        const streamResult = await this.modernClient.streamText(modelId, params)
         const finalText = await adapter.processStream(streamResult)
 
         return {
           getText: () => finalText
         }
-      } else if (params.streamOutput) {
+      } else {
         // 流式处理但没有 onChunk 回调
-        const streamResult = await this.modernClient.streamText(model.id, aiSdkParams)
+        const streamResult = await this.modernClient.streamText(modelId, params)
         const finalText = await streamResult.text
 
         return {
           getText: () => finalText
-        }
-      } else {
-        // 非流式处理
-        const result = await this.modernClient.generateText(model.id, aiSdkParams)
-
-        const cherryChunk: Chunk = {
-          type: ChunkType.TEXT_COMPLETE,
-          text: result.text || ''
-        }
-        chunks.push(cherryChunk)
-
-        if (params.onChunk) {
-          params.onChunk(cherryChunk)
-        }
-
-        return {
-          getText: () => result.text || ''
         }
       }
     } catch (error) {

@@ -3,7 +3,7 @@
  * 用于将 AI SDK 的 fullStream 转换为 Cherry Studio 的 chunk 格式
  */
 
-import { TextStreamPart } from '@cherry-studio/ai-core'
+import { TextStreamPart } from '@cherrystudio/ai-core'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
 
 export interface CherryStudioChunk {
@@ -78,38 +78,14 @@ export class AiSdkToChunkAdapter {
           type: ChunkType.TEXT_DELTA,
           text: chunk.textDelta || ''
         })
-        if (final.reasoning_content) {
-          this.onChunk({
-            type: ChunkType.THINKING_COMPLETE,
-            text: final.reasoning_content || ''
-          })
-          final.reasoning_content = ''
-        }
-        break
-
-      // === 推理相关事件 ===
-      case 'reasoning':
-        final.reasoning_content += chunk.textDelta || ''
-        this.onChunk({
-          type: ChunkType.THINKING_DELTA,
-          text: chunk.textDelta || ''
-        })
         break
 
       case 'reasoning-signature':
-        // 推理签名，可以映射到思考完成
-        this.onChunk({
-          type: ChunkType.THINKING_COMPLETE,
-          text: chunk.signature || ''
-        })
+        // 不再需要处理，中间件会发出 THINKING_COMPLETE
         break
 
       case 'redacted-reasoning':
-        // 被编辑的推理内容，也映射到思考
-        this.onChunk({
-          type: ChunkType.THINKING_DELTA,
-          text: chunk.data || ''
-        })
+        // 不再需要处理
         break
 
       // === 工具调用相关事件 ===

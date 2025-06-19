@@ -66,6 +66,8 @@ export type {
   GenerateTextResult,
   InvalidToolArgumentsError,
   LanguageModelUsage, // AI SDK 4.0 中 TokenUsage 改名为 LanguageModelUsage
+  LanguageModelV1Middleware,
+  LanguageModelV1StreamPart,
   // 错误类型
   NoSuchToolError,
   StreamTextResult,
@@ -115,7 +117,7 @@ export { getAllProviders, getProvider, isProviderSupported, registerProvider } f
 
 // ==================== 包信息 ====================
 export const AI_CORE_VERSION = '1.0.0'
-export const AI_CORE_NAME = '@cherry-studio/ai-core'
+export const AI_CORE_NAME = '@cherrystudio/ai-core'
 
 // ==================== 便捷 API ====================
 // 主要的便捷工厂类

@@ -16,7 +16,7 @@
       "@renderer/*": ["src/renderer/src/*"],
       "@shared/*": ["packages/shared/*"],
       "@types": ["src/renderer/src/types/index.ts"],
-      "@cherry-studio/ai-core": ["packages/aiCore/src/"]
+      "@cherrystudio/ai-core": ["packages/aiCore/src/"]
     }
   }
 }

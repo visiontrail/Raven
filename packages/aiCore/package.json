@@ -1,5 +1,5 @@
 {
-  "name": "@cherry-studio/ai-core",
+  "name": "@cherrystudio/ai-core",
   "version": "1.0.0",
   "description": "Cherry Studio AI Core - Unified AI Provider Interface Based on Vercel AI SDK",
   "main": "src/index.ts",

@@ -4,7 +4,7 @@
  */
 
 import type { ImageModelV1 } from '@ai-sdk/provider'
-import { type LanguageModelV1, wrapLanguageModel } from 'ai'
+import { type LanguageModelV1, LanguageModelV1Middleware, wrapLanguageModel } from 'ai'
 
 import { aiProviderRegistry } from '../providers/registry'
 import { type ProviderId, type ProviderSettingsMap } from './types'
@@ -39,16 +39,23 @@ export class ApiClientFactory {
   static async createClient<T extends ProviderId>(
     providerId: T,
     modelId: string,
-    options: ProviderSettingsMap[T]
+    options: ProviderSettingsMap[T],
+    middlewares?: LanguageModelV1Middleware[]
   ): Promise<LanguageModelV1>
 
   static async createClient(
     providerId: string,
     modelId: string,
-    options: ProviderSettingsMap['openai-compatible']
+    options: ProviderSettingsMap['openai-compatible'],
+    middlewares?: LanguageModelV1Middleware[]
   ): Promise<LanguageModelV1>
 
-  static async createClient(providerId: string, modelId: string = 'default', options: any): Promise<LanguageModelV1> {
+  static async createClient(
+    providerId: string,
+    modelId: string = 'default',
+    options: any,
+    middlewares?: LanguageModelV1Middleware[]
+  ): Promise<LanguageModelV1> {
     try {
       // 对于不在注册表中的 provider，默认使用 openai-compatible
       const effectiveProviderId = aiProviderRegistry.isSupported(providerId) ? providerId : 'openai-compatible'
@@ -78,10 +85,10 @@ export class ApiClientFactory {
         let model = provider(modelId)
 
         // 应用 AI SDK 中间件
-        if (providerConfig.aiSdkMiddlewares) {
+        if (middlewares && middlewares.length > 0) {
           model = wrapLanguageModel({
             model: model,
-            middleware: providerConfig.aiSdkMiddlewares
+            middleware: middlewares
           })
         }
 

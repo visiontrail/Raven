@@ -1,9 +1,9 @@
 import db from '@renderer/databases'
 import { autoRenameTopic } from '@renderer/hooks/useTopic'
-import { fetchChatCompletion } from '@renderer/services/ApiService'
 import { EVENT_NAMES, EventEmitter } from '@renderer/services/EventService'
 import FileManager from '@renderer/services/FileManager'
 import { NotificationService } from '@renderer/services/NotificationService'
+import { OrchestrationService } from '@renderer/services/OrchestrateService'
 import { createStreamProcessor, type StreamProcessorCallbacks } from '@renderer/services/StreamProcessingService'
 import { estimateMessagesUsage } from '@renderer/services/TokenService'
 import store from '@renderer/store'
@@ -829,15 +829,26 @@ const fetchAndProcessAssistantResponseImpl = async (
     const streamProcessorCallbacks = createStreamProcessor(callbacks)
 
     const startTime = Date.now()
-    await fetchChatCompletion({
-      messages: messagesForContext,
-      assistant: assistant,
-      onChunkReceived: streamProcessorCallbacks
-    })
+    const orchestrationService = new OrchestrationService()
+    await orchestrationService.handleUserMessage(
+      {
+        messages: messagesForContext,
+        assistant,
+        options: {
+          timeout: 30000
+        }
+      },
+      streamProcessorCallbacks
+    )
   } catch (error: any) {
-    console.error('Error fetching chat completion:', error)
-    if (assistantMessage) {
-      callbacks.onError?.(error)
+    console.error('Error in fetchAndProcessAssistantResponseImpl:', error)
+    // The main error handling is now delegated to OrchestrationService,
+    // which calls the `onError` callback. This catch block is for
+    // any errors that might occur outside of that orchestration flow.
+    if (assistantMessage && callbacks.onError) {
+      callbacks.onError(error)
+    } else {
+      // Fallback if callbacks are not even defined yet
       throw error
     }
   }

@@ -1,5 +1,3 @@
-import type { LanguageModelV1Middleware } from 'ai'
-
 /**
  * AI Provider 注册表
  * 静态类型 + 动态导入模式：所有类型静态导入，所有实现动态导入
@@ -73,8 +71,6 @@ export interface ProviderConfig {
   creatorFunctionName: string
   // 是否支持图片生成
   supportsImageGeneration?: boolean
-  // AI SDK 原生中间件
-  aiSdkMiddlewares?: LanguageModelV1Middleware[]
 }
 
 /**

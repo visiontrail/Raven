@@ -3,8 +3,19 @@
  * 统一管理从各个 apiClient 提取的参数处理和转换功能
  */
 
-import type { StreamTextParams } from '@cherry-studio/ai-core'
-import { isNotSupportTemperatureAndTopP, isSupportedFlexServiceTier } from '@renderer/config/models'
+import type { CoreMessage, StreamTextParams } from '@cherrystudio/ai-core'
+import {
+  isGenerateImageModel,
+  isNotSupportTemperatureAndTopP,
+  isOpenRouterBuiltInWebSearchModel,
+  isReasoningModel,
+  isSupportedDisableGenerationModel,
+  isSupportedFlexServiceTier,
+  isSupportedReasoningEffortModel,
+  isSupportedThinkingTokenModel,
+  isWebSearchModel
+} from '@renderer/config/models'
+import { getAssistantSettings, getDefaultModel } from '@renderer/services/AssistantService'
 import type { Assistant, MCPTool, Message, Model } from '@renderer/types'
 import { FileTypes } from '@renderer/types'
 import { findFileBlocks, findImageBlocks, getMainTextContent } from '@renderer/utils/messageUtils/find'
@@ -183,19 +194,38 @@ export async function convertMessagesToSdkMessages(
  * 这是主要的参数构建函数，整合所有转换逻辑
  */
 export async function buildStreamTextParams(
-  messages: Message[],
+  sdkMessages: StreamTextParams['messages'],
   assistant: Assistant,
-  model: Model,
   options: {
-    maxTokens?: number
     mcpTools?: MCPTool[]
     enableTools?: boolean
+    requestOptions?: {
+      signal?: AbortSignal
+      timeout?: number
+      headers?: Record<string, string>
+    }
   } = {}
-): Promise<StreamTextParams> {
-  const { maxTokens, mcpTools, enableTools = false } = options
+): Promise<{ params: StreamTextParams; modelId: string }> {
+  const { mcpTools, enableTools = false } = options
 
-  // 转换消息
-  const sdkMessages = await convertMessagesToSdkMessages(messages, model)
+  const model = assistant.model || getDefaultModel()
+
+  const { maxTokens, reasoning_effort } = getAssistantSettings(assistant)
+
+  const enableReasoning =
+    ((isSupportedThinkingTokenModel(model) || isSupportedReasoningEffortModel(model)) &&
+      reasoning_effort !== undefined) ||
+    (isReasoningModel(model) && (!isSupportedThinkingTokenModel(model) || !isSupportedReasoningEffortModel(model)))
+
+  const enableWebSearch =
+    (assistant.enableWebSearch && isWebSearchModel(model)) ||
+    isOpenRouterBuiltInWebSearchModel(model) ||
+    model.id.includes('sonar') ||
+    false
+
+  const enableGenerateImage =
+    isGenerateImageModel(model) &&
+    (isSupportedDisableGenerationModel(model) ? assistant.enableGenerateImage || false : true)
 
   // 构建系统提示
   let systemPrompt = assistant.prompt || ''
@@ -210,6 +240,20 @@ export async function buildStreamTextParams(
     temperature: getTemperature(assistant, model),
     topP: getTopP(assistant, model),
     system: systemPrompt || undefined,
+    abortSignal: options.requestOptions?.signal,
+    headers: options.requestOptions?.headers,
+    // 随便填着，后面再改
+    providerOptions: {
+      reasoning: {
+        enabled: enableReasoning
+      },
+      webSearch: {
+        enabled: enableWebSearch
+      },
+      generateImage: {
+        enabled: enableGenerateImage
+      }
+    },
     ...getCustomParameters(assistant)
   }
 
@@ -219,24 +263,22 @@ export async function buildStreamTextParams(
     // params.tools = convertMcpToolsToSdkTools(mcpTools)
   }
 
-  return params
+  return { params, modelId: model.id }
 }
 
 /**
  * 构建非流式的 generateText 参数
  */
 export async function buildGenerateTextParams(
-  messages: Message[],
+  messages: CoreMessage[],
   assistant: Assistant,
-  model: Model,
   options: {
-    maxTokens?: number
     mcpTools?: MCPTool[]
     enableTools?: boolean
   } = {}
 ): Promise<any> {
   // 复用流式参数的构建逻辑
-  return await buildStreamTextParams(messages, assistant, model, options)
+  return await buildStreamTextParams(messages, assistant, options)
 }
 
 /**
