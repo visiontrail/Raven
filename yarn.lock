@@ -960,7 +960,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cherry-studio/ai-core@workspace:packages/aiCore":
+"@cherry-studio/ai-core@workspace:*, @cherry-studio/ai-core@workspace:packages/aiCore":
   version: 0.0.0-use.local
   resolution: "@cherry-studio/ai-core@workspace:packages/aiCore"
   dependencies:
@@ -6392,6 +6392,7 @@ __metadata:
     "@agentic/tavily": "npm:^7.3.3"
     "@ant-design/v5-patch-for-react-19": "npm:^1.0.3"
     "@anthropic-ai/sdk": "npm:^0.41.0"
+    "@cherry-studio/ai-core": "workspace:*"
     "@cherrystudio/embedjs": "npm:^0.1.31"
     "@cherrystudio/embedjs-libsql": "npm:^0.1.31"
     "@cherrystudio/embedjs-loader-csv": "npm:^0.1.31"

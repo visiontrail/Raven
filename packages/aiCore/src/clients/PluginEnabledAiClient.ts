@@ -19,10 +19,10 @@
  * })
  * ```
  */
-
 import { generateObject, generateText, streamObject, streamText } from 'ai'
 
 import { AiPlugin, createContext, PluginManager } from '../plugins'
+import { isProviderSupported } from '../providers/registry'
 import { ApiClientFactory } from './ApiClientFactory'
 import { type ProviderId, type ProviderSettingsMap } from './types'
 import { UniversalAiSdkClient } from './UniversalAiSdkClient'
@@ -178,8 +178,7 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
       async (finalModelId, transformedParams, streamTransforms) => {
         // 对于流式调用，需要直接调用 AI SDK 以支持流转换器
         const model = await ApiClientFactory.createClient(this.providerId, finalModelId, this.options)
-
-        return streamText({
+        return await streamText({
           model,
           ...transformedParams,
           experimental_transform: streamTransforms.length > 0 ? streamTransforms : undefined
@@ -196,7 +195,7 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
     params: Omit<Parameters<typeof generateText>[0], 'model'>
   ): Promise<ReturnType<typeof generateText>> {
     return this.executeWithPlugins('generateText', modelId, params, async (finalModelId, transformedParams) => {
-      return this.baseClient.generateText(finalModelId, transformedParams)
+      return await this.baseClient.generateText(finalModelId, transformedParams)
     })
   }
 
@@ -208,7 +207,7 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
     params: Omit<Parameters<typeof generateObject>[0], 'model'>
   ): Promise<ReturnType<typeof generateObject>> {
     return this.executeWithPlugins('generateObject', modelId, params, async (finalModelId, transformedParams) => {
-      return this.baseClient.generateObject(finalModelId, transformedParams)
+      return await this.baseClient.generateObject(finalModelId, transformedParams)
     })
   }
 
@@ -221,7 +220,7 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
     params: Omit<Parameters<typeof streamObject>[0], 'model'>
   ): Promise<ReturnType<typeof streamObject>> {
     return this.executeWithPlugins('streamObject', modelId, params, async (finalModelId, transformedParams) => {
-      return this.baseClient.streamObject(finalModelId, transformedParams)
+      return await this.baseClient.streamObject(finalModelId, transformedParams)
     })
   }
 
@@ -267,7 +266,7 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
   ): PluginEnabledAiClient<'openai-compatible'>
 
   static create(providerId: string, options: any, plugins: AiPlugin[] = []): PluginEnabledAiClient {
-    if (providerId in ({} as ProviderSettingsMap)) {
+    if (isProviderSupported(providerId)) {
       return new PluginEnabledAiClient(providerId as ProviderId, options, plugins)
     } else {
       // 对于未知 provider，使用 openai-compatible

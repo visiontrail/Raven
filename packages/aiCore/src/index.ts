@@ -39,9 +39,44 @@ export { aiProviderRegistry } from './providers/registry'
 
 // ==================== 类型定义 ====================
 export type { ClientFactoryError } from './clients/ApiClientFactory'
-export type { BaseProviderSettings, ProviderSettings } from './clients/types'
+export type {
+  GenerateObjectParams,
+  GenerateTextParams,
+  ProviderSettings,
+  StreamObjectParams,
+  StreamTextParams
+} from './clients/types'
 export type { ProviderConfig } from './providers/registry'
 export type { ProviderError } from './providers/types'
+export * as aiSdk from 'ai'
+
+// ==================== AI SDK 常用类型导出 ====================
+// 直接导出 AI SDK 的常用类型，方便使用
+export type {
+  CoreAssistantMessage,
+  // 消息相关类型
+  CoreMessage,
+  CoreSystemMessage,
+  CoreToolMessage,
+  CoreUserMessage,
+  // 通用类型
+  FinishReason,
+  GenerateObjectResult,
+  // 生成相关类型
+  GenerateTextResult,
+  InvalidToolArgumentsError,
+  LanguageModelUsage, // AI SDK 4.0 中 TokenUsage 改名为 LanguageModelUsage
+  // 错误类型
+  NoSuchToolError,
+  StreamTextResult,
+  // 流相关类型
+  TextStreamPart,
+  // 工具相关类型
+  Tool,
+  ToolCall,
+  ToolExecutionError,
+  ToolResult
+} from 'ai'
 
 // 重新导出所有 Provider Settings 类型
 export type {

@@ -1,38 +1,14 @@
-import { FetchFunction } from '@ai-sdk/provider-utils'
+import { generateObject, generateText, streamObject, streamText } from 'ai'
 
 import type { ProviderSettingsMap } from '../providers/registry'
 
 // ProviderSettings 是所有 Provider Settings 的联合类型
 export type ProviderSettings = ProviderSettingsMap[keyof ProviderSettingsMap]
 
-// 基础 Provider 配置类型（为了向后兼容和通用场景）
-export type BaseProviderSettings = {
-  /**
-   * API key for authentication
-   */
-  apiKey?: string
-  /**
-   * Base URL for the API calls
-   */
-  baseURL?: string
-  /**
-   * Custom headers to include in the requests
-   */
-  headers?: Record<string, string>
-  /**
-   * Optional custom url query parameters to include in request urls
-   */
-  queryParams?: Record<string, string>
-  /**
-   * Custom fetch implementation. You can use it as a middleware to intercept requests,
-   * or to provide a custom fetch implementation for e.g. testing.
-   */
-  fetch?: FetchFunction
-  /**
-   * Allow additional properties for provider-specific settings
-   */
-  [key: string]: any
-}
+export type StreamTextParams = Omit<Parameters<typeof streamText>[0], 'model'>
+export type GenerateTextParams = Omit<Parameters<typeof generateText>[0], 'model'>
+export type StreamObjectParams = Omit<Parameters<typeof streamObject>[0], 'model'>
+export type GenerateObjectParams = Omit<Parameters<typeof generateObject>[0], 'model'>
 
 // 重新导出 ProviderSettingsMap 中的所有类型
 export type {

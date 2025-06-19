@@ -37,7 +37,7 @@ import { findFileBlocks, getMainTextContent } from '@renderer/utils/messageUtils
 import { findLast, isEmpty, takeRight } from 'lodash'
 
 import AiProvider from '../aiCore'
-import store from '../store'
+import AiProviderNew from '../aiCore/index_new'
 import {
   getAssistantProvider,
   getAssistantSettings,
@@ -313,7 +313,7 @@ export async function fetchChatCompletion({
   console.log('fetchChatCompletion', messages, assistant)
 
   const provider = getAssistantProvider(assistant)
-  const AI = new AiProvider(provider)
+  const AI = new AiProviderNew(provider)
 
   // Make sure that 'Clear Context' works for all scenarios including external tool and normal chat.
   messages = filterContextMessages(messages)
