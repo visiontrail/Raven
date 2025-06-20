@@ -38,7 +38,8 @@ function mapProviderTypeToAiSdkId(providerType: string): string {
     // 需要转换的映射
     grok: 'xai', // grok -> xai
     'azure-openai': 'azure', // azure-openai -> azure
-    gemini: 'google' // gemini -> google
+    gemini: 'google', // gemini -> google
+    vertexai: 'google-vertex' // vertexai -> google-vertex
   }
 
   return typeMapping[providerType]

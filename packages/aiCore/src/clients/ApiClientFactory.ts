@@ -12,7 +12,7 @@ import { type ProviderId, type ProviderSettingsMap } from './types'
 // 客户端配置接口
 export interface ClientConfig {
   providerId: string
-  options?: ProviderOptions
+  options?: any
 }
 
 // 错误类型
@@ -108,11 +108,19 @@ export class ApiClientFactory {
     }
   }
 
+  static async createImageClient<T extends ProviderId>(
+    providerId: T,
+    modelId: string,
+    options: ProviderSettingsMap[T]
+  ): Promise<ImageModelV1>
+
   static async createImageClient(
     providerId: string,
-    modelId: string = 'default',
-    options: ProviderOptions
-  ): Promise<ImageModelV1> {
+    modelId: string,
+    options: ProviderSettingsMap['openai-compatible']
+  ): Promise<ImageModelV1>
+
+  static async createImageClient(providerId: string, modelId: string = 'default', options: any): Promise<ImageModelV1> {
     try {
       if (!aiProviderRegistry.isSupported(providerId)) {
         throw new ClientFactoryError(`Provider "${providerId}" is not supported`, providerId)
@@ -207,9 +215,9 @@ export function createClient(providerId: string, modelId: string = 'default', op
   return ApiClientFactory.createClient(providerId, modelId, options)
 }
 
+export const createImageClient = (providerId: string, modelId: string, options: any): Promise<ImageModelV1> =>
+  ApiClientFactory.createImageClient(providerId, modelId, options)
+
 export const getSupportedProviders = () => ApiClientFactory.getSupportedProviders()
 
 export const getClientInfo = (providerId: string) => ApiClientFactory.getClientInfo(providerId)
-
-export const createImageClient = (providerId: string, modelId?: string, options?: any) =>
-  ApiClientFactory.createImageClient(providerId, modelId, options)
