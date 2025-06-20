@@ -1,5 +1,5 @@
 import { LanguageModelV1Middleware, LanguageModelV1StreamPart } from '@cherrystudio/ai-core'
-import { Chunk, ChunkType, ThinkingCompleteChunk } from '@renderer/types/chunk'
+import { ChunkType, ThinkingCompleteChunk } from '@renderer/types/chunk'
 
 /**
  * 一个用于统计 LLM "思考时间"（Time to First Token）的 AI SDK 中间件。
@@ -9,15 +9,16 @@ import { Chunk, ChunkType, ThinkingCompleteChunk } from '@renderer/types/chunk'
  * 2. 它会创建一个新的 `TransformStream` 来代理原始的流。
  * 3. 当第一个数据块 (chunk) 从原始流中到达时，记录结束时间。
  * 4. 计算两者之差，即为 "思考时间"
+ * 这里只处理了thinking_complete
  */
-export default function thinkingTimeMiddleware(onChunkReceived: (chunk: Chunk) => void): LanguageModelV1Middleware {
+export default function thinkingTimeMiddleware(): LanguageModelV1Middleware {
   return {
     wrapStream: async ({ doStream }) => {
       let hasThinkingContent = false
       let thinkingStartTime = 0
       let accumulatedThinkingContent = ''
       const { stream, ...reset } = await doStream()
-      const transformStream = new TransformStream<LanguageModelV1StreamPart, LanguageModelV1StreamPart>({
+      const transformStream = new TransformStream<LanguageModelV1StreamPart, any>({
         transform(chunk, controller) {
           if (chunk.type === 'reasoning' || chunk.type === 'redacted-reasoning') {
             if (!hasThinkingContent) {
@@ -25,19 +26,15 @@ export default function thinkingTimeMiddleware(onChunkReceived: (chunk: Chunk) =
               thinkingStartTime = Date.now()
             }
             accumulatedThinkingContent += chunk.textDelta || ''
-            onChunkReceived({
-              type: ChunkType.THINKING_DELTA,
-              text: chunk.textDelta || ''
-            })
           } else {
             if (hasThinkingContent && thinkingStartTime > 0) {
               const thinkingTime = Date.now() - thinkingStartTime
-              const thinkingCompleteChunk: ThinkingCompleteChunk = {
-                type: ChunkType.THINKING_COMPLETE,
+              const thinkingCompleteChunk = {
+                type: 'reasoning-signature',
                 text: accumulatedThinkingContent,
                 thinking_millsec: thinkingTime
               }
-              onChunkReceived(thinkingCompleteChunk)
+              controller.enqueue(thinkingCompleteChunk)
               hasThinkingContent = false
               thinkingStartTime = 0
               accumulatedThinkingContent = ''
@@ -55,7 +52,7 @@ export default function thinkingTimeMiddleware(onChunkReceived: (chunk: Chunk) =
               text: accumulatedThinkingContent,
               thinking_millsec: thinkingTime
             }
-            onChunkReceived(thinkingCompleteChunk)
+            controller.enqueue(thinkingCompleteChunk)
           }
           controller.terminate()
         }

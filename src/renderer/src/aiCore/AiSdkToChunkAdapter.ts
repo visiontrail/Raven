@@ -68,7 +68,7 @@ export class AiSdkToChunkAdapter {
    * 转换 AI SDK chunk 为 Cherry Studio chunk 并调用回调
    * @param chunk AI SDK 的 chunk 数据
    */
-  private convertAndEmitChunk(chunk: TextStreamPart<any>, final: { text: string; reasoning_content: string }) {
+  private convertAndEmitChunk(chunk: any, final: { text: string; reasoning_content: string }) {
     console.log('AI SDK chunk type:', chunk.type, chunk)
     switch (chunk.type) {
       // === 文本相关事件 ===
@@ -80,12 +80,24 @@ export class AiSdkToChunkAdapter {
         })
         break
 
-      case 'reasoning-signature':
-        // 不再需要处理，中间件会发出 THINKING_COMPLETE
+      case 'reasoning':
+        this.onChunk({
+          type: ChunkType.THINKING_DELTA,
+          text: chunk.textDelta || ''
+        })
         break
-
       case 'redacted-reasoning':
-        // 不再需要处理
+        this.onChunk({
+          type: ChunkType.THINKING_DELTA,
+          text: chunk.data || ''
+        })
+        break
+      case 'reasoning-signature':
+        this.onChunk({
+          type: ChunkType.THINKING_COMPLETE,
+          text: chunk.text || '',
+          thinking_millsec: chunk.thinking_millsec || 0
+        })
         break
 
       // === 工具调用相关事件 ===

@@ -100,7 +100,7 @@ export function buildAiSdkMiddlewares(config: AiSdkMiddlewareConfig): NamedAiSdk
   if (config.onChunk && config.model && isReasoningModel(config.model)) {
     builder.add({
       name: 'thinking-time',
-      aiSdkMiddlewares: [thinkingTimeMiddleware(config.onChunk)]
+      aiSdkMiddlewares: [thinkingTimeMiddleware()]
     })
   }
 

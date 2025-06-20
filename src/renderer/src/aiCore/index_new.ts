@@ -19,7 +19,6 @@ import {
 } from '@cherrystudio/ai-core'
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
-import { Chunk } from '@renderer/types/chunk'
 
 // 引入适配器
 import AiSdkToChunkAdapter from './AiSdkToChunkAdapter'
@@ -121,15 +120,13 @@ export default class ModernAiProvider {
   public async completions(
     modelId: string,
     params: StreamTextParams,
-    middlewareConfig: AiSdkMiddlewareConfig,
-    onChunk?: (chunk: Chunk) => void
+    middlewareConfig: AiSdkMiddlewareConfig
   ): Promise<CompletionsResult> {
     // const model = params.assistant.model
 
     // 检查是否应该使用现代化客户端
     // if (this.modernClient && model && isModernSdkSupported(this.provider, model)) {
     // try {
-    console.log('completions', modelId, params, onChunk)
     return await this.modernCompletions(modelId, params, middlewareConfig)
     // } catch (error) {
     // console.warn('Modern client failed, falling back to legacy:', error)
