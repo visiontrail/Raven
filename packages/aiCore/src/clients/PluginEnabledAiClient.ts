@@ -19,14 +19,7 @@
  * })
  * ```
  */
-import {
-  generateObject,
-  generateText,
-  LanguageModelV1Middleware,
-  simulateStreamingMiddleware,
-  streamObject,
-  streamText
-} from 'ai'
+import { generateObject, generateText, LanguageModelV1Middleware, streamObject, streamText } from 'ai'
 
 import { AiPlugin, createContext, PluginManager } from '../plugins'
 import { isProviderSupported } from '../providers/registry'
@@ -196,7 +189,7 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
       this.providerId,
       modelId,
       this.options,
-      middlewares.length > 0 ? middlewares : [simulateStreamingMiddleware()] //TODO: 这里需要改成非流时调用simulateStreamingMiddleware()，这里先随便传一个
+      middlewares.length > 0 ? middlewares : undefined
     )
   }
 

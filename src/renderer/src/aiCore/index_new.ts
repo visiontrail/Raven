@@ -14,6 +14,7 @@ import {
   createClient,
   type OpenAICompatibleProviderSettings,
   type ProviderId,
+  smoothStream,
   StreamTextParams
 } from '@cherrystudio/ai-core'
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
@@ -176,7 +177,13 @@ export default class ModernAiProvider {
       if (middlewareConfig.onChunk) {
         // 流式处理 - 使用适配器
         const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk)
-        const streamResult = await clientWithMiddlewares.streamText(modelId, params)
+        const streamResult = await clientWithMiddlewares.streamText(modelId, {
+          ...params,
+          experimental_transform: smoothStream({
+            delayInMs: 100,
+            chunking: 'word'
+          })
+        })
         const finalText = await adapter.processStream(streamResult)
 
         return {
