@@ -213,10 +213,13 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
         params!,
         async (finalModelId, transformedParams, streamTransforms) => {
           const model = await this.getModelWithMiddlewares(finalModelId)
+          const experimental_transform =
+            params?.experimental_transform ?? (streamTransforms.length > 0 ? streamTransforms : undefined)
+
           return await streamText({
             model,
             ...transformedParams,
-            experimental_transform: streamTransforms.length > 0 ? streamTransforms : undefined
+            experimental_transform
           })
         }
       )

@@ -147,7 +147,7 @@ const getBlockThrottler = (id: string) => {
       }
 
       const rafId = requestAnimationFrame(() => {
-        store.dispatch(updateOneBlock({ id, changes: blockUpdate }))
+        // store.dispatch(updateOneBlock({ id, changes: blockUpdate }))
         blockUpdateRafs.delete(id)
       })
 
@@ -166,6 +166,7 @@ const getBlockThrottler = (id: string) => {
  */
 const throttledBlockUpdate = (id: string, blockUpdate: any) => {
   const throttler = getBlockThrottler(id)
+  store.dispatch(updateOneBlock({ id, changes: blockUpdate }))
   throttler(blockUpdate)
 }
 

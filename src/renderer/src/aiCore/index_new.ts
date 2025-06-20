@@ -177,8 +177,9 @@ export default class ModernAiProvider {
         const streamResult = await clientWithMiddlewares.streamText(modelId, {
           ...params,
           experimental_transform: smoothStream({
-            delayInMs: 100,
-            chunking: 'word'
+            delayInMs: 80,
+            // 中文3个字符一个chunk,英文一个单词一个chunk
+            chunking: /([\u4E00-\u9FFF]{3})|\S+\s+/
           })
         })
         const finalText = await adapter.processStream(streamResult)
