@@ -79,6 +79,7 @@ export type {
   ToolExecutionError,
   ToolResult
 } from 'ai'
+export { defaultSettingsMiddleware, extractReasoningMiddleware, simulateStreamingMiddleware } from 'ai'
 
 // 重新导出所有 Provider Settings 类型
 export type {

@@ -3,6 +3,7 @@
  */
 
 import { StreamTextParams } from '@cherrystudio/ai-core'
+import { AiSdkMiddlewareConfig } from '@renderer/aiCore/middleware/aisdk/AiSdkMiddlewareBuilder'
 import { CompletionsParams } from '@renderer/aiCore/middleware/schemas'
 import { buildStreamTextParams } from '@renderer/aiCore/transformParameters'
 import {
@@ -293,7 +294,7 @@ export async function fetchChatCompletion({
   onChunkReceived: (chunk: Chunk) => void
 }) {
   const provider = getAssistantProvider(assistant)
-  const AI = new AiProviderNew(provider, onChunkReceived)
+  const AI = new AiProviderNew(provider)
 
   const mcpTools = await fetchMcpTools(assistant)
 
@@ -303,9 +304,17 @@ export async function fetchChatCompletion({
     requestOptions: options
   })
 
+  const middlewareConfig: AiSdkMiddlewareConfig = {
+    streamOutput: assistant.settings?.streamOutput ?? true,
+    onChunk: onChunkReceived,
+    model: assistant.model,
+    provider: provider,
+    enableReasoning: assistant.settings?.reasoning_effort !== undefined
+  }
+
   // --- Call AI Completions ---
   onChunkReceived({ type: ChunkType.LLM_RESPONSE_CREATED })
-  await AI.completions(modelId, aiSdkParams, onChunkReceived)
+  await AI.completions(modelId, aiSdkParams, middlewareConfig)
 }
 
 interface FetchTranslateProps {

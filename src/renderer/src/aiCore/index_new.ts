@@ -24,7 +24,7 @@ import { Chunk } from '@renderer/types/chunk'
 import AiSdkToChunkAdapter from './AiSdkToChunkAdapter'
 // 引入原有的AiProvider作为fallback
 import LegacyAiProvider from './index'
-import thinkingTimeMiddleware from './middleware/aisdk/ThinkingTimeMiddleware'
+import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/aisdk/AiSdkMiddlewareBuilder'
 import { CompletionsResult } from './middleware/schemas'
 // 引入参数转换模块
 
@@ -88,7 +88,7 @@ function providerToAiSdkConfig(provider: Provider): {
  */
 function isModernSdkSupported(provider: Provider, model?: Model): boolean {
   // 目前支持主要的providers
-  const supportedProviders = ['openai', 'anthropic', 'gemini', 'azure-openai']
+  const supportedProviders = ['openai', 'anthropic', 'gemini', 'azure-openai', 'vertexai']
 
   // 检查provider类型
   if (!supportedProviders.includes(provider.type)) {
@@ -108,21 +108,19 @@ export default class ModernAiProvider {
   private legacyProvider: LegacyAiProvider
   private provider: Provider
 
-  constructor(provider: Provider, onChunk?: (chunk: Chunk) => void) {
+  constructor(provider: Provider) {
     this.provider = provider
     this.legacyProvider = new LegacyAiProvider(provider)
 
+    // 初始化时不构建中间件，等到需要时再构建
     const config = providerToAiSdkConfig(provider)
-    this.modernClient = createClient(
-      config.providerId,
-      config.options,
-      onChunk ? [{ name: 'thinking-time', aiSdkMiddlewares: [thinkingTimeMiddleware(onChunk)] }] : undefined
-    )
+    this.modernClient = createClient(config.providerId, config.options)
   }
 
   public async completions(
     modelId: string,
     params: StreamTextParams,
+    middlewareConfig: AiSdkMiddlewareConfig,
     onChunk?: (chunk: Chunk) => void
   ): Promise<CompletionsResult> {
     // const model = params.assistant.model
@@ -131,7 +129,7 @@ export default class ModernAiProvider {
     // if (this.modernClient && model && isModernSdkSupported(this.provider, model)) {
     // try {
     console.log('completions', modelId, params, onChunk)
-    return await this.modernCompletions(modelId, params, onChunk)
+    return await this.modernCompletions(modelId, params, middlewareConfig)
     // } catch (error) {
     // console.warn('Modern client failed, falling back to legacy:', error)
     // fallback到原有实现
@@ -144,22 +142,41 @@ export default class ModernAiProvider {
 
   /**
    * 使用现代化AI SDK的completions实现
-   * 使用 AiSdkUtils 工具模块进行参数构建
+   * 使用建造者模式动态构建中间件
    */
   private async modernCompletions(
     modelId: string,
     params: StreamTextParams,
-    onChunk?: (chunk: Chunk) => void
+    middlewareConfig: AiSdkMiddlewareConfig
   ): Promise<CompletionsResult> {
     if (!this.modernClient) {
       throw new Error('Modern AI SDK client not initialized')
     }
 
     try {
-      if (onChunk) {
+      // 合并传入的配置和实例配置
+      const finalConfig: AiSdkMiddlewareConfig = {
+        ...middlewareConfig,
+        provider: this.provider,
+        // 工具相关信息从 params 中获取
+        enableTool: params.tools !== undefined && Array.isArray(params.tools) && params.tools.length > 0
+      }
+
+      // 动态构建中间件数组
+      const middlewares = buildAiSdkMiddlewares(finalConfig)
+      console.log(
+        '构建的中间件:',
+        middlewares.map((m) => m.name)
+      )
+
+      // 创建带有中间件的客户端
+      const config = providerToAiSdkConfig(this.provider)
+      const clientWithMiddlewares = createClient(config.providerId, config.options, middlewares)
+
+      if (middlewareConfig.onChunk) {
         // 流式处理 - 使用适配器
-        const adapter = new AiSdkToChunkAdapter(onChunk)
-        const streamResult = await this.modernClient.streamText(modelId, params)
+        const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk)
+        const streamResult = await clientWithMiddlewares.streamText(modelId, params)
         const finalText = await adapter.processStream(streamResult)
 
         return {
@@ -167,7 +184,7 @@ export default class ModernAiProvider {
         }
       } else {
         // 流式处理但没有 onChunk 回调
-        const streamResult = await this.modernClient.streamText(modelId, params)
+        const streamResult = await clientWithMiddlewares.streamText(modelId, params)
         const finalText = await streamResult.text
 
         return {
