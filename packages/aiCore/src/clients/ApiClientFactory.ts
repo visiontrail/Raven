@@ -82,7 +82,7 @@ export class ApiClientFactory {
 
       // 返回模型实例
       if (typeof provider === 'function') {
-        let model = provider(modelId)
+        let model: LanguageModelV1 = provider(modelId)
 
         // 应用 AI SDK 中间件
         if (middlewares && middlewares.length > 0) {

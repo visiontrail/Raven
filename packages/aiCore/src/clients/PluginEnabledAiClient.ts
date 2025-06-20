@@ -194,29 +194,40 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
   }
 
   /**
-   * 流式文本生成 - 集成插件系统
+   * 流式文本生成
    */
   async streamText(
     modelId: string,
     params: Omit<Parameters<typeof streamText>[0], 'model'>
+  ): Promise<ReturnType<typeof streamText>>
+  async streamText(params: Parameters<typeof streamText>[0]): Promise<ReturnType<typeof streamText>>
+  async streamText(
+    modelIdOrParams: string | Parameters<typeof streamText>[0],
+    params?: Omit<Parameters<typeof streamText>[0], 'model'>
   ): Promise<ReturnType<typeof streamText>> {
-    return this.executeStreamWithPlugins(
-      'streamText',
-      modelId,
-      params,
-      async (finalModelId, transformedParams, streamTransforms) => {
-        const model = await this.getModelWithMiddlewares(finalModelId)
-        return await streamText({
-          model,
-          ...transformedParams,
-          experimental_transform: streamTransforms.length > 0 ? streamTransforms : undefined
-        })
-      }
-    )
+    if (typeof modelIdOrParams === 'string') {
+      // 传统方式：使用内建逻辑
+      return this.executeStreamWithPlugins(
+        'streamText',
+        modelIdOrParams,
+        params!,
+        async (finalModelId, transformedParams, streamTransforms) => {
+          const model = await this.getModelWithMiddlewares(finalModelId)
+          return await streamText({
+            model,
+            ...transformedParams,
+            experimental_transform: streamTransforms.length > 0 ? streamTransforms : undefined
+          })
+        }
+      )
+    } else {
+      // 外部 registry 方式：直接使用用户提供的 model
+      return await streamText(modelIdOrParams)
+    }
   }
 
   /**
-   * 生成文本 - 集成插件系统
+   * 生成文本
    * 可能不需要了，因为内置模拟非流中间件
    */
   async generateText(
@@ -230,29 +241,60 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
   }
 
   /**
-   * 生成结构化对象 - 集成插件系统
+   * 生成结构化对象
    */
   async generateObject(
     modelId: string,
     params: Omit<Parameters<typeof generateObject>[0], 'model'>
+  ): Promise<ReturnType<typeof generateObject>>
+  async generateObject(params: Parameters<typeof generateObject>[0]): Promise<ReturnType<typeof generateObject>>
+  async generateObject(
+    modelIdOrParams: string | Parameters<typeof generateObject>[0],
+    params?: Omit<Parameters<typeof generateObject>[0], 'model'>
   ): Promise<ReturnType<typeof generateObject>> {
-    return this.executeWithPlugins('generateObject', modelId, params, async (finalModelId, transformedParams) => {
-      const model = await this.getModelWithMiddlewares(finalModelId)
-      return await generateObject({ model, ...transformedParams })
-    })
+    if (typeof modelIdOrParams === 'string') {
+      // 传统方式：使用内建逻辑
+      return this.executeWithPlugins(
+        'generateObject',
+        modelIdOrParams,
+        params!,
+        async (finalModelId, transformedParams) => {
+          const model = await this.getModelWithMiddlewares(finalModelId)
+          return await generateObject({ model, ...transformedParams })
+        }
+      )
+    } else {
+      // 外部 registry 方式：直接使用用户提供的 model
+      return await generateObject(modelIdOrParams)
+    }
   }
 
   /**
-   * 流式生成结构化对象 - 集成插件系统
-   * 注意：streamObject 目前不支持流转换器，所以使用普通的插件处理
+   * 流式生成结构化对象
    */
   async streamObject(
     modelId: string,
     params: Omit<Parameters<typeof streamObject>[0], 'model'>
+  ): Promise<ReturnType<typeof streamObject>>
+  async streamObject(params: Parameters<typeof streamObject>[0]): Promise<ReturnType<typeof streamObject>>
+  async streamObject(
+    modelIdOrParams: string | Parameters<typeof streamObject>[0],
+    params?: Omit<Parameters<typeof streamObject>[0], 'model'>
   ): Promise<ReturnType<typeof streamObject>> {
-    return this.executeWithPlugins('streamObject', modelId, params, async (finalModelId, transformedParams) => {
-      return await this.baseClient.streamObject(finalModelId, transformedParams)
-    })
+    if (typeof modelIdOrParams === 'string') {
+      // 传统方式：使用内建逻辑
+      return this.executeWithPlugins(
+        'streamObject',
+        modelIdOrParams,
+        params!,
+        async (finalModelId, transformedParams) => {
+          return await this.baseClient.streamObject(finalModelId, transformedParams)
+        }
+      )
+    } else {
+      // 外部 registry 方式：直接使用用户提供的 model
+      return await streamObject(modelIdOrParams)
+    }
   }
 
   /**
