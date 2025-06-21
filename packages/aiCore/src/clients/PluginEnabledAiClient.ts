@@ -225,7 +225,7 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
       )
     } else {
       // 外部 registry 方式：直接使用用户提供的 model
-      return await streamText(modelIdOrParams)
+      return streamText(modelIdOrParams)
     }
   }
 

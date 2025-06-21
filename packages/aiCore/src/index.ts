@@ -112,15 +112,26 @@ export type {
   ZhipuProviderSettings
 } from './clients/types'
 
+// ==================== 选项 ====================
+export {
+  createAnthropicOptions,
+  createGoogleOptions,
+  createOpenAIOptions,
+  type ExtractProviderOptions,
+  mergeProviderOptions,
+  type ProviderOptionsMap,
+  type TypedProviderOptions
+} from './options'
+
 // ==================== 工具函数 ====================
 export { createClient as createApiClient, getClientInfo, getSupportedProviders } from './clients/ApiClientFactory'
 export { getAllProviders, getProvider, isProviderSupported, registerProvider } from './providers/registry'
 
 // ==================== Provider 配置工厂 ====================
 export {
-  BaseProviderConfig,
+  type BaseProviderConfig,
   createProviderConfig,
-  ProviderConfigBuilder,
+  type ProviderConfigBuilder,
   providerConfigBuilder,
   ProviderConfigFactory
 } from './providers/factory'

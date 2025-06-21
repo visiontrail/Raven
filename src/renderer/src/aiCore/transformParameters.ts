@@ -22,6 +22,8 @@ import { findFileBlocks, findImageBlocks, getMainTextContent } from '@renderer/u
 import { buildSystemPrompt } from '@renderer/utils/prompt'
 import { defaultTimeout } from '@shared/config/constant'
 
+import { buildProviderOptions } from './utils/reasoning'
+
 /**
  * 获取温度参数
  */
@@ -233,6 +235,13 @@ export async function buildStreamTextParams(
     systemPrompt = await buildSystemPromptWithTools(systemPrompt, mcpTools, assistant)
   }
 
+  // 构建真正的 providerOptions
+  const providerOptions = buildProviderOptions(assistant, model, {
+    enableReasoning,
+    enableWebSearch,
+    enableGenerateImage
+  })
+
   // 构建基础参数
   const params: StreamTextParams = {
     messages: sdkMessages,
@@ -242,19 +251,7 @@ export async function buildStreamTextParams(
     system: systemPrompt || undefined,
     abortSignal: options.requestOptions?.signal,
     headers: options.requestOptions?.headers,
-    // 随便填着，后面再改
-    providerOptions: {
-      reasoning: {
-        enabled: enableReasoning
-      },
-      webSearch: {
-        enabled: enableWebSearch
-      },
-      generateImage: {
-        enabled: enableGenerateImage
-      }
-    },
-    ...getCustomParameters(assistant)
+    providerOptions
   }
 
   // 添加工具（如果启用且有工具）
@@ -279,33 +276,4 @@ export async function buildGenerateTextParams(
 ): Promise<any> {
   // 复用流式参数的构建逻辑
   return await buildStreamTextParams(messages, assistant, options)
-}
-
-/**
- * 获取自定义参数
- * 从 assistant 设置中提取自定义参数
- */
-export function getCustomParameters(assistant: Assistant): Record<string, any> {
-  return (
-    assistant?.settings?.customParameters?.reduce((acc, param) => {
-      if (!param.name?.trim()) {
-        return acc
-      }
-      if (param.type === 'json') {
-        const value = param.value as string
-        if (value === 'undefined') {
-          return { ...acc, [param.name]: undefined }
-        }
-        try {
-          return { ...acc, [param.name]: JSON.parse(value) }
-        } catch {
-          return { ...acc, [param.name]: value }
-        }
-      }
-      return {
-        ...acc,
-        [param.name]: param.value
-      }
-    }, {}) || {}
-  )
 }

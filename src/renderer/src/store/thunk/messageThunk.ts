@@ -34,7 +34,7 @@ import {
   resetAssistantMessage
 } from '@renderer/utils/messageUtils/create'
 import { getMainTextContent } from '@renderer/utils/messageUtils/find'
-import { getTopicQueue } from '@renderer/utils/queue'
+import { getTopicQueue, waitForTopicQueue } from '@renderer/utils/queue'
 import { isOnHomePage } from '@renderer/utils/window'
 import { t } from 'i18next'
 import { isEmpty, throttle } from 'lodash'
@@ -44,10 +44,10 @@ import type { AppDispatch, RootState } from '../index'
 import { removeManyBlocks, updateOneBlock, upsertManyBlocks, upsertOneBlock } from '../messageBlock'
 import { newMessagesActions, selectMessagesForTopic } from '../newMessage'
 
-// const handleChangeLoadingOfTopic = async (topicId: string) => {
-//   await waitForTopicQueue(topicId)
-//   store.dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }))
-// }
+const handleChangeLoadingOfTopic = async (topicId: string) => {
+  await waitForTopicQueue(topicId)
+  store.dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }))
+}
 // TODO: 后续可以将db操作移到Listener Middleware中
 export const saveMessageAndBlocksToDB = async (message: Message, blocks: MessageBlock[], messageIndex: number = -1) => {
   try {
@@ -704,12 +704,12 @@ const fetchAndProcessAssistantResponseImpl = async (
         }
 
         const serializableError = {
-          name: error.name,
-          message: pauseErrorLanguagePlaceholder || error.message || formatErrorMessage(error),
-          originalMessage: error.message,
-          stack: error.stack,
-          status: error.status || error.code,
-          requestId: error.request_id
+          name: String(error.name || ''),
+          message: pauseErrorLanguagePlaceholder || String(error.message || '') || formatErrorMessage(error),
+          originalMessage: String(error.message || ''),
+          stack: String(error.stack || ''),
+          status: error.status || error.code || undefined,
+          requestId: error.request_id || undefined
         }
         if (!isOnHomePage()) {
           await notificationService.send({
@@ -723,7 +723,14 @@ const fetchAndProcessAssistantResponseImpl = async (
           })
         }
         const possibleBlockId =
-          mainTextBlockId || thinkingBlockId || toolBlockId || imageBlockId || citationBlockId || lastBlockId
+          mainTextBlockId ||
+          thinkingBlockId ||
+          toolBlockId ||
+          imageBlockId ||
+          citationBlockId ||
+          lastBlockId ||
+          initialPlaceholderBlockId
+
         if (possibleBlockId) {
           // 更改上一个block的状态为ERROR
           const changes: Partial<MessageBlock> = {
@@ -742,6 +749,9 @@ const fetchAndProcessAssistantResponseImpl = async (
         dispatch(newMessagesActions.updateMessage({ topicId, messageId: assistantMsgId, updates: messageErrorUpdate }))
 
         saveUpdatesToDB(assistantMsgId, topicId, messageErrorUpdate, [])
+
+        // 立即设置 loading 为 false，因为当前任务已经出错
+        dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }))
 
         EventEmitter.emit(EVENT_NAMES.MESSAGE_COMPLETE, {
           id: assistantMsgId,
@@ -843,14 +853,14 @@ const fetchAndProcessAssistantResponseImpl = async (
     )
   } catch (error: any) {
     console.error('Error in fetchAndProcessAssistantResponseImpl:', error)
-    // The main error handling is now delegated to OrchestrationService,
-    // which calls the `onError` callback. This catch block is for
-    // any errors that might occur outside of that orchestration flow.
-    if (assistantMessage && callbacks.onError) {
-      callbacks.onError(error)
-    } else {
-      // Fallback if callbacks are not even defined yet
-      throw error
+    // 统一错误处理：确保 loading 状态被正确设置，避免队列任务卡住
+    try {
+      await callbacks.onError?.(error)
+    } catch (callbackError) {
+      console.error('Error in onError callback:', callbackError)
+    } finally {
+      // 确保无论如何都设置 loading 为 false（onError 回调中已设置，这里是保险）
+      dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }))
     }
   }
 }
@@ -895,10 +905,9 @@ export const sendMessage =
       }
     } catch (error) {
       console.error('Error in sendMessage thunk:', error)
+    } finally {
+      handleChangeLoadingOfTopic(topicId)
     }
-    // finally {
-    //   handleChangeLoadingOfTopic(topicId)
-    // }
   }
 
 /**
@@ -1132,10 +1141,9 @@ export const resendMessageThunk =
       }
     } catch (error) {
       console.error(`[resendMessageThunk] Error resending user message ${userMessageToResend.id}:`, error)
+    } finally {
+      handleChangeLoadingOfTopic(topicId)
     }
-    // finally {
-    //   handleChangeLoadingOfTopic(topicId)
-    // }
   }
 
 /**
@@ -1243,11 +1251,10 @@ export const regenerateAssistantResponseThunk =
         `[regenerateAssistantResponseThunk] Error regenerating response for assistant message ${assistantMessageToRegenerate.id}:`,
         error
       )
-      // dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }))
+      dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }))
+    } finally {
+      handleChangeLoadingOfTopic(topicId)
     }
-    //  finally {
-    //   handleChangeLoadingOfTopic(topicId)
-    // }
   }
 
 // --- Thunk to initiate translation and create the initial block ---
@@ -1413,10 +1420,9 @@ export const appendAssistantResponseThunk =
       console.error(`[appendAssistantResponseThunk] Error appending assistant response:`, error)
       // Optionally dispatch an error action or notification
       // Resetting loading state should be handled by the underlying fetchAndProcessAssistantResponseImpl
+    } finally {
+      handleChangeLoadingOfTopic(topicId)
     }
-    // finally {
-    //   handleChangeLoadingOfTopic(topicId)
-    // }
   }
 
 /**
