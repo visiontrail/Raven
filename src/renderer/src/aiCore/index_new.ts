@@ -45,7 +45,7 @@ function providerToAiSdkConfig(provider: Provider): {
     actualProvider = createVertexProvider(provider)
   }
 
-  if (actualProvider.type === 'openai') {
+  if (actualProvider.type === 'openai' || actualProvider.type === 'anthropic') {
     actualProvider.apiHost = formatApiHost(actualProvider.apiHost)
   }
 

@@ -382,7 +382,7 @@ function getAnthropicReasoningParams(assistant: Assistant, model: Model): Record
     return {
       thinking: {
         type: 'enabled',
-        budget_tokens: budgetTokens
+        budgetTokens: budgetTokens
       }
     }
   }

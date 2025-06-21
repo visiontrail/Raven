@@ -25,6 +25,8 @@ export default function thinkingTimeMiddleware(): LanguageModelV1Middleware {
               thinkingStartTime = Date.now()
             }
             accumulatedThinkingContent += chunk.textDelta || ''
+            // 将所有 chunk 原样传递下去
+            controller.enqueue(chunk)
           } else {
             if (hasThinkingContent && thinkingStartTime > 0) {
               const thinkingTime = Date.now() - thinkingStartTime
@@ -37,10 +39,10 @@ export default function thinkingTimeMiddleware(): LanguageModelV1Middleware {
               hasThinkingContent = false
               thinkingStartTime = 0
               accumulatedThinkingContent = ''
+            } else {
+              controller.enqueue(chunk)
             }
           }
-          // 将所有 chunk 原样传递下去
-          controller.enqueue(chunk)
         },
         flush(controller) {
           // 如果流的末尾都是 reasoning，也需要发送 complete 事件
