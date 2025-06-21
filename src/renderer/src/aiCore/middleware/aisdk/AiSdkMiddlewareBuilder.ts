@@ -142,7 +142,7 @@ function addProviderSpecificMiddlewares(builder: AiSdkMiddlewareBuilder, config:
     case 'openai':
       builder.add({
         name: 'thinking-tag-extraction',
-        aiSdkMiddlewares: [extractReasoningMiddleware({ tagName: 'think', separator: '\n', startWithReasoning: true })]
+        aiSdkMiddlewares: [extractReasoningMiddleware({ tagName: 'think' })]
       })
       break
     case 'gemini':

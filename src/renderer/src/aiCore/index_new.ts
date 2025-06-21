@@ -20,6 +20,8 @@ import {
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
 import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
+import { formatApiHost } from '@renderer/utils/api'
+import { cloneDeep } from 'lodash'
 
 import AiSdkToChunkAdapter from './AiSdkToChunkAdapter'
 import LegacyAiProvider from './index'
@@ -35,7 +37,7 @@ function providerToAiSdkConfig(provider: Provider): {
   options: ProviderSettingsMap[keyof ProviderSettingsMap]
 } {
   // 如果是 vertexai 类型且没有 googleCredentials，转换为 VertexProvider
-  let actualProvider = provider
+  let actualProvider = cloneDeep(provider)
   if (provider.type === 'vertexai' && !isVertexProvider(provider)) {
     if (!isVertexAIConfigured()) {
       throw new Error('VertexAI is not configured. Please configure project, location and service account credentials.')
@@ -43,10 +45,17 @@ function providerToAiSdkConfig(provider: Provider): {
     actualProvider = createVertexProvider(provider)
   }
 
+  if (actualProvider.type === 'openai') {
+    actualProvider.apiHost = formatApiHost(actualProvider.apiHost)
+  }
+
   const aiSdkProviderId = getAiSdkProviderId(actualProvider)
 
   if (aiSdkProviderId !== 'openai-compatible') {
-    const options = ProviderConfigFactory.fromProvider(aiSdkProviderId, actualProvider)
+    const options = ProviderConfigFactory.fromProvider(aiSdkProviderId, {
+      ...actualProvider,
+      baseURL: actualProvider.apiHost
+    })
 
     return {
       providerId: aiSdkProviderId as ProviderId,
@@ -58,7 +67,10 @@ function providerToAiSdkConfig(provider: Provider): {
 
     return {
       providerId: 'openai-compatible',
-      options
+      options: {
+        ...options,
+        name: actualProvider.id
+      }
     }
   }
 }
@@ -112,6 +124,7 @@ export default class ModernAiProvider {
     // 检查是否应该使用现代化客户端
     // if (this.modernClient && model && isModernSdkSupported(this.provider, model)) {
     // try {
+    console.log('completions', modelId, params, middlewareConfig)
     return await this.modernCompletions(modelId, params, middlewareConfig)
     // } catch (error) {
     // console.warn('Modern client failed, falling back to legacy:', error)

@@ -107,6 +107,13 @@ export class AiProviderRegistry {
         supportsImageGeneration: true
       },
       {
+        id: 'openai-compatible',
+        name: 'OpenAI Compatible',
+        import: () => import('@ai-sdk/openai-compatible'),
+        creatorFunctionName: 'createOpenAICompatible',
+        supportsImageGeneration: true
+      },
+      {
         id: 'anthropic',
         name: 'Anthropic',
         import: () => import('@ai-sdk/anthropic'),
