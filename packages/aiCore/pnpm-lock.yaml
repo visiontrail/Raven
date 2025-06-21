@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@ai-sdk/google-vertex':
+    hash: b7c4a8a2274e90367ea6efb1e3056a9c6c83cb14329086354e8d20db1139e2f1
+    path: patches/@ai-sdk__google-vertex.patch
+
 importers:
 
   .:
@@ -40,7 +45,7 @@ importers:
         version: 1.2.19(zod@3.25.67)
       '@ai-sdk/google-vertex':
         specifier: ^2.2.24
-        version: 2.2.24(zod@3.25.67)
+        version: 2.2.24(patch_hash=b7c4a8a2274e90367ea6efb1e3056a9c6c83cb14329086354e8d20db1139e2f1)(zod@3.25.67)
       '@ai-sdk/groq':
         specifier: ^1.2.9
         version: 1.2.9(zod@3.25.67)
@@ -612,7 +617,7 @@ snapshots:
       '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
       zod: 3.25.67
 
-  '@ai-sdk/google-vertex@2.2.24(zod@3.25.67)':
+  '@ai-sdk/google-vertex@2.2.24(patch_hash=b7c4a8a2274e90367ea6efb1e3056a9c6c83cb14329086354e8d20db1139e2f1)(zod@3.25.67)':
     dependencies:
       '@ai-sdk/anthropic': 1.2.12(zod@3.25.67)
       '@ai-sdk/google': 1.2.19(zod@3.25.67)

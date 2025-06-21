@@ -4,6 +4,7 @@
  */
 
 import type { ProviderId, ProviderSettingsMap } from './registry'
+import { formatPrivateKey } from './utils'
 
 /**
  * 通用配置基础类型，包含所有 Provider 共有的属性
@@ -141,7 +142,10 @@ export class ProviderConfigBuilder<T extends ProviderId = ProviderId> {
   withGoogleCredentials(credentials: any): any {
     if (this.providerId === 'google-vertex') {
       const vertexConfig = this.config as CompleteProviderConfig<'google-vertex'>
-      vertexConfig.googleCredentials = credentials
+      vertexConfig.googleCredentials = {
+        clientEmail: credentials.clientEmail,
+        privateKey: formatPrivateKey(credentials.privateKey)
+      }
     }
     return this
   }
