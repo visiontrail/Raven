@@ -40,10 +40,15 @@ const configHandlers: {
   'google-vertex': (builder, provider) => {
     const vertexBuilder = builder as ProviderConfigBuilder<'google-vertex'>
     const vertexProvider = provider as CompleteProviderConfig<'google-vertex'>
-    vertexBuilder.withGoogleVertexConfig({
-      project: vertexProvider.project,
-      location: vertexProvider.location
-    })
+    vertexBuilder
+      .withGoogleVertexConfig({
+        project: vertexProvider.project,
+        location: vertexProvider.location
+      })
+      .withGoogleCredentials({
+        clientEmail: vertexProvider.googleCredentials?.clientEmail || '',
+        privateKey: vertexProvider.googleCredentials?.privateKey || ''
+      })
   }
 }
 
@@ -266,7 +271,6 @@ export class ProviderConfigFactory {
       baseURL: string
       apiVersion?: string
       resourceName?: string
-      deploymentName?: string
     }
   ) {
     return this.builder('azure')

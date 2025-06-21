@@ -18,7 +18,7 @@ import {
   StreamTextParams
 } from '@cherrystudio/ai-core'
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
-import { getDefaultModel } from '@renderer/services/AssistantService'
+import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
 
 import AiSdkToChunkAdapter from './AiSdkToChunkAdapter'
@@ -26,7 +26,6 @@ import LegacyAiProvider from './index'
 import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/aisdk/AiSdkMiddlewareBuilder'
 import { CompletionsResult } from './middleware/schemas'
 import { getAiSdkProviderId } from './provider/factory'
-import { getTimeout } from './transformParameters'
 
 /**
  * 将 Provider 配置转换为新 AI SDK 格式
@@ -35,21 +34,27 @@ function providerToAiSdkConfig(provider: Provider): {
   providerId: ProviderId | 'openai-compatible'
   options: ProviderSettingsMap[keyof ProviderSettingsMap]
 } {
-  const aiSdkProviderId = getAiSdkProviderId(provider)
+  // 如果是 vertexai 类型且没有 googleCredentials，转换为 VertexProvider
+  let actualProvider = provider
+  if (provider.type === 'vertexai' && !isVertexProvider(provider)) {
+    if (!isVertexAIConfigured()) {
+      throw new Error('VertexAI is not configured. Please configure project, location and service account credentials.')
+    }
+    actualProvider = createVertexProvider(provider)
+  }
+
+  const aiSdkProviderId = getAiSdkProviderId(actualProvider)
 
   if (aiSdkProviderId !== 'openai-compatible') {
-    const defaultModel = getDefaultModel()
-    const options = ProviderConfigFactory.fromProvider(aiSdkProviderId, provider, {
-      timeout: getTimeout(defaultModel)
-    })
+    const options = ProviderConfigFactory.fromProvider(aiSdkProviderId, actualProvider)
 
     return {
       providerId: aiSdkProviderId as ProviderId,
       options
     }
   } else {
-    console.log(`Using openai-compatible fallback for provider: ${provider.type}`)
-    const options = ProviderConfigFactory.createOpenAICompatible(provider.apiHost, provider.apiKey)
+    console.log(`Using openai-compatible fallback for provider: ${actualProvider.type}`)
+    const options = ProviderConfigFactory.createOpenAICompatible(actualProvider.apiHost, actualProvider.apiKey)
 
     return {
       providerId: 'openai-compatible',
@@ -67,6 +72,11 @@ function isModernSdkSupported(provider: Provider, model?: Model): boolean {
 
   // 检查provider类型
   if (!supportedProviders.includes(provider.type)) {
+    return false
+  }
+
+  // 对于 vertexai，检查配置是否完整
+  if (provider.type === 'vertexai' && !isVertexAIConfigured()) {
     return false
   }
 
