@@ -155,7 +155,7 @@ export default class ModernAiProvider {
         ...middlewareConfig,
         provider: this.provider,
         // 工具相关信息从 params 中获取
-        enableTool: params.tools !== undefined && Array.isArray(params.tools) && params.tools.length > 0
+        enableTool: !!Object.keys(params.tools || {}).length
       }
 
       // 动态构建中间件数组

@@ -6,6 +6,8 @@
 import { TextStreamPart } from '@cherrystudio/ai-core'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
 
+import { ToolCallChunkHandler } from './chunk/handleTooCallChunk'
+
 export interface CherryStudioChunk {
   type: 'text-delta' | 'text-complete' | 'tool-call' | 'tool-result' | 'finish' | 'error'
   text?: string
@@ -21,7 +23,10 @@ export interface CherryStudioChunk {
  * 处理 fullStream 到 Cherry Studio chunk 的转换
  */
 export class AiSdkToChunkAdapter {
-  constructor(private onChunk: (chunk: Chunk) => void) {}
+  toolCallHandler: ToolCallChunkHandler
+  constructor(private onChunk: (chunk: Chunk) => void) {
+    this.toolCallHandler = new ToolCallChunkHandler(onChunk)
+  }
 
   /**
    * 处理 AI SDK 流结果
@@ -100,7 +105,7 @@ export class AiSdkToChunkAdapter {
         })
         break
 
-      // === 工具调用相关事件 ===
+      // === 工具调用相关事件（原始 AI SDK 事件，如果没有被中间件处理） ===
       case 'tool-call-streaming-start':
         // 开始流式工具调用
         this.onChunk({
@@ -145,55 +150,31 @@ export class AiSdkToChunkAdapter {
         break
 
       case 'tool-call':
-        // 完整的工具调用
-        this.onChunk({
-          type: ChunkType.MCP_TOOL_CREATED,
-          tool_calls: [
-            {
-              id: chunk.toolCallId,
-              name: chunk.toolName,
-              args: chunk.args
-            }
-          ]
-        })
+        // 原始的工具调用（未被中间件处理）
+        this.toolCallHandler.handleToolCall(chunk)
         break
 
       case 'tool-result':
-        // 工具调用结果
-        this.onChunk({
-          type: ChunkType.MCP_TOOL_COMPLETE,
-          responses: [
-            {
-              id: chunk.toolCallId,
-              tool: {
-                id: chunk.toolName,
-                // TODO: serverId,serverName
-                serverId: 'ai-sdk',
-                serverName: 'AI SDK',
-                name: chunk.toolName,
-                description: '',
-                inputSchema: {
-                  type: 'object',
-                  title: chunk.toolName,
-                  properties: {}
-                }
-              },
-              arguments: chunk.args || {},
-              status: 'done',
-              response: chunk.result,
-              toolCallId: chunk.toolCallId
-            }
-          ]
-        })
+        // 原始的工具调用结果（未被中间件处理）
+        this.toolCallHandler.handleToolResult(chunk)
         break
 
       // === 步骤相关事件 ===
-      //   case 'step-start':
-      //     this.onChunk({
-      //       type: ChunkType.LLM_RESPONSE_CREATED
-      //     })
-      //     break
+      // TODO: 需要区分接口开始和步骤开始
+      // case 'step-start':
+      //   this.onChunk({
+      //     type: ChunkType.LLM_RESPONSE_CREATED
+      //   })
+      //   break
       case 'step-finish':
+        this.onChunk({
+          type: ChunkType.TEXT_COMPLETE,
+          text: final.text || '' // TEXT_COMPLETE 需要 text 字段
+        })
+        final.text = ''
+        break
+
+      case 'finish':
         this.onChunk({
           type: ChunkType.BLOCK_COMPLETE,
           response: {
@@ -211,13 +192,6 @@ export class AiSdkToChunkAdapter {
                 }
               : undefined
           }
-        })
-        break
-
-      case 'finish':
-        this.onChunk({
-          type: ChunkType.TEXT_COMPLETE,
-          text: final.text || '' // TEXT_COMPLETE 需要 text 字段
         })
         this.onChunk({
           type: ChunkType.LLM_RESPONSE_COMPLETE,

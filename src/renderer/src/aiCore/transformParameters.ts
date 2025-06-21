@@ -4,6 +4,8 @@
  */
 
 import { type CoreMessage, type StreamTextParams } from '@cherrystudio/ai-core'
+import { aiSdk } from '@cherrystudio/ai-core'
+import { DEFAULT_MAX_TOKENS } from '@renderer/config/constant'
 import {
   isGenerateImageModel,
   isNotSupportTemperatureAndTopP,
@@ -16,14 +18,18 @@ import {
   isWebSearchModel
 } from '@renderer/config/models'
 import { getAssistantSettings, getDefaultModel } from '@renderer/services/AssistantService'
-import type { Assistant, MCPTool, Message, Model } from '@renderer/types'
+import type { Assistant, MCPTool, MCPToolResponse, Message, Model } from '@renderer/types'
 import { FileTypes } from '@renderer/types'
+import { callMCPTool } from '@renderer/utils/mcp-tools'
 import { findFileBlocks, findImageBlocks, getMainTextContent } from '@renderer/utils/messageUtils/find'
 import { buildSystemPrompt } from '@renderer/utils/prompt'
 import { defaultTimeout } from '@shared/config/constant'
+// import { jsonSchemaToZod } from 'json-schema-to-zod'
+import { jsonSchema } from 'ai'
 
 import { buildProviderOptions } from './utils/reasoning'
 
+const { tool } = aiSdk
 /**
  * 获取温度参数
  */
@@ -58,22 +64,6 @@ export async function buildSystemPromptWithTools(
 ): Promise<string> {
   return await buildSystemPrompt(prompt, mcpTools, assistant)
 }
-
-// /**
-//  * 转换 MCP 工具为 AI SDK 工具格式
-//  * 注意：这里返回通用格式，实际使用时需要根据具体 provider 转换
-// TODO: 需要使用ai-sdk的mcp
-//  */
-// export function convertMcpToolsToSdkTools(mcpTools: MCPTool[]): Pick<StreamTextParams, 'tools'> {
-//   return mcpTools.map((tool) => ({
-//     type: 'function',
-//     function: {
-//       name: tool.id,
-//       description: tool.description,
-//       parameters: tool.inputSchema || {}
-//     }
-//   }))
-// }
 
 /**
  * 提取文件内容
@@ -200,6 +190,7 @@ export async function buildStreamTextParams(
   assistant: Assistant,
   options: {
     mcpTools?: MCPTool[]
+    // FIXME: 上游没传
     enableTools?: boolean
     requestOptions?: {
       signal?: AbortSignal
@@ -208,7 +199,7 @@ export async function buildStreamTextParams(
     }
   } = {}
 ): Promise<{ params: StreamTextParams; modelId: string }> {
-  const { mcpTools, enableTools = false } = options
+  const { mcpTools } = options
 
   const model = assistant.model || getDefaultModel()
 
@@ -230,10 +221,11 @@ export async function buildStreamTextParams(
     (isSupportedDisableGenerationModel(model) ? assistant.enableGenerateImage || false : true)
 
   // 构建系统提示
-  let systemPrompt = assistant.prompt || ''
-  if (mcpTools && mcpTools.length > 0) {
-    systemPrompt = await buildSystemPromptWithTools(systemPrompt, mcpTools, assistant)
-  }
+  const systemPrompt = assistant.prompt || ''
+  // TODO:根据调用类型判断是否添加systemPrompt
+  // if (mcpTools && mcpTools.length > 0) {
+  //   systemPrompt = await buildSystemPromptWithTools(systemPrompt, mcpTools, assistant)
+  // }
 
   // 构建真正的 providerOptions
   const providerOptions = buildProviderOptions(assistant, model, {
@@ -245,19 +237,23 @@ export async function buildStreamTextParams(
   // 构建基础参数
   const params: StreamTextParams = {
     messages: sdkMessages,
-    maxTokens: maxTokens || 1000,
+    maxTokens: maxTokens || DEFAULT_MAX_TOKENS,
     temperature: getTemperature(assistant, model),
     topP: getTopP(assistant, model),
     system: systemPrompt || undefined,
     abortSignal: options.requestOptions?.signal,
     headers: options.requestOptions?.headers,
-    providerOptions
+    providerOptions,
+    maxSteps: 10
   }
 
+  const tools = mcpTools ? convertMcpToolsToAiSdkTools(mcpTools) : {}
+  console.log('tools', tools)
+  console.log('enableTools', assistant?.mcpServers?.length)
+  // console.log('tools.length > 0', tools.length > 0)
   // 添加工具（如果启用且有工具）
-  if (enableTools && mcpTools && mcpTools.length > 0) {
-    // TODO: 暂时注释掉工具支持，等类型问题解决后再启用
-    // params.tools = convertMcpToolsToSdkTools(mcpTools)
+  if (!!assistant?.mcpServers?.length && Object.keys(tools).length > 0) {
+    params.tools = tools
   }
 
   return { params, modelId: model.id }
@@ -276,4 +272,153 @@ export async function buildGenerateTextParams(
 ): Promise<any> {
   // 复用流式参数的构建逻辑
   return await buildStreamTextParams(messages, assistant, options)
+}
+
+/**
+ * 简单的 JSON Schema 到 Zod Schema 转换
+ * 支持基本类型：string, number, boolean, array, object
+ */
+// function jsonSchemaToZod(schema: MCPToolInputSchema): z.ZodObject<any> {
+//   const properties: Record<string, z.ZodTypeAny> = {}
+//   const required = schema.required || []
+
+//   // 处理每个属性
+//   for (const [key, propSchema] of Object.entries(schema.properties)) {
+//     let zodSchema: z.ZodTypeAny
+
+//     // 根据 JSON Schema 类型创建对应的 Zod Schema
+//     const schemaType = (propSchema as any).type
+//     switch (schemaType) {
+//       case 'string': {
+//         let stringSchema = z.string()
+//         if ((propSchema as any).description) {
+//           stringSchema = stringSchema.describe((propSchema as any).description)
+//         }
+//         if ((propSchema as any).enum) {
+//           zodSchema = z.enum((propSchema as any).enum)
+//         } else {
+//           zodSchema = stringSchema
+//         }
+//         break
+//       }
+
+//       case 'number':
+//       case 'integer': {
+//         let numberSchema = z.number()
+//         if (schemaType === 'integer') {
+//           numberSchema = numberSchema.int()
+//         }
+//         if ((propSchema as any).minimum !== undefined) {
+//           numberSchema = numberSchema.min((propSchema as any).minimum)
+//         }
+//         if ((propSchema as any).maximum !== undefined) {
+//           numberSchema = numberSchema.max((propSchema as any).maximum)
+//         }
+//         if ((propSchema as any).description) {
+//           numberSchema = numberSchema.describe((propSchema as any).description)
+//         }
+//         zodSchema = numberSchema
+//         break
+//       }
+
+//       case 'boolean': {
+//         let booleanSchema = z.boolean()
+//         if ((propSchema as any).description) {
+//           booleanSchema = booleanSchema.describe((propSchema as any).description)
+//         }
+//         zodSchema = booleanSchema
+//         break
+//       }
+
+//       case 'array': {
+//         let itemSchema: z.ZodTypeAny = z.any()
+//         const itemsType = (propSchema as any).items?.type
+//         if (itemsType === 'string') {
+//           itemSchema = z.string()
+//         } else if (itemsType === 'number') {
+//           itemSchema = z.number()
+//         }
+//         let arraySchema = z.array(itemSchema)
+//         if ((propSchema as any).description) {
+//           arraySchema = arraySchema.describe((propSchema as any).description)
+//         }
+//         zodSchema = arraySchema
+//         break
+//       }
+
+//       case 'object': {
+//         // 对于嵌套对象，简单处理为 z.record
+//         let objectSchema = z.record(z.any())
+//         if ((propSchema as any).description) {
+//           objectSchema = objectSchema.describe((propSchema as any).description)
+//         }
+//         zodSchema = objectSchema
+//         break
+//       }
+
+//       default: {
+//         // 默认为 any
+//         zodSchema = z.any()
+//         break
+//       }
+//     }
+
+//     // 如果不是必需字段，添加 optional()
+//     if (!required.includes(key)) {
+//       zodSchema = zodSchema.optional()
+//     }
+
+//     properties[key] = zodSchema
+//   }
+
+//   return z.object(properties)
+// }
+
+/**
+ * 将 MCPTool 转换为 AI SDK 工具格式
+ */
+export function convertMcpToolsToAiSdkTools(mcpTools: MCPTool[]): Record<string, any> {
+  const tools: Record<string, any> = {}
+
+  for (const mcpTool of mcpTools) {
+    console.log('mcpTool', mcpTool.inputSchema)
+    tools[mcpTool.name] = tool({
+      description: mcpTool.description || `Tool from ${mcpTool.serverName}`,
+      parameters: jsonSchema<Record<string, object>>(mcpTool.inputSchema),
+      execute: async (params) => {
+        console.log('execute_params', params)
+        // 创建适配的 MCPToolResponse 对象
+        const toolResponse: MCPToolResponse = {
+          id: `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          tool: mcpTool,
+          arguments: params,
+          status: 'invoking',
+          toolCallId: `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        }
+
+        try {
+          // 复用现有的 callMCPTool 函数
+          const result = await callMCPTool(toolResponse)
+
+          // 返回结果，AI SDK 会处理序列化
+          if (result.isError) {
+            throw new Error(result.content?.[0]?.text || 'Tool execution failed')
+          }
+          console.log('result', result)
+          // 返回工具执行结果
+          return {
+            success: true,
+            data: result
+          }
+        } catch (error) {
+          console.error(`MCP Tool execution failed: ${mcpTool.name}`, error)
+          throw new Error(
+            `Tool ${mcpTool.name} execution failed: ${error instanceof Error ? error.message : String(error)}`
+          )
+        }
+      }
+    })
+  }
+
+  return tools
 }

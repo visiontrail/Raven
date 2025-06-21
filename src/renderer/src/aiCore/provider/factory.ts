@@ -2,15 +2,16 @@ import { AiCore, ProviderId } from '@cherrystudio/ai-core'
 import { Provider } from '@renderer/types'
 
 const PROVIDER_MAPPING: Record<string, ProviderId> = {
-  anthropic: 'anthropic',
+  // anthropic: 'anthropic',
   gemini: 'google',
   vertexai: 'google-vertex',
   'azure-openai': 'azure',
-  'openai-response': 'openai'
+  'openai-response': 'openai',
+  grok: 'xai'
 }
 
 export function getAiSdkProviderId(provider: Provider): ProviderId | 'openai-compatible' {
-  const providerId = PROVIDER_MAPPING[provider.type]
+  const providerId = PROVIDER_MAPPING[provider.id]
 
   if (providerId) {
     return providerId
