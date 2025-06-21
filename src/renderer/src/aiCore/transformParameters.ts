@@ -3,7 +3,7 @@
  * 统一管理从各个 apiClient 提取的参数处理和转换功能
  */
 
-import type { CoreMessage, StreamTextParams } from '@cherrystudio/ai-core'
+import { type CoreMessage, type StreamTextParams } from '@cherrystudio/ai-core'
 import {
   isGenerateImageModel,
   isNotSupportTemperatureAndTopP,

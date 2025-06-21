@@ -14,7 +14,7 @@ import { type DeepSeekProviderSettings } from '@ai-sdk/deepseek'
 import { type FalProviderSettings } from '@ai-sdk/fal'
 import { type FireworksProviderSettings } from '@ai-sdk/fireworks'
 import { type GoogleGenerativeAIProviderSettings } from '@ai-sdk/google'
-import { type GoogleVertexProviderSettings } from '@ai-sdk/google-vertex'
+import { type GoogleVertexProviderSettings } from '@ai-sdk/google-vertex/edge'
 import { type GroqProviderSettings } from '@ai-sdk/groq'
 import { type MistralProviderSettings } from '@ai-sdk/mistral'
 import { type OpenAIProviderSettings } from '@ai-sdk/openai'
@@ -123,7 +123,7 @@ export class AiProviderRegistry {
       {
         id: 'google-vertex',
         name: 'Google Vertex AI',
-        import: () => import('@ai-sdk/google-vertex'),
+        import: () => import('@ai-sdk/google-vertex/edge'),
         creatorFunctionName: 'createVertex',
         supportsImageGeneration: true
       },
@@ -270,7 +270,6 @@ export class AiProviderRegistry {
       }
     ]
 
-    // 注册所有 providers (总计24个)
     providers.forEach((config) => {
       this.registry.set(config.id, config)
     })

@@ -1,5 +1,4 @@
 import { LanguageModelV1Middleware, LanguageModelV1StreamPart } from '@cherrystudio/ai-core'
-import { ChunkType, ThinkingCompleteChunk } from '@renderer/types/chunk'
 
 /**
  * 一个用于统计 LLM "思考时间"（Time to First Token）的 AI SDK 中间件。
@@ -47,8 +46,8 @@ export default function thinkingTimeMiddleware(): LanguageModelV1Middleware {
           // 如果流的末尾都是 reasoning，也需要发送 complete 事件
           if (hasThinkingContent && thinkingStartTime > 0) {
             const thinkingTime = Date.now() - thinkingStartTime
-            const thinkingCompleteChunk: ThinkingCompleteChunk = {
-              type: ChunkType.THINKING_COMPLETE,
+            const thinkingCompleteChunk = {
+              type: 'reasoning-signature',
               text: accumulatedThinkingContent,
               thinking_millsec: thinkingTime
             }

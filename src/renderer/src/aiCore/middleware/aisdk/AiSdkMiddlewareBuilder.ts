@@ -1,4 +1,4 @@
-import { AiPlugin, simulateStreamingMiddleware } from '@cherrystudio/ai-core'
+import { AiPlugin, extractReasoningMiddleware, simulateStreamingMiddleware } from '@cherrystudio/ai-core'
 import { isReasoningModel } from '@renderer/config/models'
 import type { Model, Provider } from '@renderer/types'
 import type { Chunk } from '@renderer/types/chunk'
@@ -140,7 +140,10 @@ function addProviderSpecificMiddlewares(builder: AiSdkMiddlewareBuilder, config:
       // Anthropic特定中间件
       break
     case 'openai':
-      // OpenAI特定中间件
+      builder.add({
+        name: 'thinking-tag-extraction',
+        aiSdkMiddlewares: [extractReasoningMiddleware({ tagName: 'think', separator: '\n', startWithReasoning: true })]
+      })
       break
     case 'gemini':
       // Gemini特定中间件

@@ -116,6 +116,15 @@ export type {
 export { createClient as createApiClient, getClientInfo, getSupportedProviders } from './clients/ApiClientFactory'
 export { getAllProviders, getProvider, isProviderSupported, registerProvider } from './providers/registry'
 
+// ==================== Provider 配置工厂 ====================
+export {
+  BaseProviderConfig,
+  createProviderConfig,
+  ProviderConfigBuilder,
+  providerConfigBuilder,
+  ProviderConfigFactory
+} from './providers/factory'
+
 // ==================== 包信息 ====================
 export const AI_CORE_VERSION = '1.0.0'
 export const AI_CORE_NAME = '@cherrystudio/ai-core'

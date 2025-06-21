@@ -10,76 +10,50 @@
 
 import {
   AiClient,
-  AiCore,
   createClient,
-  type OpenAICompatibleProviderSettings,
+  ProviderConfigFactory,
   type ProviderId,
+  type ProviderSettingsMap,
   smoothStream,
   StreamTextParams
 } from '@cherrystudio/ai-core'
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
+import { getDefaultModel } from '@renderer/services/AssistantService'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
 
-// 引入适配器
 import AiSdkToChunkAdapter from './AiSdkToChunkAdapter'
-// 引入原有的AiProvider作为fallback
 import LegacyAiProvider from './index'
 import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/aisdk/AiSdkMiddlewareBuilder'
 import { CompletionsResult } from './middleware/schemas'
-// 引入参数转换模块
-
-/**
- * 将现有 Provider 类型映射到 AI SDK 的 Provider ID
- * 根据 registry.ts 中的支持列表进行映射
- */
-function mapProviderTypeToAiSdkId(providerType: string): string {
-  // Cherry Studio Provider Type -> AI SDK Provider ID 映射表
-  const typeMapping: Record<string, string> = {
-    // 需要转换的映射
-    grok: 'xai', // grok -> xai
-    'azure-openai': 'azure', // azure-openai -> azure
-    gemini: 'google', // gemini -> google
-    vertexai: 'google-vertex' // vertexai -> google-vertex
-  }
-
-  return typeMapping[providerType]
-}
+import { getAiSdkProviderId } from './provider/factory'
+import { getTimeout } from './transformParameters'
 
 /**
  * 将 Provider 配置转换为新 AI SDK 格式
  */
 function providerToAiSdkConfig(provider: Provider): {
   providerId: ProviderId | 'openai-compatible'
-  options: any
+  options: ProviderSettingsMap[keyof ProviderSettingsMap]
 } {
-  console.log('provider', provider)
-  // 1. 先映射 provider 类型到 AI SDK ID
-  const mappedProviderId = mapProviderTypeToAiSdkId(provider.id)
+  const aiSdkProviderId = getAiSdkProviderId(provider)
 
-  // 2. 检查映射后的 provider ID 是否在 AI SDK 注册表中
-  const isSupported = AiCore.isSupported(mappedProviderId)
+  if (aiSdkProviderId !== 'openai-compatible') {
+    const defaultModel = getDefaultModel()
+    const options = ProviderConfigFactory.fromProvider(aiSdkProviderId, provider, {
+      timeout: getTimeout(defaultModel)
+    })
 
-  console.log(`Provider mapping: ${provider.type} -> ${mappedProviderId}, supported: ${isSupported}`)
-
-  // 3. 如果映射的 provider 不支持，则使用 openai-compatible
-  if (isSupported) {
     return {
-      providerId: mappedProviderId as ProviderId,
-      options: {
-        apiKey: provider.apiKey
-      }
+      providerId: aiSdkProviderId as ProviderId,
+      options
     }
   } else {
     console.log(`Using openai-compatible fallback for provider: ${provider.type}`)
-    const compatibleConfig: OpenAICompatibleProviderSettings = {
-      name: provider.name || provider.type,
-      apiKey: provider.apiKey,
-      baseURL: provider.apiHost
-    }
+    const options = ProviderConfigFactory.createOpenAICompatible(provider.apiHost, provider.apiKey)
 
     return {
       providerId: 'openai-compatible',
-      options: compatibleConfig
+      options
     }
   }
 }
