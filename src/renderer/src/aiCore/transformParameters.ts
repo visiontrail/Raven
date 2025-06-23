@@ -18,7 +18,7 @@ import {
   isWebSearchModel
 } from '@renderer/config/models'
 import { getAssistantSettings, getDefaultModel } from '@renderer/services/AssistantService'
-import type { Assistant, MCPTool, MCPToolResponse, Message, Model } from '@renderer/types'
+import type { Assistant, MCPTool, MCPToolInputSchema, MCPToolResponse, Message, Model } from '@renderer/types'
 import { FileTypes } from '@renderer/types'
 import { callMCPTool } from '@renderer/utils/mcp-tools'
 import { findFileBlocks, findImageBlocks, getMainTextContent } from '@renderer/utils/messageUtils/find'
@@ -221,11 +221,11 @@ export async function buildStreamTextParams(
     (isSupportedDisableGenerationModel(model) ? assistant.enableGenerateImage || false : true)
 
   // 构建系统提示
-  const systemPrompt = assistant.prompt || ''
+  let systemPrompt = assistant.prompt || ''
   // TODO:根据调用类型判断是否添加systemPrompt
-  // if (mcpTools && mcpTools.length > 0) {
-  //   systemPrompt = await buildSystemPromptWithTools(systemPrompt, mcpTools, assistant)
-  // }
+  if (mcpTools && mcpTools.length > 0 && assistant.settings?.toolUseMode === 'prompt') {
+    systemPrompt = await buildSystemPromptWithTools(systemPrompt, mcpTools, assistant)
+  }
 
   // 构建真正的 providerOptions
   const providerOptions = buildProviderOptions(assistant, model, {
@@ -275,104 +275,28 @@ export async function buildGenerateTextParams(
 }
 
 /**
- * 简单的 JSON Schema 到 Zod Schema 转换
- * 支持基本类型：string, number, boolean, array, object
+ * 将 MCPToolInputSchema 转换为 JSONSchema7 格式
  */
-// function jsonSchemaToZod(schema: MCPToolInputSchema): z.ZodObject<any> {
-//   const properties: Record<string, z.ZodTypeAny> = {}
-//   const required = schema.required || []
+function convertMcpSchemaToJsonSchema7(schema: MCPToolInputSchema): any {
+  // 创建符合 JSONSchema7 的对象
+  const jsonSchema7: Record<string, any> = {
+    type: 'object',
+    properties: schema.properties || {},
+    required: schema.required || []
+  }
 
-//   // 处理每个属性
-//   for (const [key, propSchema] of Object.entries(schema.properties)) {
-//     let zodSchema: z.ZodTypeAny
+  // 如果有 description，添加它
+  if (schema.description) {
+    jsonSchema7.description = schema.description
+  }
 
-//     // 根据 JSON Schema 类型创建对应的 Zod Schema
-//     const schemaType = (propSchema as any).type
-//     switch (schemaType) {
-//       case 'string': {
-//         let stringSchema = z.string()
-//         if ((propSchema as any).description) {
-//           stringSchema = stringSchema.describe((propSchema as any).description)
-//         }
-//         if ((propSchema as any).enum) {
-//           zodSchema = z.enum((propSchema as any).enum)
-//         } else {
-//           zodSchema = stringSchema
-//         }
-//         break
-//       }
+  // 如果有 title，添加它
+  if (schema.title) {
+    jsonSchema7.title = schema.title
+  }
 
-//       case 'number':
-//       case 'integer': {
-//         let numberSchema = z.number()
-//         if (schemaType === 'integer') {
-//           numberSchema = numberSchema.int()
-//         }
-//         if ((propSchema as any).minimum !== undefined) {
-//           numberSchema = numberSchema.min((propSchema as any).minimum)
-//         }
-//         if ((propSchema as any).maximum !== undefined) {
-//           numberSchema = numberSchema.max((propSchema as any).maximum)
-//         }
-//         if ((propSchema as any).description) {
-//           numberSchema = numberSchema.describe((propSchema as any).description)
-//         }
-//         zodSchema = numberSchema
-//         break
-//       }
-
-//       case 'boolean': {
-//         let booleanSchema = z.boolean()
-//         if ((propSchema as any).description) {
-//           booleanSchema = booleanSchema.describe((propSchema as any).description)
-//         }
-//         zodSchema = booleanSchema
-//         break
-//       }
-
-//       case 'array': {
-//         let itemSchema: z.ZodTypeAny = z.any()
-//         const itemsType = (propSchema as any).items?.type
-//         if (itemsType === 'string') {
-//           itemSchema = z.string()
-//         } else if (itemsType === 'number') {
-//           itemSchema = z.number()
-//         }
-//         let arraySchema = z.array(itemSchema)
-//         if ((propSchema as any).description) {
-//           arraySchema = arraySchema.describe((propSchema as any).description)
-//         }
-//         zodSchema = arraySchema
-//         break
-//       }
-
-//       case 'object': {
-//         // 对于嵌套对象，简单处理为 z.record
-//         let objectSchema = z.record(z.any())
-//         if ((propSchema as any).description) {
-//           objectSchema = objectSchema.describe((propSchema as any).description)
-//         }
-//         zodSchema = objectSchema
-//         break
-//       }
-
-//       default: {
-//         // 默认为 any
-//         zodSchema = z.any()
-//         break
-//       }
-//     }
-
-//     // 如果不是必需字段，添加 optional()
-//     if (!required.includes(key)) {
-//       zodSchema = zodSchema.optional()
-//     }
-
-//     properties[key] = zodSchema
-//   }
-
-//   return z.object(properties)
-// }
+  return jsonSchema7
+}
 
 /**
  * 将 MCPTool 转换为 AI SDK 工具格式
@@ -384,7 +308,7 @@ export function convertMcpToolsToAiSdkTools(mcpTools: MCPTool[]): Record<string,
     console.log('mcpTool', mcpTool.inputSchema)
     tools[mcpTool.name] = tool({
       description: mcpTool.description || `Tool from ${mcpTool.serverName}`,
-      parameters: jsonSchema<Record<string, object>>(mcpTool.inputSchema),
+      parameters: jsonSchema<Record<string, object>>(convertMcpSchemaToJsonSchema7(mcpTool.inputSchema)),
       execute: async (params) => {
         console.log('execute_params', params)
         // 创建适配的 MCPToolResponse 对象

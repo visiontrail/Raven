@@ -1,4 +1,4 @@
-import type { LanguageModelV1Middleware, TextStreamPart, ToolSet } from 'ai'
+import type { TextStreamPart, ToolSet } from 'ai'
 
 /**
  * 生命周期阶段定义
@@ -62,7 +62,7 @@ export interface AiPlugin {
   }) => TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>
 
   // AI SDK 原生中间件
-  aiSdkMiddlewares?: LanguageModelV1Middleware[]
+  // aiSdkMiddlewares?: LanguageModelV1Middleware[]
 }
 
 /**

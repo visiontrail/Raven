@@ -1,6 +1,6 @@
 import { generateObject, generateText, streamObject, streamText } from 'ai'
 
-import type { ProviderSettingsMap } from '../providers/registry'
+import type { ProviderSettingsMap } from './core/providers/registry'
 
 // ProviderSettings 是所有 Provider Settings 的联合类型
 export type ProviderSettings = ProviderSettingsMap[keyof ProviderSettingsMap]
@@ -39,4 +39,4 @@ export type {
   VercelProviderSettings,
   XaiProviderSettings,
   ZhipuProviderSettings
-} from '../providers/registry'
+} from './core/providers/registry'

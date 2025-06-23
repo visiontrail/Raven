@@ -4,50 +4,57 @@
  */
 
 // 导入内部使用的类和函数
-import { ApiClientFactory } from './clients/ApiClientFactory'
-import { createClient } from './clients/PluginEnabledAiClient'
-import { type ProviderSettingsMap } from './clients/types'
-import { createUniversalClient } from './clients/UniversalAiSdkClient'
-import { aiProviderRegistry, isProviderSupported } from './providers/registry'
+import { createClient } from './core/clients/PluginEnabledAiClient'
+import {
+  getProviderInfo as factoryGetProviderInfo,
+  getSupportedProviders as factoryGetSupportedProviders
+} from './core/creation'
+import { AiExecutor } from './core/execution/AiExecutor'
+import { aiProviderRegistry, isProviderSupported } from './core/providers/registry'
+import { type ProviderSettingsMap } from './types'
 
-// ==================== 主要客户端接口 ====================
-// 默认使用集成插件系统的客户端
+// ==================== 主要用户接口 ====================
+// orchestration层 - 面向用户的主要API
+export {
+  AiExecutor,
+  generateObject,
+  generateText,
+  type OrchestrationConfig,
+  streamObject,
+  streamText
+} from './orchestration'
+
+// 为了向后兼容，保留AiClient别名（内部使用PluginEnabledAiClient）
 export {
   PluginEnabledAiClient as AiClient,
   createClient,
   createCompatibleClient
-} from './clients/PluginEnabledAiClient'
-
-// 为了向后兼容，也导出原名称
-export { PluginEnabledAiClient } from './clients/PluginEnabledAiClient'
+} from './core/clients/PluginEnabledAiClient'
 
 // ==================== 插件系统 ====================
-export type { AiPlugin, AiRequestContext, HookResult, HookType, PluginManagerConfig } from './plugins'
-export { createContext, definePlugin, PluginManager } from './plugins'
-
-// ==================== 底层客户端（高级用法） ====================
-// 不带插件系统的基础客户端，用于需要绕过插件系统的场景
-export {
-  createOpenAICompatibleClient as createBasicOpenAICompatibleClient,
-  createUniversalClient,
-  UniversalAiSdkClient
-} from './clients/UniversalAiSdkClient'
+export type { AiPlugin, AiRequestContext, HookResult, HookType, PluginManagerConfig } from './core/plugins'
+export { createContext, definePlugin, PluginManager } from './core/plugins'
 
 // ==================== 低级 API ====================
-export { ApiClientFactory } from './clients/ApiClientFactory'
-export { aiProviderRegistry } from './providers/registry'
+export {
+  createBaseModel as createApiClient,
+  createImageModel,
+  getProviderInfo as getClientInfo,
+  getSupportedProviders,
+  ProviderCreationError
+} from './core/creation'
+export { aiProviderRegistry } from './core/providers/registry'
 
 // ==================== 类型定义 ====================
-export type { ClientFactoryError } from './clients/ApiClientFactory'
+export type { ProviderConfig } from './core/providers/registry'
+export type { ProviderError } from './core/providers/types'
 export type {
   GenerateObjectParams,
   GenerateTextParams,
   ProviderSettings,
   StreamObjectParams,
   StreamTextParams
-} from './clients/types'
-export type { ProviderConfig } from './providers/registry'
-export type { ProviderError } from './providers/types'
+} from './types'
 export * as aiSdk from 'ai'
 
 // ==================== AI SDK 常用类型导出 ====================
@@ -110,7 +117,7 @@ export type {
   VercelProviderSettings,
   XaiProviderSettings,
   ZhipuProviderSettings
-} from './clients/types'
+} from './types'
 
 // ==================== 选项 ====================
 export {
@@ -121,11 +128,10 @@ export {
   mergeProviderOptions,
   type ProviderOptionsMap,
   type TypedProviderOptions
-} from './options'
+} from './core/options'
 
 // ==================== 工具函数 ====================
-export { createClient as createApiClient, getClientInfo, getSupportedProviders } from './clients/ApiClientFactory'
-export { getAllProviders, getProvider, isProviderSupported, registerProvider } from './providers/registry'
+export { getAllProviders, getProvider, isProviderSupported, registerProvider } from './core/providers/registry'
 
 // ==================== Provider 配置工厂 ====================
 export {
@@ -134,7 +140,7 @@ export {
   type ProviderConfigBuilder,
   providerConfigBuilder,
   ProviderConfigFactory
-} from './providers/factory'
+} from './core/providers/factory'
 
 // ==================== 包信息 ====================
 export const AI_CORE_VERSION = '1.0.0'
@@ -146,19 +152,19 @@ export const AiCore = {
   version: AI_CORE_VERSION,
   name: AI_CORE_NAME,
 
-  // 创建主要客户端（默认带插件系统）
-  create(providerId: string, options: any = {}, plugins: any[] = []) {
-    return createClient(providerId, options, plugins)
+  // 创建主要执行器（推荐使用）
+  create(providerId: string, plugins: any[] = []) {
+    return AiExecutor.create(providerId, plugins)
   },
 
-  // 创建基础客户端（不带插件系统）
-  createBasic(providerId: string, options: any = {}) {
-    return createUniversalClient(providerId, options)
+  // 创建底层客户端（高级用法）
+  createClient(providerId: string, plugins: any[] = []) {
+    return createClient(providerId, plugins)
   },
 
   // 获取支持的providers
   getSupportedProviders() {
-    return ApiClientFactory.getSupportedProviders()
+    return factoryGetSupportedProviders()
   },
 
   // 检查provider支持
@@ -168,24 +174,42 @@ export const AiCore = {
 
   // 获取客户端信息
   getClientInfo(providerId: string) {
-    return ApiClientFactory.getClientInfo(providerId)
+    return factoryGetProviderInfo(providerId)
   }
 }
 
+// 推荐使用的执行器创建函数
+export const createOpenAIExecutor = (options: ProviderSettingsMap['openai'], plugins?: any[]) => {
+  return AiExecutor.create('openai', plugins)
+}
+
+export const createAnthropicExecutor = (options: ProviderSettingsMap['anthropic'], plugins?: any[]) => {
+  return AiExecutor.create('anthropic', plugins)
+}
+
+export const createGoogleExecutor = (options: ProviderSettingsMap['google'], plugins?: any[]) => {
+  return AiExecutor.create('google', plugins)
+}
+
+export const createXAIExecutor = (options: ProviderSettingsMap['xai'], plugins?: any[]) => {
+  return AiExecutor.create('xai', plugins)
+}
+
+// 向后兼容的客户端创建函数
 export const createOpenAIClient = (options: ProviderSettingsMap['openai'], plugins?: any[]) => {
-  return createClient('openai', options, plugins)
+  return createClient('openai', plugins)
 }
 
 export const createAnthropicClient = (options: ProviderSettingsMap['anthropic'], plugins?: any[]) => {
-  return createClient('anthropic', options, plugins)
+  return createClient('anthropic', plugins)
 }
 
 export const createGoogleClient = (options: ProviderSettingsMap['google'], plugins?: any[]) => {
-  return createClient('google', options, plugins)
+  return createClient('google', plugins)
 }
 
 export const createXAIClient = (options: ProviderSettingsMap['xai'], plugins?: any[]) => {
-  return createClient('xai', options, plugins)
+  return createClient('xai', plugins)
 }
 
 // ==================== 调试和开发工具 ====================

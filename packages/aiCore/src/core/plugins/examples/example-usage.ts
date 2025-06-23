@@ -2,7 +2,7 @@ import { openai } from '@ai-sdk/openai'
 import { streamText } from 'ai'
 
 import { PluginEnabledAiClient } from '../../clients/PluginEnabledAiClient'
-import { createContext, PluginManager } from '../'
+import { createContext, PluginManager } from '..'
 import { ContentFilterPlugin, LoggingPlugin } from './example-plugins'
 
 /**

@@ -1,7 +1,7 @@
-import { AnthropicProviderOptions } from '@ai-sdk/anthropic'
-import { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google'
-import { OpenAIResponsesProviderOptions } from '@ai-sdk/openai'
-import { LanguageModelV1ProviderMetadata } from '@ai-sdk/provider'
+import { type AnthropicProviderOptions } from '@ai-sdk/anthropic'
+import { type GoogleGenerativeAIProviderOptions } from '@ai-sdk/google'
+import { type OpenAIResponsesProviderOptions } from '@ai-sdk/openai'
+import { type LanguageModelV1ProviderMetadata } from '@ai-sdk/provider'
 
 export type ProviderOptions<T extends keyof LanguageModelV1ProviderMetadata> = LanguageModelV1ProviderMetadata[T]
 
