@@ -105,13 +105,11 @@ export async function createImageModel<T extends ProviderId>(
   modelId: string,
   options: ProviderSettingsMap[T]
 ): Promise<ImageModelV1>
-
 export async function createImageModel(
   providerId: string,
   modelId: string,
   options: ProviderSettingsMap['openai-compatible']
 ): Promise<ImageModelV1>
-
 export async function createImageModel(
   providerId: string,
   modelId: string = 'default',

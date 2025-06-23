@@ -21,3 +21,5 @@ export function createContext(providerId: string, modelId: string, originalParam
 export function definePlugin(plugin: AiPlugin): AiPlugin {
   return plugin
 }
+
+export { createLoggingPlugin } from './built-in/logging'

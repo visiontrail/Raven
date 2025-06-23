@@ -1,27 +1,4 @@
-/**
- * AI Client - Cherry Studio AI Core 的主要客户端接口
- * 默认集成插件系统，提供完整的 AI 调用能力
- *
- * ## 使用方式
- *
- * ```typescript
- * import { AiClient } from '@cherrystudio/ai-core'
- *
- * // 创建客户端（默认带插件系统）
- * const client = AiClient.create('openai', {
- *   name: 'openai',
- *   apiKey: process.env.OPENAI_API_KEY
- * }, [LoggingPlugin, ContentFilterPlugin])
- *
- * // 使用方式与 UniversalAiSdkClient 完全相同
- * const result = await client.generateText('gpt-4', {
- *   messages: [{ role: 'user', content: 'Hello!' }]
- * })
- * ```
- */
-
 import { type ProviderId, type ProviderSettingsMap } from '../../types'
-import { getProviderInfo } from '..'
 import { type AiPlugin, createContext, PluginManager } from '../plugins'
 import { isProviderSupported } from '../providers/registry'
 
@@ -29,7 +6,7 @@ import { isProviderSupported } from '../providers/registry'
  * 插件增强的 AI 客户端
  * 专注于插件处理，不暴露用户API
  */
-export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
+export class PluginEngine<T extends ProviderId = ProviderId> {
   private pluginManager: PluginManager
 
   constructor(
@@ -170,21 +147,6 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
       throw error
     }
   }
-
-  /**
-   * 获取客户端信息
-   */
-  getClientInfo() {
-    return getProviderInfo(this.providerId)
-  }
-
-  // /**
-  //  * 获取底层客户端实例（用于高级用法）
-  //  */
-  // getBaseClient(): UniversalAiSdkClient<T> {
-  //   return this.baseClient
-  // }
-
   // === 静态工厂方法 ===
 
   /**
@@ -193,46 +155,23 @@ export class PluginEnabledAiClient<T extends ProviderId = ProviderId> {
   static createOpenAICompatible(
     config: ProviderSettingsMap['openai-compatible'],
     plugins: AiPlugin[] = []
-  ): PluginEnabledAiClient<'openai-compatible'> {
-    return new PluginEnabledAiClient('openai-compatible', plugins)
+  ): PluginEngine<'openai-compatible'> {
+    return new PluginEngine('openai-compatible', plugins)
   }
 
   /**
    * 创建标准提供商客户端
    */
-  static create<T extends ProviderId>(providerId: T, plugins?: AiPlugin[]): PluginEnabledAiClient<T>
+  static create<T extends ProviderId>(providerId: T, plugins?: AiPlugin[]): PluginEngine<T>
 
-  static create(providerId: string, plugins?: AiPlugin[]): PluginEnabledAiClient<'openai-compatible'>
+  static create(providerId: string, plugins?: AiPlugin[]): PluginEngine<'openai-compatible'>
 
-  static create(providerId: string, plugins: AiPlugin[] = []): PluginEnabledAiClient {
+  static create(providerId: string, plugins: AiPlugin[] = []): PluginEngine {
     if (isProviderSupported(providerId)) {
-      return new PluginEnabledAiClient(providerId as ProviderId, plugins)
+      return new PluginEngine(providerId as ProviderId, plugins)
     } else {
       // 对于未知 provider，使用 openai-compatible
-      return new PluginEnabledAiClient('openai-compatible', plugins)
+      return new PluginEngine('openai-compatible', plugins)
     }
   }
-}
-
-/**
- * 创建 AI 客户端的工厂函数（默认带插件系统）
- * @deprecated 建议使用 AiExecutor 代替
- */
-export function createClient<T extends ProviderId>(providerId: T, plugins?: AiPlugin[]): PluginEnabledAiClient<T>
-
-export function createClient(providerId: string, plugins?: AiPlugin[]): PluginEnabledAiClient<'openai-compatible'>
-
-export function createClient(providerId: string, plugins: AiPlugin[] = []): PluginEnabledAiClient {
-  return PluginEnabledAiClient.create(providerId, plugins)
-}
-
-/**
- * 创建 OpenAI Compatible 客户端的便捷函数
- * @deprecated 建议使用 AiExecutor 代替
- */
-export function createCompatibleClient(
-  config: ProviderSettingsMap['openai-compatible'],
-  plugins: AiPlugin[] = []
-): PluginEnabledAiClient<'openai-compatible'> {
-  return PluginEnabledAiClient.createOpenAICompatible(config, plugins)
 }

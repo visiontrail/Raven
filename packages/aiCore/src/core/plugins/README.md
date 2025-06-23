@@ -4,8 +4,6 @@
 
 ## 🎯 设计理念
 
-借鉴 Rollup/Vite 的成熟插件思想：
-
 - **语义清晰**：不同钩子有不同的执行语义
 - **类型安全**：TypeScript 完整支持
 - **性能优化**：First 短路、Parallel 并发、Sequential 链式

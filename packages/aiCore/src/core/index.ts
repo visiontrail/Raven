@@ -5,21 +5,19 @@
 
 // 中间件系统
 export type { NamedMiddleware } from './middleware'
-export { MiddlewareManager, wrapModelWithMiddlewares } from './middleware'
+export { createMiddlewares, wrapModelWithMiddlewares } from './middleware'
 
 // 创建管理
-export type { ModelCreationRequest, ResolvedConfig } from './creation'
+export type { ModelCreationRequest, ResolvedConfig } from './models'
 export {
   createBaseModel,
   createImageModel,
   createModel,
-  createModelFromConfig,
   getProviderInfo,
   getSupportedProviders,
-  ProviderCreationError,
-  resolveConfig
-} from './creation'
+  ProviderCreationError
+} from './models'
 
 // 执行管理
-export type { ExecutionOptions, ExecutorConfig, GenericExecutorConfig } from './execution'
-export { AiExecutor } from './execution'
+export type { ExecutionOptions, ExecutorConfig } from './runtime'
+export { createExecutor, createOpenAICompatibleExecutor } from './runtime'

@@ -3,7 +3,7 @@ import type { TextStreamPart, ToolSet } from 'ai'
 import { AiPlugin, AiRequestContext } from './types'
 
 /**
- * 插件管理器 - 基于 Rollup 钩子分类设计
+ * 插件管理器
  */
 export class PluginManager {
   private plugins: AiPlugin[] = []

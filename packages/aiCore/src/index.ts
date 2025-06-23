@@ -4,36 +4,21 @@
  */
 
 // 导入内部使用的类和函数
-import { createClient } from './core/clients/PluginEnabledAiClient'
 import {
   getProviderInfo as factoryGetProviderInfo,
   getSupportedProviders as factoryGetSupportedProviders
-} from './core/creation'
-import { AiExecutor } from './core/execution/AiExecutor'
+} from './core/models'
 import { aiProviderRegistry, isProviderSupported } from './core/providers/registry'
-import { type ProviderSettingsMap } from './types'
+import { createExecutor } from './core/runtime'
+import { ProviderId, type ProviderSettingsMap } from './types'
 
 // ==================== 主要用户接口 ====================
-// orchestration层 - 面向用户的主要API
-export {
-  AiExecutor,
-  generateObject,
-  generateText,
-  type OrchestrationConfig,
-  streamObject,
-  streamText
-} from './orchestration'
-
-// 为了向后兼容，保留AiClient别名（内部使用PluginEnabledAiClient）
-export {
-  PluginEnabledAiClient as AiClient,
-  createClient,
-  createCompatibleClient
-} from './core/clients/PluginEnabledAiClient'
+export { createExecutor, createOpenAICompatibleExecutor } from './core/runtime'
 
 // ==================== 插件系统 ====================
 export type { AiPlugin, AiRequestContext, HookResult, HookType, PluginManagerConfig } from './core/plugins'
 export { createContext, definePlugin, PluginManager } from './core/plugins'
+export { PluginEngine } from './core/runtime/pluginEngine'
 
 // ==================== 低级 API ====================
 export {
@@ -42,7 +27,7 @@ export {
   getProviderInfo as getClientInfo,
   getSupportedProviders,
   ProviderCreationError
-} from './core/creation'
+} from './core/models'
 export { aiProviderRegistry } from './core/providers/registry'
 
 // ==================== 类型定义 ====================
@@ -153,13 +138,13 @@ export const AiCore = {
   name: AI_CORE_NAME,
 
   // 创建主要执行器（推荐使用）
-  create(providerId: string, plugins: any[] = []) {
-    return AiExecutor.create(providerId, plugins)
+  create(providerId: ProviderId, options: ProviderSettingsMap[ProviderId], plugins: any[] = []) {
+    return createExecutor(providerId, options, plugins)
   },
 
   // 创建底层客户端（高级用法）
-  createClient(providerId: string, plugins: any[] = []) {
-    return createClient(providerId, plugins)
+  createClient(providerId: ProviderId, options: ProviderSettingsMap[ProviderId], plugins: any[] = []) {
+    return createExecutor(providerId, options, plugins)
   },
 
   // 获取支持的providers
@@ -180,36 +165,19 @@ export const AiCore = {
 
 // 推荐使用的执行器创建函数
 export const createOpenAIExecutor = (options: ProviderSettingsMap['openai'], plugins?: any[]) => {
-  return AiExecutor.create('openai', plugins)
+  return createExecutor('openai', options, plugins)
 }
 
 export const createAnthropicExecutor = (options: ProviderSettingsMap['anthropic'], plugins?: any[]) => {
-  return AiExecutor.create('anthropic', plugins)
+  return createExecutor('anthropic', options, plugins)
 }
 
 export const createGoogleExecutor = (options: ProviderSettingsMap['google'], plugins?: any[]) => {
-  return AiExecutor.create('google', plugins)
+  return createExecutor('google', options, plugins)
 }
 
 export const createXAIExecutor = (options: ProviderSettingsMap['xai'], plugins?: any[]) => {
-  return AiExecutor.create('xai', plugins)
-}
-
-// 向后兼容的客户端创建函数
-export const createOpenAIClient = (options: ProviderSettingsMap['openai'], plugins?: any[]) => {
-  return createClient('openai', plugins)
-}
-
-export const createAnthropicClient = (options: ProviderSettingsMap['anthropic'], plugins?: any[]) => {
-  return createClient('anthropic', plugins)
-}
-
-export const createGoogleClient = (options: ProviderSettingsMap['google'], plugins?: any[]) => {
-  return createClient('google', plugins)
-}
-
-export const createXAIClient = (options: ProviderSettingsMap['xai'], plugins?: any[]) => {
-  return createClient('xai', plugins)
+  return createExecutor('xai', options, plugins)
 }
 
 // ==================== 调试和开发工具 ====================
@@ -223,10 +191,10 @@ export const DevTools = {
   },
 
   // 测试provider连接
-  async testProvider(providerId: string, options: any) {
+  async testProvider(providerId: ProviderId, options: ProviderSettingsMap[ProviderId]) {
     try {
-      const client = createClient(providerId, options)
-      const info = client.getClientInfo()
+      const executor = createExecutor(providerId, options)
+      const info = executor.getClientInfo()
       return {
         success: true,
         providerId: info.id,

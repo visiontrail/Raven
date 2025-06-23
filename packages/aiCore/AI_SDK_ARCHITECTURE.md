@@ -4,7 +4,7 @@
 
 ### 1.1 设计目标
 
-- **分层架构**：orchestration（编排层）→ core（核心层），职责分离
+- **简化分层**：`models`（模型层）→ `runtime`（运行时层），清晰的职责分离
 - **统一接口**：使用 Vercel AI SDK 统一不同 AI Provider 的接口差异
 - **动态导入**：通过动态导入实现按需加载，减少打包体积
 - **最小包装**：直接使用 AI SDK 的类型和接口，避免重复定义
@@ -12,15 +12,17 @@
 - **类型安全**：利用 TypeScript 和 AI SDK 的类型系统确保类型安全
 - **轻量级**：专注核心功能，保持包的轻量和高效
 - **包级独立**：作为独立包管理，便于复用和维护
+- **Agent就绪**：为将来集成 OpenAI Agents SDK 预留扩展空间
 
 ### 1.2 核心优势
 
 - **标准化**：AI SDK 提供统一的模型接口，减少适配工作
-- **分层设计**：清晰的职责分离，便于维护和扩展
+- **简化设计**：函数式API，避免过度抽象
 - **更好的开发体验**：完整的 TypeScript 支持和丰富的生态系统
 - **性能优化**：AI SDK 内置优化和最佳实践
 - **模块化设计**：独立包结构，支持跨项目复用
 - **可扩展插件**：通用的流转换和参数处理插件系统
+- **面向未来**：为 OpenAI Agents SDK 集成做好准备
 
 ## 2. 整体架构图
 
@@ -32,34 +34,26 @@ graph TD
     end
 
     subgraph "packages/aiCore (AI Core 包)"
-        subgraph "Orchestration Layer (编排层)"
-            OrchAPI["api.ts (用户API)"]
-            OrchTypes["types.ts (编排类型)"]
+        subgraph "Runtime Layer (运行时层)"
+            RuntimeExecutor["RuntimeExecutor (运行时执行器)"]
+            PluginEngine["PluginEngine (插件引擎)"]
+            RuntimeAPI["Runtime API (便捷函数)"]
         end
 
-        subgraph "Core Layer (核心层)"
-            subgraph "Creation (创建层)"
-                ConfigManager["ConfigManager (配置管理)"]
-                ModelCreator["ModelCreator (模型创建)"]
-                ProviderCreator["ProviderCreator (提供商创建)"]
-            end
+        subgraph "Models Layer (模型层)"
+            ModelFactory["createModel() (模型工厂)"]
+            ProviderCreator["ProviderCreator (提供商创建器)"]
+        end
 
-            subgraph "Execution (执行层)"
-                AiExecutor["AiExecutor (执行器)"]
-            end
-
-            subgraph "Clients (客户端层)"
-                PluginClient["PluginEnabledAiClient (插件客户端)"]
+        subgraph "Core Systems (核心系统)"
+            subgraph "Plugins (插件)"
+                PluginManager["PluginManager (插件管理)"]
+                BuiltInPlugins["Built-in Plugins (内置插件)"]
+                StreamTransforms["Stream Transforms (流转换)"]
             end
 
             subgraph "Middleware (中间件)"
-                MiddlewareManager["MiddlewareManager (中间件管理)"]
-                ModelWrapper["ModelWrapper (模型包装)"]
-            end
-
-            subgraph "Plugins (插件)"
-                PluginManager["PluginManager (插件管理)"]
-                StreamTransforms["Stream Transforms (流转换)"]
+                MiddlewareWrapper["wrapModelWithMiddlewares() (中间件包装)"]
             end
 
             subgraph "Providers (提供商)"
@@ -78,16 +72,19 @@ graph TD
         Others["其他 19+ Providers"]
     end
 
-    UI --> OrchAPI
-    Components --> OrchAPI
-    OrchAPI --> AiExecutor
-    AiExecutor --> PluginClient
-    PluginClient --> PluginManager
-    PluginClient --> ConfigManager
-    ConfigManager --> ModelCreator
-    ModelCreator --> ProviderCreator
-    ModelCreator --> MiddlewareManager
-    MiddlewareManager --> ModelWrapper
+    subgraph "Future: OpenAI Agents SDK"
+        AgentSDK["@openai/agents (未来集成)"]
+        AgentExtensions["Agent Extensions (预留)"]
+    end
+
+    UI --> RuntimeAPI
+    Components --> RuntimeExecutor
+    RuntimeAPI --> RuntimeExecutor
+    RuntimeExecutor --> PluginEngine
+    RuntimeExecutor --> ModelFactory
+    PluginEngine --> PluginManager
+    ModelFactory --> ProviderCreator
+    ModelFactory --> MiddlewareWrapper
     ProviderCreator --> Registry
     Registry --> Factory
     Factory --> OpenAI
@@ -96,51 +93,48 @@ graph TD
     Factory --> XAI
     Factory --> Others
 
-    PluginClient --> AICore
+    PluginEngine --> AICore
     AICore --> streamText
     AICore --> generateText
     AICore --> streamObject
     AICore --> generateObject
 
     PluginManager --> StreamTransforms
+    PluginManager --> BuiltInPlugins
+
+    %% 未来集成路径
+    RuntimeExecutor -.-> AgentSDK
+    AgentSDK -.-> AgentExtensions
 ```
 
 ## 3. 包结构设计
 
-### 3.1 当前架构文件结构
+### 3.1 新架构文件结构
 
 ```
 packages/aiCore/
 ├── src/
-│   ├── orchestration/               # 编排层 - 用户面向接口
-│   │   ├── api.ts                   # 主要API函数 ✅
-│   │   ├── types.ts                 # 编排类型定义 ✅
-│   │   └── index.ts                 # 编排层导出 ✅
 │   ├── core/                        # 核心层 - 内部实现
-│   │   ├── creation/                # 创建层
-│   │   │   ├── types.ts             # 创建类型定义 ✅
-│   │   │   ├── ConfigManager.ts     # 配置管理器 ✅
-│   │   │   ├── ModelCreator.ts      # 模型创建器 ✅
+│   │   ├── models/                  # 模型层 - 模型创建和配置
+│   │   │   ├── factory.ts           # 模型工厂函数 ✅
 │   │   │   ├── ProviderCreator.ts   # 提供商创建器 ✅
-│   │   │   └── index.ts             # 创建层导出 ✅
-│   │   ├── execution/               # 执行层
-│   │   │   ├── types.ts             # 执行类型定义 ✅
-│   │   │   ├── AiExecutor.ts        # AI执行器 ✅
-│   │   │   └── index.ts             # 执行层导出 ✅
-│   │   ├── clients/                 # 客户端层
-│   │   │   ├── PluginEnabledAiClient.ts # 插件客户端 ✅
-│   │   │   └── index.ts             # 客户端导出 ✅
+│   │   │   ├── types.ts             # 模型类型定义 ✅
+│   │   │   └── index.ts             # 模型层导出 ✅
+│   │   ├── runtime/                 # 运行时层 - 执行和用户API
+│   │   │   ├── executor.ts          # 运行时执行器 ✅
+│   │   │   ├── plugin-engine.ts     # 插件引擎 ✅
+│   │   │   ├── types.ts             # 运行时类型定义 ✅
+│   │   │   └── index.ts             # 运行时导出 ✅
 │   │   ├── middleware/              # 中间件系统
-│   │   │   ├── types.ts             # 中间件类型 ✅
-│   │   │   ├── MiddlewareManager.ts # 中间件管理器 ✅
 │   │   │   ├── ModelWrapper.ts      # 模型包装器 ✅
 │   │   │   └── index.ts             # 中间件导出 ✅
 │   │   ├── plugins/                 # 插件系统
 │   │   │   ├── types.ts             # 插件类型定义 ✅
 │   │   │   ├── manager.ts           # 插件管理器 ✅
+│   │   │   ├── built-in/            # 内置插件 ✅
+│   │   │   │   ├── logging.ts       # 日志插件 ✅
+│   │   │   │   └── index.ts         # 内置插件导出 ✅
 │   │   │   ├── examples/            # 示例插件 ✅
-│   │   │   │   ├── example-plugins.ts
-│   │   │   │   └── example-usage.ts
 │   │   │   ├── README.md            # 插件文档 ✅
 │   │   │   └── index.ts             # 插件导出 ✅
 │   │   ├── providers/               # 提供商管理
@@ -159,143 +153,147 @@ packages/aiCore/
 
 ## 4. 架构分层详解
 
-### 4.1 Orchestration Layer (编排层)
+### 4.1 Models Layer (模型层)
 
-**职责**：面向用户的主要API接口，提供简洁的使用体验
+**职责**：统一的模型创建和配置管理
 
 **核心文件**：
 
-- `api.ts`: 主要API函数 (`streamText`, `generateText`, `streamObject`, `generateObject`)
-- `types.ts`: 编排配置类型定义
+- `factory.ts`: 模型工厂函数 (`createModel`, `createModels`)
+- `ProviderCreator.ts`: 底层提供商创建和模型实例化
+- `types.ts`: 模型配置类型定义
 
 **设计特点**：
 
-- 支持两种使用方式：配置模式和直接AI SDK模式
-- 统一的函数重载设计
-- 自动处理执行器创建和调用
+- 函数式设计，避免不必要的类抽象
+- 统一的模型配置接口
+- 自动处理中间件应用
+- 支持批量模型创建
 
 **核心API**：
 
 ```typescript
-// 配置模式 - 推荐使用
-export async function streamText<T extends ProviderId>(
-  config: OrchestrationConfig<T>,
-  modelId: string,
-  params: StreamTextParams
-): Promise<ReturnType<typeof aiStreamText>>
+// 模型配置接口
+export interface ModelConfig {
+  providerId: ProviderId
+  modelId: string
+  options: ProviderSettingsMap[ProviderId]
+  middlewares?: LanguageModelV1Middleware[]
+}
 
-// 直接AI SDK模式 - 兼容原生使用
-export async function streamText(params: Parameters<typeof aiStreamText>[0]): Promise<ReturnType<typeof aiStreamText>>
+// 核心模型创建函数
+export async function createModel(config: ModelConfig): Promise<LanguageModel>
+export async function createModels(configs: ModelConfig[]): Promise<LanguageModel[]>
 ```
 
-### 4.2 Core Layer (核心层)
+### 4.2 Runtime Layer (运行时层)
 
-#### 4.2.1 Creation Layer (创建层)
-
-**职责**：负责配置解析、模型创建和提供商管理
+**职责**：运行时执行器和用户面向的API接口
 
 **核心组件**：
 
-- `ConfigManager`: 配置解析和中间件收集
-- `ModelCreator`: 高级模型创建逻辑
-- `ProviderCreator`: 底层提供商导入和模型创建
-
-**关键功能**：
-
-```typescript
-// 配置管理
-export function resolveConfig(
-  providerId: ProviderId,
-  modelId: string,
-  userOptions: ProviderSettingsMap[ProviderId],
-  plugins: AiPlugin[] = []
-): ResolvedConfig
-
-// 模型创建
-export async function createModel(
-  providerId: ProviderId,
-  modelId: string,
-  userOptions: ProviderSettingsMap[ProviderId],
-  plugins: AiPlugin[] = []
-): Promise<LanguageModel>
-```
-
-#### 4.2.2 Execution Layer (执行层)
-
-**职责**：AI执行引擎，封装插件处理逻辑
-
-**核心组件**：
-
-- `AiExecutor`: 主要执行器类
+- `executor.ts`: 运行时执行器类
+- `plugin-engine.ts`: 插件引擎（原PluginEnabledAiClient）
+- `index.ts`: 便捷函数和工厂方法
 
 **设计特点**：
 
-- 构造时确定插件配置，运行时不可变更
-- 内部使用 `PluginEnabledAiClient` 处理插件
-- 提供类型安全的API接口
+- 提供三种使用方式：类实例、静态工厂、函数式调用
+- 自动集成模型创建和插件处理
+- 完整的类型安全支持
+- 为 OpenAI Agents SDK 预留扩展接口
 
 **核心API**：
 
 ```typescript
-export class AiExecutor<T extends ProviderId = any> {
+// 运行时执行器
+export class RuntimeExecutor<T extends ProviderId = ProviderId> {
   static create<T extends ProviderId>(
     providerId: T,
     options: ProviderSettingsMap[T],
-    plugins: AiPlugin[] = []
-  ): AiExecutor<T>
+    plugins?: AiPlugin[]
+  ): RuntimeExecutor<T>
 
-  async streamText(modelId: string, params: StreamTextParams): Promise<StreamTextResult<any>>
-  async generateText(modelId: string, params: GenerateTextParams): Promise<GenerateTextResult<any>>
-  async streamObject(modelId: string, params: StreamObjectParams): Promise<StreamObjectResult<any>>
-  async generateObject(modelId: string, params: GenerateObjectParams): Promise<GenerateObjectResult<any>>
+  async streamText(modelId: string, params: StreamTextParams): Promise<StreamTextResult>
+  async generateText(modelId: string, params: GenerateTextParams): Promise<GenerateTextResult>
+  async streamObject(modelId: string, params: StreamObjectParams): Promise<StreamObjectResult>
+  async generateObject(modelId: string, params: GenerateObjectParams): Promise<GenerateObjectResult>
 }
+
+// 便捷函数式API
+export async function streamText<T extends ProviderId>(
+  providerId: T,
+  options: ProviderSettingsMap[T],
+  modelId: string,
+  params: StreamTextParams,
+  plugins?: AiPlugin[]
+): Promise<StreamTextResult>
 ```
 
-#### 4.2.3 Clients Layer (客户端层)
+### 4.3 Plugin System (插件系统)
 
-**职责**：插件处理，连接插件系统和AI SDK
+**职责**：可扩展的插件架构
 
 **核心组件**：
 
-- `PluginEnabledAiClient`: 处理插件执行和AI SDK调用
+- `PluginManager`: 插件生命周期管理
+- `built-in/`: 内置插件集合
+- 流转换收集和应用
 
 **设计特点**：
 
-- 使用 core/creation 层创建模型
-- 区分 streaming 和 non-streaming 插件处理
-- 支持 `streamText` 的流转换和其他方法的常规插件处理
+- 借鉴 Rollup 的钩子分类设计
+- 支持流转换 (`experimental_transform`)
+- 内置常用插件（日志、计数等）
+- 完整的生命周期钩子
 
-#### 4.2.4 Middleware Layer (中间件层)
+**插件接口**：
+
+```typescript
+export interface AiPlugin {
+  name: string
+  enforce?: 'pre' | 'post'
+
+  // 【First】首个钩子 - 只执行第一个返回值的插件
+  resolveModel?: (modelId: string, context: AiRequestContext) => string | null | Promise<string | null>
+  loadTemplate?: (templateName: string, context: AiRequestContext) => any | null | Promise<any | null>
+
+  // 【Sequential】串行钩子 - 链式执行，支持数据转换
+  transformParams?: (params: any, context: AiRequestContext) => any | Promise<any>
+  transformResult?: (result: any, context: AiRequestContext) => any | Promise<any>
+
+  // 【Parallel】并行钩子 - 不依赖顺序，用于副作用
+  onRequestStart?: (context: AiRequestContext) => void | Promise<void>
+  onRequestEnd?: (context: AiRequestContext, result: any) => void | Promise<void>
+  onError?: (error: Error, context: AiRequestContext) => void | Promise<void>
+
+  // 【Stream】流处理
+  transformStream?: () => TransformStream
+}
+```
+
+### 4.4 Middleware System (中间件系统)
 
 **职责**：AI SDK原生中间件支持
 
 **核心组件**：
 
-- `MiddlewareManager`: 中间件管理 (函数式)
-- `ModelWrapper`: 模型包装器 (函数式)
+- `ModelWrapper.ts`: 模型包装函数
 
 **设计哲学**：
 
-- 使用函数而非类，简化设计
 - 直接使用AI SDK的 `wrapLanguageModel`
 - 与插件系统分离，职责明确
+- 函数式设计，简化使用
 
-#### 4.2.5 Plugins Layer (插件层)
+```typescript
+export function wrapModelWithMiddlewares(
+  model: LanguageModel, 
+  middlewares: LanguageModelV1Middleware[]
+): LanguageModel
+```
 
-**职责**：特定的插件功能
-
-**核心组件**：
-
-- `PluginManager`: 插件管理器
-- 流转换收集：`collectStreamTransforms`
-
-**设计特点**：
-
-- 支持流转换 (`experimental_transform`)
-- 与AI SDK中间件分离
-- 专注于特定需求
-
-#### 4.2.6 Providers Layer (提供商层)
+### 4.5 Provider System (提供商系统)
 
 **职责**：AI Provider注册表和动态导入
 
@@ -313,192 +311,194 @@ export class AiExecutor<T extends ProviderId = any> {
 
 ## 5. 使用方式
 
-### 5.1 推荐使用方式 (Orchestration API)
+### 5.1 函数式调用 (推荐 - 简单场景)
 
 ```typescript
-import { streamText, generateText } from '@cherrystudio/ai-core'
+import { streamText, generateText } from '@cherrystudio/ai-core/runtime'
 
-// 配置模式使用
-const config = {
-  providerId: 'openai',
-  options: { apiKey: 'your-api-key' },
-  plugins: [thinkingPlugin, toolPlugin]
-}
-
-// 流式文本生成
-const stream = await streamText(config, 'gpt-4', {
-  messages: [{ role: 'user', content: 'Hello!' }]
-})
-
-// 普通文本生成
-const result = await generateText(config, 'gpt-4', {
-  messages: [{ role: 'user', content: 'Hello!' }]
-})
+// 直接函数调用
+const stream = await streamText(
+  'anthropic',
+  { apiKey: 'your-api-key' },
+  'claude-3',
+  { messages: [{ role: 'user', content: 'Hello!' }] },
+  [loggingPlugin]
+)
 ```
 
-### 5.2 直接AI SDK模式 (兼容性)
+### 5.2 执行器实例 (推荐 - 复杂场景)
 
 ```typescript
-import { streamText } from '@cherrystudio/ai-core'
-import { openai } from '@ai-sdk/openai'
+import { createExecutor } from '@cherrystudio/ai-core/runtime'
 
-// 直接使用AI SDK模式
-const stream = await streamText({
-  model: openai('gpt-4'),
-  messages: [{ role: 'user', content: 'Hello!' }]
-})
-```
+// 创建可复用的执行器
+const executor = createExecutor('openai', { apiKey: 'your-api-key' }, [plugin1, plugin2])
 
-### 5.3 执行器模式 (高级用法)
-
-```typescript
-import { AiExecutor } from '@cherrystudio/ai-core'
-
-// 创建执行器
-const executor = AiExecutor.create('openai', { apiKey: 'your-api-key' }, [plugin1, plugin2])
-
-// 使用执行器
+// 多次使用
 const stream = await executor.streamText('gpt-4', {
   messages: [{ role: 'user', content: 'Hello!' }]
 })
-```
 
-## 6. 插件系统详解
-
-### 6.1 插件接口设计
-
-```typescript
-export interface AiPlugin {
-  name: string
-  collectStreamTransforms?: (context: AiRequestContext) => StreamTransform[]
-  transformParams?: (params: any, context: AiRequestContext) => Promise<any>
-  transformResult?: (result: any, context: AiRequestContext) => Promise<any>
-  onRequest?: (context: AiRequestContext) => Promise<void>
-  onSuccess?: (result: any, context: AiRequestContext) => Promise<void>
-  onError?: (error: Error, context: AiRequestContext) => Promise<void>
-}
-```
-
-### 6.2 流转换支持
-
-专门针对 `streamText` 的流转换功能：
-
-```typescript
-// 插件收集流转换
-const streamTransforms = pluginManager.collectStreamTransforms(context)
-
-// 应用到AI SDK
-const result = await streamText({
-  model,
-  ...params,
-  experimental_transform: streamTransforms.length > 0 ? composeTransforms(streamTransforms) : undefined
+const result = await executor.generateText('gpt-4', {
+  messages: [{ role: 'user', content: 'How are you?' }]
 })
 ```
 
-### 6.3 插件vs中间件
+### 5.3 静态工厂方法
 
-| 功能     | 插件 (Plugins)                   | 中间件 (Middleware) |
-| -------- | -------------------------------- | ------------------- |
-| 用途     | 应用特定功能                     | AI SDK原生功能      |
-| 流转换   | ✅ 支持 `experimental_transform` | ❌ 不支持           |
-| 适用范围 | 所有AI方法                       | 所有AI方法          |
-| 应用时机 | 运行时                           | 创建时              |
-| 复杂度   | 简单                             | 原生AI SDK          |
+```typescript
+import { RuntimeExecutor } from '@cherrystudio/ai-core/runtime'
+
+// 静态创建
+const executor = RuntimeExecutor.create('anthropic', { apiKey: 'your-api-key' })
+await executor.streamText('claude-3', { messages: [...] })
+```
+
+### 5.4 直接模型创建 (高级用法)
+
+```typescript
+import { createModel } from '@cherrystudio/ai-core/models'
+import { streamText } from 'ai'
+
+// 直接创建模型使用
+const model = await createModel({
+  providerId: 'openai',
+  modelId: 'gpt-4',
+  options: { apiKey: 'your-api-key' },
+  middlewares: [middleware1, middleware2]
+})
+
+// 直接使用 AI SDK
+const result = await streamText({ model, messages: [...] })
+```
+
+## 6. 为 OpenAI Agents SDK 预留的设计
+
+### 6.1 架构兼容性
+
+当前架构完全兼容 OpenAI Agents SDK 的集成需求：
+
+```typescript
+// 当前的模型创建
+const model = await createModel({
+  providerId: 'anthropic',
+  modelId: 'claude-3',
+  options: { apiKey: 'xxx' }
+})
+
+// 将来可以直接用于 OpenAI Agents SDK
+import { Agent, run } from '@openai/agents'
+
+const agent = new Agent({
+  model,  // ✅ 直接兼容 LanguageModel 接口
+  name: 'Assistant',
+  instructions: '...',
+  tools: [tool1, tool2]
+})
+
+const result = await run(agent, 'user input')
+```
+
+### 6.2 预留的扩展点
+
+1. **runtime/agents/** 目录预留
+2. **AgentExecutor** 类预留
+3. **Agent工具转换插件** 预留
+4. **多Agent编排** 预留
+
+### 6.3 未来架构扩展
+
+```
+packages/aiCore/src/core/
+├── runtime/
+│   ├── agents/              # 🚀 未来添加
+│   │   ├── AgentExecutor.ts
+│   │   ├── WorkflowManager.ts
+│   │   └── ConversationManager.ts
+│   ├── executor.ts
+│   └── index.ts
+```
 
 ## 7. 架构优势
 
-### 7.1 分层清晰
+### 7.1 简化设计
 
-- **Orchestration**: 用户友好的API
-- **Core**: 模块化的内部实现
-- **职责分离**: 每层专注自己的职责
+- **移除过度抽象**：删除了orchestration层和creation层的复杂包装
+- **函数式优先**：models层使用函数而非类
+- **直接明了**：runtime层直接提供用户API
 
-### 7.2 函数式设计
+### 7.2 职责清晰
 
-- 大部分模块使用函数而非类
-- 更简洁的代码和更好的可测试性
-- 避免不必要的面向对象复杂性
+- **Models**: 专注模型创建和配置
+- **Runtime**: 专注执行和用户API
+- **Plugins**: 专注扩展功能
+- **Providers**: 专注AI Provider管理
 
 ### 7.3 类型安全
 
-- 统一使用 `types.ts` 中的类型定义
-- 避免重复定义，提高维护性
 - 完整的 TypeScript 支持
+- AI SDK 类型的直接复用
+- 避免类型重复定义
 
-### 7.4 灵活扩展
+### 7.4 灵活使用
 
-- 插件系统支持流转换
-- 中间件系统支持AI SDK原生功能
-- 模块化设计便于功能扩展
+- 三种使用模式满足不同需求
+- 从简单函数调用到复杂执行器
+- 支持直接AI SDK使用
 
-## 8. 迁移状态
+### 7.5 面向未来
 
-### 8.1 已完成 ✅
+- 为 OpenAI Agents SDK 集成做好准备
+- 清晰的扩展点和架构边界
+- 模块化设计便于功能添加
 
-1. **架构重构** - 分层设计和职责分离
-2. **类型系统** - 统一类型定义和复用
-3. **函数式设计** - 从类转换为函数
-4. **插件系统** - 流转换和通用插件功能
-5. **Orchestration层** - 用户友好的API接口
-6. **Core层完整实现** - 创建、执行、客户端、中间件、插件、提供商
+## 8. 技术决策记录
 
-### 8.2 进行中 🔄
+### 8.1 为什么选择简化的两层架构？
 
-1. **集成测试** - 在实际项目中完整测试
-2. **性能优化** - 确保无性能退化
-3. **文档完善** - 使用指南和最佳实践
+- **职责分离**：models专注创建，runtime专注执行
+- **模块化**：每层都有清晰的边界和职责
+- **扩展性**：为Agent功能预留了清晰的扩展空间
 
-### 8.3 计划中 📋
+### 8.2 为什么选择函数式设计？
 
-1. **生态系统扩展** - 更多通用插件
-2. **优化改进** - 基于使用反馈的持续改进
-3. **社区贡献** - 开源发布和社区生态
+- **简洁性**：避免不必要的类设计
+- **性能**：减少对象创建开销
+- **易用性**：函数调用更直观
 
-## 9. 技术决策记录
-
-### 9.1 为什么选择分层架构？
-
-- **用户体验**: Orchestration层提供简洁API
-- **内部复杂性**: Core层处理复杂逻辑
-- **维护性**: 清晰的职责分离
-
-### 9.2 为什么选择函数式设计？
-
-- **简洁性**: 避免不必要的类设计
-- **可测试性**: 函数更容易测试
-- **性能**: 减少对象创建开销
-
-### 9.3 为什么分离插件和中间件？
+### 8.3 为什么分离插件和中间件？
 
 - **职责明确**: 插件处理应用特定需求
 - **原生支持**: 中间件使用AI SDK原生功能
 - **灵活性**: 两套系统可以独立演进
 
-## 10. 总结
+## 9. 总结
 
-新的AI Core架构实现了：
+AI Core架构实现了：
 
-### 10.1 设计目标
+### 9.1 核心特点
 
-- ✅ **分层架构**: 清晰的编排层和核心层分离
-- ✅ **函数式设计**: 简洁的函数式API
-- ✅ **类型安全**: 统一的类型定义和复用
-- ✅ **插件扩展**: 支持流转换的插件系统
-- ✅ **易用性**: 多种使用模式满足不同需求
+- ✅ **简化架构**: 2层核心架构，职责清晰
+- ✅ **函数式设计**: models层完全函数化
+- ✅ **类型安全**: 统一的类型定义和AI SDK类型复用
+- ✅ **插件扩展**: 强大的插件系统
+- ✅ **多种使用方式**: 满足不同复杂度需求
+- ✅ **Agent就绪**: 为OpenAI Agents SDK集成做好准备
 
-### 10.2 核心价值
+### 9.2 核心价值
 
 - **统一接口**: 一套API支持19+ AI providers
-- **灵活使用**: 配置模式、AI SDK模式、执行器模式
+- **灵活使用**: 函数式、实例式、静态工厂式
 - **强类型**: 完整的TypeScript支持
 - **可扩展**: 插件和中间件双重扩展能力
 - **高性能**: 最小化包装，直接使用AI SDK
+- **面向未来**: Agent SDK集成架构就绪
 
-### 10.3 未来发展
+### 9.3 未来发展
 
-这个架构提供了坚实的AI基础设施，支持：
+这个架构提供了：
 
-- 持续的功能扩展
-- 良好的开发体验
-- 社区生态建设
-- 跨项目复用价值
+- **优秀的开发体验**: 简洁的API和清晰的使用模式
+- **强大的扩展能力**: 为Agent功能预留了完整的架构空间
+- **良好的维护性**: 职责分离明确，代码易于维护
+- **广泛的适用性**: 既适合简单调用也适合复杂应用

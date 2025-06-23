@@ -5,7 +5,7 @@
 import { LanguageModelV1Middleware } from 'ai'
 
 import { ProviderId, ProviderSettingsMap } from '../../types'
-import { createMiddlewares } from '../middleware/MiddlewareManager'
+import { createMiddlewares } from '../middleware/manager'
 import { AiPlugin } from '../plugins'
 import { ResolvedConfig } from './types'
 

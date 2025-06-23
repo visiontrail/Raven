@@ -3,6 +3,6 @@
  * 提供通用的中间件管理能力
  */
 
-export { MiddlewareManager } from './MiddlewareManager'
-export { wrapModelWithMiddlewares } from './ModelWrapper'
+export { createMiddlewares } from './manager'
 export type { NamedMiddleware } from './types'
+export { wrapModelWithMiddlewares } from './wrapper'
