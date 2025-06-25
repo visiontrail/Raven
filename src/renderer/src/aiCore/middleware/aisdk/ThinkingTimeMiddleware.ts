@@ -22,14 +22,14 @@ export default function thinkingTimeMiddleware(): LanguageModelV1Middleware {
           if (chunk.type === 'reasoning' || chunk.type === 'redacted-reasoning') {
             if (!hasThinkingContent) {
               hasThinkingContent = true
-              thinkingStartTime = Date.now()
+              thinkingStartTime = performance.now()
             }
             accumulatedThinkingContent += chunk.textDelta || ''
             // 将所有 chunk 原样传递下去
-            controller.enqueue(chunk)
+            controller.enqueue({ ...chunk, thinking_millsec: performance.now() - thinkingStartTime })
           } else {
             if (hasThinkingContent && thinkingStartTime > 0) {
-              const thinkingTime = Date.now() - thinkingStartTime
+              const thinkingTime = performance.now() - thinkingStartTime
               const thinkingCompleteChunk = {
                 type: 'reasoning-signature',
                 text: accumulatedThinkingContent,

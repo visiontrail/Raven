@@ -88,7 +88,9 @@ export class AiSdkToChunkAdapter {
       case 'reasoning':
         this.onChunk({
           type: ChunkType.THINKING_DELTA,
-          text: chunk.textDelta || ''
+          text: chunk.textDelta || '',
+          // 自定义字段
+          thinking_millsec: chunk.thinking_millsec || 0
         })
         break
       case 'redacted-reasoning':

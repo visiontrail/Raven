@@ -13,7 +13,6 @@ import {
   ProviderConfigFactory,
   type ProviderId,
   type ProviderSettingsMap,
-  smoothStream,
   StreamTextParams
 } from '@cherrystudio/ai-core'
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
@@ -26,6 +25,8 @@ import AiSdkToChunkAdapter from './AiSdkToChunkAdapter'
 import LegacyAiProvider from './index'
 import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/aisdk/AiSdkMiddlewareBuilder'
 import { CompletionsResult } from './middleware/schemas'
+import reasonPlugin from './plugins/reasonPlugin'
+import textPlugin from './plugins/textPlugin'
 import { getAiSdkProviderId } from './provider/factory'
 
 /**
@@ -111,7 +112,13 @@ export default class ModernAiProvider {
     // TODO:如果后续在调用completions时需要切换provider的话,
     // 初始化时不构建中间件，等到需要时再构建
     const config = providerToAiSdkConfig(provider)
-    this.modernExecutor = createExecutor(config.providerId, config.options)
+    this.modernExecutor = createExecutor(config.providerId, config.options, [
+      reasonPlugin({
+        delayInMs: 80,
+        chunkingRegex: /([\u4E00-\u9FFF]{3})|\S+\s+/
+      }),
+      textPlugin
+    ])
   }
 
   public async completions(
@@ -160,7 +167,7 @@ export default class ModernAiProvider {
 
       // 动态构建中间件数组
       const middlewares = buildAiSdkMiddlewares(finalConfig)
-      console.log('构建的中间件:', middlewares.length)
+      console.log('构建的中间件:', middlewares)
 
       // 创建带有中间件的执行器
       if (middlewareConfig.onChunk) {
@@ -168,14 +175,7 @@ export default class ModernAiProvider {
         const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk)
         const streamResult = await this.modernExecutor.streamText(
           modelId,
-          {
-            ...params,
-            experimental_transform: smoothStream({
-              delayInMs: 80,
-              // 中文3个字符一个chunk,英文一个单词一个chunk
-              chunking: /([\u4E00-\u9FFF]{3})|\S+\s+/
-            })
-          },
+          params,
           middlewares.length > 0 ? { middlewares } : undefined
         )
 

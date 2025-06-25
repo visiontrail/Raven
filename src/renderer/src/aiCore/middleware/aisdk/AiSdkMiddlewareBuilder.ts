@@ -138,7 +138,7 @@ export function buildAiSdkMiddlewares(config: AiSdkMiddlewareConfig): LanguageMo
       middleware: simulateStreamingMiddleware()
     })
   }
-
+  console.log('builder.build()', builder.buildNamed())
   return builder.build()
 }
 

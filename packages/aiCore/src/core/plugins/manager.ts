@@ -127,7 +127,7 @@ export class PluginManager {
       stopStream: () => void
     }) => TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>
   > {
-    return this.plugins.map((plugin) => plugin.transformStream?.()).filter(Boolean) as Array<
+    return this.plugins.map((plugin) => plugin.transformStream).filter(Boolean) as Array<
       (options: {
         tools?: TOOLS
         stopStream: () => void

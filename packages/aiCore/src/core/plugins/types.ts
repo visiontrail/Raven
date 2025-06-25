@@ -33,8 +33,8 @@ export interface AiPlugin {
   onError?: (error: Error, context: AiRequestContext) => void | Promise<void>
 
   // 【Stream】流处理 - 直接使用 AI SDK
-  transformStream?: <TOOLS extends ToolSet>() => (options: {
-    tools?: TOOLS
+  transformStream?: <TOOLS extends ToolSet>(options: {
+    tools: TOOLS
     stopStream: () => void
   }) => TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>
 
