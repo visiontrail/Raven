@@ -9,8 +9,7 @@
  */
 
 import {
-  AiClient,
-  createClient,
+  createExecutor,
   ProviderConfigFactory,
   type ProviderId,
   type ProviderSettingsMap,
@@ -101,7 +100,7 @@ function isModernSdkSupported(provider: Provider, model?: Model): boolean {
 }
 
 export default class ModernAiProvider {
-  private modernClient?: AiClient
+  private modernExecutor?: ReturnType<typeof createExecutor>
   private legacyProvider: LegacyAiProvider
   private provider: Provider
 
@@ -109,9 +108,10 @@ export default class ModernAiProvider {
     this.provider = provider
     this.legacyProvider = new LegacyAiProvider(provider)
 
+    // TODO:如果后续在调用completions时需要切换provider的话,
     // 初始化时不构建中间件，等到需要时再构建
     const config = providerToAiSdkConfig(provider)
-    this.modernClient = createClient(config.providerId, config.options)
+    this.modernExecutor = createExecutor(config.providerId, config.options)
   }
 
   public async completions(
@@ -145,7 +145,7 @@ export default class ModernAiProvider {
     params: StreamTextParams,
     middlewareConfig: AiSdkMiddlewareConfig
   ): Promise<CompletionsResult> {
-    if (!this.modernClient) {
+    if (!this.modernExecutor) {
       throw new Error('Modern AI SDK client not initialized')
     }
 
@@ -160,26 +160,25 @@ export default class ModernAiProvider {
 
       // 动态构建中间件数组
       const middlewares = buildAiSdkMiddlewares(finalConfig)
-      console.log(
-        '构建的中间件:',
-        middlewares.map((m) => m.name)
-      )
+      console.log('构建的中间件:', middlewares.length)
 
-      // 创建带有中间件的客户端
-      const config = providerToAiSdkConfig(this.provider)
-      const clientWithMiddlewares = createClient(config.providerId, config.options, middlewares)
-
+      // 创建带有中间件的执行器
       if (middlewareConfig.onChunk) {
         // 流式处理 - 使用适配器
         const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk)
-        const streamResult = await clientWithMiddlewares.streamText(modelId, {
-          ...params,
-          experimental_transform: smoothStream({
-            delayInMs: 80,
-            // 中文3个字符一个chunk,英文一个单词一个chunk
-            chunking: /([\u4E00-\u9FFF]{3})|\S+\s+/
-          })
-        })
+        const streamResult = await this.modernExecutor.streamText(
+          modelId,
+          {
+            ...params,
+            experimental_transform: smoothStream({
+              delayInMs: 80,
+              // 中文3个字符一个chunk,英文一个单词一个chunk
+              chunking: /([\u4E00-\u9FFF]{3})|\S+\s+/
+            })
+          },
+          middlewares.length > 0 ? { middlewares } : undefined
+        )
+
         const finalText = await adapter.processStream(streamResult)
 
         return {
@@ -187,7 +186,11 @@ export default class ModernAiProvider {
         }
       } else {
         // 流式处理但没有 onChunk 回调
-        const streamResult = await clientWithMiddlewares.streamText(modelId, params)
+        const streamResult = await this.modernExecutor.streamText(
+          modelId,
+          params,
+          middlewares.length > 0 ? { middlewares } : undefined
+        )
         const finalText = await streamResult.text
 
         return {

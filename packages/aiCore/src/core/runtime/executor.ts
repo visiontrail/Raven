@@ -2,7 +2,7 @@
  * 运行时执行器
  * 专注于插件化的AI调用处理
  */
-import { generateObject, generateText, LanguageModelV1, streamObject, streamText } from 'ai'
+import { generateObject, generateText, LanguageModel, LanguageModelV1Middleware, streamObject, streamText } from 'ai'
 
 import { type ProviderId, type ProviderSettingsMap } from '../../types'
 import { createModel, getProviderInfo } from '../models'
@@ -28,24 +28,43 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     this.pluginClient = new PluginEngine(config.providerId, config.plugins || [])
   }
 
+  // === 高阶重载：直接使用模型 ===
+
   /**
-   * 流式文本生成 - 使用modelId自动创建模型
+   * 流式文本生成 - 使用已创建的模型（高级用法）
+   */
+  async streamText(
+    model: LanguageModel,
+    params: Omit<Parameters<typeof streamText>[0], 'model'>
+  ): Promise<ReturnType<typeof streamText>>
+
+  /**
+   * 流式文本生成 - 使用modelId + 可选middleware（灵活用法）
    */
   async streamText(
     modelId: string,
-    params: Omit<Parameters<typeof streamText>[0], 'model'>
+    params: Omit<Parameters<typeof streamText>[0], 'model'>,
+    options?: {
+      middlewares?: LanguageModelV1Middleware[]
+    }
+  ): Promise<ReturnType<typeof streamText>>
+
+  /**
+   * 流式文本生成 - 内部实现（统一处理重载）
+   */
+  async streamText(
+    modelOrId: LanguageModel | string,
+    params: Omit<Parameters<typeof streamText>[0], 'model'>,
+    options?: {
+      middlewares?: LanguageModelV1Middleware[]
+    }
   ): Promise<ReturnType<typeof streamText>> {
-    // 1. 使用 createModel 创建模型
-    const model = await createModel({
-      providerId: this.config.providerId,
-      modelId,
-      options: this.config.options
-    })
+    const model = await this.resolveModel(modelOrId, options?.middlewares)
 
     // 2. 执行插件处理
     return this.pluginClient.executeStreamWithPlugins(
       'streamText',
-      modelId,
+      typeof modelOrId === 'string' ? modelOrId : model.modelId,
       params,
       async (finalModelId, transformedParams, streamTransforms) => {
         const experimental_transform =
@@ -60,46 +79,42 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     )
   }
 
+  // === 其他方法的重载 ===
+
   /**
-   * 流式文本生成 - 直接使用已创建的模型
+   * 生成文本 - 使用已创建的模型
    */
-  async streamTextWithModel(
-    model: LanguageModelV1,
-    params: Omit<Parameters<typeof streamText>[0], 'model'>
-  ): Promise<ReturnType<typeof streamText>> {
-    return this.pluginClient.executeStreamWithPlugins(
-      'streamText',
-      model.modelId,
-      params,
-      async (finalModelId, transformedParams, streamTransforms) => {
-        const experimental_transform =
-          params?.experimental_transform ?? (streamTransforms.length > 0 ? streamTransforms : undefined)
-
-        return await streamText({
-          model,
-          ...transformedParams,
-          experimental_transform
-        })
-      }
-    )
-  }
+  async generateText(
+    model: LanguageModel,
+    params: Omit<Parameters<typeof generateText>[0], 'model'>
+  ): Promise<ReturnType<typeof generateText>>
 
   /**
-   * 生成文本
+   * 生成文本 - 使用modelId + 可选middleware
    */
   async generateText(
     modelId: string,
-    params: Omit<Parameters<typeof generateText>[0], 'model'>
+    params: Omit<Parameters<typeof generateText>[0], 'model'>,
+    options?: {
+      middlewares?: LanguageModelV1Middleware[]
+    }
+  ): Promise<ReturnType<typeof generateText>>
+
+  /**
+   * 生成文本 - 内部实现
+   */
+  async generateText(
+    modelOrId: LanguageModel | string,
+    params: Omit<Parameters<typeof generateText>[0], 'model'>,
+    options?: {
+      middlewares?: LanguageModelV1Middleware[]
+    }
   ): Promise<ReturnType<typeof generateText>> {
-    const model = await createModel({
-      providerId: this.config.providerId,
-      modelId,
-      options: this.config.options
-    })
+    const model = await this.resolveModel(modelOrId, options?.middlewares)
 
     return this.pluginClient.executeWithPlugins(
       'generateText',
-      modelId,
+      typeof modelOrId === 'string' ? modelOrId : model.modelId,
       params,
       async (finalModelId, transformedParams) => {
         return await generateText({ model, ...transformedParams })
@@ -108,21 +123,39 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
   }
 
   /**
-   * 生成结构化对象
+   * 生成结构化对象 - 使用已创建的模型
    */
   async generateObject(
-    modelId: string,
+    model: LanguageModel,
     params: Omit<Parameters<typeof generateObject>[0], 'model'>
+  ): Promise<ReturnType<typeof generateObject>>
+
+  /**
+   * 生成结构化对象 - 使用modelId + 可选middleware
+   */
+  async generateObject(
+    modelOrId: string,
+    params: Omit<Parameters<typeof generateObject>[0], 'model'>,
+    options?: {
+      middlewares?: LanguageModelV1Middleware[]
+    }
+  ): Promise<ReturnType<typeof generateObject>>
+
+  /**
+   * 生成结构化对象 - 内部实现
+   */
+  async generateObject(
+    modelOrId: LanguageModel | string,
+    params: Omit<Parameters<typeof generateObject>[0], 'model'>,
+    options?: {
+      middlewares?: LanguageModelV1Middleware[]
+    }
   ): Promise<ReturnType<typeof generateObject>> {
-    const model = await createModel({
-      providerId: this.config.providerId,
-      modelId,
-      options: this.config.options
-    })
+    const model = await this.resolveModel(modelOrId, options?.middlewares)
 
     return this.pluginClient.executeWithPlugins(
       'generateObject',
-      modelId,
+      typeof modelOrId === 'string' ? modelOrId : model.modelId,
       params,
       async (finalModelId, transformedParams) => {
         return await generateObject({ model, ...transformedParams })
@@ -131,27 +164,69 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
   }
 
   /**
-   * 流式生成结构化对象
+   * 流式生成结构化对象 - 使用已创建的模型
+   */
+  async streamObject(
+    model: LanguageModel,
+    params: Omit<Parameters<typeof streamObject>[0], 'model'>
+  ): Promise<ReturnType<typeof streamObject>>
+
+  /**
+   * 流式生成结构化对象 - 使用modelId + 可选middleware
    */
   async streamObject(
     modelId: string,
-    params: Omit<Parameters<typeof streamObject>[0], 'model'>
+    params: Omit<Parameters<typeof streamObject>[0], 'model'>,
+    options?: {
+      middlewares?: LanguageModelV1Middleware[]
+    }
+  ): Promise<ReturnType<typeof streamObject>>
+
+  /**
+   * 流式生成结构化对象 - 内部实现
+   */
+  async streamObject(
+    modelOrId: LanguageModel | string,
+    params: Omit<Parameters<typeof streamObject>[0], 'model'>,
+    options?: {
+      middlewares?: LanguageModelV1Middleware[]
+    }
   ): Promise<ReturnType<typeof streamObject>> {
-    const model = await createModel({
-      providerId: this.config.providerId,
-      modelId,
-      options: this.config.options
-    })
+    const model = await this.resolveModel(modelOrId, options?.middlewares)
 
     return this.pluginClient.executeWithPlugins(
       'streamObject',
-      modelId,
+      typeof modelOrId === 'string' ? modelOrId : model.modelId,
       params,
       async (finalModelId, transformedParams) => {
         return await streamObject({ model, ...transformedParams })
       }
     )
   }
+
+  // === 辅助方法 ===
+
+  /**
+   * 解析模型：如果是字符串则创建模型，如果是模型则直接返回
+   */
+  private async resolveModel(
+    modelOrId: LanguageModel | string,
+    middlewares?: LanguageModelV1Middleware[]
+  ): Promise<LanguageModel> {
+    if (typeof modelOrId === 'string') {
+      // 字符串modelId，需要创建模型
+      return await createModel({
+        providerId: this.config.providerId,
+        modelId: modelOrId,
+        options: this.config.options,
+        middlewares
+      })
+    } else {
+      // 已经是模型，直接返回
+      return modelOrId
+    }
+  }
+
   /**
    * 获取客户端信息
    */

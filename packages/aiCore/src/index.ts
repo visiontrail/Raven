@@ -15,6 +15,9 @@ import { ProviderId, type ProviderSettingsMap } from './types'
 // ==================== 主要用户接口 ====================
 export { createExecutor, createOpenAICompatibleExecutor } from './core/runtime'
 
+// ==================== 高级API ====================
+export { createModel, type ModelConfig } from './core/models'
+
 // ==================== 插件系统 ====================
 export type { AiPlugin, AiRequestContext, HookResult, HookType, PluginManagerConfig } from './core/plugins'
 export { createContext, definePlugin, PluginManager } from './core/plugins'

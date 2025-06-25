@@ -55,17 +55,6 @@ export class PluginEngine<T extends ProviderId = ProviderId> {
     return this.pluginManager.getPlugins()
   }
 
-  // /**
-  //  * 使用core模块创建模型（包含中间件）
-  //  */
-  // async createModelWithMiddlewares(modelId: string): Promise<any> {
-  //   // 使用core模块的resolveConfig解析配置
-  //   const config = resolveConfig(this.providerId, modelId, this.options, this.pluginManager.getPlugins())
-
-  //   // 使用core模块创建包装好的模型
-  //   return createModelFromConfig(config)
-  // }
-
   /**
    * 执行带插件的操作（非流式）
    * 提供给AiExecutor使用

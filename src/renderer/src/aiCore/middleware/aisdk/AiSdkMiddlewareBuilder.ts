@@ -1,4 +1,8 @@
-import { AiPlugin, extractReasoningMiddleware, simulateStreamingMiddleware } from '@cherrystudio/ai-core'
+import {
+  extractReasoningMiddleware,
+  LanguageModelV1Middleware,
+  simulateStreamingMiddleware
+} from '@cherrystudio/ai-core'
 import { isReasoningModel } from '@renderer/config/models'
 import type { Model, Provider } from '@renderer/types'
 import type { Chunk } from '@renderer/types/chunk'
@@ -21,7 +25,10 @@ export interface AiSdkMiddlewareConfig {
 /**
  * 具名的 AI SDK 中间件
  */
-export type NamedAiSdkMiddleware = AiPlugin
+export interface NamedAiSdkMiddleware {
+  name: string
+  middleware: LanguageModelV1Middleware
+}
 
 /**
  * AI SDK 中间件建造者
@@ -69,7 +76,14 @@ export class AiSdkMiddlewareBuilder {
   /**
    * 构建最终的中间件数组
    */
-  public build(): NamedAiSdkMiddleware[] {
+  public build(): LanguageModelV1Middleware[] {
+    return this.middlewares.map((m) => m.middleware)
+  }
+
+  /**
+   * 获取具名中间件数组（用于调试）
+   */
+  public buildNamed(): NamedAiSdkMiddleware[] {
     return [...this.middlewares]
   }
 
@@ -93,14 +107,14 @@ export class AiSdkMiddlewareBuilder {
  * 根据配置构建AI SDK中间件的工厂函数
  * 这里要注意构建顺序，因为有些中间件需要依赖其他中间件的结果
  */
-export function buildAiSdkMiddlewares(config: AiSdkMiddlewareConfig): NamedAiSdkMiddleware[] {
+export function buildAiSdkMiddlewares(config: AiSdkMiddlewareConfig): LanguageModelV1Middleware[] {
   const builder = new AiSdkMiddlewareBuilder()
 
   // 1. 思考模型且有onChunk回调时添加思考时间中间件
   if (config.onChunk && config.model && isReasoningModel(config.model)) {
     builder.add({
       name: 'thinking-time',
-      aiSdkMiddlewares: [thinkingTimeMiddleware()]
+      middleware: thinkingTimeMiddleware()
     })
   }
 
@@ -121,7 +135,7 @@ export function buildAiSdkMiddlewares(config: AiSdkMiddlewareConfig): NamedAiSdk
   if (config.streamOutput === false) {
     builder.add({
       name: 'simulate-streaming',
-      aiSdkMiddlewares: [simulateStreamingMiddleware()]
+      middleware: simulateStreamingMiddleware()
     })
   }
 
@@ -142,7 +156,7 @@ function addProviderSpecificMiddlewares(builder: AiSdkMiddlewareBuilder, config:
     case 'openai':
       builder.add({
         name: 'thinking-tag-extraction',
-        aiSdkMiddlewares: [extractReasoningMiddleware({ tagName: 'think' })]
+        middleware: extractReasoningMiddleware({ tagName: 'think' })
       })
       break
     case 'gemini':
@@ -183,8 +197,12 @@ export function createDefaultAiSdkMiddlewareBuilder(config: AiSdkMiddlewareConfi
   const builder = new AiSdkMiddlewareBuilder()
   const defaultMiddlewares = buildAiSdkMiddlewares(config)
 
-  defaultMiddlewares.forEach((middleware) => {
-    builder.add(middleware)
+  // 将普通中间件数组转换为具名中间件并添加
+  defaultMiddlewares.forEach((middleware, index) => {
+    builder.add({
+      name: `default-middleware-${index}`,
+      middleware
+    })
   })
 
   return builder

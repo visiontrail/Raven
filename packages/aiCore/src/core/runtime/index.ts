@@ -16,6 +16,8 @@ export type {
 
 // === 便捷工厂函数 ===
 
+import { LanguageModelV1Middleware } from 'ai'
+
 import { type ProviderId, type ProviderSettingsMap } from '../../types'
 import { type AiPlugin } from '../plugins'
 import { RuntimeExecutor } from './executor'
@@ -44,59 +46,63 @@ export function createOpenAICompatibleExecutor(
 // === 直接调用API（无需创建executor实例）===
 
 /**
- * 直接流式文本生成
+ * 直接流式文本生成 - 支持middlewares
  */
 export async function streamText<T extends ProviderId>(
   providerId: T,
   options: ProviderSettingsMap[T],
   modelId: string,
   params: Parameters<RuntimeExecutor<T>['streamText']>[1],
-  plugins?: AiPlugin[]
+  plugins?: AiPlugin[],
+  middlewares?: LanguageModelV1Middleware[]
 ): Promise<ReturnType<RuntimeExecutor<T>['streamText']>> {
   const executor = createExecutor(providerId, options, plugins)
-  return executor.streamText(modelId, params)
+  return executor.streamText(modelId, params, { middlewares })
 }
 
 /**
- * 直接生成文本
+ * 直接生成文本 - 支持middlewares
  */
 export async function generateText<T extends ProviderId>(
   providerId: T,
   options: ProviderSettingsMap[T],
   modelId: string,
   params: Parameters<RuntimeExecutor<T>['generateText']>[1],
-  plugins?: AiPlugin[]
+  plugins?: AiPlugin[],
+  middlewares?: LanguageModelV1Middleware[]
 ): Promise<ReturnType<RuntimeExecutor<T>['generateText']>> {
   const executor = createExecutor(providerId, options, plugins)
-  return executor.generateText(modelId, params)
+  return executor.generateText(modelId, params, { middlewares })
 }
 
 /**
- * 直接生成结构化对象
+ * 直接生成结构化对象 - 支持middlewares
  */
 export async function generateObject<T extends ProviderId>(
   providerId: T,
   options: ProviderSettingsMap[T],
   modelId: string,
   params: Parameters<RuntimeExecutor<T>['generateObject']>[1],
-  plugins?: AiPlugin[]
+  plugins?: AiPlugin[],
+  middlewares?: LanguageModelV1Middleware[]
 ): Promise<ReturnType<RuntimeExecutor<T>['generateObject']>> {
   const executor = createExecutor(providerId, options, plugins)
-  return executor.generateObject(modelId, params)
+  return executor.generateObject(modelId, params, { middlewares })
 }
 
 /**
- * 直接流式生成结构化对象
+ * 直接流式生成结构化对象 - 支持middlewares
  */
 export async function streamObject<T extends ProviderId>(
   providerId: T,
   options: ProviderSettingsMap[T],
   modelId: string,
   params: Parameters<RuntimeExecutor<T>['streamObject']>[1],
-  plugins?: AiPlugin[]
+  plugins?: AiPlugin[],
+  middlewares?: LanguageModelV1Middleware[]
 ): Promise<ReturnType<RuntimeExecutor<T>['streamObject']>> {
   const executor = createExecutor(providerId, options, plugins)
-  return executor.streamObject(modelId, params)
+  return executor.streamObject(modelId, params, { middlewares })
 }
 
 // === Agent 功能预留 ===
