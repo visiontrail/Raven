@@ -12,7 +12,7 @@ import { PluginEngine } from './pluginEngine'
 import { type RuntimeConfig } from './types'
 
 export class RuntimeExecutor<T extends ProviderId = ProviderId> {
-  private pluginClient: PluginEngine<T>
+  public pluginEngine: PluginEngine<T>
   // private options: ProviderSettingsMap[T]
   private config: RuntimeConfig<T>
 
@@ -25,7 +25,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     // this.options = config.options
     this.config = config
     // 创建插件客户端
-    this.pluginClient = new PluginEngine(config.providerId, config.plugins || [])
+    this.pluginEngine = new PluginEngine(config.providerId, config.plugins || [])
   }
 
   // === 高阶重载：直接使用模型 ===
@@ -62,7 +62,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     const model = await this.resolveModel(modelOrId, options?.middlewares)
 
     // 2. 执行插件处理
-    return this.pluginClient.executeStreamWithPlugins(
+    return this.pluginEngine.executeStreamWithPlugins(
       'streamText',
       typeof modelOrId === 'string' ? modelOrId : model.modelId,
       params,
@@ -112,7 +112,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
   ): Promise<ReturnType<typeof generateText>> {
     const model = await this.resolveModel(modelOrId, options?.middlewares)
 
-    return this.pluginClient.executeWithPlugins(
+    return this.pluginEngine.executeWithPlugins(
       'generateText',
       typeof modelOrId === 'string' ? modelOrId : model.modelId,
       params,
@@ -153,7 +153,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
   ): Promise<ReturnType<typeof generateObject>> {
     const model = await this.resolveModel(modelOrId, options?.middlewares)
 
-    return this.pluginClient.executeWithPlugins(
+    return this.pluginEngine.executeWithPlugins(
       'generateObject',
       typeof modelOrId === 'string' ? modelOrId : model.modelId,
       params,
@@ -194,7 +194,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
   ): Promise<ReturnType<typeof streamObject>> {
     const model = await this.resolveModel(modelOrId, options?.middlewares)
 
-    return this.pluginClient.executeWithPlugins(
+    return this.pluginEngine.executeWithPlugins(
       'streamObject',
       typeof modelOrId === 'string' ? modelOrId : model.modelId,
       params,

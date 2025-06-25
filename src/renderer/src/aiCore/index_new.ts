@@ -53,8 +53,9 @@ function providerToAiSdkConfig(provider: Provider): {
 
   if (aiSdkProviderId !== 'openai-compatible') {
     const options = ProviderConfigFactory.fromProvider(aiSdkProviderId, {
-      ...actualProvider,
-      baseURL: actualProvider.apiHost
+      ...actualProvider
+      // 使用ai-sdk内置的baseURL
+      // baseURL: actualProvider.apiHost
     })
 
     return {
@@ -173,6 +174,16 @@ export default class ModernAiProvider {
       if (middlewareConfig.onChunk) {
         // 流式处理 - 使用适配器
         const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk)
+        // this.modernExecutor.pluginEngine.use(
+        //   createMCPPromptPlugin({
+        //     mcpTools: middlewareConfig.mcpTools || [],
+        //     assistant: params.assistant,
+        //     onChunk: middlewareConfig.onChunk,
+        //     recursiveCall: this.modernExecutor.streamText,
+        //     recursionDepth: 0,
+        //     maxRecursionDepth: 20
+        //   })
+        // )
         const streamResult = await this.modernExecutor.streamText(
           modelId,
           params,

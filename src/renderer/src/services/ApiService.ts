@@ -310,7 +310,8 @@ export async function fetchChatCompletion({
     onChunk: onChunkReceived,
     model: assistant.model,
     provider: provider,
-    enableReasoning: assistant.settings?.reasoning_effort !== undefined
+    enableReasoning: assistant.settings?.reasoning_effort !== undefined,
+    mcpTools
   }
 
   // --- Call AI Completions ---

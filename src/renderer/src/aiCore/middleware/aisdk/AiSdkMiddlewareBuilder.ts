@@ -4,7 +4,7 @@ import {
   simulateStreamingMiddleware
 } from '@cherrystudio/ai-core'
 import { isReasoningModel } from '@renderer/config/models'
-import type { Model, Provider } from '@renderer/types'
+import type { MCPTool, Model, Provider } from '@renderer/types'
 import type { Chunk } from '@renderer/types/chunk'
 
 import thinkingTimeMiddleware from './ThinkingTimeMiddleware'
@@ -20,6 +20,7 @@ export interface AiSdkMiddlewareConfig {
   enableReasoning?: boolean
   enableTool?: boolean
   enableWebSearch?: boolean
+  mcpTools?: MCPTool[]
 }
 
 /**
