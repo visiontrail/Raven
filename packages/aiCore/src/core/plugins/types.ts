@@ -16,7 +16,8 @@ export interface AiRequestContext {
   metadata: Record<string, any>
   startTime: number
   requestId: string
-  recursiveCall?: RecursiveCallFn
+  recursiveCall: RecursiveCallFn
+  isRecursiveCall?: boolean
   [key: string]: any
 }
 

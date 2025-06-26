@@ -115,15 +115,9 @@ export default class ModernAiProvider {
     // 初始化时不构建中间件，等到需要时再构建
     const config = providerToAiSdkConfig(provider)
 
-    // 创建MCP Prompt插件
-    const mcpPromptPlugin = createMCPPromptPlugin({
-      enabled: true
-    })
-
     console.log('[Modern AI Provider] Creating executor with MCP Prompt plugin enabled')
 
     this.modernExecutor = createExecutor(config.providerId, config.options, [
-      mcpPromptPlugin,
       reasonPlugin({
         delayInMs: 80,
         chunkingRegex: /([\u4E00-\u9FFF]{3})|\S+\s+/
@@ -184,6 +178,28 @@ export default class ModernAiProvider {
       if (middlewareConfig.onChunk) {
         // 流式处理 - 使用适配器
         const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk)
+        // 创建MCP Prompt插件
+        const mcpPromptPlugin = createMCPPromptPlugin({
+          enabled: true,
+          createSystemMessage: (systemPrompt, params, context) => {
+            console.log('createSystemMessage_context', context.isRecursiveCall)
+            if (context.modelId.includes('o1-mini') || context.modelId.includes('o1-preview')) {
+              if (context.isRecursiveCall) {
+                return null
+              }
+              params.messages = [
+                {
+                  role: 'assistant',
+                  content: systemPrompt
+                },
+                ...params.messages
+              ]
+              return null
+            }
+            return systemPrompt
+          }
+        })
+        this.modernExecutor.pluginEngine.use(mcpPromptPlugin)
         const streamResult = await this.modernExecutor.streamText(
           modelId,
           params,

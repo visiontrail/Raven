@@ -3,7 +3,8 @@
  * 为不支持原生 Function Call 的模型提供 prompt 方式的工具调用
  * 内置默认逻辑，支持自定义覆盖
  */
-import { ToolExecutionError, ToolSet } from 'ai'
+import type { ToolSet } from 'ai'
+import { ToolExecutionError } from 'ai'
 
 import { definePlugin } from '../index'
 import type { AiRequestContext } from '../types'
@@ -46,6 +47,7 @@ export interface MCPPromptConfig {
   buildSystemPrompt?: (userSystemPrompt: string, tools: ToolSet) => Promise<string>
   // 自定义工具解析函数（可选，有默认实现）
   parseToolUse?: (content: string, tools: ToolSet) => ToolUseResult[]
+  createSystemMessage?: (systemPrompt: string, originalParams: any, context: MCPRequestContext) => string | null
 }
 
 /**
@@ -302,11 +304,17 @@ export const createMCPPromptPlugin = definePlugin((config: MCPPromptConfig = {})
       // 构建系统提示符
       const userSystemPrompt = typeof params.system === 'string' ? params.system : ''
       const systemPrompt = await buildSystemPrompt(userSystemPrompt, params.tools)
+      let systemMessage: string | null = systemPrompt
+      console.log('config.context', context)
+      if (config.createSystemMessage) {
+        // 🎯 如果用户提供了自定义处理函数，使用它
+        systemMessage = config.createSystemMessage(systemPrompt, params, context)
+      }
 
       // 移除 tools，改为 prompt 模式
       const transformedParams = {
         ...params,
-        system: systemPrompt,
+        ...(systemMessage ? { system: systemMessage } : {}),
         tools: undefined
       }
       console.log('transformedParams', transformedParams)
@@ -457,7 +465,7 @@ export const createMCPPromptPlugin = definePlugin((config: MCPPromptConfig = {})
             })
 
             // 递归调用逻辑
-            if (context.recursiveCall && validToolUses.length > 0) {
+            if (validToolUses.length > 0) {
               console.log('[MCP Prompt] Starting recursive call after tool execution...')
 
               // 构建工具结果的文本表示，使用Cherry Studio标准格式
@@ -471,7 +479,7 @@ export const createMCPPromptPlugin = definePlugin((config: MCPPromptConfig = {})
                   }
                 })
                 .join('\n\n')
-
+              console.log('context.originalParams.messages', context.originalParams.messages)
               // 构建新的对话消息
               const newMessages = [
                 ...(context.originalParams.messages || []),
@@ -491,6 +499,7 @@ export const createMCPPromptPlugin = definePlugin((config: MCPPromptConfig = {})
                 messages: newMessages,
                 tools: tools
               }
+              context.originalParams.messages = newMessages
 
               try {
                 const recursiveResult = await context.recursiveCall(recursiveParams)

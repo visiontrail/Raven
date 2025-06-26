@@ -14,7 +14,8 @@ export function createContext(providerId: string, modelId: string, originalParam
     metadata: {},
     startTime: Date.now(),
     requestId: `${providerId}-${modelId}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    recursiveCall: undefined
+    // 占位
+    recursiveCall: () => Promise.resolve(null)
   }
 }
 
