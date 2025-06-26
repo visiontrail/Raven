@@ -63,15 +63,16 @@ export class PluginEngine<T extends ProviderId = ProviderId> {
     methodName: string,
     modelId: string,
     params: TParams,
-    executor: (finalModelId: string, transformedParams: TParams) => Promise<TResult>
+    executor: (finalModelId: string, transformedParams: TParams) => Promise<TResult>,
+    _context?: ReturnType<typeof createContext>
   ): Promise<TResult> {
     // 使用正确的createContext创建请求上下文
-    const context = createContext(this.providerId, modelId, params)
+    const context = _context ? _context : createContext(this.providerId, modelId, params)
 
     // 🔥 为上下文添加递归调用能力
     context.recursiveCall = (newParams: any): Promise<TResult> => {
       // 递归调用自身，重新走完整的插件流程
-      return this.executeWithPlugins(methodName, modelId, newParams, executor)
+      return this.executeWithPlugins(methodName, modelId, newParams, executor, context)
     }
 
     try {
