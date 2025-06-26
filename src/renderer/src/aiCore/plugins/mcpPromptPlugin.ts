@@ -20,8 +20,8 @@ export interface MCPPromptPluginConfig {
  * 创建 MCP Prompt 模式插件
  * 支持在 prompt 模式下解析文本中的工具调用并执行
  */
-export const createMCPPromptPlugin = (config: MCPPromptPluginConfig) => {
-  return definePlugin({
+export const createMCPPromptPlugin = definePlugin((config: MCPPromptPluginConfig) => {
+  return {
     name: 'mcp-prompt-plugin',
 
     // 1. 参数转换 - 注入工具描述到系统提示
@@ -49,7 +49,7 @@ export const createMCPPromptPlugin = (config: MCPPromptPluginConfig) => {
     },
 
     // 2. 流处理 - 检测工具调用并执行
-    transformStream: () => {
+    transformStream: () => () => {
       let fullResponseText = ''
       let hasProcessedTools = false
 
@@ -87,8 +87,8 @@ export const createMCPPromptPlugin = (config: MCPPromptPluginConfig) => {
         }
       })
     }
-  })
-}
+  }
+})
 
 /**
  * 处理工具调用并执行递归

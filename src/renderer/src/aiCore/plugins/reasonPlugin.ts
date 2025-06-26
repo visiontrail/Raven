@@ -3,7 +3,7 @@ import { definePlugin } from '@cherrystudio/ai-core'
 export default definePlugin(({ delayInMs, chunkingRegex }: { delayInMs: number; chunkingRegex: RegExp }) => ({
   name: 'reasonPlugin',
 
-  transformStream: () => {
+  transformStream: () => () => {
     let buffer = ''
     const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
     const detectChunk = (buffer: string) => {

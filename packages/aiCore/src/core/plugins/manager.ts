@@ -1,5 +1,3 @@
-import type { TextStreamPart, ToolSet } from 'ai'
-
 import { AiPlugin, AiRequestContext } from './types'
 
 /**
@@ -121,18 +119,8 @@ export class PluginManager {
   /**
    * 收集所有流转换器（返回数组，AI SDK 原生支持）
    */
-  collectStreamTransforms<TOOLS extends ToolSet>(): Array<
-    (options: {
-      tools?: TOOLS
-      stopStream: () => void
-    }) => TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>
-  > {
-    return this.plugins.map((plugin) => plugin.transformStream).filter(Boolean) as Array<
-      (options: {
-        tools?: TOOLS
-        stopStream: () => void
-      }) => TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>
-    >
+  collectStreamTransforms(params: any, context: AiRequestContext) {
+    return this.plugins.map((plugin) => plugin.transformStream?.(params, context))
   }
 
   /**

@@ -1,6 +1,12 @@
 import type { TextStreamPart, ToolSet } from 'ai'
 
 /**
+ * 递归调用函数类型
+ * 使用 any 是因为递归调用时参数和返回类型可能完全不同
+ */
+export type RecursiveCallFn = (newParams: any) => Promise<any>
+
+/**
  * AI 请求上下文
  */
 export interface AiRequestContext {
@@ -10,6 +16,8 @@ export interface AiRequestContext {
   metadata: Record<string, any>
   startTime: number
   requestId: string
+  recursiveCall?: RecursiveCallFn
+  [key: string]: any
 }
 
 /**
@@ -33,7 +41,10 @@ export interface AiPlugin {
   onError?: (error: Error, context: AiRequestContext) => void | Promise<void>
 
   // 【Stream】流处理 - 直接使用 AI SDK
-  transformStream?: <TOOLS extends ToolSet>(options: {
+  transformStream?: (
+    params: any,
+    context: AiRequestContext
+  ) => <TOOLS extends ToolSet>(options: {
     tools: TOOLS
     stopStream: () => void
   }) => TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>

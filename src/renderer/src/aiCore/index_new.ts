@@ -15,6 +15,7 @@ import {
   type ProviderSettingsMap,
   StreamTextParams
 } from '@cherrystudio/ai-core'
+import { createMCPPromptPlugin } from '@cherrystudio/ai-core/core/plugins/built-in'
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
 import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
@@ -113,7 +114,16 @@ export default class ModernAiProvider {
     // TODO:如果后续在调用completions时需要切换provider的话,
     // 初始化时不构建中间件，等到需要时再构建
     const config = providerToAiSdkConfig(provider)
+
+    // 创建MCP Prompt插件
+    const mcpPromptPlugin = createMCPPromptPlugin({
+      enabled: true
+    })
+
+    console.log('[Modern AI Provider] Creating executor with MCP Prompt plugin enabled')
+
     this.modernExecutor = createExecutor(config.providerId, config.options, [
+      mcpPromptPlugin,
       reasonPlugin({
         delayInMs: 80,
         chunkingRegex: /([\u4E00-\u9FFF]{3})|\S+\s+/
@@ -174,16 +184,6 @@ export default class ModernAiProvider {
       if (middlewareConfig.onChunk) {
         // 流式处理 - 使用适配器
         const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk)
-        // this.modernExecutor.pluginEngine.use(
-        //   createMCPPromptPlugin({
-        //     mcpTools: middlewareConfig.mcpTools || [],
-        //     assistant: params.assistant,
-        //     onChunk: middlewareConfig.onChunk,
-        //     recursiveCall: this.modernExecutor.streamText,
-        //     recursionDepth: 0,
-        //     maxRecursionDepth: 20
-        //   })
-        // )
         const streamResult = await this.modernExecutor.streamText(
           modelId,
           params,

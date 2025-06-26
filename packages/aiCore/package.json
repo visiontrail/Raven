@@ -118,6 +118,11 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "require": "./src/index.ts"
+    },
+    "./core/plugins/built-in": {
+      "types": "./src/core/plugins/built-in/index.ts",
+      "import": "./src/core/plugins/built-in/index.ts",
+      "require": "./src/core/plugins/built-in/index.ts"
     }
   }
 }

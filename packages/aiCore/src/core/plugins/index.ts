@@ -13,7 +13,8 @@ export function createContext(providerId: string, modelId: string, originalParam
     originalParams,
     metadata: {},
     startTime: Date.now(),
-    requestId: `${providerId}-${modelId}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    requestId: `${providerId}-${modelId}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    recursiveCall: undefined
   }
 }
 
