@@ -19,7 +19,7 @@ export default definePlugin(({ delayInMs, chunkingRegex }: { delayInMs: number; 
       async transform(chunk, controller) {
         if (chunk.type !== 'reasoning') {
           if (buffer.length > 0) {
-            controller.enqueue({ type: 'reasoning', textDelta: buffer, thinking_millsec: chunk.thinking_millsec })
+            controller.enqueue({ type: 'reasoning', textDelta: buffer })
             buffer = ''
           }
 
@@ -31,7 +31,7 @@ export default definePlugin(({ delayInMs, chunkingRegex }: { delayInMs: number; 
         let match
 
         while ((match = detectChunk(buffer)) != null) {
-          controller.enqueue({ type: 'reasoning', textDelta: match, thinking_millsec: chunk.thinking_millsec })
+          controller.enqueue({ type: 'reasoning', textDelta: match })
           buffer = buffer.slice(match.length)
 
           await delay(delayInMs)

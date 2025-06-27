@@ -1,9 +1,9 @@
 import { definePlugin } from '@cherrystudio/ai-core'
 
-export default definePlugin(() => ({
+export default definePlugin({
   name: 'reasoningTimePlugin',
   transformStream: () => () => {
-    let thinkingStartTime = 0
+    let thinkingStartTime = performance.now()
     let hasStartedThinking = false
     let accumulatedThinkingContent = ''
     return new TransformStream({
@@ -11,9 +11,10 @@ export default definePlugin(() => ({
         if (chunk.type === 'reasoning') {
           if (!hasStartedThinking) {
             hasStartedThinking = true
-            thinkingStartTime = performance.now()
+            // thinkingStartTime = performance.now()
           }
           accumulatedThinkingContent += chunk.textDelta
+          console.log('performance.now() - thinkingStartTime', performance.now() - thinkingStartTime)
           controller.enqueue({
             ...chunk,
             thinking_millsec: performance.now() - thinkingStartTime
@@ -34,4 +35,4 @@ export default definePlugin(() => ({
       }
     })
   }
-}))
+})

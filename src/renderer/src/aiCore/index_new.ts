@@ -133,7 +133,7 @@ export default class ModernAiProvider {
           delayInMs: 80,
           chunkingRegex: /([\u4E00-\u9FFF]{3})|\S+\s+/
         }),
-        reasoningTimePlugin()
+        reasoningTimePlugin
       )
     }
 

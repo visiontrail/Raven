@@ -306,12 +306,13 @@ export async function fetchChatCompletion({
     enableTools: isEnabledToolUse(assistant),
     requestOptions: options
   })
-
+  console.log('assistant.settings?.reasoning_effort', assistant.settings?.reasoning_effort)
   const middlewareConfig: AiSdkMiddlewareConfig = {
     streamOutput: assistant.settings?.streamOutput ?? true,
     onChunk: onChunkReceived,
     model: assistant.model,
     provider: provider,
+    // FIXME: 这里需要根据模型来判断是否启用推理
     enableReasoning: assistant.settings?.reasoning_effort !== undefined,
     enableTool: assistant.settings?.toolUseMode === 'prompt',
     mcpTools
