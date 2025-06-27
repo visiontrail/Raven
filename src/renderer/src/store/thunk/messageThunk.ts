@@ -20,6 +20,7 @@ import type {
 import { AssistantMessageStatus, MessageBlockStatus, MessageBlockType } from '@renderer/types/newMessage'
 import { Response } from '@renderer/types/newMessage'
 import { uuid } from '@renderer/utils'
+import { addAbortController } from '@renderer/utils/abortController'
 import { formatErrorMessage, isAbortError } from '@renderer/utils/error'
 import {
   createAssistantMessage,
@@ -840,11 +841,16 @@ const fetchAndProcessAssistantResponseImpl = async (
     const streamProcessorCallbacks = createStreamProcessor(callbacks)
 
     const startTime = Date.now()
+
+    const abortController = new AbortController()
+    addAbortController(userMessageId!, () => abortController.abort())
+
     await transformMessagesAndFetch(
       {
         messages: messagesForContext,
         assistant,
         options: {
+          signal: abortController.signal,
           timeout: 30000
         }
       },

@@ -187,50 +187,51 @@ export default class ModernAiProvider {
     params: StreamTextParams,
     middlewareConfig: AiSdkMiddlewareConfig
   ): Promise<CompletionsResult> {
-    try {
-      // 根据条件构建插件数组
-      const plugins = this.buildPlugins(middlewareConfig)
+    // try {
+    // 根据条件构建插件数组
+    const plugins = this.buildPlugins(middlewareConfig)
 
-      // 用构建好的插件数组创建executor
-      const executor = createExecutor(this.config.providerId, this.config.options, plugins)
+    // 用构建好的插件数组创建executor
+    const executor = createExecutor(this.config.providerId, this.config.options, plugins)
 
-      // 动态构建中间件数组
-      const middlewares = buildAiSdkMiddlewares(middlewareConfig)
-      console.log('构建的中间件:', middlewares)
+    // 动态构建中间件数组
+    const middlewares = buildAiSdkMiddlewares(middlewareConfig)
+    console.log('构建的中间件:', middlewares)
 
-      // 创建带有中间件的执行器
-      if (middlewareConfig.onChunk) {
-        // 流式处理 - 使用适配器
-        const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk)
+    // 创建带有中间件的执行器
+    if (middlewareConfig.onChunk) {
+      // 流式处理 - 使用适配器
+      const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk)
 
-        const streamResult = await executor.streamText(
-          modelId,
-          params,
-          middlewares.length > 0 ? { middlewares } : undefined
-        )
+      const streamResult = await executor.streamText(
+        modelId,
+        params,
+        middlewares.length > 0 ? { middlewares } : undefined
+      )
 
-        const finalText = await adapter.processStream(streamResult)
+      const finalText = await adapter.processStream(streamResult)
 
-        return {
-          getText: () => finalText
-        }
-      } else {
-        // 流式处理但没有 onChunk 回调
-        const streamResult = await executor.streamText(
-          modelId,
-          params,
-          middlewares.length > 0 ? { middlewares } : undefined
-        )
-        const finalText = await streamResult.text
-
-        return {
-          getText: () => finalText
-        }
+      return {
+        getText: () => finalText
       }
-    } catch (error) {
-      console.error('Modern AI SDK error:', error)
-      throw error
+    } else {
+      // 流式处理但没有 onChunk 回调
+      const streamResult = await executor.streamText(
+        modelId,
+        params,
+        middlewares.length > 0 ? { middlewares } : undefined
+      )
+      const finalText = await streamResult.text
+
+      return {
+        getText: () => finalText
+      }
     }
+    // }
+    // catch (error) {
+    //   console.error('Modern AI SDK error:', error)
+    //   throw error
+    // }
   }
 
   // 代理其他方法到原有实现
