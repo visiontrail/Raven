@@ -20,6 +20,7 @@ import { type Chunk, ChunkType } from '@renderer/types/chunk'
 import { Message } from '@renderer/types/newMessage'
 import { SdkModel } from '@renderer/types/sdk'
 import { removeSpecialCharactersForTopicName } from '@renderer/utils'
+import { isEnabledToolUse } from '@renderer/utils/mcp-tools'
 import { findFileBlocks, getMainTextContent } from '@renderer/utils/messageUtils/find'
 import { isEmpty, takeRight } from 'lodash'
 
@@ -302,6 +303,7 @@ export async function fetchChatCompletion({
   // 使用 transformParameters 模块构建参数
   const { params: aiSdkParams, modelId } = await buildStreamTextParams(messages, assistant, {
     mcpTools: mcpTools,
+    enableTools: isEnabledToolUse(assistant),
     requestOptions: options
   })
 
@@ -311,6 +313,7 @@ export async function fetchChatCompletion({
     model: assistant.model,
     provider: provider,
     enableReasoning: assistant.settings?.reasoning_effort !== undefined,
+    enableTool: assistant.settings?.toolUseMode === 'prompt',
     mcpTools
   }
 

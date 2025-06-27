@@ -162,16 +162,8 @@ export default class ModernAiProvider {
     }
 
     try {
-      // 合并传入的配置和实例配置
-      const finalConfig: AiSdkMiddlewareConfig = {
-        ...middlewareConfig,
-        provider: this.provider,
-        // 工具相关信息从 params 中获取
-        enableTool: !!Object.keys(params.tools || {}).length
-      }
-
       // 动态构建中间件数组
-      const middlewares = buildAiSdkMiddlewares(finalConfig)
+      const middlewares = buildAiSdkMiddlewares(middlewareConfig)
       console.log('构建的中间件:', middlewares)
 
       // 创建带有中间件的执行器
@@ -179,27 +171,29 @@ export default class ModernAiProvider {
         // 流式处理 - 使用适配器
         const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk)
         // 创建MCP Prompt插件
-        const mcpPromptPlugin = createMCPPromptPlugin({
-          enabled: true,
-          createSystemMessage: (systemPrompt, params, context) => {
-            console.log('createSystemMessage_context', context.isRecursiveCall)
-            if (context.modelId.includes('o1-mini') || context.modelId.includes('o1-preview')) {
-              if (context.isRecursiveCall) {
+        if (middlewareConfig.enableTool) {
+          const mcpPromptPlugin = createMCPPromptPlugin({
+            enabled: true,
+            createSystemMessage: (systemPrompt, params, context) => {
+              console.log('createSystemMessage_context', context.isRecursiveCall)
+              if (context.modelId.includes('o1-mini') || context.modelId.includes('o1-preview')) {
+                if (context.isRecursiveCall) {
+                  return null
+                }
+                params.messages = [
+                  {
+                    role: 'assistant',
+                    content: systemPrompt
+                  },
+                  ...params.messages
+                ]
                 return null
               }
-              params.messages = [
-                {
-                  role: 'assistant',
-                  content: systemPrompt
-                },
-                ...params.messages
-              ]
-              return null
+              return systemPrompt
             }
-            return systemPrompt
-          }
-        })
-        this.modernExecutor.pluginEngine.use(mcpPromptPlugin)
+          })
+          this.modernExecutor.pluginEngine.use(mcpPromptPlugin)
+        }
         const streamResult = await this.modernExecutor.streamText(
           modelId,
           params,

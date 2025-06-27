@@ -39,9 +39,8 @@ export default function thinkingTimeMiddleware(): LanguageModelV1Middleware {
               hasThinkingContent = false
               thinkingStartTime = 0
               accumulatedThinkingContent = ''
-            } else {
-              controller.enqueue(chunk)
             }
+            controller.enqueue(chunk)
           }
         },
         flush(controller) {

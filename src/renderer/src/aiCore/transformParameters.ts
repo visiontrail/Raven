@@ -4,7 +4,6 @@
  */
 
 import { type CoreMessage, type StreamTextParams } from '@cherrystudio/ai-core'
-import { aiSdk } from '@cherrystudio/ai-core'
 import { DEFAULT_MAX_TOKENS } from '@renderer/config/constant'
 import {
   isGenerateImageModel,
@@ -18,18 +17,16 @@ import {
   isWebSearchModel
 } from '@renderer/config/models'
 import { getAssistantSettings, getDefaultModel } from '@renderer/services/AssistantService'
-import type { Assistant, MCPTool, MCPToolInputSchema, MCPToolResponse, Message, Model } from '@renderer/types'
+import type { Assistant, MCPTool, Message, Model } from '@renderer/types'
 import { FileTypes } from '@renderer/types'
-import { callMCPTool } from '@renderer/utils/mcp-tools'
 import { findFileBlocks, findImageBlocks, getMainTextContent } from '@renderer/utils/messageUtils/find'
 import { buildSystemPrompt } from '@renderer/utils/prompt'
 import { defaultTimeout } from '@shared/config/constant'
+
 // import { jsonSchemaToZod } from 'json-schema-to-zod'
-import { jsonSchema } from 'ai'
+import { setupToolsConfig } from './utils/mcp'
+import { buildProviderOptions } from './utils/options'
 
-import { buildProviderOptions } from './utils/reasoning'
-
-const { tool } = aiSdk
 /**
  * 获取温度参数
  */
@@ -190,7 +187,6 @@ export async function buildStreamTextParams(
   assistant: Assistant,
   options: {
     mcpTools?: MCPTool[]
-    // FIXME: 上游没传
     enableTools?: boolean
     requestOptions?: {
       signal?: AbortSignal
@@ -199,7 +195,7 @@ export async function buildStreamTextParams(
     }
   } = {}
 ): Promise<{ params: StreamTextParams; modelId: string }> {
-  const { mcpTools } = options
+  const { mcpTools, enableTools } = options
 
   const model = assistant.model || getDefaultModel()
 
@@ -221,11 +217,11 @@ export async function buildStreamTextParams(
     (isSupportedDisableGenerationModel(model) ? assistant.enableGenerateImage || false : true)
 
   // 构建系统提示
-  let systemPrompt = assistant.prompt || ''
-  // TODO:根据调用类型判断是否添加systemPrompt
-  if (mcpTools && mcpTools.length > 0 && assistant.settings?.toolUseMode === 'prompt') {
-    systemPrompt = await buildSystemPromptWithTools(systemPrompt, mcpTools, assistant)
-  }
+  const { tools } = setupToolsConfig({
+    mcpTools,
+    model,
+    enableToolUse: enableTools
+  })
 
   // 构建真正的 providerOptions
   const providerOptions = buildProviderOptions(assistant, model, {
@@ -240,20 +236,12 @@ export async function buildStreamTextParams(
     maxTokens: maxTokens || DEFAULT_MAX_TOKENS,
     temperature: getTemperature(assistant, model),
     topP: getTopP(assistant, model),
-    system: systemPrompt || undefined,
+    system: assistant.prompt || '',
     abortSignal: options.requestOptions?.signal,
     headers: options.requestOptions?.headers,
     providerOptions,
+    tools,
     maxSteps: 10
-  }
-
-  const tools = mcpTools ? convertMcpToolsToAiSdkTools(mcpTools) : {}
-  console.log('tools', tools)
-  console.log('enableTools', assistant?.mcpServers?.length)
-  // console.log('tools.length > 0', tools.length > 0)
-  // 添加工具（如果启用且有工具）
-  if (!!assistant?.mcpServers?.length && Object.keys(tools).length > 0) {
-    params.tools = tools
   }
 
   return { params, modelId: model.id }
@@ -272,77 +260,4 @@ export async function buildGenerateTextParams(
 ): Promise<any> {
   // 复用流式参数的构建逻辑
   return await buildStreamTextParams(messages, assistant, options)
-}
-
-/**
- * 将 MCPToolInputSchema 转换为 JSONSchema7 格式
- */
-function convertMcpSchemaToJsonSchema7(schema: MCPToolInputSchema): any {
-  // 创建符合 JSONSchema7 的对象
-  const jsonSchema7: Record<string, any> = {
-    type: 'object',
-    properties: schema.properties || {},
-    required: schema.required || []
-  }
-
-  // 如果有 description，添加它
-  if (schema.description) {
-    jsonSchema7.description = schema.description
-  }
-
-  // 如果有 title，添加它
-  if (schema.title) {
-    jsonSchema7.title = schema.title
-  }
-
-  return jsonSchema7
-}
-
-/**
- * 将 MCPTool 转换为 AI SDK 工具格式
- */
-export function convertMcpToolsToAiSdkTools(mcpTools: MCPTool[]): Record<string, any> {
-  const tools: Record<string, any> = {}
-
-  for (const mcpTool of mcpTools) {
-    console.log('mcpTool', mcpTool.inputSchema)
-    tools[mcpTool.name] = tool({
-      description: mcpTool.description || `Tool from ${mcpTool.serverName}`,
-      parameters: jsonSchema<Record<string, object>>(convertMcpSchemaToJsonSchema7(mcpTool.inputSchema)),
-      execute: async (params) => {
-        console.log('execute_params', params)
-        // 创建适配的 MCPToolResponse 对象
-        const toolResponse: MCPToolResponse = {
-          id: `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          tool: mcpTool,
-          arguments: params,
-          status: 'invoking',
-          toolCallId: `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        }
-
-        try {
-          // 复用现有的 callMCPTool 函数
-          const result = await callMCPTool(toolResponse)
-
-          // 返回结果，AI SDK 会处理序列化
-          if (result.isError) {
-            throw new Error(result.content?.[0]?.text || 'Tool execution failed')
-          }
-          console.log('result', result)
-          // 返回工具执行结果
-          return {
-            success: true,
-            data: result
-          }
-        } catch (error) {
-          console.error(`MCP Tool execution failed: ${mcpTool.name}`, error)
-          throw new Error(
-            `Tool ${mcpTool.name} execution failed: ${error instanceof Error ? error.message : String(error)}`
-          )
-        }
-      }
-    })
-  }
-
-  return tools
 }

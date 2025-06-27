@@ -1,2 +1,0 @@
-patchedDependencies:
-  '@ai-sdk/google-vertex': patches/@ai-sdk__google-vertex.patch

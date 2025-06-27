@@ -18,6 +18,7 @@ export interface AiSdkMiddlewareConfig {
   model?: Model
   provider?: Provider
   enableReasoning?: boolean
+  // 是否开启提示词工具调用
   enableTool?: boolean
   enableWebSearch?: boolean
   mcpTools?: MCPTool[]
