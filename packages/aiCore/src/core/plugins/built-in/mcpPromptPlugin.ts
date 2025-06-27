@@ -286,10 +286,10 @@ function defaultParseToolUse(content: string, tools: ToolSet): ToolUseResult[] {
 /**
  * 创建 MCP Prompt 插件
  */
-export const createMCPPromptPlugin = definePlugin((config: MCPPromptConfig = {}) => {
+export const createMCPPromptPlugin = (config: MCPPromptConfig = {}) => {
   const { enabled = true, buildSystemPrompt = defaultBuildSystemPrompt, parseToolUse = defaultParseToolUse } = config
 
-  return {
+  return definePlugin({
     name: 'built-in:mcp-prompt',
 
     transformParams: async (params: any, context: MCPRequestContext) => {
@@ -562,5 +562,5 @@ export const createMCPPromptPlugin = definePlugin((config: MCPPromptConfig = {})
         }
       })
     }
-  }
-})
+  })
+}
