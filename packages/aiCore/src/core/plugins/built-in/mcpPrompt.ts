@@ -328,24 +328,24 @@ export const createMCPPromptPlugin = definePlugin((config: MCPPromptConfig = {})
 
       return new TransformStream<any>({
         async transform(chunk, controller) {
-          console.log('chunk', chunk)
+          // console.log('chunk', chunk)
           // 收集文本内容
           if (chunk.type === 'text-delta') {
             textBuffer += chunk.textDelta || ''
-            console.log('textBuffer', textBuffer)
+            // console.log('textBuffer', textBuffer)
             controller.enqueue(chunk)
             return
           }
 
           // 监听 step-finish 事件
           if (chunk.type === 'step-finish' || chunk.type === 'finish') {
-            console.log('[MCP Prompt Stream] Received step-finish, checking for tool use...')
+            // console.log('[MCP Prompt Stream] Received step-finish, checking for tool use...')
 
             // 从 context 获取工具信息
             const tools = context.mcpTools
-            console.log('tools from context', tools)
+            // console.log('tools from context', tools)
             if (!tools || Object.keys(tools).length === 0) {
-              console.log('[MCP Prompt Stream] No tools available, passing through')
+              // console.log('[MCP Prompt Stream] No tools available, passing through')
               controller.enqueue(chunk)
               return
             }
@@ -353,16 +353,16 @@ export const createMCPPromptPlugin = definePlugin((config: MCPPromptConfig = {})
             // 解析工具调用
             const parsedTools = parseToolUse(textBuffer, tools)
             const validToolUses = parsedTools.filter((t) => t.status === 'pending')
-            console.log('parsedTools', parsedTools)
+            // console.log('parsedTools', parsedTools)
 
             // 如果没有有效的工具调用，直接传递原始事件
             if (validToolUses.length === 0) {
-              console.log('[MCP Prompt Stream] No valid tool uses found, passing through')
+              // console.log('[MCP Prompt Stream] No valid tool uses found, passing through')
               controller.enqueue(chunk)
               return
             }
 
-            console.log('[MCP Prompt Stream] Found valid tool uses:', validToolUses.length)
+            // console.log('[MCP Prompt Stream] Found valid tool uses:', validToolUses.length)
 
             // 修改 step-finish 事件，标记为工具调用
             if (chunk.type !== 'finish') {
@@ -466,7 +466,7 @@ export const createMCPPromptPlugin = definePlugin((config: MCPPromptConfig = {})
 
             // 递归调用逻辑
             if (validToolUses.length > 0) {
-              console.log('[MCP Prompt] Starting recursive call after tool execution...')
+              // console.log('[MCP Prompt] Starting recursive call after tool execution...')
 
               // 构建工具结果的文本表示，使用Cherry Studio标准格式
               const toolResultsText = executedResults
@@ -479,7 +479,7 @@ export const createMCPPromptPlugin = definePlugin((config: MCPPromptConfig = {})
                   }
                 })
                 .join('\n\n')
-              console.log('context.originalParams.messages', context.originalParams.messages)
+              // console.log('context.originalParams.messages', context.originalParams.messages)
               // 构建新的对话消息
               const newMessages = [
                 ...(context.originalParams.messages || []),
@@ -513,7 +513,10 @@ export const createMCPPromptPlugin = definePlugin((config: MCPPromptConfig = {})
                       if (done) {
                         break
                       }
-
+                      if (value.type === 'finish') {
+                        // 迭代的流不发finish
+                        break
+                      }
                       // 将递归流的数据传递到当前流
                       controller.enqueue(value)
                     }
