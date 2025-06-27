@@ -3,7 +3,7 @@ import { autoRenameTopic } from '@renderer/hooks/useTopic'
 import { EVENT_NAMES, EventEmitter } from '@renderer/services/EventService'
 import FileManager from '@renderer/services/FileManager'
 import { NotificationService } from '@renderer/services/NotificationService'
-import { OrchestrationService } from '@renderer/services/OrchestrateService'
+import { transformMessagesAndFetch } from '@renderer/services/OrchestrateService'
 import { createStreamProcessor, type StreamProcessorCallbacks } from '@renderer/services/StreamProcessingService'
 import { estimateMessagesUsage } from '@renderer/services/TokenService'
 import store from '@renderer/store'
@@ -840,8 +840,7 @@ const fetchAndProcessAssistantResponseImpl = async (
     const streamProcessorCallbacks = createStreamProcessor(callbacks)
 
     const startTime = Date.now()
-    const orchestrationService = new OrchestrationService()
-    await orchestrationService.handleUserMessage(
+    await transformMessagesAndFetch(
       {
         messages: messagesForContext,
         assistant,

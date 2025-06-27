@@ -35,11 +35,11 @@ export class OrchestrationService {
    * @param request The orchestration request containing messages and assistant info.
    * @param events A set of callbacks to report progress and results to the UI layer.
    */
-  async handleUserMessage(request: OrchestrationRequest, onChunkReceived: (chunk: Chunk) => void) {
+  async transformMessagesAndFetch(request: OrchestrationRequest, onChunkReceived: (chunk: Chunk) => void) {
     const { messages, assistant } = request
 
     try {
-      const llmMessages = await ConversationService.prepareMessagesForLlm(messages, assistant)
+      const llmMessages = await ConversationService.prepareMessagesForModel(messages, assistant)
 
       await fetchChatCompletion({
         messages: llmMessages,
@@ -50,5 +50,26 @@ export class OrchestrationService {
     } catch (error: any) {
       onChunkReceived({ type: ChunkType.ERROR, error })
     }
+  }
+}
+
+// 目前先按照函数来写,后续如果有需要到class的地方就改回来
+export async function transformMessagesAndFetch(
+  request: OrchestrationRequest,
+  onChunkReceived: (chunk: Chunk) => void
+) {
+  const { messages, assistant } = request
+
+  try {
+    const llmMessages = await ConversationService.prepareMessagesForModel(messages, assistant)
+
+    await fetchChatCompletion({
+      messages: llmMessages,
+      assistant: assistant,
+      options: request.options,
+      onChunkReceived
+    })
+  } catch (error: any) {
+    onChunkReceived({ type: ChunkType.ERROR, error })
   }
 }

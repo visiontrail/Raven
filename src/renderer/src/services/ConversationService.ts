@@ -12,7 +12,10 @@ import {
 } from './MessagesService'
 
 export class ConversationService {
-  static async prepareMessagesForLlm(messages: Message[], assistant: Assistant): Promise<StreamTextParams['messages']> {
+  static async prepareMessagesForModel(
+    messages: Message[],
+    assistant: Assistant
+  ): Promise<StreamTextParams['messages']> {
     const { contextCount } = getAssistantSettings(assistant)
     // This logic is extracted from the original ApiService.fetchChatCompletion
     const contextMessages = filterContextMessages(messages)
