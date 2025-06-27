@@ -1,7 +1,7 @@
 import { definePlugin } from '@cherrystudio/ai-core'
 
 export default definePlugin(({ delayInMs, chunkingRegex }: { delayInMs: number; chunkingRegex: RegExp }) => ({
-  name: 'reasonPlugin',
+  name: 'smoothReasoningPlugin',
 
   transformStream: () => () => {
     let buffer = ''

@@ -9,6 +9,7 @@
  */
 
 import {
+  AiPlugin,
   createExecutor,
   ProviderConfigFactory,
   type ProviderId,
@@ -26,7 +27,8 @@ import AiSdkToChunkAdapter from './AiSdkToChunkAdapter'
 import LegacyAiProvider from './index'
 import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/aisdk/AiSdkMiddlewareBuilder'
 import { CompletionsResult } from './middleware/schemas'
-import reasonPlugin from './plugins/reasonPlugin'
+import reasoningTimePlugin from './plugins/reasoningTimePlugin'
+import smoothReasoningPlugin from './plugins/smoothReasoningPlugin'
 import textPlugin from './plugins/textPlugin'
 import { getAiSdkProviderId } from './provider/factory'
 
@@ -103,27 +105,69 @@ function isModernSdkSupported(provider: Provider, model?: Model): boolean {
 }
 
 export default class ModernAiProvider {
-  private modernExecutor?: ReturnType<typeof createExecutor>
   private legacyProvider: LegacyAiProvider
-  private provider: Provider
+  private config: ReturnType<typeof providerToAiSdkConfig>
 
   constructor(provider: Provider) {
-    this.provider = provider
     this.legacyProvider = new LegacyAiProvider(provider)
 
-    // TODO:如果后续在调用completions时需要切换provider的话,
-    // 初始化时不构建中间件，等到需要时再构建
-    const config = providerToAiSdkConfig(provider)
+    // 只保存配置，不预先创建executor
+    this.config = providerToAiSdkConfig(provider)
 
     console.log('[Modern AI Provider] Creating executor with MCP Prompt plugin enabled')
+  }
 
-    this.modernExecutor = createExecutor(config.providerId, config.options, [
-      reasonPlugin({
-        delayInMs: 80,
-        chunkingRegex: /([\u4E00-\u9FFF]{3})|\S+\s+/
-      }),
-      textPlugin
-    ])
+  /**
+   * 根据条件构建插件数组
+   */
+  private buildPlugins(middlewareConfig: AiSdkMiddlewareConfig) {
+    const plugins: AiPlugin[] = []
+    const model = middlewareConfig.model
+    // 1. 总是添加通用插件
+    plugins.push(textPlugin)
+
+    // 2. 推理模型时添加推理插件
+    if (model && middlewareConfig.enableReasoning) {
+      plugins.push(
+        smoothReasoningPlugin({
+          delayInMs: 80,
+          chunkingRegex: /([\u4E00-\u9FFF]{3})|\S+\s+/
+        }),
+        reasoningTimePlugin()
+      )
+    }
+
+    // 3. 启用Prompt工具调用时添加工具插件
+    if (middlewareConfig.enableTool) {
+      plugins.push(
+        createMCPPromptPlugin({
+          enabled: true,
+          createSystemMessage: (systemPrompt, params, context) => {
+            console.log('createSystemMessage_context', context.isRecursiveCall)
+            if (context.modelId.includes('o1-mini') || context.modelId.includes('o1-preview')) {
+              if (context.isRecursiveCall) {
+                return null
+              }
+              params.messages = [
+                {
+                  role: 'assistant',
+                  content: systemPrompt
+                },
+                ...params.messages
+              ]
+              return null
+            }
+            return systemPrompt
+          }
+        })
+      )
+    }
+
+    console.log(
+      '最终插件列表:',
+      plugins.map((p) => p.name)
+    )
+    return plugins
   }
 
   public async completions(
@@ -131,37 +175,25 @@ export default class ModernAiProvider {
     params: StreamTextParams,
     middlewareConfig: AiSdkMiddlewareConfig
   ): Promise<CompletionsResult> {
-    // const model = params.assistant.model
-
-    // 检查是否应该使用现代化客户端
-    // if (this.modernClient && model && isModernSdkSupported(this.provider, model)) {
-    // try {
     console.log('completions', modelId, params, middlewareConfig)
     return await this.modernCompletions(modelId, params, middlewareConfig)
-    // } catch (error) {
-    // console.warn('Modern client failed, falling back to legacy:', error)
-    // fallback到原有实现
-    // }
-    // }
-
-    // 使用原有实现
-    // return this.legacyProvider.completions(params, options)
   }
 
   /**
    * 使用现代化AI SDK的completions实现
-   * 使用建造者模式动态构建中间件
    */
   private async modernCompletions(
     modelId: string,
     params: StreamTextParams,
     middlewareConfig: AiSdkMiddlewareConfig
   ): Promise<CompletionsResult> {
-    if (!this.modernExecutor) {
-      throw new Error('Modern AI SDK client not initialized')
-    }
-
     try {
+      // 根据条件构建插件数组
+      const plugins = this.buildPlugins(middlewareConfig)
+
+      // 用构建好的插件数组创建executor
+      const executor = createExecutor(this.config.providerId, this.config.options, plugins)
+
       // 动态构建中间件数组
       const middlewares = buildAiSdkMiddlewares(middlewareConfig)
       console.log('构建的中间件:', middlewares)
@@ -170,31 +202,8 @@ export default class ModernAiProvider {
       if (middlewareConfig.onChunk) {
         // 流式处理 - 使用适配器
         const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk)
-        // 创建MCP Prompt插件
-        if (middlewareConfig.enableTool) {
-          const mcpPromptPlugin = createMCPPromptPlugin({
-            enabled: true,
-            createSystemMessage: (systemPrompt, params, context) => {
-              console.log('createSystemMessage_context', context.isRecursiveCall)
-              if (context.modelId.includes('o1-mini') || context.modelId.includes('o1-preview')) {
-                if (context.isRecursiveCall) {
-                  return null
-                }
-                params.messages = [
-                  {
-                    role: 'assistant',
-                    content: systemPrompt
-                  },
-                  ...params.messages
-                ]
-                return null
-              }
-              return systemPrompt
-            }
-          })
-          this.modernExecutor.pluginEngine.use(mcpPromptPlugin)
-        }
-        const streamResult = await this.modernExecutor.streamText(
+
+        const streamResult = await executor.streamText(
           modelId,
           params,
           middlewares.length > 0 ? { middlewares } : undefined
@@ -207,7 +216,7 @@ export default class ModernAiProvider {
         }
       } else {
         // 流式处理但没有 onChunk 回调
-        const streamResult = await this.modernExecutor.streamText(
+        const streamResult = await executor.streamText(
           modelId,
           params,
           middlewares.length > 0 ? { middlewares } : undefined

@@ -3,11 +3,8 @@ import {
   LanguageModelV1Middleware,
   simulateStreamingMiddleware
 } from '@cherrystudio/ai-core'
-import { isReasoningModel } from '@renderer/config/models'
 import type { MCPTool, Model, Provider } from '@renderer/types'
 import type { Chunk } from '@renderer/types/chunk'
-
-import thinkingTimeMiddleware from './ThinkingTimeMiddleware'
 
 /**
  * AI SDK 中间件配置项
@@ -112,34 +109,24 @@ export class AiSdkMiddlewareBuilder {
 export function buildAiSdkMiddlewares(config: AiSdkMiddlewareConfig): LanguageModelV1Middleware[] {
   const builder = new AiSdkMiddlewareBuilder()
 
-  // 1. 思考模型且有onChunk回调时添加思考时间中间件
-  if (config.onChunk && config.model && isReasoningModel(config.model)) {
-    builder.add({
-      name: 'thinking-time',
-      middleware: thinkingTimeMiddleware()
-    })
-  }
-
-  // 2. 可以在这里根据其他条件添加更多中间件
-  // 例如：工具调用、Web搜索等相关中间件
-
-  // 3. 根据provider添加特定中间件
+  // 1. 根据provider添加特定中间件
   if (config.provider) {
     addProviderSpecificMiddlewares(builder, config)
   }
 
-  // 4. 根据模型类型添加特定中间件
+  // 2. 根据模型类型添加特定中间件
   if (config.model) {
     addModelSpecificMiddlewares(builder, config)
   }
 
-  // 5. 非流式输出时添加模拟流中间件
+  // 3. 非流式输出时添加模拟流中间件
   if (config.streamOutput === false) {
     builder.add({
       name: 'simulate-streaming',
       middleware: simulateStreamingMiddleware()
     })
   }
+
   console.log('builder.build()', builder.buildNamed())
   return builder.build()
 }
