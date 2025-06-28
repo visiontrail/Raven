@@ -194,13 +194,18 @@ export async function buildStreamTextParams(
       headers?: Record<string, string>
     }
   } = {}
-): Promise<{ params: StreamTextParams; modelId: string }> {
+): Promise<{
+  params: StreamTextParams
+  modelId: string
+  capabilities: { enableReasoning?: boolean; enableWebSearch?: boolean; enableGenerateImage?: boolean }
+}> {
   const { mcpTools, enableTools } = options
 
   const model = assistant.model || getDefaultModel()
 
   const { maxTokens, reasoning_effort } = getAssistantSettings(assistant)
 
+  // 这三个变量透传出来，交给下面动态启用插件/中间件
   const enableReasoning =
     ((isSupportedThinkingTokenModel(model) || isSupportedReasoningEffortModel(model)) &&
       reasoning_effort !== undefined) ||
@@ -244,7 +249,7 @@ export async function buildStreamTextParams(
     maxSteps: 10
   }
 
-  return { params, modelId: model.id }
+  return { params, modelId: model.id, capabilities: { enableReasoning, enableWebSearch, enableGenerateImage } }
 }
 
 /**

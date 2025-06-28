@@ -301,19 +301,22 @@ export async function fetchChatCompletion({
   const mcpTools = await fetchMcpTools(assistant)
 
   // 使用 transformParameters 模块构建参数
-  const { params: aiSdkParams, modelId } = await buildStreamTextParams(messages, assistant, {
+  const {
+    params: aiSdkParams,
+    modelId,
+    capabilities
+  } = await buildStreamTextParams(messages, assistant, {
     mcpTools: mcpTools,
     enableTools: isEnabledToolUse(assistant),
     requestOptions: options
   })
-  console.log('assistant.settings?.reasoning_effort', assistant.settings?.reasoning_effort)
+
   const middlewareConfig: AiSdkMiddlewareConfig = {
     streamOutput: assistant.settings?.streamOutput ?? true,
     onChunk: onChunkReceived,
     model: assistant.model,
     provider: provider,
-    // FIXME: 这里需要根据模型来判断是否启用推理
-    enableReasoning: assistant.settings?.reasoning_effort !== undefined,
+    enableReasoning: capabilities.enableReasoning,
     enableTool: assistant.settings?.toolUseMode === 'prompt',
     mcpTools
   }
