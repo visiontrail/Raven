@@ -7,7 +7,6 @@ import { generateObject, generateText, LanguageModel, LanguageModelV1Middleware,
 import { type ProviderId, type ProviderSettingsMap } from '../../types'
 import { createModel, getProviderInfo } from '../models'
 import { type AiPlugin } from '../plugins'
-import { isProviderSupported } from '../providers/registry'
 import { PluginEngine } from './pluginEngine'
 import { type RuntimeConfig } from './types'
 
@@ -17,9 +16,9 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
   private config: RuntimeConfig<T>
 
   constructor(config: RuntimeConfig<T>) {
-    if (!isProviderSupported(config.providerId)) {
-      throw new Error(`Unsupported provider: ${config.providerId}`)
-    }
+    // if (!isProviderSupported(config.providerId)) {
+    //   throw new Error(`Unsupported provider: ${config.providerId}`)
+    // }
 
     // 存储options供后续使用
     // this.options = config.options

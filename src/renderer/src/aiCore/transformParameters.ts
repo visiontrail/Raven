@@ -206,6 +206,7 @@ export async function buildStreamTextParams(
   const { maxTokens, reasoning_effort } = getAssistantSettings(assistant)
 
   // 这三个变量透传出来，交给下面动态启用插件/中间件
+  // 也可以在外部构建好再传入buildStreamTextParams
   const enableReasoning =
     ((isSupportedThinkingTokenModel(model) || isSupportedReasoningEffortModel(model)) &&
       reasoning_effort !== undefined) ||

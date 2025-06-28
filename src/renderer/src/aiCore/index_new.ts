@@ -9,6 +9,7 @@
  */
 
 import {
+  AiCore,
   AiPlugin,
   createExecutor,
   ProviderConfigFactory,
@@ -54,12 +55,8 @@ function providerToAiSdkConfig(provider: Provider): {
 
   const aiSdkProviderId = getAiSdkProviderId(actualProvider)
 
-  if (aiSdkProviderId !== 'openai-compatible') {
-    const options = ProviderConfigFactory.fromProvider(aiSdkProviderId, {
-      ...actualProvider
-      // 使用ai-sdk内置的baseURL
-      // baseURL: actualProvider.apiHost
-    })
+  if (AiCore.isSupported(aiSdkProviderId) && aiSdkProviderId !== 'openai-compatible') {
+    const options = ProviderConfigFactory.fromProvider(aiSdkProviderId, actualProvider)
 
     return {
       providerId: aiSdkProviderId as ProviderId,
@@ -138,7 +135,7 @@ export default class ModernAiProvider {
     }
 
     // 3. 启用Prompt工具调用时添加工具插件
-    if (middlewareConfig.enableTool) {
+    if (middlewareConfig.enableTool && middlewareConfig.mcpTools && middlewareConfig.mcpTools.length > 0) {
       plugins.push(
         createMCPPromptPlugin({
           enabled: true,

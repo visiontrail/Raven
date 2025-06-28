@@ -24,8 +24,8 @@ export function getAiSdkProviderId(provider: Provider): ProviderId | 'openai-com
   }
 
   if (AiCore.isSupported(provider.id)) {
-    return provider.id as ProviderId as ProviderId
+    return provider.id as ProviderId
   }
 
-  return 'openai-compatible'
+  return provider.id as ProviderId
 }
