@@ -179,16 +179,13 @@ function buildGenericProviderOptions(
     enableGenerateImage: boolean
   }
 ): Record<string, any> {
-  const { enableReasoning, enableWebSearch, enableGenerateImage } = capabilities
+  const { enableWebSearch, enableGenerateImage } = capabilities
   let providerOptions: Record<string, any> = {}
 
-  // 使用原有的通用推理逻辑
-  if (enableReasoning) {
-    const reasoningParams = getReasoningEffort(assistant, model)
-    providerOptions = {
-      ...providerOptions,
-      ...reasoningParams
-    }
+  const reasoningParams = getReasoningEffort(assistant, model)
+  providerOptions = {
+    ...providerOptions,
+    ...reasoningParams
   }
 
   if (enableWebSearch) {

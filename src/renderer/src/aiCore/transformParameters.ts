@@ -210,8 +210,7 @@ export async function buildStreamTextParams(
   const enableReasoning =
     ((isSupportedThinkingTokenModel(model) || isSupportedReasoningEffortModel(model)) &&
       reasoning_effort !== undefined) ||
-    (isReasoningModel(model) && (!isSupportedThinkingTokenModel(model) || !isSupportedReasoningEffortModel(model)))
-
+    (isReasoningModel(model) && !isSupportedThinkingTokenModel(model) && !isSupportedReasoningEffortModel(model))
   const enableWebSearch =
     (assistant.enableWebSearch && isWebSearchModel(model)) ||
     isOpenRouterBuiltInWebSearchModel(model) ||

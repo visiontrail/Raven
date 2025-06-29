@@ -28,6 +28,32 @@ export function getReasoningEffort(assistant: Assistant, model: Model): Reasonin
   }
   const reasoningEffort = assistant?.settings?.reasoning_effort
 
+  if (!reasoningEffort) {
+    if (model.provider === 'openrouter') {
+      return { reasoning: { enabled: false } }
+    }
+    if (isSupportedThinkingTokenQwenModel(model)) {
+      return { enable_thinking: false }
+    }
+
+    if (isSupportedThinkingTokenClaudeModel(model)) {
+      return {}
+    }
+
+    if (isSupportedThinkingTokenGeminiModel(model)) {
+      if (GEMINI_FLASH_MODEL_REGEX.test(model.id)) {
+        return { reasoning_effort: 'none' }
+      }
+      return {}
+    }
+
+    if (isSupportedThinkingTokenDoubaoModel(model)) {
+      return { thinking: { type: 'disabled' } }
+    }
+
+    return {}
+  }
+
   // Doubao 思考模式支持
   if (isSupportedThinkingTokenDoubaoModel(model)) {
     // reasoningEffort 为空，默认开启 enabled

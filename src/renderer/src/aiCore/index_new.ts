@@ -119,12 +119,11 @@ export default class ModernAiProvider {
    */
   private buildPlugins(middlewareConfig: AiSdkMiddlewareConfig) {
     const plugins: AiPlugin[] = []
-    const model = middlewareConfig.model
     // 1. 总是添加通用插件
     plugins.push(textPlugin)
 
     // 2. 推理模型时添加推理插件
-    if (model && middlewareConfig.enableReasoning) {
+    if (middlewareConfig.enableReasoning) {
       plugins.push(
         smoothReasoningPlugin({
           delayInMs: 80,
