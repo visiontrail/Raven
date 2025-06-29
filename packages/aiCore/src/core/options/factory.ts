@@ -55,3 +55,10 @@ export function createAnthropicOptions(options: ExtractProviderOptions<'anthropi
 export function createGoogleOptions(options: ExtractProviderOptions<'google'>) {
   return createProviderOptions('google', options)
 }
+
+/**
+ * 创建OpenRouter供应商选项的便捷函数
+ */
+export function createOpenRouterOptions(options: ExtractProviderOptions<'openrouter'>) {
+  return createProviderOptions('openrouter', options)
+}

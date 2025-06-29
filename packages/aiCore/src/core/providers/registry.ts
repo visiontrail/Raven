@@ -24,7 +24,7 @@ import { type ReplicateProviderSettings } from '@ai-sdk/replicate'
 import { type TogetherAIProviderSettings } from '@ai-sdk/togetherai'
 import { type VercelProviderSettings } from '@ai-sdk/vercel'
 import { type XaiProviderSettings } from '@ai-sdk/xai'
-// import { type OpenRouterProviderSettings } from '@openrouter/ai-sdk-provider'
+import { type OpenRouterProviderSettings } from '@openrouter/ai-sdk-provider'
 import { type AnthropicVertexProviderSettings } from 'anthropic-vertex-ai'
 import { type OllamaProviderSettings } from 'ollama-ai-provider'
 import { type QwenProviderSettings } from 'qwen-ai-provider'
@@ -34,6 +34,7 @@ import { type ZhipuProviderSettings } from 'zhipu-ai-provider'
 export type ProviderSettingsMap = {
   openai: OpenAIProviderSettings
   'openai-compatible': OpenAICompatibleProviderSettings
+  openrouter: OpenRouterProviderSettings
   anthropic: AnthropicProviderSettings
   google: GoogleGenerativeAIProviderSettings
   'google-vertex': GoogleVertexProviderSettings
@@ -266,15 +267,14 @@ export class AiProviderRegistry {
         import: () => import('anthropic-vertex-ai'),
         creatorFunctionName: 'createAnthropicVertex',
         supportsImageGeneration: false
+      },
+      {
+        id: 'openrouter',
+        name: 'OpenRouter',
+        import: () => import('@openrouter/ai-sdk-provider'),
+        creatorFunctionName: 'createOpenRouter',
+        supportsImageGeneration: false
       }
-      // bug太多
-      // {
-      //   id: 'openrouter',
-      //   name: 'OpenRouter',
-      //   import: () => import('@openrouter/ai-sdk-provider'),
-      //   creatorFunctionName: 'createOpenRouter',
-      //   supportsImageGeneration: false
-      // }
     ]
 
     providers.forEach((config) => {
@@ -365,6 +365,7 @@ export type {
   OllamaProviderSettings,
   OpenAICompatibleProviderSettings,
   OpenAIProviderSettings,
+  OpenRouterProviderSettings,
   PerplexityProviderSettings,
   QwenProviderSettings,
   ReplicateProviderSettings,

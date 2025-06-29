@@ -338,23 +338,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:2.1.5":
-  version: 2.1.5
-  resolution: "@ai-sdk/provider-utils@npm:2.1.5"
-  dependencies:
-    "@ai-sdk/provider": "npm:1.0.6"
-    eventsource-parser: "npm:^3.0.0"
-    nanoid: "npm:^3.3.8"
-    secure-json-parse: "npm:^2.7.0"
-  peerDependencies:
-    zod: ^3.0.0
-  peerDependenciesMeta:
-    zod:
-      optional: true
-  checksum: 10c0/6ec33c1f9cc6bb38a7634cdb1b43f49d78ddcb92a8daa4b65193f3309b5a7ad35b134e2d5e82b8576917079a3f8e3b83b5505151cd259ec747ba27458db58356
-  languageName: node
-  linkType: hard
-
 "@ai-sdk/provider-utils@npm:2.2.8, @ai-sdk/provider-utils@npm:^2.0.0, @ai-sdk/provider-utils@npm:^2.1.6":
   version: 2.2.8
   resolution: "@ai-sdk/provider-utils@npm:2.2.8"
@@ -374,15 +357,6 @@ __metadata:
   dependencies:
     json-schema: "npm:0.4.0"
   checksum: 10c0/6e550c33ce6375636897b24ad8dfb2a605ff91d92aabd3c7aba2049f3d943c3a5534a1441e9ae4d7ef35c864687dc41c15704d19f11dcc6624fa1e705255c103
-  languageName: node
-  linkType: hard
-
-"@ai-sdk/provider@npm:1.0.6":
-  version: 1.0.6
-  resolution: "@ai-sdk/provider@npm:1.0.6"
-  dependencies:
-    json-schema: "npm:^0.4.0"
-  checksum: 10c0/251c8cd4fa53b89dcf751d0faba5482762d88fcc5ffe1cdb660327c14817a4d94206317e95e6e69fc4ae3071001191b5c418b4b9e1212d6a554a90114db216fc
   languageName: node
   linkType: hard
 
@@ -1012,7 +986,7 @@ __metadata:
     "@ai-sdk/togetherai": "npm:^0.2.14"
     "@ai-sdk/vercel": "npm:^0.0.1"
     "@ai-sdk/xai": "npm:^1.2.16"
-    "@openrouter/ai-sdk-provider": "npm:^0.1.0"
+    "@openrouter/ai-sdk-provider": "npm:^0.7.2"
     ai: "npm:^4.3.16"
     anthropic-vertex-ai: "npm:^1.0.2"
     ollama-ai-provider: "npm:^1.2.0"
@@ -3839,15 +3813,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openrouter/ai-sdk-provider@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "@openrouter/ai-sdk-provider@npm:0.1.0"
+"@openrouter/ai-sdk-provider@npm:^0.7.2":
+  version: 0.7.2
+  resolution: "@openrouter/ai-sdk-provider@npm:0.7.2"
   dependencies:
-    "@ai-sdk/provider": "npm:1.0.6"
-    "@ai-sdk/provider-utils": "npm:2.1.5"
+    "@ai-sdk/provider": "npm:1.1.3"
+    "@ai-sdk/provider-utils": "npm:2.2.8"
   peerDependencies:
-    zod: ^3.0.0
-  checksum: 10c0/495c0349d6f42adc8e880651c215a183a4f041808019c6b2710df447ff3c81f5e69f951b589c1bb3c0cc1ce16c0d659b624d18f097b3344bce74eb178fb936a1
+    ai: ^4.3.16
+    zod: ^3.25.34
+  checksum: 10c0/3d941fdc47418d16f74f98d0e1eb8c8c60bb152bdd2804baf4f6856f754237339cc6240b7ff41ce5a35e967214ca2cc0f33d0c60537ec1f0e5b5b5648475bb02
   languageName: node
   linkType: hard
 
