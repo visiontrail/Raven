@@ -28,7 +28,6 @@ import AiSdkToChunkAdapter from './AiSdkToChunkAdapter'
 import LegacyAiProvider from './index'
 import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/aisdk/AiSdkMiddlewareBuilder'
 import { CompletionsResult } from './middleware/schemas'
-import reasoningTimePlugin from './plugins/reasoningTimePlugin'
 import smoothReasoningPlugin from './plugins/smoothReasoningPlugin'
 import textPlugin from './plugins/textPlugin'
 import { getAiSdkProviderId } from './provider/factory'
@@ -124,13 +123,7 @@ export default class ModernAiProvider {
 
     // 2. 推理模型时添加推理插件
     if (middlewareConfig.enableReasoning) {
-      plugins.push(
-        smoothReasoningPlugin({
-          delayInMs: 80,
-          chunkingRegex: /([\u4E00-\u9FFF]{3})|\S+\s+/
-        }),
-        reasoningTimePlugin
-      )
+      plugins.push(smoothReasoningPlugin)
     }
 
     // 3. 启用Prompt工具调用时添加工具插件
