@@ -28,8 +28,7 @@ import AiSdkToChunkAdapter from './AiSdkToChunkAdapter'
 import LegacyAiProvider from './index'
 import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/aisdk/AiSdkMiddlewareBuilder'
 import { CompletionsResult } from './middleware/schemas'
-import smoothReasoningPlugin from './plugins/smoothReasoningPlugin'
-import textPlugin from './plugins/textPlugin'
+import reasoningTimePlugin from './plugins/reasoningTimePlugin'
 import { getAiSdkProviderId } from './provider/factory'
 
 /**
@@ -119,11 +118,11 @@ export default class ModernAiProvider {
   private buildPlugins(middlewareConfig: AiSdkMiddlewareConfig) {
     const plugins: AiPlugin[] = []
     // 1. 总是添加通用插件
-    plugins.push(textPlugin)
+    // plugins.push(textPlugin)
 
     // 2. 推理模型时添加推理插件
     if (middlewareConfig.enableReasoning) {
-      plugins.push(smoothReasoningPlugin)
+      plugins.push(reasoningTimePlugin)
     }
 
     // 3. 启用Prompt工具调用时添加工具插件
@@ -151,7 +150,6 @@ export default class ModernAiProvider {
         })
       )
     }
-
     console.log(
       '最终插件列表:',
       plugins.map((p) => p.name)
