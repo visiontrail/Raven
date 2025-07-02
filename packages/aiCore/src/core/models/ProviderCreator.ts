@@ -65,10 +65,13 @@ export async function createBaseModel(
         `Creator function "${providerConfig.creatorFunctionName}" not found in the imported module for provider "${effectiveProviderId}"`
       )
     }
-
     // 创建provider实例
-    const provider = creatorFunction(options)
+    let provider = creatorFunction(options)
 
+    // 加一个特判
+    if (providerConfig.id === 'openai' && options.compatibility === 'strict') {
+      provider = provider.responses
+    }
     // 返回模型实例
     if (typeof provider === 'function') {
       let model: LanguageModelV1 = provider(modelId)

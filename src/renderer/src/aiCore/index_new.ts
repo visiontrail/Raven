@@ -53,9 +53,16 @@ function providerToAiSdkConfig(provider: Provider): {
 
   const aiSdkProviderId = getAiSdkProviderId(actualProvider)
 
-  if (AiCore.isSupported(aiSdkProviderId) && aiSdkProviderId !== 'openai-compatible') {
-    const options = ProviderConfigFactory.fromProvider(aiSdkProviderId, actualProvider)
+  // 如果provider是openai，则使用strict模式并且默认responses api
+  const openaiResponseOptions =
+    aiSdkProviderId === 'openai'
+      ? {
+          compatibility: 'strict'
+        }
+      : undefined
 
+  if (AiCore.isSupported(aiSdkProviderId) && aiSdkProviderId !== 'openai-compatible') {
+    const options = ProviderConfigFactory.fromProvider(aiSdkProviderId, actualProvider, openaiResponseOptions)
     return {
       providerId: aiSdkProviderId as ProviderId,
       options
@@ -183,13 +190,13 @@ export default class ModernAiProvider {
 
     // 动态构建中间件数组
     const middlewares = buildAiSdkMiddlewares(middlewareConfig)
-    console.log('构建的中间件:', middlewares)
+    // console.log('构建的中间件:', middlewares)
 
     // 创建带有中间件的执行器
     if (middlewareConfig.onChunk) {
       // 流式处理 - 使用适配器
       const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk)
-
+      console.log('最终params', params)
       const streamResult = await executor.streamText(
         modelId,
         params,
