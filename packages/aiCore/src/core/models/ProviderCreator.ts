@@ -6,6 +6,7 @@ import type { ImageModelV1 } from '@ai-sdk/provider'
 import { type LanguageModelV1, LanguageModelV1Middleware, wrapLanguageModel } from 'ai'
 
 import { type ProviderId, type ProviderSettingsMap } from '../../types'
+import { isOpenAIChatCompletionOnlyModel } from '../../utils/model'
 import { aiProviderRegistry, type ProviderConfig } from '../providers/registry'
 
 // 错误类型
@@ -69,7 +70,7 @@ export async function createBaseModel(
     let provider = creatorFunction(options)
 
     // 加一个特判
-    if (providerConfig.id === 'openai' && options.compatibility === 'strict') {
+    if (providerConfig.id === 'openai' && !isOpenAIChatCompletionOnlyModel(modelId)) {
       provider = provider.responses
     }
     // 返回模型实例

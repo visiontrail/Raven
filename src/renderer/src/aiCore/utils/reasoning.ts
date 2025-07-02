@@ -180,7 +180,7 @@ export function getOpenAIReasoningParams(assistant: Assistant, model: Model): Re
   // OpenAI 推理参数
   if (isSupportedReasoningEffortOpenAIModel(model)) {
     return {
-      reasoning_effort: reasoningEffort
+      reasoningEffort
     }
   }
 
