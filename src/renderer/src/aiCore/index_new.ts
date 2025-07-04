@@ -126,6 +126,7 @@ export default class ModernAiProvider {
     const plugins: AiPlugin[] = []
     // 1. 总是添加通用插件
     // plugins.push(textPlugin)
+    // plugins.push(webSearchPlugin)
 
     // 2. 推理模型时添加推理插件
     if (middlewareConfig.enableReasoning) {
@@ -138,7 +139,6 @@ export default class ModernAiProvider {
         createMCPPromptPlugin({
           enabled: true,
           createSystemMessage: (systemPrompt, params, context) => {
-            console.log('createSystemMessage_context', context.isRecursiveCall)
             if (context.modelId.includes('o1-mini') || context.modelId.includes('o1-preview')) {
               if (context.isRecursiveCall) {
                 return null
