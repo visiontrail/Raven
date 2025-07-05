@@ -2,15 +2,16 @@
  * 模型包装工具函数
  * 用于将中间件应用到LanguageModel上
  */
-import { LanguageModel, LanguageModelV1Middleware, wrapLanguageModel } from 'ai'
+import { LanguageModelV2, LanguageModelV2Middleware } from '@ai-sdk/provider'
+import { wrapLanguageModel } from 'ai'
 
 /**
  * 使用中间件包装模型
  */
 export function wrapModelWithMiddlewares(
-  model: LanguageModel,
-  middlewares: LanguageModelV1Middleware[]
-): LanguageModel {
+  model: LanguageModelV2,
+  middlewares: LanguageModelV2Middleware[]
+): LanguageModelV2 {
   if (middlewares.length === 0) {
     return model
   }

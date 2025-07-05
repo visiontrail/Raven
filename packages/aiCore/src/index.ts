@@ -47,32 +47,30 @@ export * as aiSdk from 'ai'
 
 // ==================== AI SDK 常用类型导出 ====================
 // 直接导出 AI SDK 的常用类型，方便使用
+export type { LanguageModelV2Middleware, LanguageModelV2StreamPart } from '@ai-sdk/provider'
+export type { ToolCall } from '@ai-sdk/provider-utils'
 export type {
-  CoreAssistantMessage,
-  // 消息相关类型
-  CoreMessage,
-  CoreSystemMessage,
-  CoreToolMessage,
-  CoreUserMessage,
+  AssistantModelMessage,
   // 通用类型
   FinishReason,
   GenerateObjectResult,
   // 生成相关类型
   GenerateTextResult,
-  InvalidToolArgumentsError,
+  InvalidToolInputError,
   LanguageModelUsage, // AI SDK 4.0 中 TokenUsage 改名为 LanguageModelUsage
-  LanguageModelV1Middleware,
-  LanguageModelV1StreamPart,
+  // 消息相关类型
+  ModelMessage,
   // 错误类型
   NoSuchToolError,
   StreamTextResult,
+  SystemModelMessage,
   // 流相关类型
   TextStreamPart,
   // 工具相关类型
   Tool,
-  ToolCall,
-  ToolExecutionError,
-  ToolResult
+  ToolModelMessage,
+  ToolResultPart,
+  UserModelMessage
 } from 'ai'
 export { defaultSettingsMiddleware, extractReasoningMiddleware, simulateStreamingMiddleware, smoothStream } from 'ai'
 
@@ -99,12 +97,10 @@ export type {
   PerplexityProviderSettings,
   ProviderId,
   ProviderSettingsMap,
-  QwenProviderSettings,
   ReplicateProviderSettings,
   TogetherAIProviderSettings,
   VercelProviderSettings,
-  XaiProviderSettings,
-  ZhipuProviderSettings
+  XaiProviderSettings
 } from './types'
 
 // ==================== 选项 ====================

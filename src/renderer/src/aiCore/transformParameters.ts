@@ -3,7 +3,7 @@
  * 统一管理从各个 apiClient 提取的参数处理和转换功能
  */
 
-import { type CoreMessage, type StreamTextParams } from '@cherrystudio/ai-core'
+import { type ModelMessage, type StreamTextParams } from '@cherrystudio/ai-core'
 import { DEFAULT_MAX_TOKENS } from '@renderer/config/constant'
 import {
   isGenerateImageModel,
@@ -238,15 +238,14 @@ export async function buildStreamTextParams(
   // 构建基础参数
   const params: StreamTextParams = {
     messages: sdkMessages,
-    maxTokens: maxTokens || DEFAULT_MAX_TOKENS,
+    maxOutputTokens: maxTokens || DEFAULT_MAX_TOKENS,
     temperature: getTemperature(assistant, model),
     topP: getTopP(assistant, model),
     system: assistant.prompt || '',
     abortSignal: options.requestOptions?.signal,
     headers: options.requestOptions?.headers,
     providerOptions,
-    tools,
-    maxSteps: 10
+    tools
   }
 
   return { params, modelId: model.id, capabilities: { enableReasoning, enableWebSearch, enableGenerateImage } }
@@ -256,7 +255,7 @@ export async function buildStreamTextParams(
  * 构建非流式的 generateText 参数
  */
 export async function buildGenerateTextParams(
-  messages: CoreMessage[],
+  messages: ModelMessage[],
   assistant: Assistant,
   options: {
     mcpTools?: MCPTool[]

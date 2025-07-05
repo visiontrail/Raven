@@ -27,8 +27,6 @@ import { type XaiProviderSettings } from '@ai-sdk/xai'
 import { type OpenRouterProviderSettings } from '@openrouter/ai-sdk-provider'
 import { type AnthropicVertexProviderSettings } from 'anthropic-vertex-ai'
 import { type OllamaProviderSettings } from 'ollama-ai-provider'
-import { type QwenProviderSettings } from 'qwen-ai-provider'
-import { type ZhipuProviderSettings } from 'zhipu-ai-provider'
 
 // 类型安全的 Provider Settings 映射
 export type ProviderSettingsMap = {
@@ -54,12 +52,10 @@ export type ProviderSettingsMap = {
   fal: FalProviderSettings
   vercel: VercelProviderSettings
   ollama: OllamaProviderSettings
-  qwen: QwenProviderSettings
-  zhipu: ZhipuProviderSettings
   'anthropic-vertex': AnthropicVertexProviderSettings
 }
 
-export type ProviderId = keyof ProviderSettingsMap
+export type ProviderId = keyof ProviderSettingsMap & string
 
 // 统一的 Provider 配置接口（所有都使用动态导入）
 export interface ProviderConfig {
@@ -248,20 +244,6 @@ export class AiProviderRegistry {
         supportsImageGeneration: false
       },
       {
-        id: 'qwen',
-        name: 'Qwen',
-        import: () => import('qwen-ai-provider'),
-        creatorFunctionName: 'createQwen',
-        supportsImageGeneration: false
-      },
-      {
-        id: 'zhipu',
-        name: 'Zhipu AI',
-        import: () => import('zhipu-ai-provider'),
-        creatorFunctionName: 'createZhipu',
-        supportsImageGeneration: false
-      },
-      {
         id: 'anthropic-vertex',
         name: 'Anthropic Vertex AI',
         import: () => import('anthropic-vertex-ai'),
@@ -367,10 +349,8 @@ export type {
   OpenAIProviderSettings,
   OpenRouterProviderSettings,
   PerplexityProviderSettings,
-  QwenProviderSettings,
   ReplicateProviderSettings,
   TogetherAIProviderSettings,
   VercelProviderSettings,
-  XaiProviderSettings,
-  ZhipuProviderSettings
+  XaiProviderSettings
 }

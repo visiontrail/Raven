@@ -2,8 +2,8 @@
  * Provider 创建器
  * 负责动态导入 AI SDK providers 并创建基础模型实例
  */
-import type { ImageModelV1 } from '@ai-sdk/provider'
-import { type LanguageModelV1, LanguageModelV1Middleware, wrapLanguageModel } from 'ai'
+import { ImageModelV2, type LanguageModelV2, LanguageModelV2Middleware } from '@ai-sdk/provider'
+import { wrapLanguageModel } from 'ai'
 
 import { type ProviderId, type ProviderSettingsMap } from '../../types'
 import { isOpenAIChatCompletionOnlyModel } from '../../utils/model'
@@ -29,22 +29,22 @@ export async function createBaseModel<T extends ProviderId>(
   providerId: T,
   modelId: string,
   options: ProviderSettingsMap[T],
-  middlewares?: LanguageModelV1Middleware[]
-): Promise<LanguageModelV1>
+  middlewares?: LanguageModelV2Middleware[]
+): Promise<LanguageModelV2>
 
 export async function createBaseModel(
   providerId: string,
   modelId: string,
   options: ProviderSettingsMap['openai-compatible'],
-  middlewares?: LanguageModelV1Middleware[]
-): Promise<LanguageModelV1>
+  middlewares?: LanguageModelV2Middleware[]
+): Promise<LanguageModelV2>
 
 export async function createBaseModel(
   providerId: string,
   modelId: string = 'default',
   options: any,
-  middlewares?: LanguageModelV1Middleware[]
-): Promise<LanguageModelV1> {
+  middlewares?: LanguageModelV2Middleware[]
+): Promise<LanguageModelV2> {
   try {
     // 对于不在注册表中的 provider，默认使用 openai-compatible
     const effectiveProviderId = aiProviderRegistry.isSupported(providerId) ? providerId : 'openai-compatible'
@@ -75,7 +75,7 @@ export async function createBaseModel(
     }
     // 返回模型实例
     if (typeof provider === 'function') {
-      let model: LanguageModelV1 = provider(modelId)
+      let model: LanguageModelV2 = provider(modelId)
 
       // 应用 AI SDK 中间件
       if (middlewares && middlewares.length > 0) {
@@ -108,17 +108,17 @@ export async function createImageModel<T extends ProviderId>(
   providerId: T,
   modelId: string,
   options: ProviderSettingsMap[T]
-): Promise<ImageModelV1>
+): Promise<ImageModelV2>
 export async function createImageModel(
   providerId: string,
   modelId: string,
   options: ProviderSettingsMap['openai-compatible']
-): Promise<ImageModelV1>
+): Promise<ImageModelV2>
 export async function createImageModel(
   providerId: string,
   modelId: string = 'default',
   options: any
-): Promise<ImageModelV1> {
+): Promise<ImageModelV2> {
   try {
     if (!aiProviderRegistry.isSupported(providerId)) {
       throw new ProviderCreationError(`Provider "${providerId}" is not supported`, providerId)

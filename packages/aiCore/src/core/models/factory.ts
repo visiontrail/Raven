@@ -2,7 +2,8 @@
  * 模型工厂函数
  * 统一的模型创建和配置管理
  */
-import { LanguageModel, LanguageModelV1Middleware } from 'ai'
+import { LanguageModelV2, LanguageModelV2Middleware } from '@ai-sdk/provider'
+import { LanguageModel } from 'ai'
 
 import { type ProviderId, type ProviderSettingsMap } from '../../types'
 import { wrapModelWithMiddlewares } from '../middleware'
@@ -12,13 +13,13 @@ export interface ModelConfig {
   providerId: ProviderId
   modelId: string
   options: ProviderSettingsMap[ProviderId]
-  middlewares?: LanguageModelV1Middleware[]
+  middlewares?: LanguageModelV2Middleware[]
 }
 
 /**
  * 创建模型 - 核心函数
  */
-export async function createModel(config: ModelConfig): Promise<LanguageModel> {
+export async function createModel(config: ModelConfig): Promise<LanguageModelV2> {
   validateModelConfig(config)
 
   // 1. 创建基础模型

@@ -1,5 +1,7 @@
 import type { TextStreamPart, ToolSet } from 'ai'
 
+import { ProviderId } from '../providers/registry'
+
 /**
  * 递归调用函数类型
  * 使用 any 是因为递归调用时参数和返回类型可能完全不同
@@ -10,7 +12,7 @@ export type RecursiveCallFn = (newParams: any) => Promise<any>
  * AI 请求上下文
  */
 export interface AiRequestContext {
-  providerId: string
+  providerId: ProviderId
   modelId: string
   originalParams: any
   metadata: Record<string, any>

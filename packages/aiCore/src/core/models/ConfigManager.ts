@@ -2,7 +2,7 @@
  * 配置管理器
  * 整合options、plugins、middlewares等配置
  */
-import { LanguageModelV1Middleware } from 'ai'
+import { LanguageModelV2Middleware } from '@ai-sdk/provider'
 
 import { ProviderId, ProviderSettingsMap } from '../../types'
 import { createMiddlewares } from '../middleware/manager'
@@ -18,7 +18,7 @@ export function resolveConfig(
   modelId: string,
   providerSettings: ProviderSettingsMap[ProviderId],
   plugins: AiPlugin[] = [],
-  middlewares: LanguageModelV1Middleware[] = []
+  middlewares: LanguageModelV2Middleware[] = []
 ): ResolvedConfig {
   // 使用独立的中间件管理器处理中间件
   const resolvedMiddlewares = createMiddlewares(middlewares)

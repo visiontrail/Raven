@@ -2,7 +2,8 @@
  * 运行时执行器
  * 专注于插件化的AI调用处理
  */
-import { generateObject, generateText, LanguageModel, LanguageModelV1Middleware, streamObject, streamText } from 'ai'
+import { LanguageModelV2, LanguageModelV2Middleware } from '@ai-sdk/provider'
+import { generateObject, generateText, LanguageModel, streamObject, streamText } from 'ai'
 
 import { type ProviderId, type ProviderSettingsMap } from '../../types'
 import { createModel, getProviderInfo } from '../models'
@@ -44,7 +45,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     modelId: string,
     params: Omit<Parameters<typeof streamText>[0], 'model'>,
     options?: {
-      middlewares?: LanguageModelV1Middleware[]
+      middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof streamText>>
 
@@ -52,10 +53,10 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
    * 流式文本生成 - 内部实现（统一处理重载）
    */
   async streamText(
-    modelOrId: LanguageModel | string,
+    modelOrId: LanguageModel,
     params: Omit<Parameters<typeof streamText>[0], 'model'>,
     options?: {
-      middlewares?: LanguageModelV1Middleware[]
+      middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof streamText>> {
     const model = await this.resolveModel(modelOrId, options?.middlewares)
@@ -95,7 +96,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     modelId: string,
     params: Omit<Parameters<typeof generateText>[0], 'model'>,
     options?: {
-      middlewares?: LanguageModelV1Middleware[]
+      middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof generateText>>
 
@@ -106,7 +107,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     modelOrId: LanguageModel | string,
     params: Omit<Parameters<typeof generateText>[0], 'model'>,
     options?: {
-      middlewares?: LanguageModelV1Middleware[]
+      middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof generateText>> {
     const model = await this.resolveModel(modelOrId, options?.middlewares)
@@ -136,7 +137,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     modelOrId: string,
     params: Omit<Parameters<typeof generateObject>[0], 'model'>,
     options?: {
-      middlewares?: LanguageModelV1Middleware[]
+      middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof generateObject>>
 
@@ -147,7 +148,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     modelOrId: LanguageModel | string,
     params: Omit<Parameters<typeof generateObject>[0], 'model'>,
     options?: {
-      middlewares?: LanguageModelV1Middleware[]
+      middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof generateObject>> {
     const model = await this.resolveModel(modelOrId, options?.middlewares)
@@ -177,7 +178,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     modelId: string,
     params: Omit<Parameters<typeof streamObject>[0], 'model'>,
     options?: {
-      middlewares?: LanguageModelV1Middleware[]
+      middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof streamObject>>
 
@@ -188,7 +189,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     modelOrId: LanguageModel | string,
     params: Omit<Parameters<typeof streamObject>[0], 'model'>,
     options?: {
-      middlewares?: LanguageModelV1Middleware[]
+      middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof streamObject>> {
     const model = await this.resolveModel(modelOrId, options?.middlewares)
@@ -209,9 +210,9 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
    * 解析模型：如果是字符串则创建模型，如果是模型则直接返回
    */
   private async resolveModel(
-    modelOrId: LanguageModel | string,
-    middlewares?: LanguageModelV1Middleware[]
-  ): Promise<LanguageModel> {
+    modelOrId: LanguageModel,
+    middlewares?: LanguageModelV2Middleware[]
+  ): Promise<LanguageModelV2> {
     if (typeof modelOrId === 'string') {
       // 字符串modelId，需要创建模型
       return await createModel({

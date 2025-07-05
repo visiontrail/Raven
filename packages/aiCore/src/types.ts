@@ -33,10 +33,8 @@ export type {
   PerplexityProviderSettings,
   ProviderId,
   ProviderSettingsMap,
-  QwenProviderSettings,
   ReplicateProviderSettings,
   TogetherAIProviderSettings,
   VercelProviderSettings,
-  XaiProviderSettings,
-  ZhipuProviderSettings
+  XaiProviderSettings
 } from './core/providers/registry'

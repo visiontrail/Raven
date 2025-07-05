@@ -1,7 +1,7 @@
 /**
  * Creation 模块类型定义
  */
-import { LanguageModelV1Middleware } from 'ai'
+import { LanguageModelV2Middleware } from '@ai-sdk/provider'
 
 import { ProviderId, ProviderSettingsMap } from '../../types'
 import { AiPlugin } from '../plugins'
@@ -13,7 +13,7 @@ export interface ModelCreationRequest {
   providerId: ProviderId
   modelId: string
   options: ProviderSettingsMap[ProviderId]
-  middlewares?: LanguageModelV1Middleware[]
+  middlewares?: LanguageModelV2Middleware[]
 }
 
 /**
@@ -28,5 +28,5 @@ export interface ResolvedConfig {
     id: string
   }
   plugins: AiPlugin[]
-  middlewares: LanguageModelV1Middleware[]
+  middlewares: LanguageModelV2Middleware[]
 }

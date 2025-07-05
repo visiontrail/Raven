@@ -4,6 +4,8 @@
  */
 import type { OpenAIProvider } from '@ai-sdk/openai'
 
+import { ProviderId } from '../../../../types'
+
 // 派生自 OpenAI SDK 的标准工具入参类型
 type WebSearchPreviewParams = Parameters<OpenAIProvider['tools']['webSearchPreview']>[0]
 
@@ -106,7 +108,7 @@ export function adaptAnthropicWebSearch(params: any, webSearchConfig: WebSearchC
  */
 export function adaptWebSearchForProvider(
   params: any,
-  providerId: string,
+  providerId: ProviderId,
   webSearchConfig: WebSearchConfig | boolean
 ): any {
   switch (providerId) {
