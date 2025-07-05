@@ -1,11 +1,11 @@
 import { type AnthropicProviderOptions } from '@ai-sdk/anthropic'
 import { type GoogleGenerativeAIProviderOptions } from '@ai-sdk/google'
 import { type OpenAIResponsesProviderOptions } from '@ai-sdk/openai'
-import { type LanguageModelV1ProviderMetadata } from '@ai-sdk/provider'
+import { type SharedV2ProviderMetadata } from '@ai-sdk/provider'
 
 import { type OpenRouterProviderOptions } from './openrouter'
 
-export type ProviderOptions<T extends keyof LanguageModelV1ProviderMetadata> = LanguageModelV1ProviderMetadata[T]
+export type ProviderOptions<T extends keyof SharedV2ProviderMetadata> = SharedV2ProviderMetadata[T]
 
 /**
  * 供应商选项类型，如果map中没有，说明没有约束
@@ -28,4 +28,4 @@ export type TypedProviderOptions = {
   [K in keyof ProviderOptionsMap]?: ProviderOptionsMap[K]
 } & {
   [K in string]?: Record<string, any>
-} & LanguageModelV1ProviderMetadata
+} & SharedV2ProviderMetadata

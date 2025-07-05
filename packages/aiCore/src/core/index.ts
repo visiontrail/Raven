@@ -19,5 +19,6 @@ export {
 } from './models'
 
 // 执行管理
+export type { MCPRequestContext } from './plugins/built-in/mcpPromptPlugin'
 export type { ExecutionOptions, ExecutorConfig } from './runtime'
 export { createExecutor, createOpenAICompatibleExecutor } from './runtime'

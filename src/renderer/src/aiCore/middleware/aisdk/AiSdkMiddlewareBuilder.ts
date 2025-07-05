@@ -1,8 +1,4 @@
-import {
-  extractReasoningMiddleware,
-  LanguageModelV1Middleware,
-  simulateStreamingMiddleware
-} from '@cherrystudio/ai-core'
+import { LanguageModelV2Middleware, simulateStreamingMiddleware } from '@cherrystudio/ai-core'
 import type { MCPTool, Model, Provider } from '@renderer/types'
 import type { Chunk } from '@renderer/types/chunk'
 
@@ -26,7 +22,7 @@ export interface AiSdkMiddlewareConfig {
  */
 export interface NamedAiSdkMiddleware {
   name: string
-  middleware: LanguageModelV1Middleware
+  middleware: LanguageModelV2Middleware
 }
 
 /**
@@ -75,7 +71,7 @@ export class AiSdkMiddlewareBuilder {
   /**
    * 构建最终的中间件数组
    */
-  public build(): LanguageModelV1Middleware[] {
+  public build(): LanguageModelV2Middleware[] {
     return this.middlewares.map((m) => m.middleware)
   }
 
@@ -106,7 +102,7 @@ export class AiSdkMiddlewareBuilder {
  * 根据配置构建AI SDK中间件的工厂函数
  * 这里要注意构建顺序，因为有些中间件需要依赖其他中间件的结果
  */
-export function buildAiSdkMiddlewares(config: AiSdkMiddlewareConfig): LanguageModelV1Middleware[] {
+export function buildAiSdkMiddlewares(config: AiSdkMiddlewareConfig): LanguageModelV2Middleware[] {
   const builder = new AiSdkMiddlewareBuilder()
 
   // 1. 根据provider添加特定中间件
@@ -143,10 +139,10 @@ function addProviderSpecificMiddlewares(builder: AiSdkMiddlewareBuilder, config:
       // Anthropic特定中间件
       break
     case 'openai':
-      builder.add({
-        name: 'thinking-tag-extraction',
-        middleware: extractReasoningMiddleware({ tagName: 'think' })
-      })
+      // builder.add({
+      //   name: 'thinking-tag-extraction',
+      //   middleware: extractReasoningMiddleware({ tagName: 'think' })
+      // })
       break
     case 'gemini':
       // Gemini特定中间件

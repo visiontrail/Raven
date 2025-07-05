@@ -16,7 +16,7 @@ export type {
 
 // === 便捷工厂函数 ===
 
-import { LanguageModelV1Middleware } from 'ai'
+import { LanguageModelV2Middleware } from '@ai-sdk/provider'
 
 import { type ProviderId, type ProviderSettingsMap } from '../../types'
 import { type AiPlugin } from '../plugins'
@@ -54,7 +54,7 @@ export async function streamText<T extends ProviderId>(
   modelId: string,
   params: Parameters<RuntimeExecutor<T>['streamText']>[1],
   plugins?: AiPlugin[],
-  middlewares?: LanguageModelV1Middleware[]
+  middlewares?: LanguageModelV2Middleware[]
 ): Promise<ReturnType<RuntimeExecutor<T>['streamText']>> {
   const executor = createExecutor(providerId, options, plugins)
   return executor.streamText(modelId, params, { middlewares })
@@ -69,7 +69,7 @@ export async function generateText<T extends ProviderId>(
   modelId: string,
   params: Parameters<RuntimeExecutor<T>['generateText']>[1],
   plugins?: AiPlugin[],
-  middlewares?: LanguageModelV1Middleware[]
+  middlewares?: LanguageModelV2Middleware[]
 ): Promise<ReturnType<RuntimeExecutor<T>['generateText']>> {
   const executor = createExecutor(providerId, options, plugins)
   return executor.generateText(modelId, params, { middlewares })
@@ -84,7 +84,7 @@ export async function generateObject<T extends ProviderId>(
   modelId: string,
   params: Parameters<RuntimeExecutor<T>['generateObject']>[1],
   plugins?: AiPlugin[],
-  middlewares?: LanguageModelV1Middleware[]
+  middlewares?: LanguageModelV2Middleware[]
 ): Promise<ReturnType<RuntimeExecutor<T>['generateObject']>> {
   const executor = createExecutor(providerId, options, plugins)
   return executor.generateObject(modelId, params, { middlewares })
@@ -99,7 +99,7 @@ export async function streamObject<T extends ProviderId>(
   modelId: string,
   params: Parameters<RuntimeExecutor<T>['streamObject']>[1],
   plugins?: AiPlugin[],
-  middlewares?: LanguageModelV1Middleware[]
+  middlewares?: LanguageModelV2Middleware[]
 ): Promise<ReturnType<RuntimeExecutor<T>['streamObject']>> {
   const executor = createExecutor(providerId, options, plugins)
   return executor.streamObject(modelId, params, { middlewares })

@@ -195,7 +195,7 @@ export default class ModernAiProvider {
     // 创建带有中间件的执行器
     if (middlewareConfig.onChunk) {
       // 流式处理 - 使用适配器
-      const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk)
+      const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk, middlewareConfig.mcpTools)
       console.log('最终params', params)
       const streamResult = await executor.streamText(
         modelId,

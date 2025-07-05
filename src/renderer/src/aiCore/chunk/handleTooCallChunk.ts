@@ -4,8 +4,9 @@
  * 提供工具调用相关的处理API，每个交互使用一个新的实例
  */
 
+import { ToolCallUnion, ToolSet } from '@cherrystudio/ai-core/index'
 import Logger from '@renderer/config/logger'
-import { MCPToolResponse } from '@renderer/types'
+import { MCPTool, MCPToolResponse } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
 
 /**
@@ -19,10 +20,13 @@ export class ToolCallChunkHandler {
       toolCallId: string
       toolName: string
       args: any
-      //   mcpTool: MCPTool
+      mcpTool: MCPTool
     }
   >()
-  constructor(private onChunk: (chunk: Chunk) => void) {}
+  constructor(
+    private onChunk: (chunk: Chunk) => void,
+    private mcpTools: MCPTool[]
+  ) {}
 
   //   /**
   //    * 设置 onChunk 回调
@@ -34,10 +38,14 @@ export class ToolCallChunkHandler {
   /**
    * 处理工具调用事件
    */
-  public handleToolCall(chunk: any): void {
+  public handleToolCall(
+    chunk: {
+      type: 'tool-call'
+    } & ToolCallUnion<ToolSet>
+  ): void {
     const toolCallId = chunk.toolCallId
     const toolName = chunk.toolName
-    const args = chunk.args || {}
+    const args = chunk.input || {}
 
     if (!toolCallId || !toolName) {
       Logger.warn(`🔧 [ToolCallChunkHandler] Invalid tool call chunk: missing toolCallId or toolName`)
@@ -51,17 +59,14 @@ export class ToolCallChunkHandler {
     this.activeToolCalls.set(toolCallId, {
       toolCallId,
       toolName,
-      args
-      //   mcpTool
+      args,
+      mcpTool: this.mcpTools.find((tool) => tool.name === toolName)!
     })
 
     // 创建 MCPToolResponse 格式
     const toolResponse: MCPToolResponse = {
       id: toolCallId,
-      tool: {
-        id: toolCallId,
-        name: toolName
-      },
+      tool: this.activeToolCalls.get(toolCallId)!.mcpTool,
       arguments: args,
       status: 'invoking',
       toolCallId: toolCallId
@@ -98,10 +103,7 @@ export class ToolCallChunkHandler {
     // 创建工具调用结果的 MCPToolResponse 格式
     const toolResponse: MCPToolResponse = {
       id: toolCallId,
-      tool: {
-        id: toolCallId,
-        name: toolCallInfo.toolName
-      },
+      tool: toolCallInfo.mcpTool,
       arguments: toolCallInfo.args,
       status: 'done',
       response: {

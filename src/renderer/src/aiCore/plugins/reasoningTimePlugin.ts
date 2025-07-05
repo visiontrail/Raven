@@ -1,4 +1,4 @@
-import { definePlugin } from '@cherrystudio/ai-core'
+import { definePlugin, TextStreamPart, ToolSet } from '@cherrystudio/ai-core'
 
 export default definePlugin({
   name: 'reasoningTimePlugin',
@@ -8,57 +8,62 @@ export default definePlugin({
     let thinkingStartTime = 0
     let hasStartedThinking = false
     let accumulatedThinkingContent = ''
+    let reasoningBlockId = ''
 
-    return new TransformStream({
-      transform(chunk, controller) {
-        if (chunk.type !== 'reasoning') {
-          // === 处理 reasoning 结束  ===
-          if (hasStartedThinking) {
-            console.log(`[ReasoningPlugin] Ending reasoning.`)
-
-            // 生成 reasoning-signature
-            controller.enqueue({
-              type: 'reasoning-signature',
-              text: accumulatedThinkingContent,
-              thinking_millsec: performance.now() - thinkingStartTime
-            })
-
-            // 重置状态
-            accumulatedThinkingContent = ''
-            hasStartedThinking = false
-            thinkingStartTime = 0
-          }
-
-          controller.enqueue(chunk)
-          return
-        }
-
+    return new TransformStream<TextStreamPart<ToolSet>, TextStreamPart<ToolSet>>({
+      transform(chunk: TextStreamPart<ToolSet>, controller: TransformStreamDefaultController<TextStreamPart<ToolSet>>) {
         // === 处理 reasoning 类型 ===
+        if (chunk.type === 'reasoning') {
+          if (!hasStartedThinking) {
+            hasStartedThinking = true
+            thinkingStartTime = performance.now()
+            reasoningBlockId = chunk.id
+          }
+          accumulatedThinkingContent += chunk.text
 
-        // 1. 时间跟踪逻辑
-        if (!hasStartedThinking) {
-          hasStartedThinking = true
-          thinkingStartTime = performance.now()
-          console.log(`[ReasoningPlugin] Starting reasoning session`)
+          controller.enqueue({
+            ...chunk,
+            providerMetadata: {
+              ...chunk.providerMetadata,
+              metadata: {
+                ...chunk.providerMetadata?.metadata,
+                thinking_millsec: performance.now() - thinkingStartTime,
+                thinking_content: accumulatedThinkingContent
+              }
+            }
+          })
+        } else if (hasStartedThinking) {
+          controller.enqueue({
+            type: 'reasoning-end',
+            id: reasoningBlockId,
+            providerMetadata: {
+              metadata: {
+                thinking_millsec: performance.now() - thinkingStartTime,
+                thinking_content: accumulatedThinkingContent
+              }
+            }
+          })
+          accumulatedThinkingContent = ''
+          hasStartedThinking = false
+          thinkingStartTime = 0
+          reasoningBlockId = ''
+          controller.enqueue(chunk)
+        } else {
+          controller.enqueue(chunk)
         }
-        accumulatedThinkingContent += chunk.textDelta
-
-        // 2. 直接透传 chunk，并附加上时间
-        console.log(`[ReasoningPlugin] Forwarding reasoning chunk: "${chunk.textDelta}"`)
-        controller.enqueue({
-          ...chunk,
-          thinking_millsec: performance.now() - thinkingStartTime
-        })
       },
 
-      // === flush 处理流结束时仍在reasoning状态的场景 ===
       flush(controller) {
         if (hasStartedThinking) {
-          console.log(`[ReasoningPlugin] Final flush for reasoning-signature.`)
           controller.enqueue({
-            type: 'reasoning-signature',
-            text: accumulatedThinkingContent,
-            thinking_millsec: performance.now() - thinkingStartTime
+            type: 'reasoning-end',
+            id: reasoningBlockId,
+            providerMetadata: {
+              metadata: {
+                thinking_millsec: performance.now() - thinkingStartTime,
+                thinking_content: accumulatedThinkingContent
+              }
+            }
           })
         }
       }

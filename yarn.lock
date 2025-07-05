@@ -956,6 +956,7 @@ __metadata:
     ollama-ai-provider: "npm:^1.2.0"
     tsdown: "npm:^0.12.9"
     typescript: "npm:^5.0.0"
+    zod: "npm:^3.25.0"
   peerDependenciesMeta:
     "@ai-sdk/amazon-bedrock":
       optional: true
@@ -20137,6 +20138,13 @@ __metadata:
   version: 3.25.56
   resolution: "zod@npm:3.25.56"
   checksum: 10c0/3800f01d4b1df932b91354eb1e648f69cc7e5561549e6d2bf83827d930a5f33bbf92926099445f6fc1ebb64ca9c6513ef9ae5e5409cfef6325f354bcf6fc9a24
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.25.0":
+  version: 3.25.74
+  resolution: "zod@npm:3.25.74"
+  checksum: 10c0/59e38b046ac333b5bd1ba325a83b6798721227cbfb1e69dfc7159bd7824b904241ab923026edb714fafefec3624265ae374a70aee9a5a45b365bd31781ffa105
   languageName: node
   linkType: hard
 

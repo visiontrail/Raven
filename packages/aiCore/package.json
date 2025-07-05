@@ -46,7 +46,8 @@
     "@openrouter/ai-sdk-provider": "^0.7.2",
     "ai": "5.0.0-beta.7",
     "anthropic-vertex-ai": "^1.0.2",
-    "ollama-ai-provider": "^1.2.0"
+    "ollama-ai-provider": "^1.2.0",
+    "zod": "^3.25.0"
   },
   "peerDependenciesMeta": {
     "@ai-sdk/amazon-bedrock": {

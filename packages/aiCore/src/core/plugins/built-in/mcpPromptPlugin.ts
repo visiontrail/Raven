@@ -3,8 +3,7 @@
  * 为不支持原生 Function Call 的模型提供 prompt 方式的工具调用
  * 内置默认逻辑，支持自定义覆盖
  */
-import type { ToolSet } from 'ai'
-import { ToolExecutionError } from 'ai'
+import type { ModelMessage, TextStreamPart, ToolErrorUnion, ToolSet } from 'ai'
 
 import { definePlugin } from '../index'
 import type { AiRequestContext } from '../types'
@@ -44,17 +43,17 @@ export interface MCPPromptConfig {
   // 是否启用（用于运行时开关）
   enabled?: boolean
   // 自定义系统提示符构建函数（可选，有默认实现）
-  buildSystemPrompt?: (userSystemPrompt: string, tools: ToolSet) => Promise<string>
+  buildSystemPrompt?: (userSystemPrompt: string, tools: ToolSet) => string
   // 自定义工具解析函数（可选，有默认实现）
   parseToolUse?: (content: string, tools: ToolSet) => ToolUseResult[]
-  createSystemMessage?: (systemPrompt: string, originalParams: any, context: MCPRequestContext) => string | null
+  createSystemMessage?: (systemPrompt: string, originalParams: any, context: AiRequestContext) => string | null
 }
 
 /**
  * 扩展的 AI 请求上下文，支持 MCP 工具存储
  */
-interface MCPRequestContext extends AiRequestContext {
-  mcpTools?: ToolSet
+export interface MCPRequestContext extends AiRequestContext {
+  mcpTools: ToolSet
 }
 
 /**
@@ -201,7 +200,7 @@ function buildAvailableTools(tools: ToolSet): string {
   <name>${toolName}</name>
   <description>${tool.description || ''}</description>
   <arguments>
-    ${tool.parameters ? JSON.stringify(tool.parameters) : ''}
+    ${tool.inputSchema ? JSON.stringify(tool.inputSchema) : ''}
   </arguments>
 </tool>
 `
@@ -215,7 +214,7 @@ ${availableTools}
 /**
  * 默认的系统提示符构建函数（提取自 Cherry Studio）
  */
-async function defaultBuildSystemPrompt(userSystemPrompt: string, tools: ToolSet): Promise<string> {
+function defaultBuildSystemPrompt(userSystemPrompt: string, tools: ToolSet): string {
   const availableTools = buildAvailableTools(tools)
 
   const fullPrompt = DEFAULT_SYSTEM_PROMPT.replace('{{ TOOL_USE_EXAMPLES }}', DEFAULT_TOOL_USE_EXAMPLES)
@@ -291,8 +290,7 @@ export const createMCPPromptPlugin = (config: MCPPromptConfig = {}) => {
 
   return definePlugin({
     name: 'built-in:mcp-prompt',
-
-    transformParams: async (params: any, context: MCPRequestContext) => {
+    transformParams: (params: any, context: AiRequestContext) => {
       if (!enabled || !params.tools || typeof params.tools !== 'object') {
         return params
       }
@@ -303,7 +301,7 @@ export const createMCPPromptPlugin = (config: MCPPromptConfig = {}) => {
 
       // 构建系统提示符
       const userSystemPrompt = typeof params.system === 'string' ? params.system : ''
-      const systemPrompt = await buildSystemPrompt(userSystemPrompt, params.tools)
+      const systemPrompt = buildSystemPrompt(userSystemPrompt, params.tools)
       let systemMessage: string | null = systemPrompt
       console.log('config.context', context)
       if (config.createSystemMessage) {
@@ -320,25 +318,30 @@ export const createMCPPromptPlugin = (config: MCPPromptConfig = {}) => {
       console.log('transformedParams', transformedParams)
       return transformedParams
     },
-
-    // 流式处理：监听 step-finish 事件并处理工具调用
-    transformStream: (_, context: MCPRequestContext) => () => {
+    transformStream: (_: any, context: AiRequestContext) => () => {
       let textBuffer = ''
+      let stepId = ''
       let executedResults: { toolCallId: string; toolName: string; result: any; isError?: boolean }[] = []
-
-      return new TransformStream<any>({
-        async transform(chunk, controller) {
+      if (!context.mcpTools) {
+        throw new Error('No tools available')
+      }
+      type TOOLS = NonNullable<typeof context.mcpTools>
+      return new TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>({
+        async transform(
+          chunk: TextStreamPart<TOOLS>,
+          controller: TransformStreamDefaultController<TextStreamPart<TOOLS>>
+        ) {
           // console.log('chunk', chunk)
           // 收集文本内容
-          if (chunk.type === 'text-delta') {
-            textBuffer += chunk.textDelta || ''
+          if (chunk.type === 'text') {
+            textBuffer += chunk.text || ''
+            stepId = chunk.id || ''
             // console.log('textBuffer', textBuffer)
             controller.enqueue(chunk)
             return
           }
 
-          // 监听 step-finish 事件
-          if (chunk.type === 'step-finish' || chunk.type === 'finish') {
+          if (chunk.type === 'finish-step') {
             // console.log('[MCP Prompt Stream] Received step-finish, checking for tool use...')
 
             // 从 context 获取工具信息
@@ -364,17 +367,11 @@ export const createMCPPromptPlugin = (config: MCPPromptConfig = {}) => {
 
             // console.log('[MCP Prompt Stream] Found valid tool uses:', validToolUses.length)
 
-            // 修改 step-finish 事件，标记为工具调用
-            if (chunk.type !== 'finish') {
-              controller.enqueue({
-                ...chunk,
-                finishReason: 'tool-call'
-              })
-            }
-
             // 发送 step-start 事件（工具调用步骤开始）
             controller.enqueue({
-              type: 'step-start'
+              type: 'start-step',
+              request: {},
+              warnings: []
             })
 
             // 执行工具调用
@@ -392,7 +389,7 @@ export const createMCPPromptPlugin = (config: MCPPromptConfig = {}) => {
                   type: 'tool-call',
                   toolCallId: toolUse.id,
                   toolName: toolUse.toolName,
-                  args: toolUse.arguments
+                  input: tool.inputSchema
                 })
 
                 const result = await tool.execute(toolUse.arguments, {
@@ -406,8 +403,8 @@ export const createMCPPromptPlugin = (config: MCPPromptConfig = {}) => {
                   type: 'tool-result',
                   toolCallId: toolUse.id,
                   toolName: toolUse.toolName,
-                  args: toolUse.arguments,
-                  result
+                  input: toolUse.arguments,
+                  output: result
                 })
 
                 executedResults.push({
@@ -420,39 +417,36 @@ export const createMCPPromptPlugin = (config: MCPPromptConfig = {}) => {
                 console.error(`[MCP Prompt Stream] Tool execution failed: ${toolUse.toolName}`, error)
 
                 // 使用 AI SDK 标准错误格式
-                const toolError = new ToolExecutionError({
-                  toolName: toolUse.toolName,
-                  toolArgs: toolUse.arguments,
+                const toolError: ToolErrorUnion<typeof context.mcpTools> = {
+                  type: 'tool-error',
                   toolCallId: toolUse.id,
-                  message: `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`,
-                  cause: error instanceof Error ? error : undefined
-                })
+                  toolName: toolUse.toolName,
+                  input: toolUse.arguments,
+                  error: error instanceof Error ? error.message : String(error)
+                }
+
+                controller.enqueue(toolError)
 
                 // 发送标准错误事件
                 controller.enqueue({
                   type: 'error',
-                  error: {
-                    message: toolError.message,
-                    name: toolError.name,
-                    toolName: toolError.toolName,
-                    toolCallId: toolError.toolCallId
-                  }
+                  error: toolError.error
                 })
 
-                // 发送 tool-result 错误事件
-                controller.enqueue({
-                  type: 'tool-result',
-                  toolCallId: toolUse.id,
-                  toolName: toolUse.toolName,
-                  args: toolUse.arguments,
-                  isError: true,
-                  result: toolError.message
-                })
+                // // 发送 tool-result 错误事件
+                // controller.enqueue({
+                //   type: 'tool-result',
+                //   toolCallId: toolUse.id,
+                //   toolName: toolUse.toolName,
+                //   args: toolUse.arguments,
+                //   isError: true,
+                //   result: toolError.message
+                // })
 
                 executedResults.push({
                   toolCallId: toolUse.id,
                   toolName: toolUse.toolName,
-                  result: toolError.message,
+                  result: toolError.error,
                   isError: true
                 })
               }
@@ -460,8 +454,11 @@ export const createMCPPromptPlugin = (config: MCPPromptConfig = {}) => {
 
             // 发送最终的 step-finish 事件
             controller.enqueue({
-              type: 'step-finish',
-              finishReason: 'tool-call'
+              type: 'finish-step',
+              finishReason: 'tool-calls',
+              response: chunk.response,
+              usage: chunk.usage,
+              providerMetadata: chunk.providerMetadata
             })
 
             // 递归调用逻辑
@@ -481,7 +478,7 @@ export const createMCPPromptPlugin = (config: MCPPromptConfig = {}) => {
                 .join('\n\n')
               // console.log('context.originalParams.messages', context.originalParams.messages)
               // 构建新的对话消息
-              const newMessages = [
+              const newMessages: ModelMessage[] = [
                 ...(context.originalParams.messages || []),
                 {
                   role: 'assistant',
@@ -540,8 +537,9 @@ export const createMCPPromptPlugin = (config: MCPPromptConfig = {}) => {
 
                 // 继续发送文本增量，保持流的连续性
                 controller.enqueue({
-                  type: 'text-delta',
-                  textDelta: '\n\n[工具执行后递归调用失败，继续对话...]'
+                  type: 'text',
+                  id: stepId,
+                  text: '\n\n[工具执行后递归调用失败，继续对话...]'
                 })
               }
             }

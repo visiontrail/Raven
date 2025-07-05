@@ -68,8 +68,10 @@ export type {
   TextStreamPart,
   // 工具相关类型
   Tool,
+  ToolCallUnion,
   ToolModelMessage,
   ToolResultPart,
+  ToolSet,
   UserModelMessage
 } from 'ai'
 export { defaultSettingsMiddleware, extractReasoningMiddleware, simulateStreamingMiddleware, smoothStream } from 'ai'

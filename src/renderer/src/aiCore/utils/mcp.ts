@@ -48,7 +48,7 @@ export function convertMcpToolsToAiSdkTools(mcpTools: MCPTool[]): Record<string,
     console.log('mcpTool', mcpTool.inputSchema)
     tools[mcpTool.name] = aiSdk.tool<any, ToolCallResult>({
       description: mcpTool.description || `Tool from ${mcpTool.serverName}`,
-      parameters: aiSdk.jsonSchema(mcpTool.inputSchema as JSONSchema7),
+      inputSchema: aiSdk.jsonSchema(mcpTool.inputSchema as JSONSchema7),
       execute: async (params): Promise<ToolCallResult> => {
         console.log('execute_params', params)
         // 创建适配的 MCPToolResponse 对象

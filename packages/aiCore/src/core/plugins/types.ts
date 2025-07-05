@@ -20,6 +20,7 @@ export interface AiRequestContext {
   requestId: string
   recursiveCall: RecursiveCallFn
   isRecursiveCall?: boolean
+  mcpTools?: ToolSet
   [key: string]: any
 }
 
@@ -47,7 +48,7 @@ export interface AiPlugin {
   transformStream?: (
     params: any,
     context: AiRequestContext
-  ) => <TOOLS extends ToolSet>(options: {
+  ) => <TOOLS extends ToolSet>(options?: {
     tools: TOOLS
     stopStream: () => void
   }) => TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>
