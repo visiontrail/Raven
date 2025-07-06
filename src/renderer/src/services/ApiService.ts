@@ -15,7 +15,7 @@ import {
 import { getStoreSetting } from '@renderer/hooks/useSettings'
 import i18n from '@renderer/i18n'
 import store from '@renderer/store'
-import { Assistant, MCPTool, Model, Provider } from '@renderer/types'
+import { Assistant, MCPServer, MCPTool, Model, Provider } from '@renderer/types'
 import { type Chunk, ChunkType } from '@renderer/types/chunk'
 import { Message } from '@renderer/types/newMessage'
 import { SdkModel } from '@renderer/types/sdk'
@@ -263,7 +263,7 @@ export async function fetchMcpTools(assistant: Assistant) {
 
   if (enabledMCPs && enabledMCPs.length > 0) {
     try {
-      const toolPromises = enabledMCPs.map<Promise<MCPTool[]>>(async (mcpServer) => {
+      const toolPromises = enabledMCPs.map<Promise<MCPTool[]>>(async (mcpServer: MCPServer) => {
         try {
           const tools = await window.api.mcp.listTools(mcpServer)
           return tools.filter((tool: any) => !mcpServer.disabledTools?.includes(tool.name))

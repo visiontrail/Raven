@@ -4,7 +4,7 @@
  * 提供工具调用相关的处理API，每个交互使用一个新的实例
  */
 
-import { ToolCallUnion, ToolSet } from '@cherrystudio/ai-core/index'
+import { ToolCallUnion, ToolResultUnion, ToolSet } from '@cherrystudio/ai-core/index'
 import Logger from '@renderer/config/logger'
 import { MCPTool, MCPToolResponse } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
@@ -84,9 +84,13 @@ export class ToolCallChunkHandler {
   /**
    * 处理工具调用结果事件
    */
-  public handleToolResult(chunk: any): void {
+  public handleToolResult(
+    chunk: {
+      type: 'tool-result'
+    } & ToolResultUnion<ToolSet>
+  ): void {
     const toolCallId = chunk.toolCallId
-    const result = chunk.result
+    const result = chunk.output
 
     if (!toolCallId) {
       Logger.warn(`🔧 [ToolCallChunkHandler] Invalid tool result chunk: missing toolCallId`)

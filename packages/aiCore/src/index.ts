@@ -71,6 +71,7 @@ export type {
   ToolCallUnion,
   ToolModelMessage,
   ToolResultPart,
+  ToolResultUnion,
   ToolSet,
   UserModelMessage
 } from 'ai'

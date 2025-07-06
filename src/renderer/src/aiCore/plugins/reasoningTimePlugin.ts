@@ -49,7 +49,9 @@ export default definePlugin({
           reasoningBlockId = ''
           controller.enqueue(chunk)
         } else {
-          controller.enqueue(chunk)
+          if (chunk.type !== 'reasoning-end') {
+            controller.enqueue(chunk)
+          }
         }
       },
 
