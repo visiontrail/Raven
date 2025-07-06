@@ -27,5 +27,5 @@ export function getAiSdkProviderId(provider: Provider): ProviderId | 'openai-com
     return provider.id as ProviderId
   }
 
-  return provider.id as ProviderId
+  return 'openai-compatible'
 }
