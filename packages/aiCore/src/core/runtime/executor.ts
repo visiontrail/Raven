@@ -217,7 +217,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       return await createModel({
         providerId: this.config.providerId,
         modelId: modelOrId,
-        options: this.config.options,
+        providerSettings: this.config.providerSettings,
         middlewares
       })
     } else {
@@ -245,7 +245,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
   ): RuntimeExecutor<T> {
     return new RuntimeExecutor({
       providerId,
-      options,
+      providerSettings: options,
       plugins
     })
   }
@@ -259,7 +259,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
   ): RuntimeExecutor<'openai-compatible'> {
     return new RuntimeExecutor({
       providerId: 'openai-compatible',
-      options,
+      providerSettings: options,
       plugins
     })
   }

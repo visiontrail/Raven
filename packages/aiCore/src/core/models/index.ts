@@ -4,7 +4,7 @@
  */
 
 // 主要的模型创建API
-export { createModel, createModels, type ModelConfig } from './factory'
+export { createModel, createModels } from './factory'
 
 // 底层Provider创建功能（供高级用户使用）
 export {
@@ -16,4 +16,4 @@ export {
 } from './ProviderCreator'
 
 // 保留原有类型
-export type { ModelCreationRequest, ResolvedConfig } from './types'
+export type { ModelConfig } from './types'

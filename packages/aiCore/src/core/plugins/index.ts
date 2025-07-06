@@ -1,12 +1,17 @@
 // 核心类型和接口
 export type { AiPlugin, AiRequestContext, HookResult, HookType, PluginManagerConfig } from './types'
+import type { ProviderId } from '../../types'
 import type { AiPlugin, AiRequestContext } from './types'
 
 // 插件管理器
 export { PluginManager } from './manager'
 
 // 工具函数
-export function createContext(providerId: string, modelId: string, originalParams: any): AiRequestContext {
+export function createContext<T extends ProviderId>(
+  providerId: T,
+  modelId: string,
+  originalParams: any
+): AiRequestContext {
   return {
     providerId,
     modelId,
