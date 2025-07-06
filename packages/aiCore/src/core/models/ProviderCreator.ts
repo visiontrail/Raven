@@ -25,26 +25,43 @@ export class ProviderCreationError extends Error {
  * 创建基础 AI SDK 模型实例
  * 对于已知的 Provider 使用严格类型检查，未知的 Provider 默认使用 openai-compatible
  */
-export async function createBaseModel<T extends ProviderId>(
-  providerId: T,
-  modelId: string,
-  options: ProviderSettingsMap[T],
-  middlewares?: LanguageModelV2Middleware[]
-): Promise<LanguageModelV2>
+export async function createBaseModel<T extends ProviderId>({
+  providerId,
+  modelId,
+  providerSettings
+  // middlewares
+}: {
+  providerId: T
+  modelId: string
+  providerSettings: ProviderSettingsMap[T]
+  // middlewares?: LanguageModelV1Middleware[]
+}): Promise<LanguageModelV2>
 
-export async function createBaseModel(
-  providerId: string,
-  modelId: string,
-  options: ProviderSettingsMap['openai-compatible'],
-  middlewares?: LanguageModelV2Middleware[]
-): Promise<LanguageModelV2>
+export async function createBaseModel({
+  providerId,
+  modelId,
+  providerSettings
+  // middlewares
+}: {
+  providerId: string
+  modelId: string
+  providerSettings: ProviderSettingsMap['openai-compatible']
+  // middlewares?: LanguageModelV1Middleware[]
+}): Promise<LanguageModelV2>
 
-export async function createBaseModel(
-  providerId: string,
-  modelId: string = 'default',
-  options: any,
-  middlewares?: LanguageModelV2Middleware[]
-): Promise<LanguageModelV2> {
+export async function createBaseModel({
+  providerId,
+  modelId,
+  providerSettings,
+  // middlewares,
+  extraModelConfig
+}: {
+  providerId: string
+  modelId: string
+  providerSettings: ProviderSettingsMap[ProviderId]
+  // middlewares?: LanguageModelV1Middleware[]
+  extraModelConfig?: any
+}): Promise<LanguageModelV2> {
   try {
     // 对于不在注册表中的 provider，默认使用 openai-compatible
     const effectiveProviderId = aiProviderRegistry.isSupported(providerId) ? providerId : 'openai-compatible'
@@ -67,7 +84,7 @@ export async function createBaseModel(
       )
     }
     // 创建provider实例
-    let provider = creatorFunction(options)
+    let provider = creatorFunction(providerSettings)
 
     // 加一个特判
     if (providerConfig.id === 'openai' && !isOpenAIChatCompletionOnlyModel(modelId)) {
@@ -75,15 +92,16 @@ export async function createBaseModel(
     }
     // 返回模型实例
     if (typeof provider === 'function') {
-      let model: LanguageModelV2 = provider(modelId)
+      // extraModelConfig:例如google的useSearchGrounding
+      const model: LanguageModelV2 = provider(modelId, extraModelConfig)
 
-      // 应用 AI SDK 中间件
-      if (middlewares && middlewares.length > 0) {
-        model = wrapLanguageModel({
-          model: model,
-          middleware: middlewares
-        })
-      }
+      // // 应用 AI SDK 中间件
+      // if (middlewares && middlewares.length > 0) {
+      //   model = wrapLanguageModel({
+      //     model: model,
+      //     middleware: middlewares
+      //   })
+      // }
 
       return model
     } else {

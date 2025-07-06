@@ -9,7 +9,7 @@ import { type AiPlugin } from '../plugins'
  */
 export interface RuntimeConfig<T extends ProviderId = ProviderId> {
   providerId: T
-  options: ProviderSettingsMap[T]
+  providerSettings: ProviderSettingsMap[T]
   plugins?: AiPlugin[]
 }
 

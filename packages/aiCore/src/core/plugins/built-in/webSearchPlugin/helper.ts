@@ -51,27 +51,29 @@ export function adaptOpenAIWebSearch(params: any, webSearchConfig: WebSearchConf
 }
 
 /**
+ *
  * 适配 Gemini 网络搜索
  * 将 googleSearch 工具放入 providerOptions.google.tools
  */
-export function adaptGeminiWebSearch(params: any, webSearchConfig: WebSearchConfig | boolean): any {
-  const config = typeof webSearchConfig === 'boolean' ? {} : webSearchConfig
-  const googleSearchTool = { googleSearch: {} }
+// export function adaptGeminiWebSearch(params: any, webSearchConfig: WebSearchConfig | boolean): any {
+//   const config = typeof webSearchConfig === 'boolean' ? {} : webSearchConfig
+//   const googleSearchTool = { googleSearch: {} }
 
-  const existingTools = Array.isArray(params.providerOptions?.google?.tools) ? params.providerOptions.google.tools : []
+//   const existingTools = Array.isArray(params.providerOptions?.google?.tools) ? params.providerOptions.google.tools : []
 
-  return {
-    ...params,
-    providerOptions: {
-      ...params.providerOptions,
-      google: {
-        ...params.providerOptions?.google,
-        tools: [...existingTools, googleSearchTool],
-        ...(config.extra || {})
-      }
-    }
-  }
-}
+//   return {
+//     ...params,
+//     providerOptions: {
+//       ...params.providerOptions,
+//       google: {
+//         ...params.providerOptions?.google,
+//         useSearchGrounding: true,
+//         // tools: [...existingTools, googleSearchTool],
+//         ...(config.extra || {})
+//       }
+//     }
+//   }
+// }
 
 /**
  * 适配 Anthropic 网络搜索
@@ -115,9 +117,10 @@ export function adaptWebSearchForProvider(
     case 'openai':
       return adaptOpenAIWebSearch(params, webSearchConfig)
 
-    case 'google':
-    case 'google-vertex':
-      return adaptGeminiWebSearch(params, webSearchConfig)
+    // google的需要通过插件，在创建model的时候传入参数
+    // case 'google':
+    // case 'google-vertex':
+    //   return adaptGeminiWebSearch(params, webSearchConfig)
 
     case 'anthropic':
       return adaptAnthropicWebSearch(params, webSearchConfig)
@@ -126,13 +129,4 @@ export function adaptWebSearchForProvider(
       // 不支持的 provider，保持原样
       return params
   }
-}
-
-/**
- * 检查 provider 是否支持网络搜索
- */
-export function isWebSearchSupported(providerId: string): boolean {
-  const supportedProviders = ['openai', 'google', 'google-vertex', 'anthropic']
-
-  return supportedProviders.includes(providerId)
 }
