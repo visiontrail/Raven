@@ -8,7 +8,7 @@ export type { NamedMiddleware } from './middleware'
 export { createMiddlewares, wrapModelWithMiddlewares } from './middleware'
 
 // 创建管理
-export type { ModelCreationRequest, ResolvedConfig } from './models'
+export type { ModelConfig } from './models'
 export {
   createBaseModel,
   createImageModel,
@@ -19,6 +19,6 @@ export {
 } from './models'
 
 // 执行管理
-export type { MCPRequestContext } from './plugins/built-in/mcpPromptPlugin'
+export type { ToolUseRequestContext } from './plugins/built-in/toolUsePlugin/type'
 export type { ExecutionOptions, ExecutorConfig } from './runtime'
 export { createExecutor, createOpenAICompatibleExecutor } from './runtime'

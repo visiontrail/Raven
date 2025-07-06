@@ -218,7 +218,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       return await createModel({
         providerId: this.config.providerId,
         modelId: modelOrId,
-        providerSettings: this.config.providerSettings,
+        options: this.config.providerSettings,
         middlewares
       })
     } else {

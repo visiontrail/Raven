@@ -38,6 +38,7 @@ export interface AiPlugin {
   // 【Sequential】串行钩子 - 链式执行，支持数据转换
   transformParams?: (params: any, context: AiRequestContext) => any | Promise<any>
   transformResult?: (result: any, context: AiRequestContext) => any | Promise<any>
+  configureModel?: (model: any, context: AiRequestContext) => any | Promise<any>
 
   // 【Parallel】并行钩子 - 不依赖顺序，用于副作用
   onRequestStart?: (context: AiRequestContext) => void | Promise<void>

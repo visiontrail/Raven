@@ -2,8 +2,7 @@
  * Provider 创建器
  * 负责动态导入 AI SDK providers 并创建基础模型实例
  */
-import { ImageModelV2, type LanguageModelV2, LanguageModelV2Middleware } from '@ai-sdk/provider'
-import { wrapLanguageModel } from 'ai'
+import { ImageModelV2, type LanguageModelV2 } from '@ai-sdk/provider'
 
 import { type ProviderId, type ProviderSettingsMap } from '../../types'
 import { isOpenAIChatCompletionOnlyModel } from '../../utils/model'

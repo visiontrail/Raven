@@ -42,7 +42,7 @@ export function getReasoningEffort(assistant: Assistant, model: Model): Reasonin
 
     if (isSupportedThinkingTokenGeminiModel(model)) {
       if (GEMINI_FLASH_MODEL_REGEX.test(model.id)) {
-        return { reasoning_effort: 'none' }
+        return { reasoningEffort: 'none' }
       }
       return {}
     }
@@ -85,7 +85,7 @@ export function getReasoningEffort(assistant: Assistant, model: Model): Reasonin
         return { reasoning: { max_tokens: 0, exclude: true } }
       }
       if (GEMINI_FLASH_MODEL_REGEX.test(model.id)) {
-        return { reasoning_effort: 'none' }
+        return { reasoningEffort: 'none' }
       }
       return {}
     }
@@ -123,14 +123,14 @@ export function getReasoningEffort(assistant: Assistant, model: Model): Reasonin
   // Grok models
   if (isSupportedReasoningEffortGrokModel(model)) {
     return {
-      reasoning_effort: reasoningEffort
+      reasoningEffort: reasoningEffort
     }
   }
 
   // OpenAI models
   if (isSupportedReasoningEffortOpenAIModel(model) || isSupportedThinkingTokenGeminiModel(model)) {
     return {
-      reasoning_effort: reasoningEffort
+      reasoningEffort: reasoningEffort
     }
   }
 

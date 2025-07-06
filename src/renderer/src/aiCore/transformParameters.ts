@@ -3,7 +3,7 @@
  * 统一管理从各个 apiClient 提取的参数处理和转换功能
  */
 
-import { type ModelMessage, type StreamTextParams } from '@cherrystudio/ai-core'
+import { type ModelMessage, stepCountIs, type StreamTextParams } from '@cherrystudio/ai-core'
 import { DEFAULT_MAX_TOKENS } from '@renderer/config/constant'
 import {
   isGenerateImageModel,
@@ -245,7 +245,8 @@ export async function buildStreamTextParams(
     abortSignal: options.requestOptions?.signal,
     headers: options.requestOptions?.headers,
     providerOptions,
-    tools
+    tools,
+    stopWhen: stepCountIs(10)
   }
 
   return { params, modelId: model.id, capabilities: { enableReasoning, enableWebSearch, enableGenerateImage } }

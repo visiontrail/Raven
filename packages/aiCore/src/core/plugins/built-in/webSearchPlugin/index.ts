@@ -14,7 +14,7 @@ import { adaptWebSearchForProvider, type WebSearchConfig } from './helper'
  * options.ts 文件负责将高层级的设置（如 assistant.enableWebSearch）
  * 转换为 providerOptions 中的 webSearch: { enabled: true } 配置。
  */
-export const webSearchPlugin = (config) =>
+export const webSearchPlugin = () =>
   definePlugin({
     name: 'webSearch',
     enforce: 'pre',

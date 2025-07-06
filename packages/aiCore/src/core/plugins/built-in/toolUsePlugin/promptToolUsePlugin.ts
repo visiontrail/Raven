@@ -5,8 +5,9 @@
  */
 import type { ModelMessage, TextStreamPart, ToolErrorUnion, ToolSet } from 'ai'
 
-import { definePlugin } from '../index'
-import type { AiRequestContext } from '../types'
+import { definePlugin } from '../../index'
+import type { AiRequestContext } from '../../types'
+import { PromptToolUseConfig, ToolUseResult } from './type'
 
 /**
  * 使用 AI SDK 的 Tool 类型，更通用
@@ -24,37 +25,6 @@ import type { AiRequestContext } from '../types'
 //     }
 //   }
 // }
-
-/**
- * 解析结果类型
- * 表示从AI响应中解析出的工具使用意图
- */
-export interface ToolUseResult {
-  id: string
-  toolName: string
-  arguments: any
-  status: 'pending' | 'invoking' | 'done' | 'error'
-}
-
-/**
- * MCP Prompt 插件配置
- */
-export interface MCPPromptConfig {
-  // 是否启用（用于运行时开关）
-  enabled?: boolean
-  // 自定义系统提示符构建函数（可选，有默认实现）
-  buildSystemPrompt?: (userSystemPrompt: string, tools: ToolSet) => string
-  // 自定义工具解析函数（可选，有默认实现）
-  parseToolUse?: (content: string, tools: ToolSet) => ToolUseResult[]
-  createSystemMessage?: (systemPrompt: string, originalParams: any, context: AiRequestContext) => string | null
-}
-
-/**
- * 扩展的 AI 请求上下文，支持 MCP 工具存储
- */
-export interface MCPRequestContext extends AiRequestContext {
-  mcpTools: ToolSet
-}
 
 /**
  * 默认系统提示符模板（提取自 Cherry Studio）
@@ -282,14 +252,11 @@ function defaultParseToolUse(content: string, tools: ToolSet): ToolUseResult[] {
   return results
 }
 
-/**
- * 创建 MCP Prompt 插件
- */
-export const createMCPPromptPlugin = (config: MCPPromptConfig = {}) => {
+export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
   const { enabled = true, buildSystemPrompt = defaultBuildSystemPrompt, parseToolUse = defaultParseToolUse } = config
 
   return definePlugin({
-    name: 'built-in:mcp-prompt',
+    name: 'built-in:prompt-tool-use',
     transformParams: (params: any, context: AiRequestContext) => {
       if (!enabled || !params.tools || typeof params.tools !== 'object') {
         return params
@@ -315,6 +282,7 @@ export const createMCPPromptPlugin = (config: MCPPromptConfig = {}) => {
         ...(systemMessage ? { system: systemMessage } : {}),
         tools: undefined
       }
+      context.originalParams = transformedParams
       console.log('transformedParams', transformedParams)
       return transformedParams
     },

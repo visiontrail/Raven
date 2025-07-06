@@ -17,7 +17,7 @@ import {
   type ProviderSettingsMap,
   StreamTextParams
 } from '@cherrystudio/ai-core'
-import { createMCPPromptPlugin } from '@cherrystudio/ai-core/core/plugins/built-in'
+import { createPromptToolUsePlugin } from '@cherrystudio/ai-core/core/plugins/built-in'
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
 import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
@@ -136,7 +136,7 @@ export default class ModernAiProvider {
     // 3. 启用Prompt工具调用时添加工具插件
     if (middlewareConfig.enableTool && middlewareConfig.mcpTools && middlewareConfig.mcpTools.length > 0) {
       plugins.push(
-        createMCPPromptPlugin({
+        createPromptToolUsePlugin({
           enabled: true,
           createSystemMessage: (systemPrompt, params, context) => {
             if (context.modelId.includes('o1-mini') || context.modelId.includes('o1-preview')) {
@@ -157,6 +157,10 @@ export default class ModernAiProvider {
         })
       )
     }
+
+    // if (!middlewareConfig.enableTool && middlewareConfig.mcpTools && middlewareConfig.mcpTools.length > 0) {
+    //   plugins.push(createNativeToolUsePlugin())
+    // }
     console.log(
       '最终插件列表:',
       plugins.map((p) => p.name)

@@ -5,6 +5,6 @@
 export const BUILT_IN_PLUGIN_PREFIX = 'built-in:'
 
 export { createLoggingPlugin } from './logging'
-export type { MCPPromptConfig, ToolUseResult } from './mcpPromptPlugin'
-export { createMCPPromptPlugin } from './mcpPromptPlugin'
+export { createPromptToolUsePlugin } from './toolUsePlugin/promptToolUsePlugin'
+export type { PromptToolUseConfig, ToolUseRequestContext, ToolUseResult } from './toolUsePlugin/type'
 export { type WebSearchConfig, webSearchPlugin } from './webSearchPlugin'

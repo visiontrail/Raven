@@ -75,7 +75,13 @@ export type {
   ToolSet,
   UserModelMessage
 } from 'ai'
-export { defaultSettingsMiddleware, extractReasoningMiddleware, simulateStreamingMiddleware, smoothStream } from 'ai'
+export {
+  defaultSettingsMiddleware,
+  extractReasoningMiddleware,
+  simulateStreamingMiddleware,
+  smoothStream,
+  stepCountIs
+} from 'ai'
 
 // 重新导出所有 Provider Settings 类型
 export type {
