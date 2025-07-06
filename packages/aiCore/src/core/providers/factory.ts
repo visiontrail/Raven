@@ -130,6 +130,9 @@ export class ProviderConfigBuilder<T extends ProviderId = ProviderId> {
       }
       if (options.location) {
         googleConfig.location = options.location
+        if (options.location === 'global') {
+          googleConfig.baseURL = 'https://aiplatform.googleapis.com'
+        }
       }
     }
     return this

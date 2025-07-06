@@ -47,7 +47,11 @@ function providerToAiSdkConfig(provider: Provider): {
     actualProvider = createVertexProvider(provider)
   }
 
-  if (actualProvider.type === 'openai' || actualProvider.type === 'anthropic') {
+  if (
+    actualProvider.type === 'openai' ||
+    actualProvider.type === 'anthropic' ||
+    actualProvider.type === 'openai-response'
+  ) {
     actualProvider.apiHost = formatApiHost(actualProvider.apiHost)
   }
 
@@ -62,7 +66,16 @@ function providerToAiSdkConfig(provider: Provider): {
       : undefined
 
   if (AiCore.isSupported(aiSdkProviderId) && aiSdkProviderId !== 'openai-compatible') {
-    const options = ProviderConfigFactory.fromProvider(aiSdkProviderId, actualProvider, openaiResponseOptions)
+    const options = ProviderConfigFactory.fromProvider(
+      aiSdkProviderId,
+      {
+        baseURL: actualProvider.apiHost,
+        apiKey: actualProvider.apiKey,
+        headers: actualProvider.extra_headers
+      },
+      openaiResponseOptions
+    )
+
     return {
       providerId: aiSdkProviderId as ProviderId,
       options
