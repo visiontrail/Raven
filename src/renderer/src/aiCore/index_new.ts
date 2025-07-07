@@ -143,7 +143,10 @@ export default class ModernAiProvider {
     const plugins: AiPlugin[] = []
     // 1. 总是添加通用插件
     // plugins.push(textPlugin)
-    plugins.push(webSearchPlugin())
+    if (middlewareConfig.enableWebSearch) {
+      // 内置了默认搜索参数，如果改的话可以传config进去
+      plugins.push(webSearchPlugin())
+    }
 
     // 2. 推理模型时添加推理插件
     if (middlewareConfig.enableReasoning) {
