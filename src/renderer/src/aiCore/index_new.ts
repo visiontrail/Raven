@@ -17,7 +17,7 @@ import {
   type ProviderSettingsMap,
   StreamTextParams
 } from '@cherrystudio/ai-core'
-import { createPromptToolUsePlugin } from '@cherrystudio/ai-core/core/plugins/built-in'
+import { createPromptToolUsePlugin, webSearchPlugin } from '@cherrystudio/ai-core/core/plugins/built-in'
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
 import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
@@ -143,7 +143,7 @@ export default class ModernAiProvider {
     const plugins: AiPlugin[] = []
     // 1. 总是添加通用插件
     // plugins.push(textPlugin)
-    // plugins.push(webSearchPlugin)
+    plugins.push(webSearchPlugin())
 
     // 2. 推理模型时添加推理插件
     if (middlewareConfig.enableReasoning) {

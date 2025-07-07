@@ -1,132 +1,78 @@
-/**
- * 网络搜索助手函数
- * 提取各个 ApiClient 中的网络搜索逻辑，提供统一的适配器
- */
-import type { OpenAIProvider } from '@ai-sdk/openai'
+import type { anthropic } from '@ai-sdk/anthropic'
+import type { openai } from '@ai-sdk/openai'
 
-import { ProviderId } from '../../../../types'
-
-// 派生自 OpenAI SDK 的标准工具入参类型
-type WebSearchPreviewParams = Parameters<OpenAIProvider['tools']['webSearchPreview']>[0]
-
-// 使用交叉类型合并，并为 extra 添加注释
-export type WebSearchConfig = WebSearchPreviewParams & {
-  /**
-   * 扩展字段，用于提供给开发者自定义参数的能力
-   * 这些参数将被合并到对应 provider 的 providerOptions 中
-   */
-  extra?: Record<string, any>
-}
+import { ProviderOptionsMap } from '../../../options/types'
 
 /**
- * 适配 OpenAI 网络搜索
- * 基于 Vercel AI SDK 的 web_search_preview 工具
+ * 从 AI SDK 的工具函数中提取参数类型，以确保类型安全。
  */
-export function adaptOpenAIWebSearch(params: any, webSearchConfig: WebSearchConfig | boolean): any {
-  const config = typeof webSearchConfig === 'boolean' ? {} : webSearchConfig
-  const { extra, ...stdParams } = config
+type OpenAISearchConfig = Parameters<typeof openai.tools.webSearchPreview>[0]
+type AnthropicSearchConfig = Parameters<typeof anthropic.tools.webSearch_20250305>[0]
 
-  const webSearchTool = {
-    type: 'web_search_preview',
-    ...stdParams
-  }
-
-  // 假设 params.tools 是一个数组或 undefined
-  const existingTools = Array.isArray(params.tools) ? params.tools : []
-
-  // 将 extra 参数添加到 providerOptions 中
-  const providerOptions = {
-    ...params.providerOptions,
-    openai: {
-      ...params.providerOptions?.openai,
-      ...(extra || {})
-    }
-  }
-
-  return {
-    ...params,
-    tools: [...existingTools, webSearchTool],
-    providerOptions
+/**
+ * XAI 特有的搜索参数
+ * @internal
+ */
+interface XaiProviderOptions {
+  searchParameters?: {
+    sources?: any[]
+    safeSearch?: boolean
   }
 }
 
 /**
+ * 插件初始化时接收的完整配置对象
  *
- * 适配 Gemini 网络搜索
- * 将 googleSearch 工具放入 providerOptions.google.tools
+ * 其结构与 ProviderOptions 保持一致，方便上游统一管理配置
  */
-// export function adaptGeminiWebSearch(params: any, webSearchConfig: WebSearchConfig | boolean): any {
-//   const config = typeof webSearchConfig === 'boolean' ? {} : webSearchConfig
-//   const googleSearchTool = { googleSearch: {} }
-
-//   const existingTools = Array.isArray(params.providerOptions?.google?.tools) ? params.providerOptions.google.tools : []
-
-//   return {
-//     ...params,
-//     providerOptions: {
-//       ...params.providerOptions,
-//       google: {
-//         ...params.providerOptions?.google,
-//         useSearchGrounding: true,
-//         // tools: [...existingTools, googleSearchTool],
-//         ...(config.extra || {})
-//       }
-//     }
-//   }
-// }
+export interface WebSearchPluginConfig {
+  openai?: OpenAISearchConfig
+  anthropic?: AnthropicSearchConfig
+  xai?: ProviderOptionsMap['xai']['searchParameters']
+  google?: Pick<ProviderOptionsMap['google'], 'useSearchGrounding' | 'dynamicRetrievalConfig'>
+  'google-vertex'?: Pick<ProviderOptionsMap['google'], 'useSearchGrounding' | 'dynamicRetrievalConfig'>
+}
 
 /**
- * 适配 Anthropic 网络搜索
- * 将 web_search_20250305 工具放入 providerOptions.anthropic.tools
+ * 插件的默认配置
  */
-export function adaptAnthropicWebSearch(params: any, webSearchConfig: WebSearchConfig | boolean): any {
-  const config = typeof webSearchConfig === 'boolean' ? {} : webSearchConfig
-  const webSearchTool = {
-    type: 'web_search_20250305',
-    name: 'web_search',
-    max_uses: 5 // 默认值，可以通过 extra 覆盖
-  }
-
-  const existingTools = Array.isArray(params.providerOptions?.anthropic?.tools)
-    ? params.providerOptions.anthropic.tools
-    : []
-
-  return {
-    ...params,
-    providerOptions: {
-      ...params.providerOptions,
-      anthropic: {
-        ...params.providerOptions?.anthropic,
-        tools: [...existingTools, webSearchTool],
-        ...(config.extra || {})
-      }
-    }
+export const DEFAULT_WEB_SEARCH_CONFIG: WebSearchPluginConfig = {
+  google: {
+    useSearchGrounding: true
+  },
+  'google-vertex': {
+    useSearchGrounding: true
+  },
+  openai: {},
+  xai: {
+    mode: 'on',
+    returnCitations: true,
+    maxSearchResults: 5
+  },
+  anthropic: {
+    maxUses: 5
   }
 }
 
 /**
- * 通用网络搜索适配器
- * 根据 providerId 选择对应的适配函数
+ * 根据配置构建 Google 的 providerOptions
  */
-export function adaptWebSearchForProvider(
-  params: any,
-  providerId: ProviderId,
-  webSearchConfig: WebSearchConfig | boolean
-): any {
-  switch (providerId) {
-    case 'openai':
-      return adaptOpenAIWebSearch(params, webSearchConfig)
+export const getGoogleProviderOptions = (providerOptions: any) => {
+  if (!providerOptions) providerOptions = {}
+  if (!providerOptions.google) providerOptions.google = {}
+  providerOptions.google.useSearchGrounding = true
+  return providerOptions
+}
 
-    // google的需要通过插件，在创建model的时候传入参数
-    // case 'google':
-    // case 'google-vertex':
-    //   return adaptGeminiWebSearch(params, webSearchConfig)
-
-    case 'anthropic':
-      return adaptAnthropicWebSearch(params, webSearchConfig)
-
-    default:
-      // 不支持的 provider，保持原样
-      return params
+/**
+ * 根据配置构建 XAI 的 providerOptions
+ */
+export const getXaiProviderOptions = (providerOptions: any, config?: XaiProviderOptions['searchParameters']) => {
+  if (!providerOptions) providerOptions = {}
+  if (!providerOptions.xai) providerOptions.xai = {}
+  providerOptions.xai.searchParameters = {
+    mode: 'on',
+    ...(config ?? {})
   }
+  return providerOptions
 }

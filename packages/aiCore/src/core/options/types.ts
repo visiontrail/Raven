@@ -4,6 +4,7 @@ import { type OpenAIResponsesProviderOptions } from '@ai-sdk/openai'
 import { type SharedV2ProviderMetadata } from '@ai-sdk/provider'
 
 import { type OpenRouterProviderOptions } from './openrouter'
+import { type XaiProviderOptions } from './xai'
 
 export type ProviderOptions<T extends keyof SharedV2ProviderMetadata> = SharedV2ProviderMetadata[T]
 
@@ -15,6 +16,7 @@ export type ProviderOptionsMap = {
   anthropic: AnthropicProviderOptions
   google: GoogleGenerativeAIProviderOptions
   openrouter: OpenRouterProviderOptions
+  xai: XaiProviderOptions
 }
 
 // 工具类型，用于从ProviderOptionsMap中提取特定供应商的选项类型

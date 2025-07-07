@@ -42,7 +42,7 @@ import { defaultTimeout } from '@shared/config/constant'
 // import { jsonSchemaToZod } from 'json-schema-to-zod'
 import { setupToolsConfig } from './utils/mcp'
 import { buildProviderOptions } from './utils/options'
-import { getWebSearchTools } from './utils/websearch'
+// import { getWebSearchTools } from './utils/websearch'
 
 /**
  * 获取温度参数
@@ -279,17 +279,17 @@ export async function buildStreamTextParams(
     (isSupportedDisableGenerationModel(model) ? assistant.enableGenerateImage || false : true)
 
   // 构建系统提示
-  let { tools } = setupToolsConfig({
+  const { tools } = setupToolsConfig({
     mcpTools,
     model,
     enableToolUse: enableTools
   })
 
   // Add web search tools if enabled
-  if (enableWebSearch) {
-    const webSearchTools = getWebSearchTools(model)
-    tools = { ...tools, ...webSearchTools }
-  }
+  // if (enableWebSearch) {
+  //   const webSearchTools = getWebSearchTools(model)
+  //   tools = { ...tools, ...webSearchTools }
+  // }
 
   // 构建真正的 providerOptions
   const providerOptions = buildProviderOptions(assistant, model, {
