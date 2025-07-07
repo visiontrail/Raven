@@ -27,24 +27,28 @@ export class ProviderCreationError extends Error {
 export async function createBaseModel<T extends ProviderId>({
   providerId,
   modelId,
-  providerSettings
+  providerSettings,
+  extraModelConfig
   // middlewares
 }: {
   providerId: T
   modelId: string
   providerSettings: ProviderSettingsMap[T]
+  extraModelConfig?: any
   // middlewares?: LanguageModelV1Middleware[]
 }): Promise<LanguageModelV2>
 
 export async function createBaseModel({
   providerId,
   modelId,
-  providerSettings
+  providerSettings,
+  extraModelConfig
   // middlewares
 }: {
   providerId: string
   modelId: string
   providerSettings: ProviderSettingsMap['openai-compatible']
+  extraModelConfig?: any
   // middlewares?: LanguageModelV1Middleware[]
 }): Promise<LanguageModelV2>
 

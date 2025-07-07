@@ -16,11 +16,7 @@ export async function createModel(config: ModelConfig): Promise<LanguageModelV2>
   validateModelConfig(config)
 
   // 1. 创建基础模型
-  const baseModel = await createBaseModel({
-    providerId: config.providerId,
-    modelId: config.modelId,
-    providerSettings: config.options
-  })
+  const baseModel = await createBaseModel(config)
 
   // 2. 应用中间件（如果有）
   return config.middlewares?.length ? wrapModelWithMiddlewares(baseModel, config.middlewares) : baseModel
@@ -43,7 +39,7 @@ function validateModelConfig(config: ModelConfig): void {
   if (!config.modelId) {
     throw new Error('ModelConfig: modelId is required')
   }
-  if (!config.options) {
+  if (!config.providerSettings) {
     throw new Error('ModelConfig: providerSettings is required')
   }
 }
