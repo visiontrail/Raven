@@ -1,3 +1,5 @@
+import { LanguageModel } from 'ai'
+
 import { type ProviderId, type ProviderSettingsMap } from '../../types'
 import { type AiPlugin, createContext, PluginManager } from '../plugins'
 import { isProviderSupported } from '../providers/registry'
@@ -63,7 +65,7 @@ export class PluginEngine<T extends ProviderId = ProviderId> {
     methodName: string,
     modelId: string,
     params: TParams,
-    executor: (finalModelId: string, transformedParams: TParams) => Promise<TResult>,
+    executor: (model: LanguageModel, transformedParams: TParams) => Promise<TResult>,
     _context?: ReturnType<typeof createContext>
   ): Promise<TResult> {
     // 使用正确的createContext创建请求上下文
@@ -79,18 +81,23 @@ export class PluginEngine<T extends ProviderId = ProviderId> {
     }
 
     try {
+      // 0. 配置上下文
+      await this.pluginManager.executeConfigureContext(context)
+
       // 1. 触发请求开始事件
       await this.pluginManager.executeParallel('onRequestStart', context)
 
-      // 2. 解析模型别名
-      const resolvedModelId = await this.pluginManager.executeFirst<string>('resolveModel', modelId, context)
-      const finalModelId = resolvedModelId || modelId
+      // 2. 解析模型
+      const model = await this.pluginManager.executeFirst<LanguageModel>('resolveModel', modelId, context)
+      if (!model) {
+        throw new Error(`Failed to resolve model: ${modelId}`)
+      }
 
       // 3. 转换请求参数
       const transformedParams = await this.pluginManager.executeSequential('transformParams', params, context)
 
       // 4. 执行具体的 API 调用
-      const result = await executor(finalModelId, transformedParams)
+      const result = await executor(model, transformedParams)
 
       // 5. 转换结果（对于非流式调用）
       const transformedResult = await this.pluginManager.executeSequential('transformResult', result, context)
@@ -114,7 +121,7 @@ export class PluginEngine<T extends ProviderId = ProviderId> {
     methodName: string,
     modelId: string,
     params: TParams,
-    executor: (finalModelId: string, transformedParams: TParams, streamTransforms: any[]) => Promise<TResult>,
+    executor: (model: LanguageModel, transformedParams: TParams, streamTransforms: any[]) => Promise<TResult>,
     _context?: ReturnType<typeof createContext>
   ): Promise<TResult> {
     // 创建请求上下文
@@ -130,12 +137,18 @@ export class PluginEngine<T extends ProviderId = ProviderId> {
     }
 
     try {
+      // 0. 配置上下文
+      await this.pluginManager.executeConfigureContext(context)
+
       // 1. 触发请求开始事件
       await this.pluginManager.executeParallel('onRequestStart', context)
 
-      // 2. 解析模型别名
-      const resolvedModelId = await this.pluginManager.executeFirst<string>('resolveModel', modelId, context)
-      const finalModelId = resolvedModelId || modelId
+      // 2. 解析模型
+      const model = await this.pluginManager.executeFirst<LanguageModel>('resolveModel', modelId, context)
+
+      if (!model) {
+        throw new Error(`Failed to resolve model: ${modelId}`)
+      }
 
       // 3. 转换请求参数
       const transformedParams = await this.pluginManager.executeSequential('transformParams', params, context)
@@ -144,12 +157,14 @@ export class PluginEngine<T extends ProviderId = ProviderId> {
       const streamTransforms = this.pluginManager.collectStreamTransforms(transformedParams, context)
 
       // 5. 执行流式 API 调用
-      const result = await executor(finalModelId, transformedParams, streamTransforms)
+      const result = await executor(model, transformedParams, streamTransforms)
+
+      const transformedResult = await this.pluginManager.executeSequential('transformResult', result, context)
 
       // 6. 触发完成事件（注意：对于流式调用，这里触发的是开始流式响应的事件）
       await this.pluginManager.executeParallel('onRequestEnd', context, { stream: true })
 
-      return result
+      return transformedResult
     } catch (error) {
       // 7. 触发错误事件
       await this.pluginManager.executeParallel('onError', context, undefined, error as Error)

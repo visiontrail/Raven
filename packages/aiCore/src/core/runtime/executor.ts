@@ -7,7 +7,7 @@ import { generateObject, generateText, LanguageModel, streamObject, streamText }
 
 import { type ProviderId, type ProviderSettingsMap } from '../../types'
 import { createModel, getProviderInfo } from '../models'
-import { type AiPlugin } from '../plugins'
+import { type AiPlugin, type AiRequestContext, definePlugin } from '../plugins'
 import { PluginEngine } from './pluginEngine'
 import { type RuntimeConfig } from './types'
 
@@ -26,6 +26,19 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     this.config = config
     // 创建插件客户端
     this.pluginEngine = new PluginEngine(config.providerId, config.plugins || [])
+  }
+
+  createResolveModelPlugin(middlewares?: LanguageModelV2Middleware[]) {
+    return definePlugin({
+      name: '_internal_resolveModel',
+      enforce: 'post',
+
+      resolveModel: async (modelId: string, context: AiRequestContext) => {
+        // 从 context 中读取由用户插件注入的 extraModelConfig
+        const extraModelConfig = context.extraModelConfig || {}
+        return await this.resolveModel(modelId, middlewares, extraModelConfig)
+      }
+    })
   }
 
   // === 高阶重载：直接使用模型 ===
@@ -59,14 +72,14 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof streamText>> {
-    const model = await this.resolveModel(modelOrId, options?.middlewares)
+    this.pluginEngine.use(this.createResolveModelPlugin(options?.middlewares))
 
     // 2. 执行插件处理
     return this.pluginEngine.executeStreamWithPlugins(
       'streamText',
-      typeof modelOrId === 'string' ? modelOrId : model.modelId,
+      typeof modelOrId === 'string' ? modelOrId : modelOrId.modelId,
       params,
-      async (finalModelId, transformedParams, streamTransforms) => {
+      async (model, transformedParams, streamTransforms) => {
         const experimental_transform =
           params?.experimental_transform ?? (streamTransforms.length > 0 ? streamTransforms : undefined)
 
@@ -110,13 +123,13 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof generateText>> {
-    const model = await this.resolveModel(modelOrId, options?.middlewares)
+    this.pluginEngine.use(this.createResolveModelPlugin(options?.middlewares))
 
     return this.pluginEngine.executeWithPlugins(
       'generateText',
-      typeof modelOrId === 'string' ? modelOrId : model.modelId,
+      typeof modelOrId === 'string' ? modelOrId : modelOrId.modelId,
       params,
-      async (finalModelId, transformedParams) => {
+      async (model, transformedParams) => {
         return await generateText({ model, ...transformedParams })
       }
     )
@@ -151,13 +164,13 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof generateObject>> {
-    const model = await this.resolveModel(modelOrId, options?.middlewares)
+    this.pluginEngine.use(this.createResolveModelPlugin(options?.middlewares))
 
     return this.pluginEngine.executeWithPlugins(
       'generateObject',
-      typeof modelOrId === 'string' ? modelOrId : model.modelId,
+      typeof modelOrId === 'string' ? modelOrId : modelOrId.modelId,
       params,
-      async (finalModelId, transformedParams) => {
+      async (model, transformedParams) => {
         return await generateObject({ model, ...transformedParams })
       }
     )
@@ -192,13 +205,13 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof streamObject>> {
-    const model = await this.resolveModel(modelOrId, options?.middlewares)
+    this.pluginEngine.use(this.createResolveModelPlugin(options?.middlewares))
 
     return this.pluginEngine.executeWithPlugins(
       'streamObject',
-      typeof modelOrId === 'string' ? modelOrId : model.modelId,
+      typeof modelOrId === 'string' ? modelOrId : modelOrId.modelId,
       params,
-      async (finalModelId, transformedParams) => {
+      async (model, transformedParams) => {
         return await streamObject({ model, ...transformedParams })
       }
     )
@@ -211,15 +224,17 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
    */
   private async resolveModel(
     modelOrId: LanguageModel,
-    middlewares?: LanguageModelV2Middleware[]
+    middlewares?: LanguageModelV2Middleware[],
+    extraModelConfig?: Record<string, any>
   ): Promise<LanguageModelV2> {
     if (typeof modelOrId === 'string') {
       // 字符串modelId，需要创建模型
       return await createModel({
         providerId: this.config.providerId,
         modelId: modelOrId,
-        options: this.config.providerSettings,
-        middlewares
+        providerSettings: this.config.providerSettings,
+        middlewares,
+        extraModelConfig
       })
     } else {
       // 已经是模型，直接返回

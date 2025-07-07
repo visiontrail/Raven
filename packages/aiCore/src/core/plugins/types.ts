@@ -1,4 +1,4 @@
-import type { TextStreamPart, ToolSet } from 'ai'
+import type { LanguageModel, TextStreamPart, ToolSet } from 'ai'
 
 import { ProviderId } from '../providers/registry'
 
@@ -32,13 +32,13 @@ export interface AiPlugin {
   enforce?: 'pre' | 'post'
 
   // 【First】首个钩子 - 只执行第一个返回值的插件
-  resolveModel?: (modelId: string, context: AiRequestContext) => string | null | Promise<string | null>
+  resolveModel?: (modelId: string, context: AiRequestContext) => Promise<LanguageModel | null> | LanguageModel | null
   loadTemplate?: (templateName: string, context: AiRequestContext) => any | null | Promise<any | null>
 
   // 【Sequential】串行钩子 - 链式执行，支持数据转换
+  configureContext?: (context: AiRequestContext) => void | Promise<void>
   transformParams?: (params: any, context: AiRequestContext) => any | Promise<any>
   transformResult?: (result: any, context: AiRequestContext) => any | Promise<any>
-  configureModel?: (model: any, context: AiRequestContext) => any | Promise<any>
 
   // 【Parallel】并行钩子 - 不依赖顺序，用于副作用
   onRequestStart?: (context: AiRequestContext) => void | Promise<void>
