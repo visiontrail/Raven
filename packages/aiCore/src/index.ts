@@ -87,6 +87,8 @@ export {
   smoothStream,
   stepCountIs
 } from 'ai'
+// 重新导出 Agent
+export { Experimental_Agent as Agent } from 'ai'
 
 // 重新导出所有 Provider Settings 类型
 export type {

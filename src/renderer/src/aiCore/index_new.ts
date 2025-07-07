@@ -55,6 +55,10 @@ function providerToAiSdkConfig(provider: Provider): {
     actualProvider.apiHost = formatApiHost(actualProvider.apiHost)
   }
 
+  if (actualProvider.type === 'gemini') {
+    actualProvider.apiHost = formatApiHost(actualProvider.apiHost, 'v1beta')
+  }
+
   const aiSdkProviderId = getAiSdkProviderId(actualProvider)
 
   // 如果provider是openai，则使用strict模式并且默认responses api
