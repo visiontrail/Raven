@@ -42,7 +42,7 @@ export function getReasoningEffort(assistant: Assistant, model: Model): Reasonin
 
     if (isSupportedThinkingTokenGeminiModel(model)) {
       if (GEMINI_FLASH_MODEL_REGEX.test(model.id)) {
-        return { reasoningEffort: 'none' }
+        return { reasoning_effort: 'none' }
       }
       return {}
     }
@@ -71,6 +71,12 @@ export function getReasoningEffort(assistant: Assistant, model: Model): Reasonin
   }
 
   if (!reasoningEffort) {
+    if (model.provider === 'openrouter') {
+      if (isSupportedThinkingTokenGeminiModel(model) && !GEMINI_FLASH_MODEL_REGEX.test(model.id)) {
+        return {}
+      }
+      return { reasoning: { enabled: false, exclude: true } }
+    }
     if (isSupportedThinkingTokenQwenModel(model)) {
       return { enable_thinking: false }
     }
@@ -80,12 +86,16 @@ export function getReasoningEffort(assistant: Assistant, model: Model): Reasonin
     }
 
     if (isSupportedThinkingTokenGeminiModel(model)) {
-      // openrouter没有提供一个不推理的选项，先隐藏
-      if (provider.id === 'openrouter') {
-        return { reasoning: { max_tokens: 0, exclude: true } }
-      }
       if (GEMINI_FLASH_MODEL_REGEX.test(model.id)) {
-        return { reasoningEffort: 'none' }
+        return {
+          extra_body: {
+            google: {
+              thinking_config: {
+                thinking_budget: 0
+              }
+            }
+          }
+        }
       }
       return {}
     }
@@ -128,9 +138,34 @@ export function getReasoningEffort(assistant: Assistant, model: Model): Reasonin
   }
 
   // OpenAI models
-  if (isSupportedReasoningEffortOpenAIModel(model) || isSupportedThinkingTokenGeminiModel(model)) {
+  if (isSupportedReasoningEffortOpenAIModel(model)) {
     return {
       reasoningEffort: reasoningEffort
+    }
+  }
+
+  if (isSupportedThinkingTokenGeminiModel(model)) {
+    if (reasoningEffort === 'auto') {
+      return {
+        extra_body: {
+          google: {
+            thinking_config: {
+              thinking_budget: -1,
+              include_thoughts: true
+            }
+          }
+        }
+      }
+    }
+    return {
+      extra_body: {
+        google: {
+          thinking_config: {
+            thinking_budget: budgetTokens,
+            include_thoughts: true
+          }
+        }
+      }
     }
   }
 

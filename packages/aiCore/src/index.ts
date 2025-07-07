@@ -60,6 +60,10 @@ export type {
   LanguageModelUsage, // AI SDK 4.0 中 TokenUsage 改名为 LanguageModelUsage
   // 消息相关类型
   ModelMessage,
+  TextPart,
+  FilePart,
+  ImagePart,
+  ToolCallPart,
   // 错误类型
   NoSuchToolError,
   StreamTextResult,
@@ -75,6 +79,7 @@ export type {
   ToolSet,
   UserModelMessage
 } from 'ai'
+export type { ReasoningPart } from '@ai-sdk/provider-utils'
 export {
   defaultSettingsMiddleware,
   extractReasoningMiddleware,

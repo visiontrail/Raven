@@ -30,6 +30,9 @@ export function buildProviderOptions(
   // 构建 provider 特定的选项
   let providerSpecificOptions: Record<string, any> = {}
 
+  console.log('buildProviderOptions', providerId)
+  console.log('buildProviderOptions', provider)
+
   // 根据 provider 类型分离构建逻辑
   switch (provider.type) {
     case 'openai-response':
