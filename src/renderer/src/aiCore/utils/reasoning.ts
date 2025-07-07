@@ -314,6 +314,18 @@ export function getGeminiReasoningParams(assistant: Assistant, model: Model): Re
   return {}
 }
 
+export function getXAIReasoningParams(assistant: Assistant, model: Model): Record<string, any> {
+  if (!isSupportedReasoningEffortGrokModel(model)) {
+    return {}
+  }
+
+  const { reasoning_effort: reasoningEffort } = getAssistantSettings(assistant)
+
+  return {
+    reasoningEffort
+  }
+}
+
 /**
  * 获取自定义参数
  * 从 assistant 设置中提取自定义参数

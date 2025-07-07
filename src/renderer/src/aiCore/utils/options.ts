@@ -1,5 +1,5 @@
-import { getProviderByModel } from '@renderer/services/AssistantService'
-import { Assistant, Model } from '@renderer/types'
+import { getDefaultModel, getProviderByModel } from '@renderer/services/AssistantService'
+import { Assistant, Model, Provider } from '@renderer/types'
 
 import { getAiSdkProviderId } from '../provider/factory'
 import {
@@ -7,8 +7,10 @@ import {
   getCustomParameters,
   getGeminiReasoningParams,
   getOpenAIReasoningParams,
-  getReasoningEffort
+  getReasoningEffort,
+  getXAIReasoningParams
 } from './reasoning'
+import { getWebSearchParams } from './websearch'
 
 /**
  * 构建 AI SDK 的 providerOptions
@@ -18,25 +20,22 @@ import {
 export function buildProviderOptions(
   assistant: Assistant,
   model: Model,
+  actualProvider: Provider,
   capabilities: {
     enableReasoning: boolean
     enableWebSearch: boolean
     enableGenerateImage: boolean
   }
 ): Record<string, any> {
-  const provider = getProviderByModel(model)
-  const providerId = getAiSdkProviderId(provider)
+  const providerId = getAiSdkProviderId(actualProvider)
 
   // 构建 provider 特定的选项
   let providerSpecificOptions: Record<string, any> = {}
 
-  console.log('buildProviderOptions', providerId)
-  console.log('buildProviderOptions', provider)
-
   // 根据 provider 类型分离构建逻辑
-  switch (provider.type) {
-    case 'openai-response':
-    case 'azure-openai':
+  switch (providerId) {
+    case 'openai':
+    case 'azure':
       providerSpecificOptions = buildOpenAIProviderOptions(assistant, model, capabilities)
       break
 
@@ -44,9 +43,13 @@ export function buildProviderOptions(
       providerSpecificOptions = buildAnthropicProviderOptions(assistant, model, capabilities)
       break
 
-    case 'gemini':
-    case 'vertexai':
+    case 'google':
+    case 'google-vertex':
       providerSpecificOptions = buildGeminiProviderOptions(assistant, model, capabilities)
+      break
+
+    case 'xai':
+      providerSpecificOptions = buildXAIProviderOptions(assistant, model, capabilities)
       break
 
     default:
@@ -79,7 +82,7 @@ function buildOpenAIProviderOptions(
     enableGenerateImage: boolean
   }
 ): Record<string, any> {
-  const { enableReasoning, enableWebSearch, enableGenerateImage } = capabilities
+  const { enableReasoning } = capabilities
   let providerOptions: Record<string, any> = {}
 
   // OpenAI 推理参数
@@ -89,15 +92,6 @@ function buildOpenAIProviderOptions(
       ...providerOptions,
       ...reasoningParams
     }
-  }
-
-  // Web 搜索和图像生成暂时使用通用格式
-  if (enableWebSearch) {
-    providerOptions.webSearch = { enabled: true }
-  }
-
-  if (enableGenerateImage) {
-    providerOptions.generateImage = { enabled: true }
   }
 
   return providerOptions
@@ -115,7 +109,7 @@ function buildAnthropicProviderOptions(
     enableGenerateImage: boolean
   }
 ): Record<string, any> {
-  const { enableReasoning, enableWebSearch, enableGenerateImage } = capabilities
+  const { enableReasoning } = capabilities
   let providerOptions: Record<string, any> = {}
 
   // Anthropic 推理参数
@@ -125,14 +119,6 @@ function buildAnthropicProviderOptions(
       ...providerOptions,
       ...reasoningParams
     }
-  }
-
-  if (enableWebSearch) {
-    providerOptions.webSearch = { enabled: true }
-  }
-
-  if (enableGenerateImage) {
-    providerOptions.generateImage = { enabled: true }
   }
 
   return providerOptions
@@ -150,21 +136,39 @@ function buildGeminiProviderOptions(
     enableGenerateImage: boolean
   }
 ): Record<string, any> {
-  const { enableReasoning, enableWebSearch, enableGenerateImage } = capabilities
-  const providerOptions: Record<string, any> = {}
+  const { enableReasoning } = capabilities
+  let providerOptions: Record<string, any> = {}
 
   // Gemini 推理参数
   if (enableReasoning) {
     const reasoningParams = getGeminiReasoningParams(assistant, model)
-    Object.assign(providerOptions, reasoningParams)
+    providerOptions = {
+      ...providerOptions,
+      ...reasoningParams
+    }
   }
 
-  if (enableWebSearch) {
-    providerOptions.webSearch = { enabled: true }
-  }
+  return providerOptions
+}
 
-  if (enableGenerateImage) {
-    providerOptions.generateImage = { enabled: true }
+function buildXAIProviderOptions(
+  assistant: Assistant,
+  model: Model,
+  capabilities: {
+    enableReasoning: boolean
+    enableWebSearch: boolean
+    enableGenerateImage: boolean
+  }
+): Record<string, any> {
+  const { enableReasoning } = capabilities
+  let providerOptions: Record<string, any> = {}
+
+  if (enableReasoning) {
+    const reasoningParams = getXAIReasoningParams(assistant, model)
+    providerOptions = {
+      ...providerOptions,
+      ...reasoningParams
+    }
   }
 
   return providerOptions
@@ -182,7 +186,7 @@ function buildGenericProviderOptions(
     enableGenerateImage: boolean
   }
 ): Record<string, any> {
-  const { enableWebSearch, enableGenerateImage } = capabilities
+  const { enableWebSearch } = capabilities
   let providerOptions: Record<string, any> = {}
 
   const reasoningParams = getReasoningEffort(assistant, model)
@@ -192,11 +196,11 @@ function buildGenericProviderOptions(
   }
 
   if (enableWebSearch) {
-    providerOptions.webSearch = { enabled: true }
-  }
-
-  if (enableGenerateImage) {
-    providerOptions.generateImage = { enabled: true }
+    const webSearchParams = getWebSearchParams(model)
+    providerOptions = {
+      ...providerOptions,
+      ...webSearchParams
+    }
   }
 
   return providerOptions

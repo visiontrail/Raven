@@ -300,8 +300,8 @@ export async function fetchChatCompletion({
   }
   onChunkReceived: (chunk: Chunk) => void
 }) {
-  const provider = getAssistantProvider(assistant)
-  const AI = new AiProviderNew(provider)
+  const AI = new AiProviderNew(assistant.model || getDefaultModel())
+  const provider = AI.getActualProvider()
 
   const mcpTools = await fetchMcpTools(assistant)
 
@@ -310,7 +310,7 @@ export async function fetchChatCompletion({
     params: aiSdkParams,
     modelId,
     capabilities
-  } = await buildStreamTextParams(messages, assistant, {
+  } = await buildStreamTextParams(messages, assistant, provider, {
     mcpTools: mcpTools,
     enableTools: isEnabledToolUse(assistant),
     requestOptions: options

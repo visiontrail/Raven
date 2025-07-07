@@ -30,14 +30,11 @@ import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/aisdk
 import { CompletionsResult } from './middleware/schemas'
 import reasoningTimePlugin from './plugins/reasoningTimePlugin'
 import { getAiSdkProviderId } from './provider/factory'
+import { getProviderByModel } from '@renderer/services/AssistantService'
+import { createAihubmixProvider } from './provider/aihubmix'
 
-/**
- * 将 Provider 配置转换为新 AI SDK 格式
- */
-function providerToAiSdkConfig(provider: Provider): {
-  providerId: ProviderId | 'openai-compatible'
-  options: ProviderSettingsMap[keyof ProviderSettingsMap]
-} {
+function getActualProvider(model: Model): Provider {
+  const provider = getProviderByModel(model)
   // 如果是 vertexai 类型且没有 googleCredentials，转换为 VertexProvider
   let actualProvider = cloneDeep(provider)
   if (provider.type === 'vertexai' && !isVertexProvider(provider)) {
@@ -47,18 +44,25 @@ function providerToAiSdkConfig(provider: Provider): {
     actualProvider = createVertexProvider(provider)
   }
 
-  if (
-    actualProvider.type === 'openai' ||
-    actualProvider.type === 'anthropic' ||
-    actualProvider.type === 'openai-response'
-  ) {
-    actualProvider.apiHost = formatApiHost(actualProvider.apiHost)
+  if (provider.id === 'aihubmix') {
+    actualProvider = createAihubmixProvider(model, actualProvider)
   }
 
   if (actualProvider.type === 'gemini') {
     actualProvider.apiHost = formatApiHost(actualProvider.apiHost, 'v1beta')
+  } else {
+    actualProvider.apiHost = formatApiHost(actualProvider.apiHost)
   }
+  return actualProvider
+}
 
+/**
+ * 将 Provider 配置转换为新 AI SDK 格式
+ */
+function providerToAiSdkConfig(actualProvider: Provider): {
+  providerId: ProviderId | 'openai-compatible'
+  options: ProviderSettingsMap[keyof ProviderSettingsMap]
+} {
   const aiSdkProviderId = getAiSdkProviderId(actualProvider)
 
   // 如果provider是openai，则使用strict模式并且默认responses api
@@ -126,14 +130,18 @@ function isModernSdkSupported(provider: Provider, model?: Model): boolean {
 export default class ModernAiProvider {
   private legacyProvider: LegacyAiProvider
   private config: ReturnType<typeof providerToAiSdkConfig>
+  private actualProvider: Provider
 
-  constructor(provider: Provider) {
-    this.legacyProvider = new LegacyAiProvider(provider)
+  constructor(model: Model) {
+    this.actualProvider = getActualProvider(model)
+    this.legacyProvider = new LegacyAiProvider(this.actualProvider)
 
     // 只保存配置，不预先创建executor
-    this.config = providerToAiSdkConfig(provider)
+    this.config = providerToAiSdkConfig(this.actualProvider)
+  }
 
-    console.log('[Modern AI Provider] Creating executor with MCP Prompt plugin enabled')
+  public getActualProvider() {
+    return this.actualProvider
   }
 
   /**

@@ -27,7 +27,7 @@ import {
   isWebSearchModel
 } from '@renderer/config/models'
 import { getAssistantSettings, getDefaultModel } from '@renderer/services/AssistantService'
-import type { Assistant, MCPTool, Message, Model } from '@renderer/types'
+import type { Assistant, MCPTool, Message, Model, Provider } from '@renderer/types'
 import { FileTypes } from '@renderer/types'
 import { FileMessageBlock, ImageMessageBlock, ThinkingMessageBlock } from '@renderer/types/newMessage'
 import {
@@ -241,6 +241,7 @@ export async function convertMessagesToSdkMessages(
 export async function buildStreamTextParams(
   sdkMessages: StreamTextParams['messages'],
   assistant: Assistant,
+  provider: Provider,
   options: {
     mcpTools?: MCPTool[]
     enableTools?: boolean
@@ -285,14 +286,8 @@ export async function buildStreamTextParams(
     enableToolUse: enableTools
   })
 
-  // Add web search tools if enabled
-  // if (enableWebSearch) {
-  //   const webSearchTools = getWebSearchTools(model)
-  //   tools = { ...tools, ...webSearchTools }
-  // }
-
   // 构建真正的 providerOptions
-  const providerOptions = buildProviderOptions(assistant, model, {
+  const providerOptions = buildProviderOptions(assistant, model, provider, {
     enableReasoning,
     enableWebSearch,
     enableGenerateImage
@@ -321,11 +316,12 @@ export async function buildStreamTextParams(
 export async function buildGenerateTextParams(
   messages: ModelMessage[],
   assistant: Assistant,
+  provider: Provider,
   options: {
     mcpTools?: MCPTool[]
     enableTools?: boolean
   } = {}
 ): Promise<any> {
   // 复用流式参数的构建逻辑
-  return await buildStreamTextParams(messages, assistant, options)
+  return await buildStreamTextParams(messages, assistant, provider, options)
 }

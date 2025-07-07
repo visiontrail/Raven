@@ -2776,8 +2776,6 @@ export function getOpenAIWebSearchParams(model: Model, isEnableWebSearch?: boole
   return {
     tools: webSearchTools
   }
-
-  return {}
 }
 
 export function isGemmaModel(model?: Model): boolean {
@@ -2839,7 +2837,7 @@ export const THINKING_TOKEN_MAP: Record<string, { min: number; max: number }> = 
   'gemini-.*-pro.*$': { min: 128, max: 32768 },
 
   // Qwen models
-  'qwen-plus-.*$': { min: 0, max: 38912 },
+  'qwen-plus(-.*)?$': { min: 0, max: 38912 },
   'qwen-turbo-.*$': { min: 0, max: 38912 },
   'qwen3-0\\.6b$': { min: 0, max: 30720 },
   'qwen3-1\\.7b$': { min: 0, max: 30720 },

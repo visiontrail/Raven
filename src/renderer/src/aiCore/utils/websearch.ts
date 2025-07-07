@@ -1,37 +1,31 @@
-// import { isWebSearchModel } from '@renderer/config/models'
-// import { Model } from '@renderer/types'
-// // import {} from '@cherrystudio/ai-core'
+import { isOpenAIWebSearchChatCompletionOnlyModel } from '@renderer/config/models'
+import { WEB_SEARCH_PROMPT_FOR_OPENROUTER } from '@renderer/config/prompts'
+import { Model } from '@renderer/types'
 
-// // The tool name for Gemini search can be arbitrary, but let's use a descriptive one.
-// const GEMINI_SEARCH_TOOL_NAME = 'google_search'
+export function getWebSearchParams(model: Model): Record<string, any> {
+  if (model.provider === 'hunyuan') {
+    return { enable_enhancement: true, citation: true, search_info: true }
+  }
 
-// export function getWebSearchTools(model: Model): Record<string, any> {
-//   if (!isWebSearchModel(model)) {
-//     return {}
-//   }
+  if (model.provider === 'dashscope') {
+    return {
+      enable_search: true,
+      search_options: {
+        forced_search: true
+      }
+    }
+  }
 
-//   // Use provider from model if available, otherwise fallback to parsing model id.
-//   const provider = model.provider || model.id.split('/')[0]
+  if (isOpenAIWebSearchChatCompletionOnlyModel(model)) {
+    return {
+      web_search_options: {}
+    }
+  }
 
-//   switch (provider) {
-//     case 'anthropic':
-//       return {
-//         web_search: {
-//           type: 'web_search_20250305',
-//           name: 'web_search',
-//           max_uses: 5
-//         }
-//       }
-//     case 'google':
-//     case 'gemini':
-//       return {
-//         [GEMINI_SEARCH_TOOL_NAME]: {
-//           googleSearch: {}
-//         }
-//       }
-//     default:
-//       // For OpenAI and others, web search is often a parameter, not a tool.
-//       // The logic is handled in `buildProviderOptions`.
-//       return {}
-//   }
-// }
+  if (model.provider === 'openrouter') {
+    return {
+      plugins: [{ id: 'web', search_prompts: WEB_SEARCH_PROMPT_FOR_OPENROUTER }]
+    }
+  }
+  return {}
+}

@@ -1,7 +1,7 @@
 // copy from @ai-sdk/xai/xai-chat-options.ts
 // 如果@ai-sdk/xai暴露出了xaiProviderOptions就删除这个文件
 
-import { z } from 'zod'
+import * as z from 'zod/v4'
 
 const webSourceSchema = z.object({
   type: z.literal('web'),
@@ -25,7 +25,7 @@ const newsSourceSchema = z.object({
 
 const rssSourceSchema = z.object({
   type: z.literal('rss'),
-  links: z.array(z.string().url()).max(1) // currently only supports one RSS link
+  links: z.array(z.url()).max(1) // currently only supports one RSS link
 })
 
 const searchSourceSchema = z.discriminatedUnion('type', [
