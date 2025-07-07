@@ -8,12 +8,9 @@ import {
   FilePart,
   ImagePart,
   ModelMessage,
-  ReasoningPart,
   stepCountIs,
   type StreamTextParams,
   TextPart,
-  ToolCallPart,
-  ToolResultPart,
   UserModelMessage
 } from '@cherrystudio/ai-core'
 import { DEFAULT_MAX_TOKENS } from '@renderer/config/constant'
