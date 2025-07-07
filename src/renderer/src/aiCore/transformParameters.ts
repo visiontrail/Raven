@@ -29,6 +29,7 @@ import {
 import { getAssistantSettings, getDefaultModel } from '@renderer/services/AssistantService'
 import type { Assistant, MCPTool, Message, Model } from '@renderer/types'
 import { FileTypes } from '@renderer/types'
+import { FileMessageBlock, ImageMessageBlock, ThinkingMessageBlock } from '@renderer/types/newMessage'
 import {
   findFileBlocks,
   findImageBlocks,
@@ -41,7 +42,7 @@ import { defaultTimeout } from '@shared/config/constant'
 // import { jsonSchemaToZod } from 'json-schema-to-zod'
 import { setupToolsConfig } from './utils/mcp'
 import { buildProviderOptions } from './utils/options'
-import { FileMessageBlock, ImageMessageBlock, ThinkingMessageBlock } from '@renderer/types/newMessage'
+import { getWebSearchTools } from './utils/websearch'
 
 /**
  * 获取温度参数
@@ -243,6 +244,7 @@ export async function buildStreamTextParams(
   options: {
     mcpTools?: MCPTool[]
     enableTools?: boolean
+    enableWebSearch?: boolean
     requestOptions?: {
       signal?: AbortSignal
       timeout?: number
@@ -277,11 +279,17 @@ export async function buildStreamTextParams(
     (isSupportedDisableGenerationModel(model) ? assistant.enableGenerateImage || false : true)
 
   // 构建系统提示
-  const { tools } = setupToolsConfig({
+  let { tools } = setupToolsConfig({
     mcpTools,
     model,
     enableToolUse: enableTools
   })
+
+  // Add web search tools if enabled
+  if (enableWebSearch) {
+    const webSearchTools = getWebSearchTools(model)
+    tools = { ...tools, ...webSearchTools }
+  }
 
   // 构建真正的 providerOptions
   const providerOptions = buildProviderOptions(assistant, model, {

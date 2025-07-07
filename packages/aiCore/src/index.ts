@@ -49,29 +49,30 @@ export * as aiSdk from 'ai'
 // 直接导出 AI SDK 的常用类型，方便使用
 export type { LanguageModelV2Middleware, LanguageModelV2StreamPart } from '@ai-sdk/provider'
 export type { ToolCall } from '@ai-sdk/provider-utils'
+export type { ReasoningPart } from '@ai-sdk/provider-utils'
 export type {
   AssistantModelMessage,
+  FilePart,
   // 通用类型
   FinishReason,
   GenerateObjectResult,
   // 生成相关类型
   GenerateTextResult,
+  ImagePart,
   InvalidToolInputError,
   LanguageModelUsage, // AI SDK 4.0 中 TokenUsage 改名为 LanguageModelUsage
   // 消息相关类型
   ModelMessage,
-  TextPart,
-  FilePart,
-  ImagePart,
-  ToolCallPart,
   // 错误类型
   NoSuchToolError,
   StreamTextResult,
   SystemModelMessage,
+  TextPart,
   // 流相关类型
   TextStreamPart,
   // 工具相关类型
   Tool,
+  ToolCallPart,
   ToolCallUnion,
   ToolModelMessage,
   ToolResultPart,
@@ -79,7 +80,6 @@ export type {
   ToolSet,
   UserModelMessage
 } from 'ai'
-export type { ReasoningPart } from '@ai-sdk/provider-utils'
 export {
   defaultSettingsMiddleware,
   extractReasoningMiddleware,
