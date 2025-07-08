@@ -20,6 +20,7 @@ import {
 import { createPromptToolUsePlugin, webSearchPlugin } from '@cherrystudio/ai-core/core/plugins/built-in'
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
 import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
+import { getProviderByModel } from '@renderer/services/AssistantService'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
 import { formatApiHost } from '@renderer/utils/api'
 import { cloneDeep } from 'lodash'
@@ -29,9 +30,8 @@ import LegacyAiProvider from './index'
 import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/aisdk/AiSdkMiddlewareBuilder'
 import { CompletionsResult } from './middleware/schemas'
 import reasoningTimePlugin from './plugins/reasoningTimePlugin'
-import { getAiSdkProviderId } from './provider/factory'
-import { getProviderByModel } from '@renderer/services/AssistantService'
 import { createAihubmixProvider } from './provider/aihubmix'
+import { getAiSdkProviderId } from './provider/factory'
 
 function getActualProvider(model: Model): Provider {
   const provider = getProviderByModel(model)

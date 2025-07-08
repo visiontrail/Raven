@@ -26,13 +26,7 @@ import { isEmpty, takeRight } from 'lodash'
 
 import AiProvider from '../aiCore'
 import AiProviderNew from '../aiCore/index_new'
-import {
-  getAssistantProvider,
-  getDefaultModel,
-  getProviderByModel,
-  getTopNamingModel,
-  getTranslateModel
-} from './AssistantService'
+import { getDefaultModel, getProviderByModel, getTopNamingModel, getTranslateModel } from './AssistantService'
 import { getDefaultAssistant } from './AssistantService'
 
 // // TODO：考虑拆开
@@ -323,6 +317,7 @@ export async function fetchChatCompletion({
     provider: provider,
     enableReasoning: capabilities.enableReasoning,
     enableTool: assistant.settings?.toolUseMode === 'prompt',
+    enableWebSearch: capabilities.enableWebSearch,
     mcpTools
   }
 

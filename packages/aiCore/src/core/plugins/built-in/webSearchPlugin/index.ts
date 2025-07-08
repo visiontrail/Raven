@@ -22,12 +22,13 @@ export const webSearchPlugin = (config: WebSearchPluginConfig = DEFAULT_WEB_SEAR
 
     transformParams: async (params: any, context: AiRequestContext) => {
       const { providerId } = context
-
+      // console.log('providerId', providerId)
       switch (providerId) {
         case 'openai': {
           if (config.openai) {
             if (!params.tools) params.tools = {}
             params.tools.web_search_preview = openai.tools.webSearchPreview(config.openai)
+            // console.log('params.tools', params.tools)
           }
           break
         }
@@ -59,6 +60,14 @@ export const webSearchPlugin = (config: WebSearchPluginConfig = DEFAULT_WEB_SEAR
           }
           break
         }
+        // default: {
+        //   if (!params.providerOptions) params.providerOptions = {}
+        //   params.providerOptions['aihubmix'] = {
+        //     web_search: anthropic.tools.webSearch_20250305()
+        //   }
+        //   console.log('params.providerOptions', params.providerOptions)
+        //   break
+        // }
       }
 
       return params
