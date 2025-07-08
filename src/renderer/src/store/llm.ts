@@ -217,7 +217,7 @@ export const INITIAL_PROVIDERS: Provider[] = [
   {
     id: 'azure-openai',
     name: 'Azure OpenAI',
-    type: 'openai',
+    type: 'azure-openai',
     apiKey: '',
     apiHost: '',
     apiVersion: '',
