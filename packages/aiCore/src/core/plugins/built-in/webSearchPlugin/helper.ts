@@ -47,7 +47,8 @@ export const DEFAULT_WEB_SEARCH_CONFIG: WebSearchPluginConfig = {
   xai: {
     mode: 'on',
     returnCitations: true,
-    maxSearchResults: 5
+    maxSearchResults: 5,
+    sources: [{ type: 'web' }, { type: 'x' }, { type: 'news' }]
   },
   anthropic: {
     maxUses: 5
