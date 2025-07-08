@@ -1,4 +1,3 @@
-import { getDefaultModel, getProviderByModel } from '@renderer/services/AssistantService'
 import { Assistant, Model, Provider } from '@renderer/types'
 
 import { getAiSdkProviderId } from '../provider/factory'
