@@ -474,11 +474,23 @@ const ORIGIN_DEFAULT_MIN_APPS: MinAppType[] = [
   }
 ]
 
-// 加载自定义小应用并合并到默认应用中
-let DEFAULT_MIN_APPS = [...ORIGIN_DEFAULT_MIN_APPS, ...(await loadCustomMiniApp())]
+// 初始化默认小应用
+let DEFAULT_MIN_APPS = [...ORIGIN_DEFAULT_MIN_APPS]
+
+// 异步加载自定义小应用并更新 DEFAULT_MIN_APPS
+async function initializeDefaultMinApps() {
+  try {
+    const customApps = await loadCustomMiniApp()
+    DEFAULT_MIN_APPS = [...ORIGIN_DEFAULT_MIN_APPS, ...customApps]
+  } catch (error) {
+    console.error('Failed to initialize custom mini apps:', error)
+    // 如果加载失败，至少保持默认应用可用
+    DEFAULT_MIN_APPS = [...ORIGIN_DEFAULT_MIN_APPS]
+  }
+}
 
 function updateDefaultMinApps(param) {
   DEFAULT_MIN_APPS = param
 }
 
-export { DEFAULT_MIN_APPS, loadCustomMiniApp, ORIGIN_DEFAULT_MIN_APPS, updateDefaultMinApps }
+export { DEFAULT_MIN_APPS, loadCustomMiniApp, ORIGIN_DEFAULT_MIN_APPS, updateDefaultMinApps, initializeDefaultMinApps }

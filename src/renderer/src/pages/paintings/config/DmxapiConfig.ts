@@ -40,11 +40,7 @@ export const STYLE_TYPE_OPTIONS = [
 ]
 
 export const TEXT_TO_IMAGES_MODELS = [
-  {
-    id: 'seedream-3.0',
-    provider: 'DMXAPI',
-    name: ' 即梦 seedream-3.0'
-  }
+  // 图像生成模型已被移除，因为只支持 deepseek, dashscope, 和 gemini
 ]
 
 export const IMAGE_EDIT_MODELS = [
@@ -108,7 +104,7 @@ export const DEFAULT_PAINTING: DmxapiPainting = {
   n: 1,
   seed: '',
   style_type: '',
-  model: TEXT_TO_IMAGES_MODELS[0].id,
+  model: 'deepseek-ai/DeepSeek-V3', // 使用默认模型，因为图像生成模型已被移除
   autoCreate: false,
   generationMode: generationModeType.GENERATION
 }

@@ -1,9 +1,11 @@
 import '@renderer/databases'
 
+import { initializeDefaultMinApps } from '@renderer/config/minapps'
 import store, { persistor } from '@renderer/store'
 import { Provider } from 'react-redux'
 import { HashRouter, Route, Routes } from 'react-router-dom'
 import { PersistGate } from 'redux-persist/integration/react'
+import { useEffect } from 'react'
 
 import Sidebar from './components/app/Sidebar'
 import TopViewContainer from './components/TopView'
@@ -22,6 +24,16 @@ import PaintingsRoutePage from './pages/paintings/PaintingsRoutePage'
 import SettingsPage from './pages/settings/SettingsPage'
 import TranslatePage from './pages/translate/TranslatePage'
 
+// 初始化组件
+function AppInitializer() {
+  useEffect(() => {
+    // 在应用启动时初始化自定义小应用
+    initializeDefaultMinApps().catch(console.error)
+  }, [])
+
+  return null
+}
+
 function App(): React.ReactElement {
   return (
     <Provider store={store}>
@@ -31,6 +43,7 @@ function App(): React.ReactElement {
             <NotificationProvider>
               <CodeStyleProvider>
                 <PersistGate loading={null} persistor={persistor}>
+                  <AppInitializer />
                   <TopViewContainer>
                     <HashRouter>
                       <NavigationHandler />

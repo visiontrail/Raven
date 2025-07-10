@@ -1763,6 +1763,22 @@ const migrateConfig = {
     } catch (error) {
       return state
     }
+  },
+  '121': (state: RootState) => {
+    try {
+      // Filter providers to only keep DeepSeek, Alibaba Cloud (dashscope), and Gemini
+      const allowedProviders = ['deepseek', 'dashscope', 'gemini']
+      state.llm.providers = state.llm.providers.filter((provider) => allowedProviders.includes(provider.id))
+
+      // Reset to initial state if no providers remain
+      if (state.llm.providers.length === 0) {
+        state.llm.providers = INITIAL_PROVIDERS
+      }
+
+      return state
+    } catch (error) {
+      return state
+    }
   }
 }
 

@@ -11,14 +11,14 @@ import { HStack, VStack } from '@renderer/components/Layout'
 import Scrollbar from '@renderer/components/Scrollbar'
 import TranslateButton from '@renderer/components/TranslateButton'
 import { isMac } from '@renderer/config/constant'
-import { TEXT_TO_IMAGES_MODELS } from '@renderer/config/models'
+// TEXT_TO_IMAGES_MODELS 已被移除，因为图像生成模型不再支持
 import { LanguagesEnum } from '@renderer/config/translate'
 import { useTheme } from '@renderer/context/ThemeProvider'
 import { usePaintings } from '@renderer/hooks/usePaintings'
 import { useAllProviders } from '@renderer/hooks/useProvider'
 import { useRuntime } from '@renderer/hooks/useRuntime'
 import { useSettings } from '@renderer/hooks/useSettings'
-import { getProviderByModel } from '@renderer/services/AssistantService'
+// getProviderByModel 不再需要，因为图像生成功能已被移除
 import FileManager from '@renderer/services/FileManager'
 import { translateText } from '@renderer/services/TranslateService'
 import { useAppDispatch } from '@renderer/store'
@@ -84,7 +84,7 @@ const DEFAULT_PAINTING: Painting = {
   seed: '',
   steps: 25,
   guidanceScale: 4.5,
-  model: TEXT_TO_IMAGES_MODELS[0].id
+  model: 'deepseek-ai/DeepSeek-V3' // 使用默认模型，因为图像生成模型已被移除
 }
 
 // let _painting: Painting
@@ -119,10 +119,7 @@ const SiliconPage: FC<{ Options: string[] }> = ({ Options }) => {
     }
   }
 
-  const modelOptions = TEXT_TO_IMAGES_MODELS.map((model) => ({
-    label: model.name,
-    value: model.id
-  }))
+  const modelOptions = [] // 图像生成模型已被移除，所以选项为空
 
   const textareaRef = useRef<any>(null)
   // _painting = painting
@@ -134,10 +131,8 @@ const SiliconPage: FC<{ Options: string[] }> = ({ Options }) => {
   }
 
   const onSelectModel = (modelId: string) => {
-    const model = TEXT_TO_IMAGES_MODELS.find((m) => m.id === modelId)
-    if (model) {
-      updatePaintingState({ model: modelId })
-    }
+    // 图像生成模型已被移除，所以这个函数现在只是更新模型ID
+    updatePaintingState({ model: modelId })
   }
 
   const onGenerate = async () => {
@@ -158,8 +153,8 @@ const SiliconPage: FC<{ Options: string[] }> = ({ Options }) => {
 
     updatePaintingState({ prompt })
 
-    const model = TEXT_TO_IMAGES_MODELS.find((m) => m.id === painting.model)
-    const provider = getProviderByModel(model)
+    // 图像生成模型已被移除，所以使用默认的 deepseek 提供者
+    const provider = providers.find((p) => p.id === 'deepseek') || providers[0]
 
     if (!provider.enabled) {
       window.modal.error({

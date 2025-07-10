@@ -38,8 +38,7 @@ import {
   IMAGE_MERGE_MODELS,
   IMAGE_SIZES,
   MODEOPTIONS,
-  STYLE_TYPE_OPTIONS,
-  TEXT_TO_IMAGES_MODELS
+  STYLE_TYPE_OPTIONS
 } from './config/DmxapiConfig'
 
 const generateRandomSeed = () => Math.floor(Math.random() * 1000000).toString()
@@ -101,11 +100,8 @@ const DmxapiPage: FC<{ Options: string[] }> = ({ Options }) => {
       }))
     }
 
-    // 默认情况或其它模式下的选项
-    return TEXT_TO_IMAGES_MODELS.map((model) => ({
-      label: model.name,
-      value: model.id
-    }))
+    // 默认情况或其它模式下的选项 - 图像生成模型已被移除
+    return []
   }
 
   const [modelOptions, setModelOptions] = useState(() => {
@@ -148,10 +144,8 @@ const DmxapiPage: FC<{ Options: string[] }> = ({ Options }) => {
   }
 
   const onSelectModel = (modelId: string) => {
-    const model = TEXT_TO_IMAGES_MODELS.find((m) => m.id === modelId)
-    if (model) {
-      updatePaintingState({ model: modelId })
-    }
+    // 图像生成模型已被移除，所以这个函数现在只是更新模型ID
+    updatePaintingState({ model: modelId })
   }
 
   const onCancel = () => {
