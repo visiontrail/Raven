@@ -3,13 +3,16 @@ import { isOpenAILLMModel } from '@renderer/config/models'
 import { Model, Provider } from '@renderer/types'
 
 export function getAiSdkProviderIdForAihubmix(model: Model): ProviderId | 'openai-compatible' {
+  console.log('getAiSdkProviderIdForAihubmix', model)
   const id = model.id.toLowerCase()
 
   if (id.startsWith('claude')) {
     return 'anthropic'
   }
+  // TODO:暂时注释,不清楚为什么排除,webSearch时会导致gemini模型走openai的逻辑
+  // if ((id.startsWith('gemini') || id.startsWith('imagen')) && !id.endsWith('-nothink') && !id.endsWith('-search')) {
 
-  if ((id.startsWith('gemini') || id.startsWith('imagen')) && !id.endsWith('-nothink') && !id.endsWith('-search')) {
+  if (id.startsWith('gemini') || id.startsWith('imagen')) {
     return 'google'
   }
 

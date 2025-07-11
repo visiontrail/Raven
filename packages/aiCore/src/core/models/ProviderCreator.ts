@@ -90,8 +90,12 @@ export async function createBaseModel({
     let provider = creatorFunction(providerSettings)
 
     // 加一个特判
-    if (providerConfig.id === 'openai' && !isOpenAIChatCompletionOnlyModel(modelId)) {
-      provider = provider.responses
+    if (providerConfig.id === 'openai') {
+      if (!isOpenAIChatCompletionOnlyModel(modelId)) {
+        provider = provider.responses
+      } else {
+        provider = provider.chat
+      }
     }
     // 返回模型实例
     if (typeof provider === 'function') {

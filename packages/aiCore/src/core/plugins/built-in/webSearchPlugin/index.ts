@@ -23,6 +23,8 @@ export const webSearchPlugin = (config: WebSearchPluginConfig = DEFAULT_WEB_SEAR
     transformParams: async (params: any, context: AiRequestContext) => {
       const { providerId } = context
       // console.log('providerId', providerId)
+      // const modelToProviderId = getModelToProviderId(modelId)
+      // console.log('modelToProviderId', modelToProviderId)
       switch (providerId) {
         case 'openai': {
           if (config.openai) {
@@ -69,6 +71,7 @@ export const webSearchPlugin = (config: WebSearchPluginConfig = DEFAULT_WEB_SEAR
         //   break
         // }
       }
+      // console.log('params', params)
 
       return params
     }

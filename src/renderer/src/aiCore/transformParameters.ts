@@ -299,12 +299,14 @@ export async function buildStreamTextParams(
     maxOutputTokens: maxTokens || DEFAULT_MAX_TOKENS,
     temperature: getTemperature(assistant, model),
     topP: getTopP(assistant, model),
-    system: assistant.prompt || '',
     abortSignal: options.requestOptions?.signal,
     headers: options.requestOptions?.headers,
     providerOptions,
     tools,
     stopWhen: stepCountIs(10)
+  }
+  if (assistant.prompt) {
+    params.system = assistant.prompt
   }
 
   return { params, modelId: model.id, capabilities: { enableReasoning, enableWebSearch, enableGenerateImage } }

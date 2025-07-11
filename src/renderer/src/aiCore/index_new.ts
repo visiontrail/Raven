@@ -46,8 +46,8 @@ function getActualProvider(model: Model): Provider {
 
   if (provider.id === 'aihubmix') {
     actualProvider = createAihubmixProvider(model, actualProvider)
+    console.log('actualProvider', actualProvider)
   }
-
   if (actualProvider.type === 'gemini') {
     actualProvider.apiHost = formatApiHost(actualProvider.apiHost, 'v1beta')
   } else {
@@ -63,15 +63,21 @@ function providerToAiSdkConfig(actualProvider: Provider): {
   providerId: ProviderId | 'openai-compatible'
   options: ProviderSettingsMap[keyof ProviderSettingsMap]
 } {
+  // console.log('actualProvider', actualProvider)
   const aiSdkProviderId = getAiSdkProviderId(actualProvider)
-
+  // console.log('aiSdkProviderId', aiSdkProviderId)
   // 如果provider是openai，则使用strict模式并且默认responses api
+  const actualProviderId = actualProvider.id
   const openaiResponseOptions =
-    aiSdkProviderId === 'openai'
+    actualProviderId === 'openai'
       ? {
           compatibility: 'strict'
         }
-      : undefined
+      : aiSdkProviderId === 'openai'
+        ? {
+            compatibility: 'compatible'
+          }
+        : undefined
 
   if (AiCore.isSupported(aiSdkProviderId) && aiSdkProviderId !== 'openai-compatible') {
     const options = ProviderConfigFactory.fromProvider(
