@@ -1,6 +1,10 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import { DragDropContext, Draggable, Droppable, DropResult } from '@hello-pangea/dnd'
 import Scrollbar from '@renderer/components/Scrollbar'
+import { 
+  isLockedModeEnabled, 
+  isFeatureDisabled 
+} from '@renderer/config/locked-settings'
 import { getProviderLogo } from '@renderer/config/providers'
 import { useAllProviders, useProviders } from '@renderer/hooks/useProvider'
 import ImageStorage from '@renderer/services/ImageStorage'
@@ -27,6 +31,8 @@ const ProvidersList: FC = () => {
   const [searchText, setSearchText] = useState<string>('')
   const [dragging, setDragging] = useState(false)
   const [providerLogos, setProviderLogos] = useState<Record<string, string>>({})
+  
+  const isLocked = isLockedModeEnabled()
 
   useEffect(() => {
     const loadAllLogos = async () => {
@@ -264,49 +270,12 @@ const ProvidersList: FC = () => {
 
   const onDragEnd = (result: DropResult) => {
     setDragging(false)
-    if (result.destination) {
+    if (result.destination && !isLocked) {
       const sourceIndex = result.source.index
       const destIndex = result.destination.index
       const reorderProviders = droppableReorder<Provider>(providers, sourceIndex, destIndex)
       updateProviders(reorderProviders)
     }
-  }
-
-  const onAddProvider = async () => {
-    const { name: providerName, type, logo } = await AddProviderPopup.show()
-
-    if (!providerName.trim()) {
-      return
-    }
-
-    const provider = {
-      id: uuid(),
-      name: providerName.trim(),
-      type,
-      apiKey: '',
-      apiHost: '',
-      models: [],
-      enabled: true,
-      isSystem: false
-    } as Provider
-
-    let updatedLogos = { ...providerLogos }
-    if (logo) {
-      try {
-        await ImageStorage.set(`provider-${provider.id}`, logo)
-        updatedLogos = {
-          ...updatedLogos,
-          [provider.id]: logo
-        }
-        setProviderLogos(updatedLogos)
-      } catch (error) {
-        console.error('Failed to save logo', error)
-        window.message.error('保存Provider Logo失败')
-      }
-    }
-
-    addProvider(provider)
-    setSelectedProvider(provider)
   }
 
   const getDropdownMenus = (provider: Provider): MenuProps['items'] => {
@@ -321,7 +290,10 @@ const ProvidersList: FC = () => {
       label: t('common.edit'),
       key: 'edit',
       icon: <EditOutlined />,
+      disabled: isLocked || isFeatureDisabled('DISABLE_PROVIDER_DELETION'),
       async onClick() {
+        if (isLocked || isFeatureDisabled('DISABLE_PROVIDER_DELETION')) return
+        
         const { name, type, logoFile, logo } = await AddProviderPopup.show(provider)
 
         if (name) {
@@ -360,7 +332,10 @@ const ProvidersList: FC = () => {
       key: 'delete',
       icon: <DeleteOutlined />,
       danger: true,
+      disabled: isLocked || isFeatureDisabled('DISABLE_PROVIDER_DELETION'),
       async onClick() {
+        if (isLocked || isFeatureDisabled('DISABLE_PROVIDER_DELETION')) return
+        
         window.modal.confirm({
           title: t('settings.provider.delete.title'),
           content: t('settings.provider.delete.content'),
@@ -448,18 +423,18 @@ const ProvidersList: FC = () => {
         <AddButtonWrapper>
           <Input
             type="text"
-            placeholder={t('settings.provider.search')}
+            placeholder={isLocked ? t('settings.provider.locked_search') : t('settings.provider.search')}
             value={searchText}
             style={{ borderRadius: 'var(--list-item-border-radius)', height: 35 }}
             suffix={<Search size={14} />}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={(e) => !isLocked && setSearchText(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Escape') {
+              if (e.key === 'Escape' && !isLocked) {
                 setSearchText('')
               }
             }}
-            allowClear
-            disabled={dragging}
+            allowClear={!isLocked}
+            disabled={dragging || isLocked}
           />
         </AddButtonWrapper>
         <Scrollbar>
@@ -469,11 +444,11 @@ const ProvidersList: FC = () => {
                 {(provided) => (
                   <div {...provided.droppableProps} ref={provided.innerRef}>
                     {filteredProviders.map((provider, index) => (
-                      <Draggable
-                        key={`draggable_${provider.id}_${index}`}
-                        draggableId={provider.id}
-                        index={index}
-                        isDragDisabled={searchText.length > 0}>
+                                              <Draggable
+                          key={`draggable_${provider.id}_${index}`}
+                          draggableId={provider.id}
+                          index={index}
+                          isDragDisabled={searchText.length > 0 || isLocked}>
                         {(provided) => (
                           <div
                             ref={provided.innerRef}
@@ -506,15 +481,7 @@ const ProvidersList: FC = () => {
             </DragDropContext>
           </ProviderList>
         </Scrollbar>
-        <AddButtonWrapper>
-          <Button
-            style={{ width: '100%', borderRadius: 'var(--list-item-border-radius)' }}
-            icon={<PlusOutlined />}
-            onClick={onAddProvider}
-            disabled={dragging}>
-            {t('button.add')}
-          </Button>
-        </AddButtonWrapper>
+
       </ProviderListContainer>
       <ProviderSetting providerId={selectedProvider.id} key={selectedProvider.id} />
     </Container>

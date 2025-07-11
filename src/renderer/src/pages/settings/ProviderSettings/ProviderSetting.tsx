@@ -4,6 +4,14 @@ import OpenAIAlert from '@renderer/components/Alert/OpenAIAlert'
 import { StreamlineGoodHealthAndWellBeing } from '@renderer/components/Icons/SVGIcon'
 import { HStack } from '@renderer/components/Layout'
 import { ApiKeyConnectivity, ApiKeyListPopup } from '@renderer/components/Popups/ApiKeyListPopup'
+import { 
+  getLockedApiKey, 
+  getLockedApiHost, 
+  getLockedApiVersion, 
+  isLockedModeEnabled, 
+  isFeatureDisabled,
+  LOCKED_SETTINGS
+} from '@renderer/config/locked-settings'
 import { isEmbeddingModel, isRerankModel } from '@renderer/config/models'
 import { PROVIDER_CONFIG } from '@renderer/config/providers'
 import { useTheme } from '@renderer/context/ThemeProvider'
@@ -53,8 +61,15 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
   const { provider, updateProvider, models } = useProvider(providerId)
   const allProviders = useAllProviders()
   const { updateProviders } = useProviders()
-  const [apiHost, setApiHost] = useState(provider.apiHost)
-  const [apiVersion, setApiVersion] = useState(provider.apiVersion)
+  
+  // 使用锁定设置或原始值
+  const isLocked = isLockedModeEnabled()
+  const lockedApiKey = getLockedApiKey(provider.id)
+  const lockedApiHost = getLockedApiHost(provider.id)
+  const lockedApiVersion = getLockedApiVersion(provider.id)
+  
+  const [apiHost, setApiHost] = useState(isLocked && lockedApiHost ? lockedApiHost : provider.apiHost)
+  const [apiVersion, setApiVersion] = useState(isLocked && lockedApiVersion ? lockedApiVersion : provider.apiVersion)
   const [modelSearchText, setModelSearchText] = useState('')
   const deferredModelSearchText = useDeferredValue(modelSearchText)
   const { t } = useTranslation()
@@ -74,7 +89,7 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
 
   const fancyProviderName = getFancyProviderName(provider)
 
-  const [localApiKey, setLocalApiKey] = useState(provider.apiKey)
+  const [localApiKey, setLocalApiKey] = useState(isLocked && lockedApiKey ? lockedApiKey : provider.apiKey)
   const [apiKeyConnectivity, setApiKeyConnectivity] = useState<ApiKeyConnectivity>({
     status: 'not_checked',
     checking: false
@@ -88,12 +103,33 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
     []
   )
 
+  // 在锁定模式下，自动应用锁定的设置
+  useEffect(() => {
+    if (isLocked) {
+      const updates: any = {}
+      if (lockedApiKey && provider.apiKey !== lockedApiKey) {
+        updates.apiKey = lockedApiKey
+      }
+      if (lockedApiHost && provider.apiHost !== lockedApiHost) {
+        updates.apiHost = lockedApiHost
+      }
+      if (lockedApiVersion && provider.apiVersion !== lockedApiVersion) {
+        updates.apiVersion = lockedApiVersion
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        updateProvider({ ...provider, ...updates })
+      }
+    }
+  }, [isLocked, lockedApiKey, lockedApiHost, lockedApiVersion, provider, updateProvider])
+
   // 同步 provider.apiKey 到 localApiKey
   // 重置连通性检查状态
   useEffect(() => {
-    setLocalApiKey(provider.apiKey)
+    const effectiveApiKey = isLocked && lockedApiKey ? lockedApiKey : provider.apiKey
+    setLocalApiKey(effectiveApiKey)
     setApiKeyConnectivity({ status: 'not_checked' })
-  }, [provider.apiKey])
+  }, [provider.apiKey, isLocked, lockedApiKey])
 
   // 同步 localApiKey 到 provider.apiKey（防抖）
   useEffect(() => {
@@ -353,7 +389,7 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
               justifyContent: 'space-between'
             }}>
             {t('settings.provider.api_key')}
-            {provider.id !== 'copilot' && (
+            {provider.id !== 'copilot' && !isLocked && !isFeatureDisabled('DISABLE_API_KEY_EDITING') && (
               <Tooltip title={t('settings.provider.api.key.list.open')} mouseEnterDelay={0.5}>
                 <Button type="text" size="small" onClick={openApiKeyList} icon={<Settings2 size={14} />} />
               </Tooltip>
@@ -362,11 +398,11 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
           <Space.Compact style={{ width: '100%', marginTop: 5 }}>
             <Input.Password
               value={localApiKey}
-              placeholder={t('settings.provider.api_key')}
-              onChange={(e) => setLocalApiKey(e.target.value)}
+              placeholder={isLocked ? t('settings.provider.locked_api_key') : t('settings.provider.api_key')}
+              onChange={(e) => !isLocked && setLocalApiKey(e.target.value)}
               spellCheck={false}
-              autoFocus={provider.enabled && provider.apiKey === '' && !isProviderSupportAuth(provider)}
-              disabled={provider.id === 'copilot'}
+              autoFocus={provider.enabled && provider.apiKey === '' && !isProviderSupportAuth(provider) && !isLocked}
+              disabled={provider.id === 'copilot' || isLocked || isFeatureDisabled('DISABLE_API_KEY_EDITING')}
               // FIXME：暂时用 prefix。因为 suffix 会被覆盖，实际上不起作用。
               prefix={renderStatusIndicator()}
             />
@@ -374,7 +410,7 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
               type={isApiKeyConnectable ? 'primary' : 'default'}
               ghost={isApiKeyConnectable}
               onClick={onCheckApi}
-              disabled={!apiHost || apiKeyConnectivity.checking}>
+              disabled={!apiHost || apiKeyConnectivity.checking || (isLocked && isFeatureDisabled('DISABLE_API_KEY_EDITING'))}>
               {apiKeyConnectivity.checking ? (
                 <LoadingOutlined spin />
               ) : apiKeyConnectivity.status === 'success' ? (
@@ -400,22 +436,25 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
             <>
               <SettingSubtitle style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 {t('settings.provider.api_host')}
-                <Button
-                  type="text"
-                  size="small"
-                  onClick={() => CustomHeaderPopup.show({ provider })}
-                  icon={<Settings2 size={14} />}
-                />
+                {!isLocked && !isFeatureDisabled('DISABLE_API_HOST_EDITING') && (
+                  <Button
+                    type="text"
+                    size="small"
+                    onClick={() => CustomHeaderPopup.show({ provider })}
+                    icon={<Settings2 size={14} />}
+                  />
+                )}
               </SettingSubtitle>
               <Space.Compact style={{ width: '100%', marginTop: 5 }}>
                 <Input
                   value={apiHost}
-                  placeholder={t('settings.provider.api_host')}
-                  onChange={(e) => setApiHost(e.target.value)}
-                  onBlur={onUpdateApiHost}
+                  placeholder={isLocked ? t('settings.provider.locked_api_host') : t('settings.provider.api_host')}
+                  onChange={(e) => !isLocked && setApiHost(e.target.value)}
+                  onBlur={!isLocked ? onUpdateApiHost : undefined}
+                  disabled={isLocked || isFeatureDisabled('DISABLE_API_HOST_EDITING')}
                 />
-                {!isEmpty(configedApiHost) && apiHost !== configedApiHost && (
-                  <Button danger onClick={onReset}>
+                {!isEmpty(configedApiHost) && apiHost !== configedApiHost && !isLocked && (
+                  <Button danger onClick={onReset} disabled={isLocked}>
                     {t('settings.provider.api.url.reset')}
                   </Button>
                 )}
@@ -441,9 +480,10 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
           <Space.Compact style={{ width: '100%', marginTop: 5 }}>
             <Input
               value={apiVersion}
-              placeholder="2024-xx-xx-preview"
-              onChange={(e) => setApiVersion(e.target.value)}
-              onBlur={onUpdateApiVersion}
+              placeholder={isLocked ? t('settings.provider.locked_api_version') : "2024-xx-xx-preview"}
+              onChange={(e) => !isLocked && setApiVersion(e.target.value)}
+              onBlur={!isLocked ? onUpdateApiVersion : undefined}
+              disabled={isLocked || isFeatureDisabled('DISABLE_API_HOST_EDITING')}
             />
           </Space.Compact>
         </>

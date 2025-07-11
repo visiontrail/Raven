@@ -3,17 +3,19 @@ import {
   CloseCircleFilled,
   ExclamationCircleFilled,
   LoadingOutlined,
-  MinusOutlined,
-  PlusOutlined
+  MinusOutlined
 } from '@ant-design/icons'
 import CustomCollapse from '@renderer/components/CustomCollapse'
 import { HStack } from '@renderer/components/Layout'
 import ModelIdWithTags from '@renderer/components/ModelIdWithTags'
+import { 
+  isLockedModeEnabled, 
+  isFeatureDisabled 
+} from '@renderer/config/locked-settings'
 import { getModelLogo } from '@renderer/config/models'
 import { PROVIDER_CONFIG } from '@renderer/config/providers'
 import { useAssistants, useDefaultModel } from '@renderer/hooks/useAssistant'
 import { useProvider } from '@renderer/hooks/useProvider'
-import NewApiAddModelPopup from '@renderer/pages/settings/ProviderSettings/NewApiAddModelPopup'
 import { ModelCheckStatus } from '@renderer/services/HealthCheckService'
 import { useAppDispatch } from '@renderer/store'
 import { setModel } from '@renderer/store/assistants'
@@ -27,7 +29,6 @@ import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import { SettingHelpLink, SettingHelpText, SettingHelpTextRow } from '..'
-import AddModelPopup from './AddModelPopup'
 import EditModelsPopup from './EditModelsPopup'
 import ModelEditContent from './ModelEditContent'
 
@@ -181,6 +182,8 @@ const ModelList: React.FC<ModelListProps> = ({ providerId, modelStatuses = [], s
   const modelsWebsite = providerConfig?.websites?.models
 
   const [editingModel, setEditingModel] = useState<Model | null>(null)
+  
+  const isLocked = isLockedModeEnabled()
 
   const modelGroups = useMemo(() => {
     const filteredModels = searchText
@@ -197,23 +200,21 @@ const ModelList: React.FC<ModelListProps> = ({ providerId, modelStatuses = [], s
   }, [modelGroups])
 
   const onManageModel = useCallback(() => {
-    EditModelsPopup.show({ provider })
-  }, [provider])
-
-  const onAddModel = useCallback(() => {
-    if (provider.id === 'new-api') {
-      NewApiAddModelPopup.show({ title: t('settings.models.add.add_model'), provider })
-    } else {
-      AddModelPopup.show({ title: t('settings.models.add.add_model'), provider })
+    if (!isLocked && !isFeatureDisabled('DISABLE_MODEL_ADDITION')) {
+      EditModelsPopup.show({ provider })
     }
-  }, [provider, t])
+  }, [provider, isLocked])
 
   const onEditModel = useCallback((model: Model) => {
-    setEditingModel(model)
-  }, [])
+    if (!isLocked && !isFeatureDisabled('DISABLE_MODEL_DELETION')) {
+      setEditingModel(model)
+    }
+  }, [isLocked])
 
   const onUpdateModel = useCallback(
     (updatedModel: Model) => {
+      if (isLocked) return
+      
       const updatedModels = models.map((m) => {
         if (m.id === updatedModel.id) {
           return updatedModel
@@ -240,7 +241,7 @@ const ModelList: React.FC<ModelListProps> = ({ providerId, modelStatuses = [], s
         setDefaultModel(updatedModel)
       }
     },
-    [models, updateProvider, provider, assistants, defaultModel?.id, defaultModel?.provider, dispatch, setDefaultModel]
+    [models, updateProvider, provider, assistants, defaultModel?.id, defaultModel?.provider, dispatch, setDefaultModel, isLocked]
   )
 
   return (
@@ -256,14 +257,16 @@ const ModelList: React.FC<ModelListProps> = ({ providerId, modelStatuses = [], s
                 </Flex>
               }
               extra={
-                <Tooltip title={t('settings.models.manage.remove_whole_group')} mouseEnterDelay={0.5}>
-                  <Button
-                    type="text"
-                    className="toolbar-item"
-                    icon={<MinusOutlined />}
-                    onClick={() => modelGroups[group].forEach((model) => removeModel(model))}
-                  />
-                </Tooltip>
+                !isLocked && !isFeatureDisabled('DISABLE_MODEL_DELETION') && (
+                  <Tooltip title={t('settings.models.manage.remove_whole_group')} mouseEnterDelay={0.5}>
+                    <Button
+                      type="text"
+                      className="toolbar-item"
+                      icon={<MinusOutlined />}
+                      onClick={() => !isLocked && modelGroups[group].forEach((model) => removeModel(model))}
+                    />
+                  </Tooltip>
+                )
               }>
               <Flex gap={10} vertical style={{ marginTop: 10 }}>
                 {sortedModelGroups[group].map((model) => {
@@ -288,18 +291,22 @@ const ModelList: React.FC<ModelListProps> = ({ providerId, modelStatuses = [], s
                       <Flex gap={4} align="center">
                         {renderLatencyText(modelStatus)}
                         {renderStatusIndicator(modelStatus)}
-                        <Button
-                          type="text"
-                          onClick={() => !isChecking && onEditModel(model)}
-                          disabled={isChecking}
-                          icon={<Bolt size={16} />}
-                        />
-                        <Button
-                          type="text"
-                          onClick={() => !isChecking && removeModel(model)}
-                          disabled={isChecking}
-                          icon={<MinusOutlined />}
-                        />
+                        {!isLocked && !isFeatureDisabled('DISABLE_MODEL_DELETION') && (
+                          <Button
+                            type="text"
+                            onClick={() => !isChecking && !isLocked && onEditModel(model)}
+                            disabled={isChecking || isLocked}
+                            icon={<Bolt size={16} />}
+                          />
+                        )}
+                        {!isLocked && !isFeatureDisabled('DISABLE_MODEL_DELETION') && (
+                          <Button
+                            type="text"
+                            onClick={() => !isChecking && !isLocked && removeModel(model)}
+                            disabled={isChecking || isLocked}
+                            icon={<MinusOutlined />}
+                          />
+                        )}
                       </Flex>
                     </ListItem>
                   )
@@ -330,19 +337,21 @@ const ModelList: React.FC<ModelListProps> = ({ providerId, modelStatuses = [], s
         )}
       </Flex>
       <Flex gap={10} style={{ marginTop: '10px' }}>
-        <Button type="primary" onClick={onManageModel} icon={<ListCheck size={18} />}>
-          {t('button.manage')}
-        </Button>
-        <Button type="default" onClick={onAddModel} icon={<PlusOutlined />}>
-          {t('button.add')}
+        <Button 
+          type="primary" 
+          onClick={onManageModel} 
+          icon={<ListCheck size={18} />}
+          disabled={isLocked || isFeatureDisabled('DISABLE_MODEL_ADDITION')}
+        >
+          {isLocked ? t('button.manage_locked') : t('button.manage')}
         </Button>
       </Flex>
-      {models.map((model) => (
+      {!isLocked && models.map((model) => (
         <ModelEditContent
           provider={provider}
           model={model}
           onUpdateModel={onUpdateModel}
-          open={editingModel?.id === model.id}
+          open={editingModel?.id === model.id && !isLocked}
           onClose={() => setEditingModel(null)}
           key={model.id}
         />
