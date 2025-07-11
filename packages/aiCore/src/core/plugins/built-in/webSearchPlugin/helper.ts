@@ -1,5 +1,5 @@
-import type { anthropic } from '@ai-sdk/anthropic'
-import type { openai } from '@ai-sdk/openai'
+import { anthropic } from '@ai-sdk/anthropic'
+import { openai } from '@ai-sdk/openai'
 
 import { ProviderOptionsMap } from '../../../options/types'
 
@@ -8,7 +8,6 @@ import { ProviderOptionsMap } from '../../../options/types'
  */
 type OpenAISearchConfig = Parameters<typeof openai.tools.webSearchPreview>[0]
 type AnthropicSearchConfig = Parameters<typeof anthropic.tools.webSearch_20250305>[0]
-
 /**
  * XAI 特有的搜索参数
  * @internal
@@ -77,3 +76,14 @@ export const getXaiProviderOptions = (providerOptions: any, config?: XaiProvider
   }
   return providerOptions
 }
+
+export type AnthropicSearchInput = {
+  query: string
+}
+export type AnthropicSearchOutput = {
+  url: string
+  title: string
+  pageAge: string | null
+  encryptedContent: string
+  type: string
+}[]

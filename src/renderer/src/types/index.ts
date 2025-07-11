@@ -5,6 +5,12 @@ import type { CSSProperties } from 'react'
 
 import type { Message } from './newMessage'
 
+export type GenericProviderTool = {
+  name: string
+  description: string
+  type: 'provider'
+}
+
 export type Assistant = {
   id: string
   name: string
@@ -655,7 +661,7 @@ export interface MCPConfig {
 
 interface BaseToolResponse {
   id: string // unique id
-  tool: MCPTool
+  tool: MCPTool | GenericProviderTool
   arguments: Record<string, unknown> | undefined
   status: string // 'invoking' | 'done'
   response?: any

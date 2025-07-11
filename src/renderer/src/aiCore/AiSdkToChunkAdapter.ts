@@ -81,6 +81,12 @@ export class AiSdkToChunkAdapter {
     console.log('AI SDK chunk type:', chunk.type, chunk)
     switch (chunk.type) {
       // === 文本相关事件 ===
+      // case 'text-start':
+      //   this.onChunk({
+      //     type: ChunkType.blo,
+      //     text: chunk.text || ''
+      //   })
+      //   break
       case 'text':
         final.text += chunk.text || ''
         this.onChunk({
@@ -93,6 +99,7 @@ export class AiSdkToChunkAdapter {
           type: ChunkType.TEXT_COMPLETE,
           text: final.text || ''
         })
+        final.text = ''
         break
       case 'reasoning':
         this.onChunk({
@@ -206,9 +213,7 @@ export class AiSdkToChunkAdapter {
       case 'error':
         this.onChunk({
           type: ChunkType.ERROR,
-          error: {
-            message: chunk.error || 'Unknown error'
-          }
+          error: chunk.error as Record<string, any>
         })
         break
 

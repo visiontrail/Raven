@@ -78,7 +78,7 @@ export const webSearchPlugin = (config: WebSearchPluginConfig = DEFAULT_WEB_SEAR
   })
 
 // 导出类型定义供开发者使用
-export type { WebSearchPluginConfig } from './helper'
+export type { AnthropicSearchInput, AnthropicSearchOutput, WebSearchPluginConfig } from './helper'
 
 // 默认导出
 export default webSearchPlugin

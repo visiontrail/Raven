@@ -1,6 +1,6 @@
 /**
  * 工具调用 Chunk 处理模块
- *
+ * TODO: Tool包含了providerTool和普通的Tool还有MCPTool,后面需要重构
  * 提供工具调用相关的处理API，每个交互使用一个新的实例
  */
 
@@ -8,7 +8,18 @@ import { ToolCallUnion, ToolResultUnion, ToolSet } from '@cherrystudio/ai-core/i
 import Logger from '@renderer/config/logger'
 import { MCPTool, MCPToolResponse } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
+// import type {
+//   AnthropicSearchOutput,
+//   WebSearchPluginConfig
+// } from '@cherrystudio/ai-core/core/plugins/built-in/webSearchPlugin'
 
+// 为 Provider 执行的工具创建一个通用类型
+// 这避免了污染 MCPTool 的定义，同时提供了 UI 显示所需的基本信息
+type GenericProviderTool = {
+  name: string
+  description: string
+  type: 'provider'
+}
 /**
  * 工具调用处理器类
  */
@@ -20,7 +31,8 @@ export class ToolCallChunkHandler {
       toolCallId: string
       toolName: string
       args: any
-      mcpTool: MCPTool
+      // mcpTool 现在可以是 MCPTool 或我们为 Provider 工具创建的通用类型
+      mcpTool: MCPTool | GenericProviderTool
     }
   >()
   constructor(
@@ -43,30 +55,47 @@ export class ToolCallChunkHandler {
       type: 'tool-call'
     } & ToolCallUnion<ToolSet>
   ): void {
-    const toolCallId = chunk.toolCallId
-    const toolName = chunk.toolName
-    const args = chunk.input || {}
+    const { toolCallId, toolName, input: args, providerExecuted } = chunk
 
     if (!toolCallId || !toolName) {
       Logger.warn(`🔧 [ToolCallChunkHandler] Invalid tool call chunk: missing toolCallId or toolName`)
       return
     }
 
-    // 从 chunk 信息构造 MCPTool
-    // const mcpTool = this.createMcpToolFromChunk(chunk)
+    let tool: MCPTool | GenericProviderTool
+
+    // 根据 providerExecuted 标志区分处理逻辑
+    if (providerExecuted) {
+      // 如果是 Provider 执行的工具（如 web_search）
+      Logger.info(`[ToolCallChunkHandler] Handling provider-executed tool: ${toolName}`)
+      tool = {
+        name: toolName,
+        description: toolName,
+        type: 'provider'
+      }
+    } else {
+      // 如果是客户端执行的 MCP 工具，沿用现有逻辑
+      Logger.info(`[ToolCallChunkHandler] Handling client-side MCP tool: ${toolName}`)
+      const mcpTool = this.mcpTools.find((t) => t.name === toolName)
+      if (!mcpTool) {
+        Logger.warn(`[ToolCallChunkHandler] MCP tool not found: ${toolName}`)
+        return
+      }
+      tool = mcpTool
+    }
 
     // 记录活跃的工具调用
     this.activeToolCalls.set(toolCallId, {
       toolCallId,
       toolName,
       args,
-      mcpTool: this.mcpTools.find((tool) => tool.name === toolName)!
+      mcpTool: tool
     })
 
     // 创建 MCPToolResponse 格式
     const toolResponse: MCPToolResponse = {
       id: toolCallId,
-      tool: this.activeToolCalls.get(toolCallId)!.mcpTool,
+      tool: tool,
       arguments: args,
       status: 'invoking',
       toolCallId: toolCallId
@@ -121,7 +150,6 @@ export class ToolCallChunkHandler {
       },
       toolCallId: toolCallId
     }
-
     // 从活跃调用中移除（交互结束后整个实例会被丢弃）
     this.activeToolCalls.delete(toolCallId)
 
