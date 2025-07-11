@@ -520,7 +520,7 @@ export interface TranslateHistory {
   createdAt: string
 }
 
-export type SidebarIcon = 'assistants' | 'agents' | 'paintings' | 'translate' | 'minapp' | 'knowledge' | 'files'
+export type SidebarIcon = 'assistants' | 'agents' | 'minapp' | 'knowledge' | 'files'
 
 export type ExternalToolResult = {
   mcpTools?: MCPTool[]

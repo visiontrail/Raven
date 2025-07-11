@@ -1779,6 +1779,38 @@ const migrateConfig = {
     } catch (error) {
       return state
     }
+  },
+  '122': (state: RootState) => {
+    try {
+      // 删除侧边栏配置中的 paintings 选项
+      if (state.settings.sidebarIcons) {
+        state.settings.sidebarIcons.visible = state.settings.sidebarIcons.visible.filter(
+          (icon) => icon !== ('paintings' as any)
+        )
+        state.settings.sidebarIcons.disabled = state.settings.sidebarIcons.disabled.filter(
+          (icon) => icon !== ('paintings' as any)
+        )
+      }
+      return state
+    } catch (error) {
+      return state
+    }
+  },
+  '123': (state: RootState) => {
+    try {
+      // 删除侧边栏配置中的 translate 选项
+      if (state.settings.sidebarIcons) {
+        state.settings.sidebarIcons.visible = state.settings.sidebarIcons.visible.filter(
+          (icon) => icon !== ('translate' as any)
+        )
+        state.settings.sidebarIcons.disabled = state.settings.sidebarIcons.disabled.filter(
+          (icon) => icon !== ('translate' as any)
+        )
+      }
+      return state
+    } catch (error) {
+      return state
+    }
   }
 }
 

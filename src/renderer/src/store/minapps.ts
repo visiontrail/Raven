@@ -2,15 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { DEFAULT_MIN_APPS } from '@renderer/config/minapps'
 import { MinAppType, SidebarIcon } from '@renderer/types'
 
-export const DEFAULT_SIDEBAR_ICONS: SidebarIcon[] = [
-  'assistants',
-  'agents',
-  'paintings',
-  'translate',
-  'minapp',
-  'knowledge',
-  'files'
-]
+export const DEFAULT_SIDEBAR_ICONS: SidebarIcon[] = ['assistants', 'agents', 'minapp', 'knowledge', 'files']
 
 export interface MinAppsState {
   enabled: MinAppType[]

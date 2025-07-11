@@ -18,11 +18,9 @@ import {
   CircleHelp,
   FileSearch,
   Folder,
-  Languages,
   LayoutGrid,
   MessageSquare,
   Moon,
-  Palette,
   Settings,
   Sparkle,
   Sun,
@@ -140,7 +138,7 @@ const MainMenus: FC = () => {
   const { hideMinappPopup } = useMinappPopup()
   const { t } = useTranslation()
   const { pathname } = useLocation()
-  const { sidebarIcons, defaultPaintingProvider } = useSettings()
+  const { sidebarIcons } = useSettings()
   const { minappShow } = useRuntime()
   const navigate = useNavigate()
   const { theme } = useTheme()
@@ -151,8 +149,6 @@ const MainMenus: FC = () => {
   const iconMap = {
     assistants: <MessageSquare size={18} className="icon" />,
     agents: <Sparkle size={18} className="icon" />,
-    paintings: <Palette size={18} className="icon" />,
-    translate: <Languages size={18} className="icon" />,
     minapp: <LayoutGrid size={18} className="icon" />,
     knowledge: <FileSearch size={18} className="icon" />,
     files: <Folder size={17} className="icon" />
@@ -161,8 +157,6 @@ const MainMenus: FC = () => {
   const pathMap = {
     assistants: '/',
     agents: '/agents',
-    paintings: `/paintings/${defaultPaintingProvider}`,
-    translate: '/translate',
     minapp: '/apps',
     knowledge: '/knowledge',
     files: '/files'
