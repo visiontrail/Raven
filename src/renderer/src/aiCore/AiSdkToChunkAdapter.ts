@@ -4,7 +4,7 @@
  */
 
 import { TextStreamPart, ToolSet } from '@cherrystudio/ai-core'
-import { MCPTool, WebSearchSource } from '@renderer/types'
+import { MCPTool, WebSearchResults, WebSearchSource } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
 
 import { ToolCallChunkHandler } from './chunk/handleTooCallChunk'
@@ -55,7 +55,8 @@ export class AiSdkToChunkAdapter {
     const reader = fullStream.getReader()
     const final = {
       text: '',
-      reasoning_content: ''
+      reasoningContent: '',
+      webSearchResults: []
     }
     try {
       while (true) {
@@ -77,7 +78,10 @@ export class AiSdkToChunkAdapter {
    * 转换 AI SDK chunk 为 Cherry Studio chunk 并调用回调
    * @param chunk AI SDK 的 chunk 数据
    */
-  private convertAndEmitChunk(chunk: TextStreamPart<any>, final: { text: string; reasoning_content: string }) {
+  private convertAndEmitChunk(
+    chunk: TextStreamPart<any>,
+    final: { text: string; reasoningContent: string; webSearchResults: any[] }
+  ) {
     console.log('AI SDK chunk type:', chunk.type, chunk)
     switch (chunk.type) {
       // === 文本相关事件 ===
@@ -147,16 +151,37 @@ export class AiSdkToChunkAdapter {
       //   final.text = ''
       //   break
 
-      // case 'finish-step': {
-      //   const { totalUsage, finishReason, providerMetadata } = chunk
-      // }
+      case 'finish-step': {
+        const { providerMetadata } = chunk
+        // googel web search
+        if (providerMetadata?.google) {
+          this.onChunk({
+            type: ChunkType.LLM_WEB_SEARCH_COMPLETE,
+            llm_web_search: {
+              results: providerMetadata.google?.groundingMetadata as WebSearchResults,
+              source: WebSearchSource.GEMINI
+            }
+          })
+        } else {
+          this.onChunk({
+            type: ChunkType.LLM_WEB_SEARCH_COMPLETE,
+            llm_web_search: {
+              results: final.webSearchResults,
+              source: WebSearchSource.AISDK
+            }
+          })
+        }
+        final.webSearchResults = []
+        break
+        // const { totalUsage, finishReason, providerMetadata } = chunk
+      }
 
       case 'finish':
         this.onChunk({
           type: ChunkType.BLOCK_COMPLETE,
           response: {
             text: final.text || '',
-            reasoning_content: final.reasoning_content || '',
+            reasoning_content: final.reasoningContent || '',
             usage: {
               completion_tokens: chunk.totalUsage.outputTokens || 0,
               prompt_tokens: chunk.totalUsage.inputTokens || 0,
@@ -174,7 +199,7 @@ export class AiSdkToChunkAdapter {
           type: ChunkType.LLM_RESPONSE_COMPLETE,
           response: {
             text: final.text || '',
-            reasoning_content: final.reasoning_content || '',
+            reasoning_content: final.reasoningContent || '',
             usage: {
               completion_tokens: chunk.totalUsage.outputTokens || 0,
               prompt_tokens: chunk.totalUsage.inputTokens || 0,
@@ -192,13 +217,20 @@ export class AiSdkToChunkAdapter {
 
       // === 源和文件相关事件 ===
       case 'source':
-        this.onChunk({
-          type: ChunkType.LLM_WEB_SEARCH_COMPLETE,
-          llm_web_search: {
-            source: WebSearchSource.AISDK,
-            results: [{}]
-          }
-        })
+        if (chunk.sourceType === 'url') {
+          // if (final.webSearchResults.length === 0) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { sourceType: _, ...rest } = chunk
+          final.webSearchResults.push(rest)
+          // }
+          // this.onChunk({
+          //   type: ChunkType.LLM_WEB_SEARCH_COMPLETE,
+          //   llm_web_search: {
+          //     source: WebSearchSource.AISDK,
+          //     results: final.webSearchResults
+          //   }
+          // })
+        }
         break
       // case 'file':
       //   // 文件相关事件，可能是图片生成
