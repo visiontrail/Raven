@@ -1,7 +1,8 @@
 /**
  * Runtime 层类型定义
  */
-import { type ProviderId, type ProviderSettingsMap } from '../../types'
+import { type ProviderId } from '../../types'
+import { type ModelConfig } from '../models'
 import { type AiPlugin } from '../plugins'
 
 /**
@@ -9,7 +10,7 @@ import { type AiPlugin } from '../plugins'
  */
 export interface RuntimeConfig<T extends ProviderId = ProviderId> {
   providerId: T
-  providerSettings: ProviderSettingsMap[T]
+  providerSettings: ModelConfig<T>['providerSettings']
   plugins?: AiPlugin[]
 }
 

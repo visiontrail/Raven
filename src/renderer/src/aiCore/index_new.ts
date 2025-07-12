@@ -71,14 +71,16 @@ function providerToAiSdkConfig(actualProvider: Provider): {
   const openaiResponseOptions =
     actualProviderId === 'openai'
       ? {
-          compatibility: 'strict'
+          mode: 'response'
         }
       : aiSdkProviderId === 'openai'
         ? {
-            compatibility: 'compatible'
+            mode: 'chat'
           }
         : undefined
-
+  console.log('openaiResponseOptions', openaiResponseOptions)
+  console.log('actualProvider', actualProvider)
+  console.log('aiSdkProviderId', aiSdkProviderId)
   if (AiCore.isSupported(aiSdkProviderId) && aiSdkProviderId !== 'openai-compatible') {
     const options = ProviderConfigFactory.fromProvider(
       aiSdkProviderId,

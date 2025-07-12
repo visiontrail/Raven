@@ -91,7 +91,11 @@ export async function createBaseModel({
 
     // 加一个特判
     if (providerConfig.id === 'openai') {
-      if (!isOpenAIChatCompletionOnlyModel(modelId)) {
+      if (
+        'mode' in providerSettings &&
+        providerSettings.mode === 'response' &&
+        !isOpenAIChatCompletionOnlyModel(modelId)
+      ) {
         provider = provider.responses
       } else {
         provider = provider.chat

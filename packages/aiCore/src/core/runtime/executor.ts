@@ -5,8 +5,9 @@
 import { LanguageModelV2, LanguageModelV2Middleware } from '@ai-sdk/provider'
 import { generateObject, generateText, LanguageModel, streamObject, streamText } from 'ai'
 
-import { type ProviderId, type ProviderSettingsMap } from '../../types'
+import { type ProviderId } from '../../types'
 import { createModel, getProviderInfo } from '../models'
+import { type ModelConfig } from '../models/types'
 import { type AiPlugin, type AiRequestContext, definePlugin } from '../plugins'
 import { PluginEngine } from './pluginEngine'
 import { type RuntimeConfig } from './types'
@@ -256,7 +257,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
    */
   static create<T extends ProviderId>(
     providerId: T,
-    options: ProviderSettingsMap[T],
+    options: ModelConfig<T>['providerSettings'],
     plugins?: AiPlugin[]
   ): RuntimeExecutor<T> {
     return new RuntimeExecutor({
@@ -270,7 +271,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
    * 创建OpenAI Compatible执行器
    */
   static createOpenAICompatible(
-    options: ProviderSettingsMap['openai-compatible'],
+    options: ModelConfig<'openai-compatible'>['providerSettings'],
     plugins: AiPlugin[] = []
   ): RuntimeExecutor<'openai-compatible'> {
     return new RuntimeExecutor({

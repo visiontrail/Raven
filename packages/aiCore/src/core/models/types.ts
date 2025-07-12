@@ -8,7 +8,8 @@ import type { ProviderId, ProviderSettingsMap } from '../../types'
 export interface ModelConfig<T extends ProviderId = ProviderId> {
   providerId: T
   modelId: string
-  providerSettings: ProviderSettingsMap[T]
+  providerSettings: ProviderSettingsMap[T] & { mode: 'chat' | 'responses' }
   middlewares?: LanguageModelV2Middleware[]
+  // 额外模型参数
   extraModelConfig?: Record<string, any>
 }
