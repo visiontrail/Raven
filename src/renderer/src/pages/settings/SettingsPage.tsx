@@ -3,7 +3,6 @@ import ModelSettings from '@renderer/pages/settings/ModelSettings/ModelSettings'
 import {
   Cloud,
   Command,
-  HardDrive,
   Info,
   MonitorCog,
   Package,
@@ -20,7 +19,6 @@ import { Link, Route, Routes, useLocation } from 'react-router-dom'
 import styled from 'styled-components'
 
 import AboutSettings from './AboutSettings'
-import DataSettings from './DataSettings/DataSettings'
 import DisplaySettings from './DisplaySettings/DisplaySettings'
 import GeneralSettings from './GeneralSettings'
 import MCPSettings from './MCPSettings'
@@ -99,12 +97,6 @@ const SettingsPage: FC = () => {
               {t('settings.quickPhrase.title')}
             </MenuItem>
           </MenuItemLink>
-          <MenuItemLink to="/settings/data">
-            <MenuItem className={isRoute('/settings/data')}>
-              <HardDrive size={18} />
-              {t('settings.data.title')}
-            </MenuItem>
-          </MenuItemLink>
           <MenuItemLink to="/settings/about">
             <MenuItem className={isRoute('/settings/about')}>
               <Info size={18} />
@@ -122,7 +114,6 @@ const SettingsPage: FC = () => {
             <Route path="display" element={<DisplaySettings />} />
             <Route path="shortcut" element={<ShortcutSettings />} />
             <Route path="quickAssistant" element={<QuickAssistantSettings />} />
-            <Route path="data" element={<DataSettings />} />
             <Route path="about" element={<AboutSettings />} />
             <Route path="quickPhrase" element={<QuickPhraseSettings />} />
           </Routes>
