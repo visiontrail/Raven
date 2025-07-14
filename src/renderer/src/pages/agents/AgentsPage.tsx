@@ -34,8 +34,7 @@ const AgentsPage: FC = () => {
     const systemAgentsGroupList = groupByCategories(systemAgents)
     const agentsGroupList = {
       我的: userAgents,
-      精选: [],
-      ...systemAgentsGroupList
+      精选: []
     } as Record<string, Agent[]>
     setAgentGroups(agentsGroupList)
   }, [systemAgents, userAgents])
