@@ -1811,6 +1811,22 @@ const migrateConfig = {
     } catch (error) {
       return state
     }
+  },
+  '124': (state: RootState) => {
+    try {
+      // 删除侧边栏配置中的 minapp 选项
+      if (state.settings.sidebarIcons) {
+        state.settings.sidebarIcons.visible = state.settings.sidebarIcons.visible.filter(
+          (icon) => icon !== ('minapp' as any)
+        )
+        state.settings.sidebarIcons.disabled = state.settings.sidebarIcons.disabled.filter(
+          (icon) => icon !== ('minapp' as any)
+        )
+      }
+      return state
+    } catch (error) {
+      return state
+    }
   }
 }
 

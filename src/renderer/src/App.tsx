@@ -51,7 +51,6 @@ function App(): React.ReactElement {
                         <Route path="/agents" element={<AgentsPage />} />
                         <Route path="/files" element={<FilesPage />} />
                         <Route path="/knowledge" element={<KnowledgePage />} />
-                        <Route path="/apps" element={<AppsPage />} />
                         <Route path="/settings/*" element={<SettingsPage />} />
                       </Routes>
                     </HashRouter>

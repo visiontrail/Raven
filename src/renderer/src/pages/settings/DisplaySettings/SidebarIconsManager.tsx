@@ -111,7 +111,6 @@ const SidebarIconsManager: FC<SidebarIconsManagerProps> = ({
     () => ({
       assistants: <MessageSquareQuote size={16} />,
       agents: <Sparkle size={16} />,
-      minapp: <LayoutGrid size={16} />,
       knowledge: <FileSearch size={16} />,
       files: <Folder size={15} />
     }),
