@@ -307,6 +307,7 @@ export async function fetchChatCompletion({
   } = await buildStreamTextParams(messages, assistant, provider, {
     mcpTools: mcpTools,
     enableTools: isEnabledToolUse(assistant),
+    webSearchProviderId: assistant.webSearchProviderId,
     requestOptions: options
   })
 

@@ -109,7 +109,7 @@ export default class WebSearchService {
    * @private
    * @returns 网络搜索状态
    */
-  private getWebSearchState(): WebSearchState {
+  private static getWebSearchState(): WebSearchState {
     return store.getState().websearch
   }
 
@@ -118,8 +118,8 @@ export default class WebSearchService {
    * @public
    * @returns 如果默认搜索提供商已启用则返回true，否则返回false
    */
-  public isWebSearchEnabled(providerId?: WebSearchProvider['id']): boolean {
-    const { providers } = this.getWebSearchState()
+  public static isWebSearchEnabled(providerId?: WebSearchProvider['id']): boolean {
+    const { providers } = WebSearchService.getWebSearchState()
     const provider = providers.find((provider) => provider.id === providerId)
 
     if (!provider) {
@@ -149,7 +149,7 @@ export default class WebSearchService {
    * @returns 如果启用覆盖搜索则返回true，否则返回false
    */
   public isOverwriteEnabled(): boolean {
-    const { overwrite } = this.getWebSearchState()
+    const { overwrite } = WebSearchService.getWebSearchState()
     return overwrite
   }
 
@@ -159,7 +159,7 @@ export default class WebSearchService {
    * @returns 网络搜索提供商
    */
   public getWebSearchProvider(providerId?: string): WebSearchProvider | undefined {
-    const { providers } = this.getWebSearchState()
+    const { providers } = WebSearchService.getWebSearchState()
     const provider = providers.find((provider) => provider.id === providerId)
 
     return provider
@@ -172,7 +172,7 @@ export default class WebSearchService {
    * @returns 搜索响应
    */
   public async search(query: string, httpOptions?: RequestInit): Promise<WebSearchProviderResponse> {
-    const websearch = this.getWebSearchState()
+    const websearch = WebSearchService.getWebSearchState()
     const webSearchProvider = this.getWebSearchProvider(this.webSearchProviderId)
     if (!webSearchProvider) {
       throw new Error(`WebSearchProvider ${this.webSearchProviderId} not found`)
@@ -495,7 +495,7 @@ export default class WebSearchService {
       }
     }
 
-    const { compressionConfig } = this.getWebSearchState()
+    const { compressionConfig } = WebSearchService.getWebSearchState()
 
     // RAG压缩处理
     if (compressionConfig?.method === 'rag' && requestId) {

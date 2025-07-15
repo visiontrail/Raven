@@ -67,6 +67,15 @@ export class ToolCallChunkHandler {
         description: toolName,
         type: 'provider'
       }
+    } else if (toolName.startsWith('builtin_')) {
+      // 如果是内置工具，沿用现有逻辑
+      Logger.info(`[ToolCallChunkHandler] Handling builtin tool: ${toolName}`)
+      tool = {
+        id: toolCallId,
+        name: toolName,
+        description: toolName,
+        type: 'builtin'
+      }
     } else {
       // 如果是客户端执行的 MCP 工具，沿用现有逻辑
       Logger.info(`[ToolCallChunkHandler] Handling client-side MCP tool: ${toolName}`)
