@@ -21,6 +21,7 @@ export { createModel, type ModelConfig } from './core/models'
 // ==================== 插件系统 ====================
 export type { AiPlugin, AiRequestContext, HookResult, HookType, PluginManagerConfig } from './core/plugins'
 export { createContext, definePlugin, PluginManager } from './core/plugins'
+export { createPromptToolUsePlugin, webSearchPlugin } from './core/plugins/built-in'
 export { PluginEngine } from './core/runtime/pluginEngine'
 
 // ==================== 低级 API ====================

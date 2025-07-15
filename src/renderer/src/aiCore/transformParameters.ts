@@ -39,6 +39,7 @@ import {
 import { buildSystemPrompt } from '@renderer/utils/prompt'
 import { defaultTimeout } from '@shared/config/constant'
 
+import { webSearchTool } from './tools/WebSearchTool'
 // import { jsonSchemaToZod } from 'json-schema-to-zod'
 import { setupToolsConfig } from './utils/mcp'
 import { buildProviderOptions } from './utils/options'
@@ -246,6 +247,7 @@ export async function buildStreamTextParams(
     mcpTools?: MCPTool[]
     enableTools?: boolean
     enableWebSearch?: boolean
+    webSearchProviderId?: string
     requestOptions?: {
       signal?: AbortSignal
       timeout?: number
@@ -257,7 +259,7 @@ export async function buildStreamTextParams(
   modelId: string
   capabilities: { enableReasoning?: boolean; enableWebSearch?: boolean; enableGenerateImage?: boolean }
 }> {
-  const { mcpTools, enableTools } = options
+  const { mcpTools, enableTools, webSearchProviderId } = options
 
   const model = assistant.model || getDefaultModel()
 
@@ -285,6 +287,13 @@ export async function buildStreamTextParams(
     model,
     enableToolUse: enableTools
   })
+
+  if (webSearchProviderId) {
+    // 生成requestId用于网络搜索工具
+    const requestId = `request_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+
+    tools['builtin_web_search'] = webSearchTool(webSearchProviderId, requestId)
+  }
 
   // 构建真正的 providerOptions
   const providerOptions = buildProviderOptions(assistant, model, provider, {

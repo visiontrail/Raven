@@ -1,16 +1,10 @@
 import { aiSdk, Tool } from '@cherrystudio/ai-core'
+import { AiSdkTool, ToolCallResult } from '@renderer/aiCore/tools/types'
 import { SYSTEM_PROMPT_THRESHOLD } from '@renderer/config/constant'
 import { isFunctionCallingModel } from '@renderer/config/models'
-import { MCPCallToolResponse, MCPTool, MCPToolResponse, Model } from '@renderer/types'
+import { MCPTool, MCPToolResponse, Model } from '@renderer/types'
 import { callMCPTool } from '@renderer/utils/mcp-tools'
 import { JSONSchema7 } from 'json-schema'
-
-type ToolCallResult = {
-  success: boolean
-  data: MCPCallToolResponse
-}
-
-type AiSdkTool = Tool<any, ToolCallResult>
 
 // Setup tools configuration based on provided parameters
 export function setupToolsConfig(params: { mcpTools?: MCPTool[]; model: Model; enableToolUse?: boolean }): {

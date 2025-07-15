@@ -4,22 +4,15 @@
  * 提供工具调用相关的处理API，每个交互使用一个新的实例
  */
 
-import { ToolCallUnion, ToolResultUnion, ToolSet } from '@cherrystudio/ai-core/index'
+import { ToolCallUnion, ToolResultUnion, ToolSet } from '@cherrystudio/ai-core'
 import Logger from '@renderer/config/logger'
-import { MCPTool, MCPToolResponse } from '@renderer/types'
+import { BaseTool, MCPToolResponse } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
 // import type {
 //   AnthropicSearchOutput,
 //   WebSearchPluginConfig
 // } from '@cherrystudio/ai-core/core/plugins/built-in/webSearchPlugin'
 
-// 为 Provider 执行的工具创建一个通用类型
-// 这避免了污染 MCPTool 的定义，同时提供了 UI 显示所需的基本信息
-type GenericProviderTool = {
-  name: string
-  description: string
-  type: 'provider'
-}
 /**
  * 工具调用处理器类
  */
@@ -32,12 +25,12 @@ export class ToolCallChunkHandler {
       toolName: string
       args: any
       // mcpTool 现在可以是 MCPTool 或我们为 Provider 工具创建的通用类型
-      mcpTool: MCPTool | GenericProviderTool
+      mcpTool: BaseTool
     }
   >()
   constructor(
     private onChunk: (chunk: Chunk) => void,
-    private mcpTools: MCPTool[]
+    private mcpTools: BaseTool[]
   ) {}
 
   //   /**
@@ -62,13 +55,14 @@ export class ToolCallChunkHandler {
       return
     }
 
-    let tool: MCPTool | GenericProviderTool
+    let tool: BaseTool
 
     // 根据 providerExecuted 标志区分处理逻辑
     if (providerExecuted) {
       // 如果是 Provider 执行的工具（如 web_search）
       Logger.info(`[ToolCallChunkHandler] Handling provider-executed tool: ${toolName}`)
       tool = {
+        id: toolCallId,
         name: toolName,
         description: toolName,
         type: 'provider'

@@ -4,12 +4,7 @@ import type OpenAI from 'openai'
 import type { CSSProperties } from 'react'
 
 import type { Message } from './newMessage'
-
-export type GenericProviderTool = {
-  name: string
-  description: string
-  type: 'provider'
-}
+import type { BaseTool, MCPTool } from './tool'
 
 export type Assistant = {
   id: string
@@ -616,15 +611,6 @@ export interface MCPToolInputSchema {
   properties: Record<string, object>
 }
 
-export interface MCPTool {
-  id: string
-  serverId: string
-  serverName: string
-  name: string
-  description?: string
-  inputSchema: MCPToolInputSchema
-}
-
 export interface MCPPromptArguments {
   name: string
   description?: string
@@ -661,7 +647,7 @@ export interface MCPConfig {
 
 interface BaseToolResponse {
   id: string // unique id
-  tool: MCPTool | GenericProviderTool
+  tool: BaseTool
   arguments: Record<string, unknown> | undefined
   status: string // 'invoking' | 'done'
   response?: any
@@ -755,3 +741,4 @@ export type S3Config = {
 }
 
 export type { Message } from './newMessage'
+export * from './tool'
