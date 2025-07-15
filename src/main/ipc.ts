@@ -25,6 +25,7 @@ import mcpService from './services/MCPService'
 import NotificationService from './services/NotificationService'
 import * as NutstoreService from './services/NutstoreService'
 import ObsidianVaultService from './services/ObsidianVaultService'
+import { packagingService } from './services/PackagingService'
 import { ProxyConfig, proxyManager } from './services/ProxyManager'
 import { pythonService } from './services/PythonService'
 import { FileServiceManager } from './services/remotefile/FileServiceManager'
@@ -513,6 +514,32 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
       return await pythonService.executeScript(script, context, timeout)
     }
   )
+
+  // Packager
+  ipcMain.handle(IpcChannel.Packager_GetInfo, (_, packageType: string) => {
+    return packagingService.getComponentTemplate(packageType)
+  })
+  ipcMain.handle(IpcChannel.Packager_GenerateSiIni, (_, config) => {
+    return packagingService.generateSiIni(config)
+  })
+  ipcMain.handle(IpcChannel.Packager_CreatePackage, (_, config) => {
+    return packagingService.handleCreatePackage(_, config)
+  })
+  ipcMain.handle(IpcChannel.Packager_GetAutoVersion, (_, filePath: string) => {
+    return packagingService.getAutoVersion(filePath)
+  })
+  ipcMain.handle(IpcChannel.Packager_GetAutoVersionFromFilename, (_, filename: string) => {
+    return packagingService.getAutoVersionFromFilename(filename)
+  })
+  ipcMain.handle(IpcChannel.Packager_SelectFile, async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      properties: ['openFile']
+    })
+    if (canceled || filePaths.length === 0) {
+      return null
+    }
+    return filePaths[0]
+  })
 
   ipcMain.handle(IpcChannel.App_IsBinaryExist, (_, name: string) => isBinaryExists(name))
   ipcMain.handle(IpcChannel.App_GetBinaryPath, (_, name: string) => getBinaryPath(name))

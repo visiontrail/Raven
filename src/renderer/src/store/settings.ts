@@ -19,9 +19,9 @@ import { RemoteSyncState } from './backup'
 
 export type SendMessageShortcut = 'Enter' | 'Shift+Enter' | 'Ctrl+Enter' | 'Command+Enter' | 'Alt+Enter'
 
-export type SidebarIcon = 'assistants' | 'agents' | 'knowledge' | 'files'
+export type SidebarIcon = 'assistants' | 'agents' | 'knowledge' | 'files' | 'packager'
 
-export const DEFAULT_SIDEBAR_ICONS: SidebarIcon[] = ['assistants', 'agents', 'knowledge', 'files']
+export const DEFAULT_SIDEBAR_ICONS: SidebarIcon[] = ['assistants', 'agents', 'knowledge', 'files', 'packager']
 
 export interface NutstoreSyncRuntime extends RemoteSyncState {}
 
@@ -593,6 +593,10 @@ const settingsSlice = createSlice({
         state.sidebarIcons.disabled = action.payload.disabled
       }
     },
+    resetSidebarIcons: (state) => {
+      state.sidebarIcons.visible = DEFAULT_SIDEBAR_ICONS;
+      state.sidebarIcons.disabled = [];
+    },
     setNarrowMode: (state, action: PayloadAction<boolean>) => {
       state.narrowMode = action.payload
     },
@@ -812,6 +816,7 @@ export const {
   setCustomCss,
   setTopicNamingPrompt,
   setSidebarIcons,
+  resetSidebarIcons,
   setNarrowMode,
   setClickTrayToShowQuickAssistant,
   setEnableQuickAssistant,

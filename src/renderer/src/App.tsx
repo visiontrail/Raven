@@ -1,8 +1,9 @@
 import '@renderer/databases'
 
 import { initializeDefaultMinApps } from '@renderer/config/minapps'
-import store, { persistor } from '@renderer/store'
-import { useEffect } from 'react'
+import store, { persistor, useAppDispatch } from '@renderer/store'
+import { resetSidebarIcons } from '@renderer/store/settings'
+import React, { useEffect } from 'react'
 import { Provider } from 'react-redux'
 import { HashRouter, Route, Routes } from 'react-router-dom'
 import { PersistGate } from 'redux-persist/integration/react'
@@ -20,14 +21,18 @@ import AppsPage from './pages/apps/AppsPage'
 import FilesPage from './pages/files/FilesPage'
 import HomePage from './pages/home/HomePage'
 import KnowledgePage from './pages/knowledge/KnowledgePage'
+import PackagerPage from './pages/Packager/Packager'
 import SettingsPage from './pages/settings/SettingsPage'
 
 // 初始化组件
 function AppInitializer() {
+  const dispatch = useAppDispatch()
   useEffect(() => {
     // 在应用启动时初始化自定义小应用
     initializeDefaultMinApps().catch(console.error)
-  }, [])
+    // 重置侧边栏图标以确保新图标可见
+    dispatch(resetSidebarIcons())
+  }, [dispatch])
 
   return null
 }
@@ -46,13 +51,16 @@ function App(): React.ReactElement {
                     <HashRouter>
                       <NavigationHandler />
                       <Sidebar />
-                      <Routes>
-                        <Route path="/" element={<HomePage />} />
-                        <Route path="/agents" element={<AgentsPage />} />
-                        <Route path="/files" element={<FilesPage />} />
-                        <Route path="/knowledge" element={<KnowledgePage />} />
-                        <Route path="/settings/*" element={<SettingsPage />} />
-                      </Routes>
+                      <React.Suspense fallback={<div>Loading...</div>}>
+                        <Routes>
+                          <Route path="/" element={<HomePage />} />
+                          <Route path="/agents" element={<AgentsPage />} />
+                          <Route path="/files" element={<FilesPage />} />
+                          <Route path="/knowledge" element={<KnowledgePage />} />
+                          <Route path="/packager/*" element={<PackagerPage />} />
+                          <Route path="/settings/*" element={<SettingsPage />} />
+                        </Routes>
+                      </React.Suspense>
                     </HashRouter>
                   </TopViewContainer>
                 </PersistGate>

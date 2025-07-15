@@ -80,6 +80,14 @@ export enum IpcChannel {
   // Python
   Python_Execute = 'python:execute',
 
+  // Packager
+  Packager_GetInfo = 'packager:get-info',
+  Packager_GenerateSiIni = 'packager:generate-si-ini',
+  Packager_CreatePackage = 'packager:create-package',
+  Packager_GetAutoVersion = 'packager:get-auto-version',
+  Packager_GetAutoVersionFromFilename = 'packager:get-auto-version-from-filename',
+  Packager_SelectFile = 'packager:select-file',
+
   //copilot
   Copilot_GetAuthMessage = 'copilot:get-auth-message',
   Copilot_GetCopilotToken = 'copilot:get-copilot-token',

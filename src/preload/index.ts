@@ -16,6 +16,7 @@ import {
   WebDavConfig
 } from '@types'
 import { contextBridge, ipcRenderer, OpenDialogOptions, shell, webUtils } from 'electron'
+import path from 'node:path'
 import { Notification } from 'src/renderer/src/types/notification'
 import { CreateDirectoryOptions } from 'webdav'
 
@@ -244,6 +245,19 @@ const api = {
   python: {
     execute: (script: string, context?: Record<string, any>, timeout?: number) =>
       ipcRenderer.invoke(IpcChannel.Python_Execute, script, context, timeout)
+  },
+  packager: {
+    getInfo: (packageType: string) => ipcRenderer.invoke(IpcChannel.Packager_GetInfo, packageType),
+    getComponentTemplate: (packageType: string) => ipcRenderer.invoke(IpcChannel.Packager_GetComponentTemplate, packageType),
+    getAutoVersion: (filePath: string) => ipcRenderer.invoke(IpcChannel.Packager_GetAutoVersion, filePath),
+    getAutoVersionFromFilename: (filename: string) =>
+      ipcRenderer.invoke(IpcChannel.Packager_GetAutoVersionFromFilename, filename),
+    generateSiIni: (config) => ipcRenderer.invoke(IpcChannel.Packager_GenerateSiIni, config),
+    createPackage: (config) => ipcRenderer.invoke(IpcChannel.Packager_CreatePackage, config),
+    selectFile: () => ipcRenderer.invoke(IpcChannel.Packager_SelectFile)
+  },
+  path: {
+    basename: (filePath: string) => path.basename(filePath)
   },
   shell: {
     openExternal: (url: string, options?: Electron.OpenExternalOptions) => shell.openExternal(url, options)

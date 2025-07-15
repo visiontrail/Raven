@@ -21,6 +21,7 @@ import {
   LayoutGrid,
   MessageSquare,
   Moon,
+  Package,
   Settings,
   Sparkle,
   Sun,
@@ -150,14 +151,16 @@ const MainMenus: FC = () => {
     assistants: <MessageSquare size={18} className="icon" />,
     agents: <Sparkle size={18} className="icon" />,
     knowledge: <FileSearch size={18} className="icon" />,
-    files: <Folder size={17} className="icon" />
+    files: <Folder size={17} className="icon" />,
+    packager: <Package size={18} className="icon" />
   }
 
   const pathMap = {
     assistants: '/',
     agents: '/agents',
     knowledge: '/knowledge',
-    files: '/files'
+    files: '/files',
+    packager: '/packager'
   }
 
   return sidebarIcons.visible.map((icon) => {
