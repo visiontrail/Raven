@@ -425,7 +425,8 @@ class McpService {
           ...tool,
           id: buildFunctionCallToolName(server.name, tool.name),
           serverId: server.id,
-          serverName: server.name
+          serverName: server.name,
+          type: 'mcp'
         }
         serverTools.push(serverTool)
       })
