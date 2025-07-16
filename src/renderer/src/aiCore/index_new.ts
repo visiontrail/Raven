@@ -67,13 +67,13 @@ function providerToAiSdkConfig(actualProvider: Provider): {
   const aiSdkProviderId = getAiSdkProviderId(actualProvider)
   // console.log('aiSdkProviderId', aiSdkProviderId)
   // 如果provider是openai，则使用strict模式并且默认responses api
-  const actualProviderId = actualProvider.id
+  const actualProviderType = actualProvider.type
   const openaiResponseOptions =
-    actualProviderId === 'openai'
+    actualProviderType === 'openai-response'
       ? {
           mode: 'response'
         }
-      : aiSdkProviderId === 'openai'
+      : actualProviderType === 'openai'
         ? {
             mode: 'chat'
           }
