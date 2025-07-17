@@ -20,6 +20,14 @@
   ],
   "author": "Cherry Studio",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CherryHQ/cherry-studio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/CherryHQ/cherry-studio/issues"
+  },
+  "homepage": "https://github.com/CherryHQ/cherry-studio#readme",
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "3.0.0-beta.7",
     "@ai-sdk/anthropic": "2.0.0-beta.6",
