@@ -1,5 +1,5 @@
 import Logger from '@renderer/config/logger'
-import { FileType } from '@renderer/types'
+import { FileMetadata } from '@renderer/types'
 import { getFileExtension } from '@renderer/utils'
 
 // Track last focused component
@@ -24,10 +24,8 @@ let isInitialized = false
  */
 export const handlePaste = async (
   event: ClipboardEvent,
-  isVisionModel: boolean,
-  isGenerateImageModel: boolean,
   supportExts: string[],
-  setFiles: (updater: (prevFiles: FileType[]) => FileType[]) => void,
+  setFiles: (updater: (prevFiles: FileMetadata[]) => FileMetadata[]) => void,
   setText?: (text: string) => void,
   pasteLongTextAsFile?: boolean,
   pasteLongTextThreshold?: number,
@@ -44,7 +42,7 @@ export const handlePaste = async (
         // 长文本直接转文件，阻止默认粘贴
         event.preventDefault()
 
-        const tempFilePath = await window.api.file.create('pasted_text.txt')
+        const tempFilePath = await window.api.file.createTempFile('pasted_text.txt')
         await window.api.file.write(tempFilePath, clipboardText)
         const selectedFile = await window.api.file.get(tempFilePath)
         if (selectedFile) {
@@ -57,7 +55,6 @@ export const handlePaste = async (
       // 短文本走默认粘贴行为，直接返回
       return false
     }
-
     // 2. 文件/图片粘贴（仅在无文本时处理）
     if (event.clipboardData?.files && event.clipboardData.files.length > 0) {
       event.preventDefault()
@@ -69,8 +66,8 @@ export const handlePaste = async (
           // 如果没有路径，可能是剪贴板中的图像数据
           if (!filePath) {
             // 图像生成也支持图像编辑
-            if (file.type.startsWith('image/') && (isVisionModel || isGenerateImageModel)) {
-              const tempFilePath = await window.api.file.create(file.name)
+            if (file.type.startsWith('image/') && supportExts.includes(getFileExtension(file.name))) {
+              const tempFilePath = await window.api.file.createTempFile(file.name)
               const arrayBuffer = await file.arrayBuffer()
               const uint8Array = new Uint8Array(arrayBuffer)
               await window.api.file.write(tempFilePath, uint8Array)

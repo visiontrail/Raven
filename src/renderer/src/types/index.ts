@@ -3,6 +3,8 @@ import type { GenerateImagesConfig, GroundingMetadata, PersonGeneration } from '
 import type OpenAI from 'openai'
 import type { CSSProperties } from 'react'
 
+export * from './file'
+import type { FileMetadata } from './file'
 import type { Message } from './newMessage'
 import type { BaseTool, MCPTool } from './tool'
 
@@ -22,11 +24,14 @@ export type Assistant = {
   /** enableWebSearch 代表使用模型内置网络搜索功能 */
   enableWebSearch?: boolean
   webSearchProviderId?: WebSearchProvider['id']
+  // enableUrlContext 是 Gemini 的特有功能
+  enableUrlContext?: boolean
   enableGenerateImage?: boolean
   mcpServers?: MCPServer[]
   knowledgeRecognition?: 'off' | 'on'
   regularPhrases?: QuickPhrase[] // Added for regular phrase
   tags?: string[] // 助手标签
+  enableMemory?: boolean
 }
 
 export type AssistantsSortType = 'tags' | 'list'
@@ -82,7 +87,7 @@ export type LegacyMessage = {
   status: 'sending' | 'pending' | 'searching' | 'success' | 'paused' | 'error'
   modelId?: string
   model?: Model
-  files?: FileType[]
+  files?: FileMetadata[]
   images?: string[]
   usage?: Usage
   metrics?: Metrics
@@ -177,9 +182,19 @@ export interface VertexProvider extends BaseProvider {
   location: string
 }
 
-export type ProviderType = 'openai' | 'openai-response' | 'anthropic' | 'gemini' | 'azure-openai' | 'vertexai'
+export type ProviderType =
+  | 'openai'
+  | 'openai-response'
+  | 'anthropic'
+  | 'gemini'
+  | 'qwenlm'
+  | 'azure-openai'
+  | 'vertexai'
+  | 'mistral'
 
 export type ModelType = 'text' | 'vision' | 'embedding' | 'reasoning' | 'function_calling' | 'web_search'
+
+export type EndpointType = 'openai' | 'openai-response' | 'anthropic' | 'gemini' | 'image-generation' | 'jina-rerank'
 
 export type ModelPricing = {
   input_per_million_tokens: number
@@ -196,6 +211,8 @@ export type Model = {
   description?: string
   type?: ModelType[]
   pricing?: ModelPricing
+  endpoint_type?: EndpointType
+  supported_endpoint_types?: EndpointType[]
 }
 
 export type Suggestion = {
@@ -205,10 +222,10 @@ export type Suggestion = {
 export type PaintingParams = {
   id: string
   urls: string[]
-  files: FileType[]
+  files: FileMetadata[]
 }
 
-export type PaintingProvider = 'aihubmix' | 'silicon' | 'dmxapi'
+export type PaintingProvider = 'aihubmix' | 'silicon' | 'dmxapi' | 'new-api'
 
 export interface Painting extends PaintingParams {
   model?: string
@@ -243,7 +260,7 @@ export interface GeneratePainting extends PaintingParams {
 
 export interface EditPainting extends PaintingParams {
   imageFile: string
-  mask: FileType
+  mask: FileMetadata
   model: string
   prompt: string
   numImages?: number
@@ -317,6 +334,8 @@ export interface PaintingsState {
   upscale: Partial<ScalePainting> & PaintingParams[]
   DMXAPIPaintings: DmxapiPainting[]
   tokenFluxPaintings: TokenFluxPainting[]
+  openai_image_generate: Partial<GeneratePainting> & PaintingParams[]
+  openai_image_edit: Partial<EditPainting> & PaintingParams[]
 }
 
 export type MinAppType = {
@@ -331,28 +350,6 @@ export type MinAppType = {
   type?: 'Custom' | 'Default' // Added the 'type' property
 }
 
-export interface FileType {
-  id: string
-  name: string
-  origin_name: string
-  path: string
-  size: number
-  ext: string
-  type: FileTypes
-  created_at: string
-  count: number
-  tokens?: number
-}
-
-export enum FileTypes {
-  IMAGE = 'image',
-  VIDEO = 'video',
-  AUDIO = 'audio',
-  TEXT = 'text',
-  DOCUMENT = 'document',
-  OTHER = 'other'
-}
-
 export enum ThemeMode {
   light = 'light',
   dark = 'dark',
@@ -361,16 +358,7 @@ export enum ThemeMode {
 
 export type LanguageVarious = 'zh-CN' | 'zh-TW' | 'el-GR' | 'en-US' | 'es-ES' | 'fr-FR' | 'ja-JP' | 'pt-PT' | 'ru-RU'
 
-export type TranslateLanguageVarious =
-  | 'chinese'
-  | 'chinese-traditional'
-  | 'greek'
-  | 'english'
-  | 'spanish'
-  | 'french'
-  | 'japanese'
-  | 'portuguese'
-  | 'russian'
+export type TranslateLanguageVarious = LanguageCode
 
 export type CodeStyleVarious = 'auto' | string
 
@@ -381,6 +369,7 @@ export type WebDavConfig = {
   webdavPath?: string
   fileName?: string
   skipBackupFile?: boolean
+  disableStream?: boolean
 }
 
 export type AppInfo = {
@@ -407,7 +396,7 @@ export interface Shortcut {
 
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
-export type KnowledgeItemType = 'file' | 'url' | 'note' | 'sitemap' | 'directory'
+export type KnowledgeItemType = 'file' | 'url' | 'note' | 'sitemap' | 'directory' | 'memory'
 
 export type KnowledgeItem = {
   id: string
@@ -415,7 +404,7 @@ export type KnowledgeItem = {
   uniqueId?: string
   uniqueIds?: string[]
   type: KnowledgeItemType
-  content: string | FileType
+  content: string | FileMetadata
   remark?: string
   created_at: number
   updated_at: number
@@ -423,6 +412,7 @@ export type KnowledgeItem = {
   processingProgress?: number
   processingError?: string
   retryCount?: number
+  isPreprocessed?: boolean
 }
 
 export interface KnowledgeBase {
@@ -441,23 +431,54 @@ export interface KnowledgeBase {
   threshold?: number
   rerankModel?: Model
   // topN?: number
+  // preprocessing?: boolean
+  preprocessOrOcrProvider?: {
+    type: 'preprocess' | 'ocr'
+    provider: PreprocessProvider | OcrProvider
+  }
+}
+
+export type ApiClient = {
+  model: string
+  provider: string
+  apiKey: string
+  apiVersion?: string
+  baseURL: string
 }
 
 export type KnowledgeBaseParams = {
   id: string
-  model: string
-  provider: string
   dimensions?: number
-  apiKey: string
-  apiVersion?: string
-  baseURL: string
   chunkSize?: number
   chunkOverlap?: number
-  rerankApiKey?: string
-  rerankBaseURL?: string
-  rerankModel?: string
-  rerankModelProvider?: string
+  embedApiClient: ApiClient
+  rerankApiClient?: ApiClient
   documentCount?: number
+  // preprocessing?: boolean
+  preprocessOrOcrProvider?: {
+    type: 'preprocess' | 'ocr'
+    provider: PreprocessProvider | OcrProvider
+  }
+}
+
+export interface PreprocessProvider {
+  id: string
+  name: string
+  apiKey?: string
+  apiHost?: string
+  model?: string
+  options?: any
+  quota?: number
+}
+
+export interface OcrProvider {
+  id: string
+  name: string
+  apiKey?: string
+  apiHost?: string
+  model?: string
+  options?: any
+  quota?: number
 }
 
 export type GenerateImageParams = {
@@ -479,12 +500,41 @@ export type GenerateImageResponse = {
   images: string[]
 }
 
+export type LanguageCode =
+  | 'en-us'
+  | 'zh-cn'
+  | 'zh-tw'
+  | 'ja-jp'
+  | 'ko-kr'
+  | 'fr-fr'
+  | 'de-de'
+  | 'it-it'
+  | 'es-es'
+  | 'pt-pt'
+  | 'ru-ru'
+  | 'pl-pl'
+  | 'ar-ar'
+  | 'tr-tr'
+  | 'th-th'
+  | 'vi-vn'
+  | 'id-id'
+  | 'ur-pk'
+  | 'ms-my'
+
+// langCode应当能够唯一确认一种语言
+export type Language = {
+  value: string
+  langCode: LanguageCode
+  label: () => string
+  emoji: string
+}
+
 export interface TranslateHistory {
   id: string
   sourceText: string
   targetText: string
-  sourceLanguage: string
-  targetLanguage: string
+  sourceLanguage: LanguageCode
+  targetLanguage: LanguageCode
   createdAt: string
 }
 
@@ -495,6 +545,7 @@ export type ExternalToolResult = {
   toolUse?: MCPToolResponse[]
   webSearch?: WebSearchResponse
   knowledge?: KnowledgeReference[]
+  memories?: MemoryItem[]
 }
 
 export type WebSearchProvider = {
@@ -561,7 +612,7 @@ export type KnowledgeReference = {
   content: string
   sourceUrl: string
   type: KnowledgeItemType
-  file?: FileType
+  file?: FileMetadata
 }
 
 export type MCPArgType = 'string' | 'list' | 'number'
@@ -593,6 +644,7 @@ export interface MCPServer {
   env?: Record<string, string>
   isActive: boolean
   disabledTools?: string[] // List of tool names that are disabled for this server
+  disabledAutoApproveTools?: string[] // Whether to auto-approve tools for this server
   configSample?: MCPConfigSample
   headers?: Record<string, string> // Custom headers to be sent with requests to this server
   searchKey?: string
@@ -601,6 +653,8 @@ export interface MCPServer {
   logoUrl?: string // URL of the MCP server's logo
   tags?: string[] // List of tags associated with this server
   timeout?: number // Timeout in seconds for requests to this server, default is 60 seconds
+  dxtVersion?: string // Version of the DXT package
+  dxtPath?: string // Path where the DXT package was extracted
 }
 
 export interface MCPToolInputSchema {
@@ -645,11 +699,13 @@ export interface MCPConfig {
   isBunInstalled: boolean
 }
 
+export type MCPToolResponseStatus = 'pending' | 'cancelled' | 'invoking' | 'done' | 'error'
+
 interface BaseToolResponse {
   id: string // unique id
   tool: BaseTool
   arguments: Record<string, unknown> | undefined
-  status: string // 'invoking' | 'done'
+  status: MCPToolResponseStatus
   response?: any
 }
 
@@ -710,9 +766,12 @@ export interface QuickPhrase {
 export interface Citation {
   number: number
   url: string
-  hostname: string
   title?: string
+  hostname?: string
   content?: string
+  showFavicon?: boolean
+  type?: string
+  metadata?: Record<string, any>
 }
 
 export type MathEngine = 'KaTeX' | 'MathJax' | 'none'
@@ -733,12 +792,93 @@ export type S3Config = {
   endpoint: string
   region: string
   bucket: string
-  access_key_id: string
-  secret_access_key: string
+  accessKeyId: string
+  secretAccessKey: string
   root?: string
   fileName?: string
-  skipBackupFile?: boolean
+  skipBackupFile: boolean
+  autoSync: boolean
+  syncInterval: number
+  maxBackups: number
 }
 
 export type { Message } from './newMessage'
 export * from './tool'
+
+// Memory Service Types
+// ========================================================================
+export interface MemoryConfig {
+  /**
+   * @deprecated use embedderApiClient instead
+   */
+  embedderModel?: Model
+  embedderDimensions?: number
+  /**
+   * @deprecated use llmApiClient instead
+   */
+  llmModel?: Model
+  embedderApiClient?: ApiClient
+  llmApiClient?: ApiClient
+  customFactExtractionPrompt?: string
+  customUpdateMemoryPrompt?: string
+  /** Indicates whether embedding dimensions are automatically detected */
+  isAutoDimensions?: boolean
+}
+
+export interface MemoryItem {
+  id: string
+  memory: string
+  hash?: string
+  createdAt?: string
+  updatedAt?: string
+  score?: number
+  metadata?: Record<string, any>
+}
+
+export interface MemorySearchResult {
+  results: MemoryItem[]
+  relations?: any[]
+}
+
+export interface MemoryEntity {
+  userId?: string
+  agentId?: string
+  runId?: string
+}
+
+export interface MemorySearchFilters {
+  userId?: string
+  agentId?: string
+  runId?: string
+  [key: string]: any
+}
+
+export interface AddMemoryOptions extends MemoryEntity {
+  metadata?: Record<string, any>
+  filters?: MemorySearchFilters
+  infer?: boolean
+}
+
+export interface MemorySearchOptions extends MemoryEntity {
+  limit?: number
+  filters?: MemorySearchFilters
+}
+
+export interface MemoryHistoryItem {
+  id: number
+  memoryId: string
+  previousValue?: string
+  newValue: string
+  action: 'ADD' | 'UPDATE' | 'DELETE'
+  createdAt: string
+  updatedAt: string
+  isDeleted: boolean
+}
+
+export interface MemoryListOptions extends MemoryEntity {
+  limit?: number
+  offset?: number
+}
+
+export interface MemoryDeleteAllOptions extends MemoryEntity {}
+// ========================================================================

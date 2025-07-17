@@ -1,5 +1,11 @@
 import { Model } from '@renderer/types'
-import { ChunkType, TextDeltaChunk, ThinkingCompleteChunk, ThinkingDeltaChunk } from '@renderer/types/chunk'
+import {
+  ChunkType,
+  TextDeltaChunk,
+  ThinkingCompleteChunk,
+  ThinkingDeltaChunk,
+  ThinkingStartChunk
+} from '@renderer/types/chunk'
 import { TagConfig, TagExtractor } from '@renderer/utils/tagExtraction'
 import Logger from 'electron-log/renderer'
 
@@ -11,11 +17,13 @@ export const MIDDLEWARE_NAME = 'ThinkingTagExtractionMiddleware'
 // 不同模型的思考标签配置
 const reasoningTags: TagConfig[] = [
   { openingTag: '<think>', closingTag: '</think>', separator: '\n' },
+  { openingTag: '<thought>', closingTag: '</thought>', separator: '\n' },
   { openingTag: '###Thinking', closingTag: '###Response', separator: '\n' }
 ]
 
 const getAppropriateTag = (model?: Model): TagConfig => {
   if (model?.id?.includes('qwen3')) return reasoningTags[0]
+  if (model?.id?.includes('gemini-2.5')) return reasoningTags[1]
   // 可以在这里添加更多模型特定的标签配置
   return reasoningTags[0] // 默认使用 <think> 标签
 }
@@ -57,6 +65,8 @@ export const ThinkingTagExtractionMiddleware: CompletionsMiddleware =
         let hasThinkingContent = false
         let thinkingStartTime = 0
 
+        let isFirstTextChunk = true
+
         const processedStream = resultFromUpstream.pipeThrough(
           new TransformStream<GenericChunk, GenericChunk>({
             transform(chunk: GenericChunk, controller) {
@@ -67,7 +77,7 @@ export const ThinkingTagExtractionMiddleware: CompletionsMiddleware =
                 const extractionResults = tagExtractor.processText(textChunk.text)
 
                 for (const extractionResult of extractionResults) {
-                  if (extractionResult.complete && extractionResult.tagContentExtracted) {
+                  if (extractionResult.complete && extractionResult.tagContentExtracted?.trim()) {
                     // 生成 THINKING_COMPLETE 事件
                     const thinkingCompleteChunk: ThinkingCompleteChunk = {
                       type: ChunkType.THINKING_COMPLETE,
@@ -85,15 +95,26 @@ export const ThinkingTagExtractionMiddleware: CompletionsMiddleware =
                       if (!hasThinkingContent) {
                         hasThinkingContent = true
                         thinkingStartTime = Date.now()
+                        controller.enqueue({
+                          type: ChunkType.THINKING_START
+                        } as ThinkingStartChunk)
                       }
 
-                      const thinkingDeltaChunk: ThinkingDeltaChunk = {
-                        type: ChunkType.THINKING_DELTA,
-                        text: extractionResult.content,
-                        thinking_millsec: thinkingStartTime > 0 ? Date.now() - thinkingStartTime : 0
+                      if (extractionResult.content?.trim()) {
+                        const thinkingDeltaChunk: ThinkingDeltaChunk = {
+                          type: ChunkType.THINKING_DELTA,
+                          text: extractionResult.content,
+                          thinking_millsec: thinkingStartTime > 0 ? Date.now() - thinkingStartTime : 0
+                        }
+                        controller.enqueue(thinkingDeltaChunk)
                       }
-                      controller.enqueue(thinkingDeltaChunk)
                     } else {
+                      if (isFirstTextChunk) {
+                        controller.enqueue({
+                          type: ChunkType.TEXT_START
+                        })
+                        isFirstTextChunk = false
+                      }
                       // 发送清理后的文本内容
                       const cleanTextChunk: TextDeltaChunk = {
                         ...textChunk,
@@ -103,7 +124,7 @@ export const ThinkingTagExtractionMiddleware: CompletionsMiddleware =
                     }
                   }
                 }
-              } else {
+              } else if (chunk.type !== ChunkType.TEXT_START) {
                 // 其他类型的chunk直接传递（包括 THINKING_DELTA, THINKING_COMPLETE 等）
                 controller.enqueue(chunk)
               }

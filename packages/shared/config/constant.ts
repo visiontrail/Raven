@@ -193,6 +193,7 @@ const textExtsByCategory = new Map([
       '.htm',
       '.xhtml', // HTML
       '.xml', // XML
+      '.fxml', // JavaFX XML
       '.org', // Org-mode
       '.wiki', // Wiki
       '.tex',
@@ -416,6 +417,6 @@ export enum UpgradeChannel {
   BETA = 'beta' // 预览版本
 }
 
-export const defaultTimeout = 5 * 1000 * 60
+export const defaultTimeout = 10 * 1000 * 60
 
 export const occupiedDirs = ['logs', 'Network', 'Partitions/webview/Network']

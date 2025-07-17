@@ -2,12 +2,13 @@ import { GenericChunk } from '@renderer/aiCore/middleware/schemas'
 import { CompletionsContext } from '@renderer/aiCore/middleware/types'
 import {
   isOpenAIChatCompletionOnlyModel,
+  isOpenAILLMModel,
   isSupportedReasoningEffortOpenAIModel,
   isVisionModel
 } from '@renderer/config/models'
 import { estimateTextTokens } from '@renderer/services/TokenService'
 import {
-  FileType,
+  FileMetadata,
   FileTypes,
   MCPCallToolResponse,
   MCPTool,
@@ -38,7 +39,7 @@ import { findFileBlocks, findImageBlocks } from '@renderer/utils/messageUtils/fi
 import { buildSystemPrompt } from '@renderer/utils/prompt'
 import { MB } from '@shared/config/constant'
 import { isEmpty } from 'lodash'
-import OpenAI from 'openai'
+import OpenAI, { AzureOpenAI } from 'openai'
 import { ResponseInput } from 'openai/resources/responses/responses'
 
 import { RequestTransformer, ResponseChunkTransformer } from '../types'
@@ -60,14 +61,38 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
     this.client = new OpenAIAPIClient(provider)
   }
 
+  private formatApiHost() {
+    const host = this.provider.apiHost
+    if (host.endsWith('/openai/v1')) {
+      return host
+    } else {
+      if (host.endsWith('/')) {
+        return host + 'openai/v1'
+      } else {
+        return host + '/openai/v1'
+      }
+    }
+  }
+
   /**
    * 根据模型特征选择合适的客户端
    */
   public getClient(model: Model) {
-    if (isOpenAIChatCompletionOnlyModel(model)) {
-      return this.client
-    } else {
+    if (this.provider.type === 'openai-response') {
       return this
+    }
+    if (isOpenAILLMModel(model) && !isOpenAIChatCompletionOnlyModel(model)) {
+      if (this.provider.id === 'azure-openai' || this.provider.type === 'azure-openai') {
+        this.provider = { ...this.provider, apiHost: this.formatApiHost() }
+        if (this.provider.apiVersion === 'preview') {
+          return this
+        } else {
+          return this.client
+        }
+      }
+      return this
+    } else {
+      return this.client
     }
   }
 
@@ -76,15 +101,24 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
       return this.sdkInstance
     }
 
-    return new OpenAI({
-      dangerouslyAllowBrowser: true,
-      apiKey: this.apiKey,
-      baseURL: this.getBaseURL(),
-      defaultHeaders: {
-        ...this.defaultHeaders(),
-        ...this.provider.extra_headers
-      }
-    })
+    if (this.provider.id === 'azure-openai' || this.provider.type === 'azure-openai') {
+      return new AzureOpenAI({
+        dangerouslyAllowBrowser: true,
+        apiKey: this.apiKey,
+        apiVersion: this.provider.apiVersion,
+        baseURL: this.provider.apiHost
+      })
+    } else {
+      return new OpenAI({
+        dangerouslyAllowBrowser: true,
+        apiKey: this.apiKey,
+        baseURL: this.getBaseURL(),
+        defaultHeaders: {
+          ...this.defaultHeaders(),
+          ...this.provider.extra_headers
+        }
+      })
+    }
   }
 
   override async createCompletions(
@@ -95,7 +129,7 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
     return await sdk.responses.create(payload, options)
   }
 
-  private async handlePdfFile(file: FileType): Promise<OpenAI.Responses.ResponseInputFile | undefined> {
+  private async handlePdfFile(file: FileMetadata): Promise<OpenAI.Responses.ResponseInputFile | undefined> {
     if (file.size > 32 * MB) return undefined
     try {
       const pageCount = await window.api.file.pdfInfo(file.id + file.ext)
@@ -172,7 +206,7 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
       }
 
       if ([FileTypes.TEXT, FileTypes.DOCUMENT].includes(file.type)) {
-        const fileContent = (await window.api.file.read(file.id + file.ext)).trim()
+        const fileContent = (await window.api.file.read(file.id + file.ext, true)).trim()
         parts.push({
           type: 'input_text',
           text: file.origin_name + '\n' + fileContent
@@ -353,16 +387,15 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
             (m) => (m as OpenAI.Responses.EasyInputMessage).role === 'assistant'
           ) as OpenAI.Responses.EasyInputMessage
           const finalUserMessage = userMessage.pop() as OpenAI.Responses.EasyInputMessage
-          if (
-            finalAssistantMessage &&
-            Array.isArray(finalAssistantMessage.content) &&
-            finalUserMessage &&
-            Array.isArray(finalUserMessage.content)
-          ) {
-            finalAssistantMessage.content = [...finalAssistantMessage.content, ...finalUserMessage.content]
+          if (finalUserMessage && Array.isArray(finalUserMessage.content)) {
+            if (finalAssistantMessage && Array.isArray(finalAssistantMessage.content)) {
+              finalAssistantMessage.content = [...finalAssistantMessage.content, ...finalUserMessage.content]
+              // 这里是故意将上条助手消息的内容（包含图片和文件）作为用户消息发送
+              userMessage = [{ ...finalAssistantMessage, role: 'user' } as OpenAI.Responses.EasyInputMessage]
+            } else {
+              userMessage.push(finalUserMessage)
+            }
           }
-          // 这里是故意将上条助手消息的内容（包含图片和文件）作为用户消息发送
-          userMessage = [{ ...finalAssistantMessage, role: 'user' } as OpenAI.Responses.EasyInputMessage]
         }
 
         // 4. 最终请求消息
@@ -386,10 +419,6 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
           })
         }
 
-        const toolChoices: OpenAI.Responses.ToolChoiceTypes = {
-          type: 'web_search_preview'
-        }
-
         tools = tools.concat(extraTools)
         const commonParams = {
           model: model.id,
@@ -402,10 +431,10 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
           max_output_tokens: maxTokens,
           stream: streamOutput,
           tools: !isEmpty(tools) ? tools : undefined,
-          tool_choice: enableWebSearch ? toolChoices : undefined,
           service_tier: this.getServiceTier(model),
           ...(this.getReasoningEffort(assistant, model) as OpenAI.Reasoning),
-          ...this.getCustomParameters(assistant)
+          // 只在对话场景下应用自定义参数，避免影响翻译、总结等其他业务逻辑
+          ...(coreRequest.callType === 'chat' ? this.getCustomParameters(assistant) : {})
         }
         const sdkParams: OpenAIResponseSdkParams = streamOutput
           ? {
@@ -427,6 +456,8 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
     const outputItems: OpenAI.Responses.ResponseOutputItem[] = []
     let hasBeenCollectedToolCalls = false
     let hasReasoningSummary = false
+    let isFirstThinkingChunk = true
+    let isFirstTextChunk = true
     return () => ({
       async transform(chunk: OpenAIResponseSdkRawChunk, controller: TransformStreamDefaultController<GenericChunk>) {
         // 处理chunk
@@ -438,6 +469,12 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
             switch (output.type) {
               case 'message':
                 if (output.content[0].type === 'output_text') {
+                  if (isFirstTextChunk) {
+                    controller.enqueue({
+                      type: ChunkType.TEXT_START
+                    })
+                    isFirstTextChunk = false
+                  }
                   controller.enqueue({
                     type: ChunkType.TEXT_DELTA,
                     text: output.content[0].text
@@ -454,6 +491,12 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
                 }
                 break
               case 'reasoning':
+                if (isFirstThinkingChunk) {
+                  controller.enqueue({
+                    type: ChunkType.THINKING_START
+                  })
+                  isFirstThinkingChunk = false
+                }
                 controller.enqueue({
                   type: ChunkType.THINKING_DELTA,
                   text: output.summary.map((s) => s.text).join('\n')
@@ -496,6 +539,10 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
             case 'response.output_item.added':
               if (chunk.item.type === 'function_call') {
                 outputItems.push(chunk.item)
+              } else if (chunk.item.type === 'web_search_call') {
+                controller.enqueue({
+                  type: ChunkType.LLM_WEB_SEARCH_IN_PROGRESS
+                })
               }
               break
             case 'response.reasoning_summary_part.added':
@@ -509,6 +556,12 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
               hasReasoningSummary = true
               break
             case 'response.reasoning_summary_text.delta':
+              if (isFirstThinkingChunk) {
+                controller.enqueue({
+                  type: ChunkType.THINKING_START
+                })
+                isFirstThinkingChunk = false
+              }
               controller.enqueue({
                 type: ChunkType.THINKING_DELTA,
                 text: chunk.delta
@@ -534,6 +587,12 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
               })
               break
             case 'response.output_text.delta': {
+              if (isFirstTextChunk) {
+                controller.enqueue({
+                  type: ChunkType.TEXT_START
+                })
+                isFirstTextChunk = false
+              }
               controller.enqueue({
                 type: ChunkType.TEXT_DELTA,
                 text: chunk.delta

@@ -22,6 +22,7 @@ import rehypeRaw from 'rehype-raw'
 import remarkCjkFriendly from 'remark-cjk-friendly'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
+import { Pluggable } from 'unified'
 
 import CodeBlock from './CodeBlock'
 import Link from './Link'
@@ -81,7 +82,11 @@ const Markdown: FC<Props> = ({ block }) => {
   }, [block.content, block.id, block.status, addChunk, reset])
 
   const remarkPlugins = useMemo(() => {
-    const plugins = [remarkGfm, remarkCjkFriendly, remarkDisableConstructs(['codeIndented'])]
+    const plugins = [
+      [remarkGfm, { singleTilde: false }] as Pluggable,
+      remarkCjkFriendly,
+      remarkDisableConstructs(['codeIndented'])
+    ]
     if (mathEngine !== 'none') {
       plugins.push(remarkMath)
     }

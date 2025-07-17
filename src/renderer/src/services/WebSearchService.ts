@@ -22,6 +22,7 @@ import { fetchWebContents } from '@renderer/utils/fetch'
 import { consolidateReferencesByUrl, selectReferences } from '@renderer/utils/websearch'
 import dayjs from 'dayjs'
 import { LRUCache } from 'lru-cache'
+import { sliceByTokens } from 'tokenx'
 
 import { getKnowledgeBaseParams } from './KnowledgeService'
 import { getKnowledgeSourceUrl, searchKnowledgeBase } from './KnowledgeService'
@@ -397,9 +398,6 @@ export default class WebSearchService {
 
     const perResultLimit = Math.max(1, Math.floor(config.cutoffLimit / rawResults.length))
 
-    // 动态导入 tokenx
-    const { sliceByTokens } = await import('tokenx')
-
     return rawResults.map((result) => {
       if (config.cutoffUnit === 'token') {
         // 使用 token 截断
@@ -519,7 +517,7 @@ export default class WebSearchService {
         window.message.error({
           key: 'websearch-rag-failed',
           duration: 10,
-          content: `${i18n.t('settings.websearch.compression.error.rag_failed')}: ${formatErrorMessage(error)}`
+          content: `${i18n.t('settings.tool.websearch.compression.error.rag_failed')}: ${formatErrorMessage(error)}`
         })
 
         finalResults = []

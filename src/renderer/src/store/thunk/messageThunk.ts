@@ -1,42 +1,23 @@
 import db from '@renderer/databases'
-import { autoRenameTopic } from '@renderer/hooks/useTopic'
-import { EVENT_NAMES, EventEmitter } from '@renderer/services/EventService'
 import FileManager from '@renderer/services/FileManager'
-import { NotificationService } from '@renderer/services/NotificationService'
+import { BlockManager } from '@renderer/services/messageStreaming/BlockManager'
+import { createCallbacks } from '@renderer/services/messageStreaming/callbacks'
 import { transformMessagesAndFetch } from '@renderer/services/OrchestrateService'
 import { createStreamProcessor, type StreamProcessorCallbacks } from '@renderer/services/StreamProcessingService'
-import { estimateMessagesUsage } from '@renderer/services/TokenService'
 import store from '@renderer/store'
-import type { Assistant, ExternalToolResult, FileType, MCPToolResponse, Model, Topic } from '@renderer/types'
-import type {
-  CitationMessageBlock,
-  FileMessageBlock,
-  ImageMessageBlock,
-  Message,
-  MessageBlock,
-  PlaceholderMessageBlock,
-  ToolMessageBlock
-} from '@renderer/types/newMessage'
+import { updateTopicUpdatedAt } from '@renderer/store/assistants'
+import { type Assistant, type FileMetadata, type Model, type Topic } from '@renderer/types'
+import type { FileMessageBlock, ImageMessageBlock, Message, MessageBlock } from '@renderer/types/newMessage'
 import { AssistantMessageStatus, MessageBlockStatus, MessageBlockType } from '@renderer/types/newMessage'
-import { Response } from '@renderer/types/newMessage'
 import { uuid } from '@renderer/utils'
 import { addAbortController } from '@renderer/utils/abortController'
-import { formatErrorMessage, isAbortError } from '@renderer/utils/error'
 import {
   createAssistantMessage,
-  createBaseMessageBlock,
-  createCitationBlock,
-  createErrorBlock,
-  createImageBlock,
-  createMainTextBlock,
-  createThinkingBlock,
-  createToolBlock,
   createTranslationBlock,
   resetAssistantMessage
 } from '@renderer/utils/messageUtils/create'
-import { getMainTextContent } from '@renderer/utils/messageUtils/find'
-import { getTopicQueue, waitForTopicQueue } from '@renderer/utils/queue'
-import { isOnHomePage } from '@renderer/utils/window'
+import { getTopicQueue } from '@renderer/utils/queue'
+import { waitForTopicQueue } from '@renderer/utils/queue'
 import { t } from 'i18next'
 import { isEmpty, throttle } from 'lodash'
 import { LRUCache } from 'lru-cache'
@@ -70,6 +51,7 @@ export const saveMessageAndBlocksToDB = async (message: Message, blocks: Message
         }
       }
       await db.topics.update(message.topicId, { messages: updatedMessages })
+      store.dispatch(updateTopicUpdatedAt({ topicId: message.topicId }))
     } else {
       console.error(`[saveMessageAndBlocksToDB] Topic ${message.topicId} not found.`)
     }
@@ -109,6 +91,8 @@ const updateExistingMessageAndBlocksInDB = async (
               })
             }
           })
+
+        store.dispatch(updateTopicUpdatedAt({ topicId: updatedMessage.topicId }))
       }
     })
   } catch (error) {
@@ -201,11 +185,11 @@ export const cleanupMultipleBlocks = (dispatch: AppDispatch, blockIds: string[])
     const files = blocks
       .filter((block) => block.type === MessageBlockType.FILE || block.type === MessageBlockType.IMAGE)
       .map((block) => block.file)
-      .filter((file): file is FileType => file !== undefined)
+      .filter((file): file is FileMetadata => file !== undefined)
     return isEmpty(files) ? [] : files
   }
 
-  const cleanupFiles = async (files: FileType[]) => {
+  const cleanupFiles = async (files: FileMetadata[]) => {
     await Promise.all(files.map((file) => FileManager.deleteFile(file.id, false)))
   }
 
@@ -215,31 +199,6 @@ export const cleanupMultipleBlocks = (dispatch: AppDispatch, blockIds: string[])
     dispatch(removeManyBlocks(blockIds))
   }
 }
-
-// // 修改: 节流更新单个块的内容/状态到数据库 (仅用于 Text/Thinking Chunks)
-// export const throttledBlockDbUpdate = throttle(
-//   async (blockId: string, blockChanges: Partial<MessageBlock>) => {
-//     // Check if blockId is valid before attempting update
-//     if (!blockId) {
-//       console.warn('[DB Throttle Block Update] Attempted to update with null/undefined blockId. Skipping.')
-//       return
-//     }
-//     const state = store.getState()
-//     const block = state.messageBlocks.entities[blockId]
-//     // throttle是异步函数,可能会在complete事件触发后才执行
-//     if (
-//       blockChanges.status === MessageBlockStatus.STREAMING &&
-//       (block?.status === MessageBlockStatus.SUCCESS || block?.status === MessageBlockStatus.ERROR)
-//     )
-//       return
-//     try {
-//     } catch (error) {
-//       console.error(`[DB Throttle Block Update] Failed for block ${blockId}:`, error)
-//     }
-//   },
-//   300, // 可以调整节流间隔
-//   { leading: false, trailing: true }
-// )
 
 // 新增: 通用的、非节流的函数，用于保存消息和块的更新到数据库
 const saveUpdatesToDB = async (
@@ -326,7 +285,6 @@ const dispatchMultiModelResponses = async (
 
 // --- End Helper Function ---
 
-// Internal function extracted from sendMessage to handle fetching and processing assistant response
 const fetchAndProcessAssistantResponseImpl = async (
   dispatch: AppDispatch,
   getState: () => RootState,
@@ -339,55 +297,102 @@ const fetchAndProcessAssistantResponseImpl = async (
   try {
     dispatch(newMessagesActions.setTopicLoading({ topicId, loading: true }))
 
-    let accumulatedContent = ''
-    let accumulatedThinking = ''
-    // 专注于管理UI焦点和块切换
-    let lastBlockId: string | null = null
-    let lastBlockType: MessageBlockType | null = null
-    // 专注于块内部的生命周期处理
-    let initialPlaceholderBlockId: string | null = null
-    let citationBlockId: string | null = null
-    let mainTextBlockId: string | null = null
-    let thinkingBlockId: string | null = null
-    let imageBlockId: string | null = null
-    let toolBlockId: string | null = null
-    let hasWebSearch = false
-    const toolCallIdToBlockIdMap = new Map<string, string>()
-    const notificationService = NotificationService.getInstance()
+    // let accumulatedContent = ''
+    // let accumulatedThinking = ''
+    // let lastBlockId: string | null = null
+    // let lastBlockType: MessageBlockType | null = null
+    // let currentActiveBlockType: MessageBlockType | null = null
+    // // 专注于块内部的生命周期处理
+    // let initialPlaceholderBlockId: string | null = null
+    // let citationBlockId: string | null = null
+    // let mainTextBlockId: string | null = null
+    // let thinkingBlockId: string | null = null
+    // let imageBlockId: string | null = null
+    // let toolBlockId: string | null = null
 
-    const handleBlockTransition = async (newBlock: MessageBlock, newBlockType: MessageBlockType) => {
-      lastBlockId = newBlock.id
-      lastBlockType = newBlockType
-      if (newBlockType !== MessageBlockType.MAIN_TEXT) {
-        accumulatedContent = ''
-      }
-      if (newBlockType !== MessageBlockType.THINKING) {
-        accumulatedThinking = ''
-      }
-      dispatch(
-        newMessagesActions.updateMessage({
-          topicId,
-          messageId: assistantMsgId,
-          updates: { blockInstruction: { id: newBlock.id } }
-        })
-      )
-      dispatch(upsertOneBlock(newBlock))
-      dispatch(
-        newMessagesActions.upsertBlockReference({
-          messageId: assistantMsgId,
-          blockId: newBlock.id,
-          status: newBlock.status
-        })
-      )
+    // const toolCallIdToBlockIdMap = new Map<string, string>()
+    // const notificationService = NotificationService.getInstance()
 
-      const currentState = getState()
-      const updatedMessage = currentState.messages.entities[assistantMsgId]
-      if (updatedMessage) {
-        await saveUpdatesToDB(assistantMsgId, topicId, { blocks: updatedMessage.blocks }, [newBlock])
-      } else {
-        console.error(`[handleBlockTransition] Failed to get updated message ${assistantMsgId} from state for DB save.`)
-      }
-    }
+    /**
+     * 智能更新策略：根据块类型连续性自动判断使用节流还是立即更新
+     * - 连续同类块：使用节流（减少重渲染）
+     * - 块类型切换：立即更新（确保状态正确）
+     * @param blockId 块ID
+     * @param changes 块更新内容
+     * @param blockType 块类型
+     * @param isComplete 是否完成，如果完成，则需要保存块更新到redux中
+     */
+    // const smartBlockUpdate = (
+    //   blockId: string,
+    //   changes: Partial<MessageBlock>,
+    //   blockType: MessageBlockType,
+    //   isComplete: boolean = false
+    // ) => {
+    //   const isBlockTypeChanged = currentActiveBlockType !== null && currentActiveBlockType !== blockType
+    //   if (isBlockTypeChanged || isComplete) {
+    //     // 如果块类型改变，则取消上一个块的节流更新，并保存块更新到redux中（尽管有可能被上一个块本身的oncomplete事件的取消节流已经取消了）
+    //     if (isBlockTypeChanged && lastBlockId) {
+    //       cancelThrottledBlockUpdate(lastBlockId)
+    //     }
+    //     // 如果当前块完成，则取消当前块的节流更新，并保存块更新到redux中，避免streaming状态覆盖掉完成状态
+    //     if (isComplete) {
+    //       cancelThrottledBlockUpdate(blockId)
+    //     }
+    //     dispatch(updateOneBlock({ id: blockId, changes }))
+    //     saveUpdatedBlockToDB(blockId, assistantMsgId, topicId, getState)
+    //   } else {
+    //     throttledBlockUpdate(blockId, changes)
+    //   }
+
+    //   // 更新当前活跃块类型
+    //   currentActiveBlockType = blockType
+    // }
+
+    // const handleBlockTransition = async (newBlock: MessageBlock, newBlockType: MessageBlockType) => {
+    //   lastBlockId = newBlock.id
+    //   lastBlockType = newBlockType
+    //   if (newBlockType !== MessageBlockType.MAIN_TEXT) {
+    //     accumulatedContent = ''
+    //   }
+    //   if (newBlockType !== MessageBlockType.THINKING) {
+    //     accumulatedThinking = ''
+    //   }
+    //   dispatch(
+    //     newMessagesActions.updateMessage({
+    //       topicId,
+    //       messageId: assistantMsgId,
+    //       updates: { blockInstruction: { id: newBlock.id } }
+    //     })
+    //   )
+    //   dispatch(upsertOneBlock(newBlock))
+    //   dispatch(
+    //     newMessagesActions.upsertBlockReference({
+    //       messageId: assistantMsgId,
+    //       blockId: newBlock.id,
+    //       status: newBlock.status
+    //     })
+    //   )
+
+    //   const currentState = getState()
+    //   const updatedMessage = currentState.messages.entities[assistantMsgId]
+    //   if (updatedMessage) {
+    //     await saveUpdatesToDB(assistantMsgId, topicId, { blocks: updatedMessage.blocks }, [newBlock])
+    //   } else {
+    //     console.error(`[handleBlockTransition] Failed to get updated message ${assistantMsgId} from state for DB save.`)
+    //   }
+    // }
+
+    // 创建 BlockManager 实例
+    const blockManager = new BlockManager({
+      dispatch,
+      getState,
+      saveUpdatedBlockToDB,
+      saveUpdatesToDB,
+      assistantMsgId,
+      topicId,
+      throttledBlockUpdate,
+      cancelThrottledBlockUpdate
+    })
 
     const allMessagesForTopic = selectMessagesForTopic(getState(), topicId)
 
@@ -410,437 +415,474 @@ const fetchAndProcessAssistantResponseImpl = async (
       messagesForContext = contextSlice.filter((m) => m && !m.status?.includes('ing'))
     }
 
-    callbacks = {
-      onLLMResponseCreated: async () => {
-        const baseBlock = createBaseMessageBlock(assistantMsgId, MessageBlockType.UNKNOWN, {
-          status: MessageBlockStatus.PROCESSING
-        })
-        initialPlaceholderBlockId = baseBlock.id
-        await handleBlockTransition(baseBlock as PlaceholderMessageBlock, MessageBlockType.UNKNOWN)
-      },
-      onTextChunk: async (text) => {
-        accumulatedContent += text
-        if (mainTextBlockId) {
-          const blockChanges: Partial<MessageBlock> = {
-            content: accumulatedContent,
-            status: MessageBlockStatus.STREAMING
-          }
-          throttledBlockUpdate(mainTextBlockId, blockChanges)
-        } else if (initialPlaceholderBlockId) {
-          // 将占位块转换为主文本块
-          const initialChanges: Partial<MessageBlock> = {
-            type: MessageBlockType.MAIN_TEXT,
-            content: accumulatedContent,
-            status: MessageBlockStatus.STREAMING,
-            citationReferences: citationBlockId ? [{ citationBlockId }] : []
-          }
-          mainTextBlockId = initialPlaceholderBlockId
-          // 清理占位块
-          initialPlaceholderBlockId = null
-          lastBlockType = MessageBlockType.MAIN_TEXT
-          dispatch(updateOneBlock({ id: mainTextBlockId, changes: initialChanges }))
-          saveUpdatedBlockToDB(mainTextBlockId, assistantMsgId, topicId, getState)
-        } else {
-          const newBlock = createMainTextBlock(assistantMsgId, accumulatedContent, {
-            status: MessageBlockStatus.STREAMING,
-            citationReferences: citationBlockId ? [{ citationBlockId }] : []
-          })
-          mainTextBlockId = newBlock.id // 立即设置ID，防止竞态条件
-          await handleBlockTransition(newBlock, MessageBlockType.MAIN_TEXT)
-        }
-      },
-      onTextComplete: async (finalText) => {
-        if (mainTextBlockId) {
-          const changes = {
-            content: finalText,
-            status: MessageBlockStatus.SUCCESS
-          }
-          cancelThrottledBlockUpdate(mainTextBlockId)
-          dispatch(updateOneBlock({ id: mainTextBlockId, changes }))
-          saveUpdatedBlockToDB(mainTextBlockId, assistantMsgId, topicId, getState)
-          mainTextBlockId = null
-        } else {
-          console.warn(
-            `[onTextComplete] Received text.complete but last block was not MAIN_TEXT (was ${lastBlockType}) or lastBlockId  is null.`
-          )
-        }
-        if (citationBlockId && !hasWebSearch) {
-          const changes: Partial<CitationMessageBlock> = {
-            status: MessageBlockStatus.SUCCESS
-          }
-          dispatch(updateOneBlock({ id: citationBlockId, changes }))
-          saveUpdatedBlockToDB(citationBlockId, assistantMsgId, topicId, getState)
-          citationBlockId = null
-        }
-      },
-      onThinkingChunk: async (text, thinking_millsec) => {
-        accumulatedThinking += text
-        if (thinkingBlockId) {
-          const blockChanges: Partial<MessageBlock> = {
-            content: accumulatedThinking,
-            status: MessageBlockStatus.STREAMING,
-            thinking_millsec: thinking_millsec
-          }
-          throttledBlockUpdate(thinkingBlockId, blockChanges)
-        } else if (initialPlaceholderBlockId) {
-          // First chunk for this block: Update type and status immediately
-          lastBlockType = MessageBlockType.THINKING
-          const initialChanges: Partial<MessageBlock> = {
-            type: MessageBlockType.THINKING,
-            content: accumulatedThinking,
-            status: MessageBlockStatus.STREAMING
-          }
-          thinkingBlockId = initialPlaceholderBlockId
-          initialPlaceholderBlockId = null
-          dispatch(updateOneBlock({ id: thinkingBlockId, changes: initialChanges }))
-          saveUpdatedBlockToDB(thinkingBlockId, assistantMsgId, topicId, getState)
-        } else {
-          const newBlock = createThinkingBlock(assistantMsgId, accumulatedThinking, {
-            status: MessageBlockStatus.STREAMING,
-            thinking_millsec: 0
-          })
-          thinkingBlockId = newBlock.id // 立即设置ID，防止竞态条件
-          await handleBlockTransition(newBlock, MessageBlockType.THINKING)
-        }
-      },
-      onThinkingComplete: (finalText, final_thinking_millsec) => {
-        if (thinkingBlockId) {
-          const changes = {
-            type: MessageBlockType.THINKING,
-            content: finalText,
-            status: MessageBlockStatus.SUCCESS,
-            thinking_millsec: final_thinking_millsec
-          }
-          cancelThrottledBlockUpdate(thinkingBlockId)
-          dispatch(updateOneBlock({ id: thinkingBlockId, changes }))
-          saveUpdatedBlockToDB(thinkingBlockId, assistantMsgId, topicId, getState)
-        } else {
-          console.warn(
-            `[onThinkingComplete] Received thinking.complete but last block was not THINKING (was ${lastBlockType}) or lastBlockId  is null.`
-          )
-        }
-        thinkingBlockId = null
-      },
-      onToolCallInProgress: (toolResponse: MCPToolResponse) => {
-        if (initialPlaceholderBlockId) {
-          lastBlockType = MessageBlockType.TOOL
-          const changes = {
-            type: MessageBlockType.TOOL,
-            status: MessageBlockStatus.PROCESSING,
-            metadata: { rawMcpToolResponse: toolResponse }
-          }
-          toolBlockId = initialPlaceholderBlockId
-          initialPlaceholderBlockId = null
-          dispatch(updateOneBlock({ id: toolBlockId, changes }))
-          saveUpdatedBlockToDB(toolBlockId, assistantMsgId, topicId, getState)
-          toolCallIdToBlockIdMap.set(toolResponse.id, toolBlockId)
-        } else if (toolResponse.status === 'invoking') {
-          const toolBlock = createToolBlock(assistantMsgId, toolResponse.id, {
-            toolName: toolResponse.tool.name,
-            status: MessageBlockStatus.PROCESSING,
-            metadata: { rawMcpToolResponse: toolResponse }
-          })
-          handleBlockTransition(toolBlock, MessageBlockType.TOOL)
-          toolCallIdToBlockIdMap.set(toolResponse.id, toolBlock.id)
-        } else {
-          console.warn(
-            `[onToolCallInProgress] Received unhandled tool status: ${toolResponse.status} for ID: ${toolResponse.id}`
-          )
-        }
-      },
-      onToolCallComplete: (toolResponse: MCPToolResponse) => {
-        const existingBlockId = toolCallIdToBlockIdMap.get(toolResponse.id)
-        toolCallIdToBlockIdMap.delete(toolResponse.id)
-        if (toolResponse.status === 'done' || toolResponse.status === 'error') {
-          if (!existingBlockId) {
-            console.error(
-              `[onToolCallComplete] No existing block found for completed/error tool call ID: ${toolResponse.id}. Cannot update.`
-            )
-            return
-          }
-          const finalStatus = toolResponse.status === 'done' ? MessageBlockStatus.SUCCESS : MessageBlockStatus.ERROR
-          const changes: Partial<ToolMessageBlock> = {
-            content: toolResponse.response,
-            status: finalStatus,
-            metadata: { rawMcpToolResponse: toolResponse }
-          }
-          if (finalStatus === MessageBlockStatus.ERROR) {
-            changes.error = { message: `Tool execution failed/error`, details: toolResponse.response }
-          }
-          cancelThrottledBlockUpdate(existingBlockId)
-          dispatch(updateOneBlock({ id: existingBlockId, changes }))
-          saveUpdatedBlockToDB(existingBlockId, assistantMsgId, topicId, getState)
-        } else {
-          console.warn(
-            `[onToolCallComplete] Received unhandled tool status: ${toolResponse.status} for ID: ${toolResponse.id}`
-          )
-        }
-      },
-      onExternalToolInProgress: async () => {
-        const citationBlock = createCitationBlock(assistantMsgId, {}, { status: MessageBlockStatus.PROCESSING })
-        citationBlockId = citationBlock.id
-        await handleBlockTransition(citationBlock, MessageBlockType.CITATION)
-        // saveUpdatedBlockToDB(citationBlock.id, assistantMsgId, topicId, getState)
-      },
-      onExternalToolComplete: (externalToolResult: ExternalToolResult) => {
-        if (citationBlockId) {
-          const changes: Partial<CitationMessageBlock> = {
-            response: externalToolResult.webSearch,
-            knowledge: externalToolResult.knowledge,
-            status: MessageBlockStatus.SUCCESS
-          }
-          dispatch(updateOneBlock({ id: citationBlockId, changes }))
-          saveUpdatedBlockToDB(citationBlockId, assistantMsgId, topicId, getState)
-        } else {
-          console.error('[onExternalToolComplete] citationBlockId is null. Cannot update.')
-        }
-      },
-      onLLMWebSearchInProgress: async () => {
-        if (initialPlaceholderBlockId) {
-          lastBlockType = MessageBlockType.CITATION
-          citationBlockId = initialPlaceholderBlockId
-          const changes = {
-            type: MessageBlockType.CITATION,
-            status: MessageBlockStatus.PROCESSING
-          }
-          lastBlockType = MessageBlockType.CITATION
-          dispatch(updateOneBlock({ id: initialPlaceholderBlockId, changes }))
-          saveUpdatedBlockToDB(initialPlaceholderBlockId, assistantMsgId, topicId, getState)
-          initialPlaceholderBlockId = null
-        } else {
-          const citationBlock = createCitationBlock(assistantMsgId, {}, { status: MessageBlockStatus.PROCESSING })
-          citationBlockId = citationBlock.id
-          await handleBlockTransition(citationBlock, MessageBlockType.CITATION)
-        }
-      },
-      onLLMWebSearchComplete: async (llmWebSearchResult) => {
-        if (citationBlockId) {
-          hasWebSearch = true
-          const changes: Partial<CitationMessageBlock> = {
-            response: llmWebSearchResult,
-            status: MessageBlockStatus.SUCCESS
-          }
-          dispatch(updateOneBlock({ id: citationBlockId, changes }))
-          saveUpdatedBlockToDB(citationBlockId, assistantMsgId, topicId, getState)
+    // callbacks = {
+    //   onLLMResponseCreated: async () => {
+    //     const baseBlock = createBaseMessageBlock(assistantMsgId, MessageBlockType.UNKNOWN, {
+    //       status: MessageBlockStatus.PROCESSING
+    //     })
+    //     initialPlaceholderBlockId = baseBlock.id
+    //     await handleBlockTransition(baseBlock as PlaceholderMessageBlock, MessageBlockType.UNKNOWN)
+    //   },
+    //   onTextStart: async () => {
+    //     if (initialPlaceholderBlockId) {
+    //       lastBlockType = MessageBlockType.MAIN_TEXT
+    //       const changes = {
+    //         type: MessageBlockType.MAIN_TEXT,
+    //         content: accumulatedContent,
+    //         status: MessageBlockStatus.STREAMING
+    //       }
+    //       smartBlockUpdate(initialPlaceholderBlockId, changes, MessageBlockType.MAIN_TEXT, true)
+    //       mainTextBlockId = initialPlaceholderBlockId
+    //       initialPlaceholderBlockId = null
+    //     } else if (!mainTextBlockId) {
+    //       const newBlock = createMainTextBlock(assistantMsgId, accumulatedContent, {
+    //         status: MessageBlockStatus.STREAMING
+    //       })
+    //       mainTextBlockId = newBlock.id
+    //       await handleBlockTransition(newBlock, MessageBlockType.MAIN_TEXT)
+    //     }
+    //   },
+    //   onTextChunk: async (text) => {
+    //     const citationBlockSource = citationBlockId
+    //       ? (getState().messageBlocks.entities[citationBlockId] as CitationMessageBlock).response?.source
+    //       : WebSearchSource.WEBSEARCH
+    //     accumulatedContent += text
+    //     if (mainTextBlockId) {
+    //       const blockChanges: Partial<MessageBlock> = {
+    //         content: accumulatedContent,
+    //         status: MessageBlockStatus.STREAMING,
+    //         citationReferences: citationBlockId ? [{ citationBlockId, citationBlockSource }] : []
+    //       }
+    //       smartBlockUpdate(mainTextBlockId, blockChanges, MessageBlockType.MAIN_TEXT)
+    //     }
+    //   },
+    //   onTextComplete: async (finalText) => {
+    //     if (mainTextBlockId) {
+    //       const changes = {
+    //         content: finalText,
+    //         status: MessageBlockStatus.SUCCESS
+    //       }
+    //       smartBlockUpdate(mainTextBlockId, changes, MessageBlockType.MAIN_TEXT, true)
+    //       mainTextBlockId = null
+    //     } else {
+    //       console.warn(
+    //         `[onTextComplete] Received text.complete but last block was not MAIN_TEXT (was ${lastBlockType}) or lastBlockId  is null.`
+    //       )
+    //     }
+    //   },
+    //   onThinkingStart: async () => {
+    //     if (initialPlaceholderBlockId) {
+    //       lastBlockType = MessageBlockType.THINKING
+    //       const changes = {
+    //         type: MessageBlockType.THINKING,
+    //         content: accumulatedThinking,
+    //         status: MessageBlockStatus.STREAMING,
+    //         thinking_millsec: 0
+    //       }
+    //       thinkingBlockId = initialPlaceholderBlockId
+    //       initialPlaceholderBlockId = null
+    //       smartBlockUpdate(thinkingBlockId, changes, MessageBlockType.THINKING, true)
+    //     } else if (!thinkingBlockId) {
+    //       const newBlock = createThinkingBlock(assistantMsgId, accumulatedThinking, {
+    //         status: MessageBlockStatus.STREAMING,
+    //         thinking_millsec: 0
+    //       })
+    //       thinkingBlockId = newBlock.id
+    //       await handleBlockTransition(newBlock, MessageBlockType.THINKING)
+    //     }
+    //   },
+    //   onThinkingChunk: async (text, thinking_millsec) => {
+    //     accumulatedThinking += text
+    //     if (thinkingBlockId) {
+    //       const blockChanges: Partial<MessageBlock> = {
+    //         content: accumulatedThinking,
+    //         status: MessageBlockStatus.STREAMING,
+    //         thinking_millsec: thinking_millsec
+    //       }
+    //       smartBlockUpdate(thinkingBlockId, blockChanges, MessageBlockType.THINKING)
+    //     }
+    //   },
+    //   onThinkingComplete: (finalText, final_thinking_millsec) => {
+    //     if (thinkingBlockId) {
+    //       const changes = {
+    //         type: MessageBlockType.THINKING,
+    //         content: finalText,
+    //         status: MessageBlockStatus.SUCCESS,
+    //         thinking_millsec: final_thinking_millsec
+    //       }
+    //       smartBlockUpdate(thinkingBlockId, changes, MessageBlockType.THINKING, true)
+    //     } else {
+    //       console.warn(
+    //         `[onThinkingComplete] Received thinking.complete but last block was not THINKING (was ${lastBlockType}) or lastBlockId  is null.`
+    //       )
+    //     }
+    //     thinkingBlockId = null
+    //   },
+    //   onToolCallPending: (toolResponse: MCPToolResponse) => {
+    //     if (initialPlaceholderBlockId) {
+    //       lastBlockType = MessageBlockType.TOOL
+    //       const changes = {
+    //         type: MessageBlockType.TOOL,
+    //         status: MessageBlockStatus.PENDING,
+    //         toolName: toolResponse.tool.name,
+    //         metadata: { rawMcpToolResponse: toolResponse }
+    //       }
+    //       toolBlockId = initialPlaceholderBlockId
+    //       initialPlaceholderBlockId = null
+    //       smartBlockUpdate(toolBlockId, changes, MessageBlockType.TOOL)
+    //       toolCallIdToBlockIdMap.set(toolResponse.id, toolBlockId)
+    //     } else if (toolResponse.status === 'pending') {
+    //       const toolBlock = createToolBlock(assistantMsgId, toolResponse.id, {
+    //         toolName: toolResponse.tool.name,
+    //         status: MessageBlockStatus.PENDING,
+    //         metadata: { rawMcpToolResponse: toolResponse }
+    //       })
+    //       toolBlockId = toolBlock.id
+    //       handleBlockTransition(toolBlock, MessageBlockType.TOOL)
+    //       toolCallIdToBlockIdMap.set(toolResponse.id, toolBlock.id)
+    //     } else {
+    //       console.warn(
+    //         `[onToolCallPending] Received unhandled tool status: ${toolResponse.status} for ID: ${toolResponse.id}`
+    //       )
+    //     }
+    //   },
+    //   onToolCallInProgress: (toolResponse: MCPToolResponse) => {
+    //     // 根据 toolResponse.id 查找对应的块ID
+    //     const targetBlockId = toolCallIdToBlockIdMap.get(toolResponse.id)
 
-          if (mainTextBlockId) {
-            const state = getState()
-            const existingMainTextBlock = state.messageBlocks.entities[mainTextBlockId]
-            if (existingMainTextBlock && existingMainTextBlock.type === MessageBlockType.MAIN_TEXT) {
-              const currentRefs = existingMainTextBlock.citationReferences || []
-              const mainTextChanges = {
-                citationReferences: [
-                  ...currentRefs,
-                  { citationBlockId, citationBlockSource: llmWebSearchResult.source }
-                ]
-              }
-              dispatch(updateOneBlock({ id: mainTextBlockId, changes: mainTextChanges }))
-              saveUpdatedBlockToDB(mainTextBlockId, assistantMsgId, topicId, getState)
-            }
-            mainTextBlockId = null
-          }
-        }
-      },
-      onImageCreated: async () => {
-        if (initialPlaceholderBlockId) {
-          lastBlockType = MessageBlockType.IMAGE
-          const initialChanges: Partial<MessageBlock> = {
-            type: MessageBlockType.IMAGE,
-            status: MessageBlockStatus.STREAMING
-          }
-          lastBlockType = MessageBlockType.IMAGE
-          imageBlockId = initialPlaceholderBlockId
-          initialPlaceholderBlockId = null
-          dispatch(updateOneBlock({ id: imageBlockId, changes: initialChanges }))
-          saveUpdatedBlockToDB(imageBlockId, assistantMsgId, topicId, getState)
-        } else if (!imageBlockId) {
-          const imageBlock = createImageBlock(assistantMsgId, {
-            status: MessageBlockStatus.STREAMING
-          })
-          imageBlockId = imageBlock.id
-          await handleBlockTransition(imageBlock, MessageBlockType.IMAGE)
-        }
-      },
-      onImageDelta: (imageData) => {
-        const imageUrl = imageData.images?.[0] || 'placeholder_image_url'
-        if (imageBlockId) {
-          const changes: Partial<ImageMessageBlock> = {
-            url: imageUrl,
-            metadata: { generateImageResponse: imageData },
-            status: MessageBlockStatus.STREAMING
-          }
-          dispatch(updateOneBlock({ id: imageBlockId, changes }))
-          saveUpdatedBlockToDB(imageBlockId, assistantMsgId, topicId, getState)
-        }
-      },
-      onImageGenerated: (imageData) => {
-        if (imageBlockId) {
-          if (!imageData) {
-            const changes: Partial<ImageMessageBlock> = {
-              status: MessageBlockStatus.SUCCESS
-            }
-            dispatch(updateOneBlock({ id: imageBlockId, changes }))
-            saveUpdatedBlockToDB(imageBlockId, assistantMsgId, topicId, getState)
-          } else {
-            const imageUrl = imageData.images?.[0] || 'placeholder_image_url'
-            const changes: Partial<ImageMessageBlock> = {
-              url: imageUrl,
-              metadata: { generateImageResponse: imageData },
-              status: MessageBlockStatus.SUCCESS
-            }
-            dispatch(updateOneBlock({ id: imageBlockId, changes }))
-            saveUpdatedBlockToDB(imageBlockId, assistantMsgId, topicId, getState)
-          }
-        } else {
-          console.error('[onImageGenerated] Last block was not an Image block or ID is missing.')
-        }
-        imageBlockId = null
-      },
-      onError: async (error) => {
-        console.dir(error, { depth: null })
-        const isErrorTypeAbort = isAbortError(error)
-        let pauseErrorLanguagePlaceholder = ''
-        if (isErrorTypeAbort) {
-          pauseErrorLanguagePlaceholder = 'pause_placeholder'
-        }
+    //     if (targetBlockId && toolResponse.status === 'invoking') {
+    //       const changes = {
+    //         status: MessageBlockStatus.PROCESSING,
+    //         metadata: { rawMcpToolResponse: toolResponse }
+    //       }
+    //       smartBlockUpdate(targetBlockId, changes, MessageBlockType.TOOL)
+    //     } else if (!targetBlockId) {
+    //       console.warn(
+    //         `[onToolCallInProgress] No block ID found for tool ID: ${toolResponse.id}. Available mappings:`,
+    //         Array.from(toolCallIdToBlockIdMap.entries())
+    //       )
+    //     } else {
+    //       console.warn(
+    //         `[onToolCallInProgress] Received unhandled tool status: ${toolResponse.status} for ID: ${toolResponse.id}`
+    //       )
+    //     }
+    //   },
+    //   onToolCallComplete: (toolResponse: MCPToolResponse) => {
+    //     const existingBlockId = toolCallIdToBlockIdMap.get(toolResponse.id)
+    //     toolCallIdToBlockIdMap.delete(toolResponse.id)
+    //     if (toolResponse.status === 'done' || toolResponse.status === 'error' || toolResponse.status === 'cancelled') {
+    //       if (!existingBlockId) {
+    //         console.error(
+    //           `[onToolCallComplete] No existing block found for completed/error tool call ID: ${toolResponse.id}. Cannot update.`
+    //         )
+    //         return
+    //       }
+    //       const finalStatus =
+    //         toolResponse.status === 'done' || toolResponse.status === 'cancelled'
+    //           ? MessageBlockStatus.SUCCESS
+    //           : MessageBlockStatus.ERROR
+    //       const changes: Partial<ToolMessageBlock> = {
+    //         content: toolResponse.response,
+    //         status: finalStatus,
+    //         metadata: { rawMcpToolResponse: toolResponse }
+    //       }
+    //       if (finalStatus === MessageBlockStatus.ERROR) {
+    //         changes.error = { message: `Tool execution failed/error`, details: toolResponse.response }
+    //       }
+    //       smartBlockUpdate(existingBlockId, changes, MessageBlockType.TOOL, true)
+    //     } else {
+    //       console.warn(
+    //         `[onToolCallComplete] Received unhandled tool status: ${toolResponse.status} for ID: ${toolResponse.id}`
+    //       )
+    //     }
+    //     toolBlockId = null
+    //   },
+    //   onExternalToolInProgress: async () => {
+    //     const citationBlock = createCitationBlock(assistantMsgId, {}, { status: MessageBlockStatus.PROCESSING })
+    //     citationBlockId = citationBlock.id
+    //     await handleBlockTransition(citationBlock, MessageBlockType.CITATION)
+    //     // saveUpdatedBlockToDB(citationBlock.id, assistantMsgId, topicId, getState)
+    //   },
+    //   onExternalToolComplete: (externalToolResult: ExternalToolResult) => {
+    //     if (citationBlockId) {
+    //       const changes: Partial<CitationMessageBlock> = {
+    //         response: externalToolResult.webSearch,
+    //         knowledge: externalToolResult.knowledge,
+    //         status: MessageBlockStatus.SUCCESS
+    //       }
+    //       smartBlockUpdate(citationBlockId, changes, MessageBlockType.CITATION, true)
+    //     } else {
+    //       console.error('[onExternalToolComplete] citationBlockId is null. Cannot update.')
+    //     }
+    //   },
+    //   onLLMWebSearchInProgress: async () => {
+    //     if (initialPlaceholderBlockId) {
+    //       lastBlockType = MessageBlockType.CITATION
+    //       citationBlockId = initialPlaceholderBlockId
+    //       const changes = {
+    //         type: MessageBlockType.CITATION,
+    //         status: MessageBlockStatus.PROCESSING
+    //       }
+    //       lastBlockType = MessageBlockType.CITATION
+    //       smartBlockUpdate(initialPlaceholderBlockId, changes, MessageBlockType.CITATION)
+    //       initialPlaceholderBlockId = null
+    //     } else {
+    //       const citationBlock = createCitationBlock(assistantMsgId, {}, { status: MessageBlockStatus.PROCESSING })
+    //       citationBlockId = citationBlock.id
+    //       await handleBlockTransition(citationBlock, MessageBlockType.CITATION)
+    //     }
+    //   },
+    //   onLLMWebSearchComplete: async (llmWebSearchResult) => {
+    //     const blockId = citationBlockId || initialPlaceholderBlockId
+    //     if (blockId) {
+    //       const changes: Partial<CitationMessageBlock> = {
+    //         type: MessageBlockType.CITATION,
+    //         response: llmWebSearchResult,
+    //         status: MessageBlockStatus.SUCCESS
+    //       }
+    //       smartBlockUpdate(blockId, changes, MessageBlockType.CITATION)
 
-        const serializableError = {
-          name: String(error.name || ''),
-          message: pauseErrorLanguagePlaceholder || String(error.message || '') || formatErrorMessage(error),
-          originalMessage: String(error.message || ''),
-          stack: String(error.stack || ''),
-          status: error.status || error.code || undefined,
-          requestId: error.request_id || undefined
-        }
-        if (!isOnHomePage()) {
-          await notificationService.send({
-            id: uuid(),
-            type: 'error',
-            title: t('notification.assistant'),
-            message: serializableError.message,
-            silent: false,
-            timestamp: Date.now(),
-            source: 'assistant'
-          })
-        }
-        const possibleBlockId =
-          mainTextBlockId ||
-          thinkingBlockId ||
-          toolBlockId ||
-          imageBlockId ||
-          citationBlockId ||
-          lastBlockId ||
-          initialPlaceholderBlockId
+    //       const state = getState()
+    //       const existingMainTextBlocks = findMainTextBlocks(state.messages.entities[assistantMsgId])
+    //       if (existingMainTextBlocks.length > 0) {
+    //         const existingMainTextBlock = existingMainTextBlocks[0]
+    //         const currentRefs = existingMainTextBlock.citationReferences || []
+    //         const mainTextChanges = {
+    //           citationReferences: [...currentRefs, { blockId, citationBlockSource: llmWebSearchResult.source }]
+    //         }
+    //         smartBlockUpdate(existingMainTextBlock.id, mainTextChanges, MessageBlockType.MAIN_TEXT, true)
+    //       }
 
-        if (possibleBlockId) {
-          // 更改上一个block的状态为ERROR
-          const changes: Partial<MessageBlock> = {
-            status: isErrorTypeAbort ? MessageBlockStatus.PAUSED : MessageBlockStatus.ERROR
-          }
-          cancelThrottledBlockUpdate(possibleBlockId)
-          dispatch(updateOneBlock({ id: possibleBlockId, changes }))
-          saveUpdatedBlockToDB(possibleBlockId, assistantMsgId, topicId, getState)
-        }
+    //       if (initialPlaceholderBlockId) {
+    //         citationBlockId = initialPlaceholderBlockId
+    //         initialPlaceholderBlockId = null
+    //       }
+    //     } else {
+    //       const citationBlock = createCitationBlock(
+    //         assistantMsgId,
+    //         {
+    //           response: llmWebSearchResult
+    //         },
+    //         {
+    //           status: MessageBlockStatus.SUCCESS
+    //         }
+    //       )
+    //       citationBlockId = citationBlock.id
+    //       const state = getState()
+    //       const existingMainTextBlocks = findMainTextBlocks(state.messages.entities[assistantMsgId])
+    //       if (existingMainTextBlocks.length > 0) {
+    //         const existingMainTextBlock = existingMainTextBlocks[0]
+    //         const currentRefs = existingMainTextBlock.citationReferences || []
+    //         const mainTextChanges = {
+    //           citationReferences: [...currentRefs, { citationBlockId, citationBlockSource: llmWebSearchResult.source }]
+    //         }
+    //         smartBlockUpdate(existingMainTextBlock.id, mainTextChanges, MessageBlockType.MAIN_TEXT, true)
+    //       }
+    //       await handleBlockTransition(citationBlock, MessageBlockType.CITATION)
+    //     }
+    //   },
+    //   onImageCreated: async () => {
+    //     if (initialPlaceholderBlockId) {
+    //       lastBlockType = MessageBlockType.IMAGE
+    //       const initialChanges: Partial<MessageBlock> = {
+    //         type: MessageBlockType.IMAGE,
+    //         status: MessageBlockStatus.PENDING
+    //       }
+    //       lastBlockType = MessageBlockType.IMAGE
+    //       imageBlockId = initialPlaceholderBlockId
+    //       initialPlaceholderBlockId = null
+    //       smartBlockUpdate(imageBlockId, initialChanges, MessageBlockType.IMAGE)
+    //     } else if (!imageBlockId) {
+    //       const imageBlock = createImageBlock(assistantMsgId, {
+    //         status: MessageBlockStatus.PENDING
+    //       })
+    //       imageBlockId = imageBlock.id
+    //       await handleBlockTransition(imageBlock, MessageBlockType.IMAGE)
+    //     }
+    //   },
+    //   onImageDelta: (imageData) => {
+    //     const imageUrl = imageData.images?.[0] || 'placeholder_image_url'
+    //     if (imageBlockId) {
+    //       const changes: Partial<ImageMessageBlock> = {
+    //         url: imageUrl,
+    //         metadata: { generateImageResponse: imageData },
+    //         status: MessageBlockStatus.STREAMING
+    //       }
+    //       smartBlockUpdate(imageBlockId, changes, MessageBlockType.IMAGE, true)
+    //     }
+    //   },
+    //   onImageGenerated: (imageData) => {
+    //     if (imageBlockId) {
+    //       if (!imageData) {
+    //         const changes: Partial<ImageMessageBlock> = {
+    //           status: MessageBlockStatus.SUCCESS
+    //         }
+    //         smartBlockUpdate(imageBlockId, changes, MessageBlockType.IMAGE)
+    //       } else {
+    //         const imageUrl = imageData.images?.[0] || 'placeholder_image_url'
+    //         const changes: Partial<ImageMessageBlock> = {
+    //           url: imageUrl,
+    //           metadata: { generateImageResponse: imageData },
+    //           status: MessageBlockStatus.SUCCESS
+    //         }
+    //         smartBlockUpdate(imageBlockId, changes, MessageBlockType.IMAGE, true)
+    //       }
+    //     } else {
+    //       console.error('[onImageGenerated] Last block was not an Image block or ID is missing.')
+    //     }
+    //     imageBlockId = null
+    //   },
+    //   onError: async (error) => {
+    //     console.dir(error, { depth: null })
+    //     const isErrorTypeAbort = isAbortError(error)
+    //     let pauseErrorLanguagePlaceholder = ''
+    //     if (isErrorTypeAbort) {
+    //       pauseErrorLanguagePlaceholder = 'pause_placeholder'
+    //     }
 
-        const errorBlock = createErrorBlock(assistantMsgId, serializableError, { status: MessageBlockStatus.SUCCESS })
-        await handleBlockTransition(errorBlock, MessageBlockType.ERROR)
-        const messageErrorUpdate = {
-          status: isErrorTypeAbort ? AssistantMessageStatus.SUCCESS : AssistantMessageStatus.ERROR
-        }
-        dispatch(newMessagesActions.updateMessage({ topicId, messageId: assistantMsgId, updates: messageErrorUpdate }))
+    //     const serializableError = {
+    //       name: error.name,
+    //       message: pauseErrorLanguagePlaceholder || error.message || formatErrorMessage(error),
+    //       originalMessage: error.message,
+    //       stack: error.stack,
+    //       status: error.status || error.code,
+    //       requestId: error.request_id
+    //     }
+    //     if (!isOnHomePage()) {
+    //       await notificationService.send({
+    //         id: uuid(),
+    //         type: 'error',
+    //         title: t('notification.assistant'),
+    //         message: serializableError.message,
+    //         silent: false,
+    //         timestamp: Date.now(),
+    //         source: 'assistant'
+    //       })
+    //     }
+    //     const possibleBlockId =
+    //       mainTextBlockId ||
+    //       thinkingBlockId ||
+    //       toolBlockId ||
+    //       imageBlockId ||
+    //       citationBlockId ||
+    //       initialPlaceholderBlockId ||
+    //       lastBlockId
 
-        saveUpdatesToDB(assistantMsgId, topicId, messageErrorUpdate, [])
+    //     if (possibleBlockId) {
+    //       // 更改上一个block的状态为ERROR
+    //       const changes: Partial<MessageBlock> = {
+    //         status: isErrorTypeAbort ? MessageBlockStatus.PAUSED : MessageBlockStatus.ERROR
+    //       }
+    //       smartBlockUpdate(possibleBlockId, changes, lastBlockType!, true)
+    //     }
 
-        // 立即设置 loading 为 false，因为当前任务已经出错
-        dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }))
+    //     const errorBlock = createErrorBlock(assistantMsgId, serializableError, { status: MessageBlockStatus.SUCCESS })
+    //     await handleBlockTransition(errorBlock, MessageBlockType.ERROR)
+    //     const messageErrorUpdate = {
+    //       status: isErrorTypeAbort ? AssistantMessageStatus.SUCCESS : AssistantMessageStatus.ERROR
+    //     }
+    //     dispatch(newMessagesActions.updateMessage({ topicId, messageId: assistantMsgId, updates: messageErrorUpdate }))
 
-        EventEmitter.emit(EVENT_NAMES.MESSAGE_COMPLETE, {
-          id: assistantMsgId,
-          topicId,
-          status: isErrorTypeAbort ? 'pause' : 'error',
-          error: error.message
-        })
-      },
-      onComplete: async (status: AssistantMessageStatus, response?: Response) => {
-        const finalStateOnComplete = getState()
-        const finalAssistantMsg = finalStateOnComplete.messages.entities[assistantMsgId]
+    //     saveUpdatesToDB(assistantMsgId, topicId, messageErrorUpdate, [])
 
-        if (status === 'success' && finalAssistantMsg) {
-          const userMsgId = finalAssistantMsg.askId
-          const orderedMsgs = selectMessagesForTopic(finalStateOnComplete, topicId)
-          const userMsgIndex = orderedMsgs.findIndex((m) => m.id === userMsgId)
-          const contextForUsage = userMsgIndex !== -1 ? orderedMsgs.slice(0, userMsgIndex + 1) : []
-          const finalContextWithAssistant = [...contextForUsage, finalAssistantMsg]
+    //     EventEmitter.emit(EVENT_NAMES.MESSAGE_COMPLETE, {
+    //       id: assistantMsgId,
+    //       topicId,
+    //       status: isErrorTypeAbort ? 'pause' : 'error',
+    //       error: error.message
+    //     })
+    //   },
+    //   onComplete: async (status: AssistantMessageStatus, response?: Response) => {
+    //     const finalStateOnComplete = getState()
+    //     const finalAssistantMsg = finalStateOnComplete.messages.entities[assistantMsgId]
 
-          const possibleBlockId =
-            mainTextBlockId || thinkingBlockId || toolBlockId || imageBlockId || citationBlockId || lastBlockId
-          if (possibleBlockId) {
-            const changes: Partial<MessageBlock> = {
-              status: MessageBlockStatus.SUCCESS
-            }
-            cancelThrottledBlockUpdate(possibleBlockId)
-            dispatch(updateOneBlock({ id: possibleBlockId, changes }))
-            saveUpdatedBlockToDB(possibleBlockId, assistantMsgId, topicId, getState)
-          }
+    //     if (status === 'success' && finalAssistantMsg) {
+    //       const userMsgId = finalAssistantMsg.askId
+    //       const orderedMsgs = selectMessagesForTopic(finalStateOnComplete, topicId)
+    //       const userMsgIndex = orderedMsgs.findIndex((m) => m.id === userMsgId)
+    //       const contextForUsage = userMsgIndex !== -1 ? orderedMsgs.slice(0, userMsgIndex + 1) : []
+    //       const finalContextWithAssistant = [...contextForUsage, finalAssistantMsg]
 
-          const endTime = Date.now()
-          const duration = endTime - startTime
-          const content = getMainTextContent(finalAssistantMsg)
-          if (!isOnHomePage() && duration > 60 * 1000) {
-            await notificationService.send({
-              id: uuid(),
-              type: 'success',
-              title: t('notification.assistant'),
-              message: content.length > 50 ? content.slice(0, 47) + '...' : content,
-              silent: false,
-              timestamp: Date.now(),
-              source: 'assistant'
-            })
-          }
+    //       const possibleBlockId =
+    //         mainTextBlockId ||
+    //         thinkingBlockId ||
+    //         toolBlockId ||
+    //         imageBlockId ||
+    //         citationBlockId ||
+    //         initialPlaceholderBlockId ||
+    //         lastBlockId
+    //       if (possibleBlockId) {
+    //         const changes: Partial<MessageBlock> = {
+    //           status: MessageBlockStatus.SUCCESS
+    //         }
+    //         smartBlockUpdate(possibleBlockId, changes, lastBlockType!, true)
+    //       }
 
-          // 更新topic的name
-          autoRenameTopic(assistant, topicId)
+    //       const endTime = Date.now()
+    //       const duration = endTime - startTime
+    //       const content = getMainTextContent(finalAssistantMsg)
+    //       if (!isOnHomePage() && duration > 60 * 1000) {
+    //         await notificationService.send({
+    //           id: uuid(),
+    //           type: 'success',
+    //           title: t('notification.assistant'),
+    //           message: content.length > 50 ? content.slice(0, 47) + '...' : content,
+    //           silent: false,
+    //           timestamp: Date.now(),
+    //           source: 'assistant'
+    //         })
+    //       }
 
-          if (
-            response &&
-            (response.usage?.total_tokens === 0 ||
-              response?.usage?.prompt_tokens === 0 ||
-              response?.usage?.completion_tokens === 0)
-          ) {
-            const usage = await estimateMessagesUsage({ assistant, messages: finalContextWithAssistant })
-            response.usage = usage
-          }
-          dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }))
-        }
-        if (response && response.metrics) {
-          if (response.metrics.completion_tokens === 0 && response.usage?.completion_tokens) {
-            response = {
-              ...response,
-              metrics: {
-                ...response.metrics,
-                completion_tokens: response.usage.completion_tokens
-              }
-            }
-          }
-        }
+    //       // 更新topic的name
+    //       autoRenameTopic(assistant, topicId)
 
-        const messageUpdates: Partial<Message> = { status, metrics: response?.metrics, usage: response?.usage }
-        dispatch(
-          newMessagesActions.updateMessage({
-            topicId,
-            messageId: assistantMsgId,
-            updates: messageUpdates
-          })
-        )
-        saveUpdatesToDB(assistantMsgId, topicId, messageUpdates, [])
+    //       if (
+    //         response &&
+    //         (response.usage?.total_tokens === 0 ||
+    //           response?.usage?.prompt_tokens === 0 ||
+    //           response?.usage?.completion_tokens === 0)
+    //       ) {
+    //         const usage = await estimateMessagesUsage({ assistant, messages: finalContextWithAssistant })
+    //         response.usage = usage
+    //       }
+    //       // dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }))
+    //     }
+    //     if (response && response.metrics) {
+    //       if (response.metrics.completion_tokens === 0 && response.usage?.completion_tokens) {
+    //         response = {
+    //           ...response,
+    //           metrics: {
+    //             ...response.metrics,
+    //             completion_tokens: response.usage.completion_tokens
+    //           }
+    //         }
+    //       }
+    //     }
 
-        EventEmitter.emit(EVENT_NAMES.MESSAGE_COMPLETE, { id: assistantMsgId, topicId, status })
-      }
-    }
+    //     const messageUpdates: Partial<Message> = { status, metrics: response?.metrics, usage: response?.usage }
+    //     dispatch(
+    //       newMessagesActions.updateMessage({
+    //         topicId,
+    //         messageId: assistantMsgId,
+    //         updates: messageUpdates
+    //       })
+    //     )
+    //     saveUpdatesToDB(assistantMsgId, topicId, messageUpdates, [])
 
+    //     EventEmitter.emit(EVENT_NAMES.MESSAGE_COMPLETE, { id: assistantMsgId, topicId, status })
+    //   }
+    // }
+
+    callbacks = createCallbacks({
+      blockManager,
+      dispatch,
+      getState,
+      topicId,
+      assistantMsgId,
+      saveUpdatesToDB,
+      assistant
+    })
     const streamProcessorCallbacks = createStreamProcessor(callbacks)
-
-    const startTime = Date.now()
 
     const abortController = new AbortController()
     addAbortController(userMessageId!, () => abortController.abort())
@@ -890,6 +932,7 @@ export const sendMessage =
       if (userMessageBlocks.length > 0) {
         dispatch(upsertManyBlocks(userMessageBlocks))
       }
+      dispatch(updateTopicUpdatedAt({ topicId }))
 
       const mentionedModels = userMessage.mentions
       const queue = getTopicQueue(topicId)
@@ -981,6 +1024,7 @@ export const deleteSingleMessageThunk =
       if (topic) {
         const finalMessagesToSave = selectMessagesForTopic(getState(), topicId)
         await db.topics.update(topicId, { messages: finalMessagesToSave })
+        dispatch(updateTopicUpdatedAt({ topicId }))
       }
     } catch (error) {
       console.error(`[deleteSingleMessage] Failed to delete message ${messageId}:`, error)
@@ -1024,6 +1068,7 @@ export const deleteMessageGroupThunk =
       if (topic) {
         const finalMessagesToSave = selectMessagesForTopic(getState(), topicId)
         await db.topics.update(topicId, { messages: finalMessagesToSave })
+        dispatch(updateTopicUpdatedAt({ topicId }))
       }
     } catch (error) {
       console.error(`[deleteMessageGroup] Failed to delete messages with askId ${askId}:`, error)
@@ -1051,6 +1096,7 @@ export const clearTopicMessagesThunk =
       cleanupMultipleBlocks(dispatch, blockIdsToDelete)
 
       await db.topics.update(topicId, { messages: [] })
+      dispatch(updateTopicUpdatedAt({ topicId }))
       if (blockIdsToDelete.length > 0) {
         await db.message_blocks.bulkDelete(blockIdsToDelete)
       }
@@ -1088,46 +1134,54 @@ export const resendMessageThunk =
 
       const resetDataList: Message[] = []
 
-      if (assistantMessagesToReset.length === 0) {
-        // 没有相关的助手消息就创建一个或多个
+      if (assistantMessagesToReset.length === 0 && !userMessageToResend?.mentions?.length) {
+        // 没有相关的助手消息且没有提及模型时，使用助手模型创建一条消息
 
-        if (userMessageToResend?.mentions?.length) {
-          console.log('userMessageToResend.mentions', userMessageToResend.mentions)
-          for (const mention of userMessageToResend.mentions) {
-            const assistantMessage = createAssistantMessage(assistant.id, topicId, {
-              askId: userMessageToResend.id,
-              model: mention,
-              modelId: mention.id
-            })
-            resetDataList.push(assistantMessage)
-          }
-        } else {
-          const assistantMessage = createAssistantMessage(assistant.id, topicId, {
-            askId: userMessageToResend.id,
-            model: assistant.model
-          })
-          resetDataList.push(assistantMessage)
-        }
+        const assistantMessage = createAssistantMessage(assistant.id, topicId, {
+          askId: userMessageToResend.id,
+          model: assistant.model
+        })
+        resetDataList.push(assistantMessage)
 
         resetDataList.forEach((message) => {
           dispatch(newMessagesActions.addMessage({ topicId, message }))
         })
       }
 
+      // 处理存在相关的助手消息的情况
       const allBlockIdsToDelete: string[] = []
       const messagesToUpdateInRedux: { topicId: string; messageId: string; updates: Partial<Message> }[] = []
 
+      // 先处理已有的重传
       for (const originalMsg of assistantMessagesToReset) {
+        const modelToSet =
+          assistantMessagesToReset.length === 1 && !userMessageToResend?.mentions?.length
+            ? assistant.model
+            : originalMsg.model
         const blockIdsToDelete = [...(originalMsg.blocks || [])]
         const resetMsg = resetAssistantMessage(originalMsg, {
           status: AssistantMessageStatus.PENDING,
           updatedAt: new Date().toISOString(),
-          ...(assistantMessagesToReset.length === 1 ? { model: assistant.model } : {})
+          model: modelToSet
         })
 
         resetDataList.push(resetMsg)
         allBlockIdsToDelete.push(...blockIdsToDelete)
         messagesToUpdateInRedux.push({ topicId, messageId: resetMsg.id, updates: resetMsg })
+      }
+
+      // 再处理新的重传（用户消息提及，但是现有助手消息中不存在提及的模型）
+      const originModelSet = new Set(assistantMessagesToReset.map((m) => m.model).filter((m) => m !== undefined))
+      const mentionedModelSet = new Set(userMessageToResend.mentions ?? [])
+      const newModelSet = new Set([...mentionedModelSet].filter((m) => !originModelSet.has(m)))
+      for (const model of newModelSet) {
+        const assistantMessage = createAssistantMessage(assistant.id, topicId, {
+          askId: userMessageToResend.id,
+          model: model,
+          modelId: model.id
+        })
+        resetDataList.push(assistantMessage)
+        dispatch(newMessagesActions.addMessage({ topicId, message: assistantMessage }))
       }
 
       messagesToUpdateInRedux.forEach((update) => dispatch(newMessagesActions.updateMessage(update)))
@@ -1182,6 +1236,29 @@ export const regenerateAssistantResponseThunk =
 
       // 1. Use selector to get all messages for the topic
       const allMessagesForTopic = selectMessagesForTopic(state, topicId)
+
+      const askId = assistantMessageToRegenerate.askId
+
+      if (!askId) {
+        console.error(
+          `[appendAssistantResponseThunk] Existing assistant message ${assistantMessageToRegenerate.id} does not have an askId.`
+        )
+        return // Stop if askId is missing
+      }
+
+      if (!state.messages.entities[askId]) {
+        console.error(
+          `[appendAssistantResponseThunk] Original user query (askId: ${askId}) not found in entities. Cannot create assistant response without corresponding user message.`
+        )
+
+        // Show error popup instead of creating error message block
+        window.message.error({
+          content: t('error.missing_user_message'),
+          key: 'missing-user-message-error'
+        })
+
+        return
+      }
 
       // 2. Find the original user query (Restored Logic)
       const originalUserQuery = allMessagesForTopic.find((m) => m.id === assistantMessageToRegenerate.askId)
@@ -1265,7 +1342,7 @@ export const regenerateAssistantResponseThunk =
         `[regenerateAssistantResponseThunk] Error regenerating response for assistant message ${assistantMessageToRegenerate.id}:`,
         error
       )
-      dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }))
+      // dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }))
     } finally {
       handleChangeLoadingOfTopic(topicId)
     }
@@ -1392,10 +1469,17 @@ export const appendAssistantResponseThunk =
 
       // (Optional but recommended) Verify the original user query exists
       if (!state.messages.entities[askId]) {
-        console.warn(
-          `[appendAssistantResponseThunk] Original user query (askId: ${askId}) not found in entities. Proceeding, but state might be inconsistent.`
+        console.error(
+          `[appendAssistantResponseThunk] Original user query (askId: ${askId}) not found in entities. Cannot create assistant response without corresponding user message.`
         )
-        // Decide whether to proceed or return based on requirements
+
+        // Show error popup instead of creating error message block
+        window.message.error({
+          content: t('error.missing_user_message'),
+          key: 'missing-user-message-error'
+        })
+
+        return
       }
 
       // 2. Create the new assistant message stub
@@ -1478,7 +1562,7 @@ export const cloneMessagesToNewTopicThunk =
       // 2. Prepare for cloning: Maps and Arrays
       const clonedMessages: Message[] = []
       const clonedBlocks: MessageBlock[] = []
-      const filesToUpdateCount: FileType[] = []
+      const filesToUpdateCount: FileMetadata[] = []
       const originalToNewMsgIdMap = new Map<string, string>() // Map original message ID -> new message ID
 
       // 3. Clone Messages and Blocks with New IDs
@@ -1647,6 +1731,8 @@ export const updateMessageAndBlocksThunk =
           await db.message_blocks.bulkPut(blockUpdatesList)
         }
       })
+
+      dispatch(updateTopicUpdatedAt({ topicId }))
     } catch (error) {
       console.error(`[updateMessageAndBlocksThunk] Failed to process updates for message ${messageId}:`, error)
     }
@@ -1688,6 +1774,8 @@ export const removeBlocksThunk =
           await db.message_blocks.bulkDelete(blockIdsToRemove)
         }
       })
+
+      dispatch(updateTopicUpdatedAt({ topicId }))
 
       return
     } catch (error) {

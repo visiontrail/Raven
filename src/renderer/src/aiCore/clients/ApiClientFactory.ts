@@ -6,8 +6,10 @@ import { AnthropicAPIClient } from './anthropic/AnthropicAPIClient'
 import { BaseApiClient } from './BaseApiClient'
 import { GeminiAPIClient } from './gemini/GeminiAPIClient'
 import { VertexAPIClient } from './gemini/VertexAPIClient'
+import { NewAPIClient } from './NewAPIClient'
 import { OpenAIAPIClient } from './openai/OpenAIApiClient'
 import { OpenAIResponseAPIClient } from './openai/OpenAIResponseAPIClient'
+import { PPIOAPIClient } from './ppio/PPIOAPIClient'
 
 /**
  * Factory for creating ApiClient instances based on provider configuration
@@ -32,14 +34,23 @@ export class ApiClientFactory {
       instance = new AihubmixAPIClient(provider) as BaseApiClient
       return instance
     }
+    if (provider.id === 'new-api') {
+      console.log(`[ApiClientFactory] Creating NewAPIClient for provider: ${provider.id}`)
+      instance = new NewAPIClient(provider) as BaseApiClient
+      return instance
+    }
+    if (provider.id === 'ppio') {
+      console.log(`[ApiClientFactory] Creating PPIOAPIClient for provider: ${provider.id}`)
+      instance = new PPIOAPIClient(provider) as BaseApiClient
+      return instance
+    }
 
     // 然后检查标准的provider type
     switch (provider.type) {
       case 'openai':
-      case 'azure-openai':
-        console.log(`[ApiClientFactory] Creating OpenAIApiClient for provider: ${provider.id}`)
         instance = new OpenAIAPIClient(provider) as BaseApiClient
         break
+      case 'azure-openai':
       case 'openai-response':
         instance = new OpenAIResponseAPIClient(provider) as BaseApiClient
         break

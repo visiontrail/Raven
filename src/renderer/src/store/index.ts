@@ -12,12 +12,15 @@ import inputToolsReducer from './inputTools'
 import knowledge from './knowledge'
 import llm from './llm'
 import mcp from './mcp'
+import memory from './memory'
 import messageBlocksReducer from './messageBlock'
 import migrate from './migrate'
 import minapps from './minapps'
 import newMessagesReducer from './newMessage'
 import nutstore from './nutstore'
+import ocr from './ocr'
 import paintings from './paintings'
+import preprocess from './preprocess'
 import runtime from './runtime'
 import selectionStore from './selectionStore'
 import settings from './settings'
@@ -33,14 +36,17 @@ const rootReducer = combineReducers({
   llm,
   settings,
   runtime,
+  ocr,
   shortcuts,
   knowledge,
   minapps,
   websearch,
   mcp,
+  memory,
   copilot,
   selectionStore,
   // messages: messagesReducer,
+  preprocess,
   messages: newMessagesReducer,
   messageBlocks: messageBlocksReducer,
   inputTools: inputToolsReducer
@@ -50,7 +56,7 @@ const persistedReducer = persistReducer(
   {
     key: 'cherry-studio',
     storage,
-    version: 116,
+    version: 121,
     blacklist: ['runtime', 'messages', 'messageBlocks'],
     migrate
   },

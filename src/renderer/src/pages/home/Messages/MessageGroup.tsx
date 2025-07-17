@@ -25,12 +25,18 @@ const MessageGroup = ({ messages, topic, registerMessageElement }: Props) => {
   const { editMessage } = useMessageOperations(topic)
   const { multiModelMessageStyle: multiModelMessageStyleSetting, gridColumns, gridPopoverTrigger } = useSettings()
   const { isMultiSelectMode } = useChatContext(topic)
+  const messageLength = messages.length
 
-  const [multiModelMessageStyle, setMultiModelMessageStyle] = useState<MultiModelMessageStyle>(
+  const [_multiModelMessageStyle, setMultiModelMessageStyle] = useState<MultiModelMessageStyle>(
     messages[0].multiModelMessageStyle || multiModelMessageStyleSetting
   )
 
-  const messageLength = messages.length
+  // 对于单模型消息，采用简单的样式，避免 overflow 影响内部的 sticky 效果
+  const multiModelMessageStyle = useMemo(
+    () => (messageLength < 2 ? 'fold' : _multiModelMessageStyle),
+    [_multiModelMessageStyle, messageLength]
+  )
+
   const prevMessageLengthRef = useRef(messageLength)
   const [selectedIndex, setSelectedIndex] = useState(messageLength - 1)
 
@@ -265,7 +271,7 @@ const GridContainer = styled(Scrollbar)<{ $count: number; $gridColumns: number }
   gap: 16px;
   &.horizontal {
     padding-bottom: 4px;
-    grid-template-columns: repeat(${({ $count }) => $count}, minmax(480px, 1fr));
+    grid-template-columns: repeat(${({ $count }) => $count}, minmax(420px, 1fr));
     overflow-x: auto;
   }
   &.fold,
@@ -308,6 +314,7 @@ interface MessageWrapperProps {
 
 const MessageWrapper = styled.div<MessageWrapperProps>`
   &.horizontal {
+    padding-right: 1px;
     overflow-y: auto;
     .message {
       height: 100%;
@@ -356,6 +363,7 @@ const MessageWrapper = styled.div<MessageWrapperProps>`
     cursor: default;
     .message-content-container {
       padding-left: 0;
+      pointer-events: auto;
     }
     .MessageFooter {
       margin-left: 0;

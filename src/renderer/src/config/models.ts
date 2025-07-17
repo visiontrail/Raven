@@ -164,7 +164,7 @@ const visionAllowedModels = [
   'claude-sonnet-4',
   'claude-opus-4',
   'vision',
-  'glm-4v',
+  'glm-4(?:\\.\\d+)?v(?:-[\\w-]+)?',
   'qwen-vl',
   'qwen2-vl',
   'qwen2.5-vl',
@@ -184,7 +184,8 @@ const visionAllowedModels = [
   'deepseek-vl(?:[\\w-]+)?',
   'kimi-latest',
   'gemma-3(?:-[\\w-]+)',
-  'doubao-seed-1[.-]6(?:-[\\w-]+)?'
+  'doubao-seed-1[.-]6(?:-[\\w-]+)?',
+  'kimi-thinking-preview'
 ]
 
 const visionExcludedModels = [
@@ -208,7 +209,7 @@ export const isDedicatedImageGenerationModel = (model: Model): boolean =>
   DEDICATED_IMAGE_MODELS.filter((m) => model.id.includes(m)).length > 0
 
 // Text to image models
-export const TEXT_TO_IMAGE_REGEX = /flux|diffusion|stabilityai|sd-|dall|cogview|janus/i
+export const TEXT_TO_IMAGE_REGEX = /flux|diffusion|stabilityai|sd-|dall|cogview|janus|midjourney|mj-|image|gpt-image/i
 
 // Reasoning models
 export const REASONING_REGEX =
@@ -239,7 +240,8 @@ export const FUNCTION_CALLING_MODELS = [
   'learnlm(?:-[\\w-]+)?',
   'gemini(?:-[\\w-]+)?', // 提前排除了gemini的嵌入模型
   'grok-3(?:-[\\w-]+)?',
-  'doubao-seed-1[.-]6(?:-[\\w-]+)?'
+  'doubao-seed-1[.-]6(?:-[\\w-]+)?',
+  'kimi-k2(?:-[\\w-]+)?'
 ]
 
 const FUNCTION_CALLING_EXCLUDED_MODELS = [
@@ -247,7 +249,8 @@ const FUNCTION_CALLING_EXCLUDED_MODELS = [
   'imagen(?:-[\\w-]+)?',
   'o1-mini',
   'o1-preview',
-  'AIDC-AI/Marco-o1'
+  'AIDC-AI/Marco-o1',
+  'gemini-1(?:\\.[\\w-]+)?'
 ]
 
 export const FUNCTION_CALLING_REGEX = new RegExp(
@@ -260,7 +263,11 @@ export const CLAUDE_SUPPORTED_WEBSEARCH_REGEX = new RegExp(
   'i'
 )
 
-export function isFunctionCallingModel(model: Model): boolean {
+export function isFunctionCallingModel(model?: Model): boolean {
+  if (!model) {
+    return false
+  }
+
   if (model.type?.includes('function_calling')) {
     return true
   }
@@ -273,7 +280,7 @@ export function isFunctionCallingModel(model: Model): boolean {
     return ['deepseek-v3-tool', 'deepseek-v3-0324', 'qwq-32b', 'qwen2.5-72b-instruct'].includes(model.id)
   }
 
-  if (model.provider === 'doubao') {
+  if (model.provider === 'doubao' || model.id.includes('doubao')) {
     return FUNCTION_CALLING_REGEX.test(model.id) || FUNCTION_CALLING_REGEX.test(model.name)
   }
 
@@ -524,6 +531,20 @@ export const SYSTEM_MODELS: Record<string, Model[]> = {
       group: 'Jina AI'
     }
   ],
+  ph8: [
+    {
+      id: 'deepseek-v3-241226',
+      name: 'deepseek-v3-241226',
+      provider: 'ph8',
+      group: 'DeepSeek'
+    },
+    {
+      id: 'deepseek-r1-250120',
+      name: 'deepseek-r1-250120',
+      provider: 'ph8',
+      group: 'DeepSeek'
+    }
+  ],
   aihubmix: [
     {
       id: 'o3',
@@ -768,6 +789,30 @@ export const SYSTEM_MODELS: Record<string, Model[]> = {
   ],
   ppio: [
     {
+      id: 'deepseek/deepseek-r1-0528',
+      provider: 'ppio',
+      name: 'DeepSeek R1-0528',
+      group: 'deepseek'
+    },
+    {
+      id: 'deepseek/deepseek-v3-0324',
+      provider: 'ppio',
+      name: 'DeepSeek V3-0324',
+      group: 'deepseek'
+    },
+    {
+      id: 'deepseek/deepseek-r1-turbo',
+      provider: 'ppio',
+      name: 'DeepSeek R1 Turbo',
+      group: 'deepseek'
+    },
+    {
+      id: 'deepseek/deepseek-v3-turbo',
+      provider: 'ppio',
+      name: 'DeepSeek V3 Turbo',
+      group: 'deepseek'
+    },
+    {
       id: 'deepseek/deepseek-r1/community',
       name: 'DeepSeek: DeepSeek R1 (Community)',
       provider: 'ppio',
@@ -780,52 +825,46 @@ export const SYSTEM_MODELS: Record<string, Model[]> = {
       group: 'deepseek'
     },
     {
-      id: 'deepseek/deepseek-r1',
+      id: 'minimaxai/minimax-m1-80k',
       provider: 'ppio',
-      name: 'DeepSeek R1',
-      group: 'deepseek'
+      name: 'MiniMax M1-80K',
+      group: 'minimaxai'
     },
     {
-      id: 'deepseek/deepseek-v3',
+      id: 'qwen/qwen3-235b-a22b-fp8',
       provider: 'ppio',
-      name: 'DeepSeek V3',
-      group: 'deepseek'
-    },
-    {
-      id: 'qwen/qwen-2.5-72b-instruct',
-      provider: 'ppio',
-      name: 'Qwen2.5-72B-Instruct',
+      name: 'Qwen3 235B',
       group: 'qwen'
     },
     {
-      id: 'qwen/qwen2.5-32b-instruct',
+      id: 'qwen/qwen3-32b-fp8',
       provider: 'ppio',
-      name: 'Qwen2.5-32B-Instruct',
+      name: 'Qwen3 32B',
       group: 'qwen'
     },
     {
-      id: 'meta-llama/llama-3.1-70b-instruct',
+      id: 'qwen/qwen3-30b-a3b-fp8',
       provider: 'ppio',
-      name: 'Llama-3.1-70B-Instruct',
-      group: 'meta-llama'
+      name: 'Qwen3 30B',
+      group: 'qwen'
     },
     {
-      id: 'meta-llama/llama-3.1-8b-instruct',
+      id: 'qwen/qwen2.5-vl-72b-instruct',
       provider: 'ppio',
-      name: 'Llama-3.1-8B-Instruct',
-      group: 'meta-llama'
+      name: 'Qwen2.5 VL 72B',
+      group: 'qwen'
     },
     {
-      id: '01-ai/yi-1.5-34b-chat',
+      id: 'qwen/qwen3-embedding-8b',
       provider: 'ppio',
-      name: 'Yi-1.5-34B-Chat',
-      group: '01-ai'
+      name: 'Qwen3 Embedding 8B',
+      group: 'qwen'
     },
     {
-      id: '01-ai/yi-1.5-9b-chat',
+      id: 'qwen/qwen3-reranker-8b',
       provider: 'ppio',
-      name: 'Yi-1.5-9B-Chat',
-      group: '01-ai'
+      name: 'Qwen3 Reranker 8B',
+      group: 'qwen'
     }
   ],
   alayanew: [],
@@ -2203,7 +2242,8 @@ export const SYSTEM_MODELS: Record<string, Model[]> = {
       group: 'DeepSeek'
     }
   ],
-  lanyun: []
+  lanyun: [],
+  'new-api': []
 }
 
 export const TEXT_TO_IMAGES_MODELS = [
@@ -2287,8 +2327,6 @@ export const TEXT_TO_IMAGES_MODELS_SUPPORT_IMAGE_ENHANCEMENT = [
 ]
 
 export const SUPPORTED_DISABLE_GENERATION_MODELS = [
-  'gemini-2.0-flash-exp-image-generation',
-  'gemini-2.0-flash-preview-image-generation',
   'gemini-2.0-flash-exp',
   'gpt-4o',
   'gpt-4o-mini',
@@ -2327,7 +2365,7 @@ export function isEmbeddingModel(model: Model): boolean {
     return false
   }
 
-  if (model.provider === 'doubao') {
+  if (model.provider === 'doubao' || model.id.includes('doubao')) {
     return EMBEDDING_REGEX.test(model.name)
   }
 
@@ -2351,7 +2389,7 @@ export function isVisionModel(model: Model): boolean {
   //   return false
   // }
 
-  if (model.provider === 'doubao') {
+  if (model.provider === 'doubao' || model.id.includes('doubao')) {
     return VISION_REGEX.test(model.name) || VISION_REGEX.test(model.id) || model.type?.includes('vision') || false
   }
 
@@ -2422,7 +2460,9 @@ export function isOpenAIWebSearchModel(model: Model): boolean {
     model.id.includes('gpt-4o-search-preview') ||
     model.id.includes('gpt-4o-mini-search-preview') ||
     (model.id.includes('gpt-4.1') && !model.id.includes('gpt-4.1-nano')) ||
-    (model.id.includes('gpt-4o') && !model.id.includes('gpt-4o-image'))
+    (model.id.includes('gpt-4o') && !model.id.includes('gpt-4o-image')) ||
+    model.id.includes('o3') ||
+    model.id.includes('o4')
   )
 }
 
@@ -2454,7 +2494,7 @@ export function isGrokModel(model?: Model): boolean {
   return model.id.includes('grok')
 }
 
-export function isGrokReasoningModel(model?: Model): boolean {
+export function isSupportedReasoningEffortGrokModel(model?: Model): boolean {
   if (!model) {
     return false
   }
@@ -2466,7 +2506,16 @@ export function isGrokReasoningModel(model?: Model): boolean {
   return false
 }
 
-export const isSupportedReasoningEffortGrokModel = isGrokReasoningModel
+export function isGrokReasoningModel(model?: Model): boolean {
+  if (!model) {
+    return false
+  }
+  if (isSupportedReasoningEffortGrokModel(model) || model.id.includes('grok-4')) {
+    return true
+  }
+
+  return false
+}
 
 export function isGeminiReasoningModel(model?: Model): boolean {
   if (!model) {
@@ -2477,14 +2526,16 @@ export function isGeminiReasoningModel(model?: Model): boolean {
     return true
   }
 
-  if (model.id.includes('gemini-2.5')) {
+  if (isSupportedThinkingTokenGeminiModel(model)) {
     return true
   }
 
   return false
 }
 
-export const isSupportedThinkingTokenGeminiModel = isGeminiReasoningModel
+export const isSupportedThinkingTokenGeminiModel = (model: Model): boolean => {
+  return model.id.includes('gemini-2.5')
+}
 
 export function isQwenReasoningModel(model?: Model): boolean {
   if (!model) {
@@ -2555,8 +2606,9 @@ export function isReasoningModel(model?: Model): boolean {
     return false
   }
 
-  if (model.provider === 'doubao') {
+  if (model.provider === 'doubao' || model.id.includes('doubao')) {
     return (
+      REASONING_REGEX.test(model.id) ||
       REASONING_REGEX.test(model.name) ||
       model.type?.includes('reasoning') ||
       isSupportedThinkingTokenDoubaoModel(model) ||
@@ -2870,3 +2922,12 @@ export function isDoubaoThinkingAutoModel(model: Model): boolean {
 }
 
 export const GEMINI_FLASH_MODEL_REGEX = new RegExp('gemini-.*-flash.*$')
+
+// 模型集合功能测试
+export const isVisionModels = (models: Model[]) => {
+  return models.every((model) => isVisionModel(model))
+}
+
+export const isGenerateImageModels = (models: Model[]) => {
+  return models.every((model) => isGenerateImageModel(model))
+}
