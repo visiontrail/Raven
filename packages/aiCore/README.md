@@ -7,7 +7,8 @@ Cherry Studio AI Core 是一个基于 Vercel AI SDK 的统一 AI Provider 接口
 - 🚀 统一的 AI Provider 接口
 - 🔄 动态导入支持
 - 🛠️ TypeScript 支持
-- 📦 轻量级设计
+- 📦 强大的插件系统
+- 🌍 内置webSearch(Openai,Google,Anthropic,xAI)
 
 ## 支持的 Providers
 

@@ -19,7 +19,7 @@ interface Props {
 
 const COUNTDOWN_TIME = 30
 
-const MessageTools: FC<Props> = ({ block }) => {
+const MessageMcpTool: FC<Props> = ({ block }) => {
   const [activeKeys, setActiveKeys] = useState<string[]>([])
   const [copiedMap, setCopiedMap] = useState<Record<string, boolean>>({})
   const [countdown, setCountdown] = useState<number>(COUNTDOWN_TIME)
@@ -682,4 +682,4 @@ const ExpandedResponseContainer = styled.div`
   }
 `
 
-export default memo(MessageTools)
+export default memo(MessageMcpTool)

@@ -6,7 +6,7 @@
 
 import { ToolCallUnion, ToolResultUnion, ToolSet } from '@cherrystudio/ai-core'
 import Logger from '@renderer/config/logger'
-import { BaseTool, MCPToolResponse } from '@renderer/types'
+import { BaseTool, MCPToolResponse, ToolCallResponse } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
 // import type {
 //   AnthropicSearchOutput,
@@ -25,7 +25,7 @@ export class ToolCallChunkHandler {
       toolName: string
       args: any
       // mcpTool 现在可以是 MCPTool 或我们为 Provider 工具创建的通用类型
-      mcpTool: BaseTool
+      tool: BaseTool
     }
   >()
   constructor(
@@ -43,16 +43,20 @@ export class ToolCallChunkHandler {
   handleToolCallCreated(chunk: { type: 'tool-input-start' | 'tool-input-delta' | 'tool-input-end' }): void {
     switch (chunk.type) {
       case 'tool-input-start': {
+        // 能拿到说明是mcpTool
+        if (this.activeToolCalls.get(chunk.id)) return
+
+        const tool: BaseTool = {
+          id: chunk.id,
+          name: chunk.toolName,
+          description: chunk.toolName,
+          type: chunk.toolName.startsWith('builtin_') ? 'builtin' : 'provider'
+        }
         this.activeToolCalls.set(chunk.id, {
           toolCallId: chunk.id,
           toolName: chunk.toolName,
           args: '',
-          mcpTool: {
-            id: chunk.id,
-            name: chunk.toolName,
-            description: chunk.toolName,
-            type: chunk.toolName.startsWith('builtin_') ? 'builtin' : 'provider'
-          }
+          tool
         })
         break
       }
@@ -72,14 +76,14 @@ export class ToolCallChunkHandler {
           Logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
           return
         }
-        const toolResponse: MCPToolResponse = {
+        const toolResponse: ToolCallResponse = {
           id: toolCall.toolCallId,
-          tool: toolCall.mcpTool,
+          tool: toolCall.tool,
           arguments: toolCall.args,
           status: 'pending',
           toolCallId: toolCall.toolCallId
         }
-
+        console.log('toolResponse', toolResponse)
         this.onChunk({
           type: ChunkType.MCP_TOOL_PENDING,
           responses: [toolResponse]
@@ -155,7 +159,7 @@ export class ToolCallChunkHandler {
       toolCallId,
       toolName,
       args,
-      mcpTool: tool
+      tool
     })
 
     // 创建 MCPToolResponse 格式
@@ -184,8 +188,7 @@ export class ToolCallChunkHandler {
       type: 'tool-result'
     } & ToolResultUnion<ToolSet>
   ): void {
-    const toolCallId = chunk.toolCallId
-    const result = chunk.output
+    const { toolCallId, output, input } = chunk
 
     if (!toolCallId) {
       Logger.warn(`🔧 [ToolCallChunkHandler] Invalid tool result chunk: missing toolCallId`)
@@ -202,17 +205,12 @@ export class ToolCallChunkHandler {
     // 创建工具调用结果的 MCPToolResponse 格式
     const toolResponse: MCPToolResponse = {
       id: toolCallId,
-      tool: toolCallInfo.mcpTool,
-      arguments: toolCallInfo.args,
+      tool: toolCallInfo.tool,
+      arguments: input,
       status: 'done',
       response: {
-        content: [
-          {
-            type: 'text',
-            text: typeof result === 'string' ? result : JSON.stringify(result)
-          }
-        ],
-        isError: false
+        data: output,
+        success: true
       },
       toolCallId: toolCallId
     }

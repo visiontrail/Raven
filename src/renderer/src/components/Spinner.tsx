@@ -3,7 +3,7 @@ import { motion } from 'motion/react'
 import styled from 'styled-components'
 
 interface Props {
-  text: string
+  text: React.ReactNode
 }
 
 // Define variants for the spinner animation
