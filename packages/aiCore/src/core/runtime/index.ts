@@ -27,7 +27,7 @@ import { RuntimeExecutor } from './executor'
  */
 export function createExecutor<T extends ProviderId>(
   providerId: T,
-  options: ProviderSettingsMap[T],
+  options: ProviderSettingsMap[T] & { mode?: 'chat' | 'responses' },
   plugins?: AiPlugin[]
 ): RuntimeExecutor<T> {
   return RuntimeExecutor.create(providerId, options, plugins)
@@ -37,7 +37,7 @@ export function createExecutor<T extends ProviderId>(
  * 创建OpenAI Compatible执行器
  */
 export function createOpenAICompatibleExecutor(
-  options: ProviderSettingsMap['openai-compatible'],
+  options: ProviderSettingsMap['openai-compatible'] & { mode?: 'chat' | 'responses' },
   plugins: AiPlugin[] = []
 ): RuntimeExecutor<'openai-compatible'> {
   return RuntimeExecutor.createOpenAICompatible(options, plugins)
@@ -50,7 +50,7 @@ export function createOpenAICompatibleExecutor(
  */
 export async function streamText<T extends ProviderId>(
   providerId: T,
-  options: ProviderSettingsMap[T],
+  options: ProviderSettingsMap[T] & { mode?: 'chat' | 'responses' },
   modelId: string,
   params: Parameters<RuntimeExecutor<T>['streamText']>[1],
   plugins?: AiPlugin[],
@@ -65,7 +65,7 @@ export async function streamText<T extends ProviderId>(
  */
 export async function generateText<T extends ProviderId>(
   providerId: T,
-  options: ProviderSettingsMap[T],
+  options: ProviderSettingsMap[T] & { mode?: 'chat' | 'responses' },
   modelId: string,
   params: Parameters<RuntimeExecutor<T>['generateText']>[1],
   plugins?: AiPlugin[],
@@ -80,7 +80,7 @@ export async function generateText<T extends ProviderId>(
  */
 export async function generateObject<T extends ProviderId>(
   providerId: T,
-  options: ProviderSettingsMap[T],
+  options: ProviderSettingsMap[T] & { mode?: 'chat' | 'responses' },
   modelId: string,
   params: Parameters<RuntimeExecutor<T>['generateObject']>[1],
   plugins?: AiPlugin[],
@@ -95,7 +95,7 @@ export async function generateObject<T extends ProviderId>(
  */
 export async function streamObject<T extends ProviderId>(
   providerId: T,
-  options: ProviderSettingsMap[T],
+  options: ProviderSettingsMap[T] & { mode?: 'chat' | 'responses' },
   modelId: string,
   params: Parameters<RuntimeExecutor<T>['streamObject']>[1],
   plugins?: AiPlugin[],

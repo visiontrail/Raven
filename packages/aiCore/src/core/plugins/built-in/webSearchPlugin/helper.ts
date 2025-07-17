@@ -1,4 +1,5 @@
 import { anthropic } from '@ai-sdk/anthropic'
+import { google } from '@ai-sdk/google'
 import { openai } from '@ai-sdk/openai'
 
 import { ProviderOptionsMap } from '../../../options/types'
@@ -8,16 +9,7 @@ import { ProviderOptionsMap } from '../../../options/types'
  */
 type OpenAISearchConfig = Parameters<typeof openai.tools.webSearchPreview>[0]
 type AnthropicSearchConfig = Parameters<typeof anthropic.tools.webSearch_20250305>[0]
-/**
- * XAI 特有的搜索参数
- * @internal
- */
-interface XaiProviderOptions {
-  searchParameters?: {
-    sources?: any[]
-    safeSearch?: boolean
-  }
-}
+type GoogleSearchConfig = Parameters<typeof google.tools.googleSearch>[0]
 
 /**
  * 插件初始化时接收的完整配置对象
@@ -28,20 +20,16 @@ export interface WebSearchPluginConfig {
   openai?: OpenAISearchConfig
   anthropic?: AnthropicSearchConfig
   xai?: ProviderOptionsMap['xai']['searchParameters']
-  google?: Pick<ProviderOptionsMap['google'], 'useSearchGrounding' | 'dynamicRetrievalConfig'>
-  'google-vertex'?: Pick<ProviderOptionsMap['google'], 'useSearchGrounding' | 'dynamicRetrievalConfig'>
+  google?: GoogleSearchConfig
+  'google-vertex'?: GoogleSearchConfig
 }
 
 /**
  * 插件的默认配置
  */
 export const DEFAULT_WEB_SEARCH_CONFIG: WebSearchPluginConfig = {
-  google: {
-    useSearchGrounding: true
-  },
-  'google-vertex': {
-    useSearchGrounding: true
-  },
+  google: {},
+  'google-vertex': {},
   openai: {},
   xai: {
     mode: 'on',
@@ -53,37 +41,3 @@ export const DEFAULT_WEB_SEARCH_CONFIG: WebSearchPluginConfig = {
     maxUses: 5
   }
 }
-
-/**
- * 根据配置构建 Google 的 providerOptions
- */
-export const getGoogleProviderOptions = (providerOptions: any) => {
-  if (!providerOptions) providerOptions = {}
-  if (!providerOptions.google) providerOptions.google = {}
-  providerOptions.google.useSearchGrounding = true
-  return providerOptions
-}
-
-/**
- * 根据配置构建 XAI 的 providerOptions
- */
-export const getXaiProviderOptions = (providerOptions: any, config?: XaiProviderOptions['searchParameters']) => {
-  if (!providerOptions) providerOptions = {}
-  if (!providerOptions.xai) providerOptions.xai = {}
-  providerOptions.xai.searchParameters = {
-    mode: 'on',
-    ...(config ?? {})
-  }
-  return providerOptions
-}
-
-export type AnthropicSearchInput = {
-  query: string
-}
-export type AnthropicSearchOutput = {
-  url: string
-  title: string
-  pageAge: string | null
-  encryptedContent: string
-  type: string
-}[]

@@ -46,7 +46,6 @@ function getActualProvider(model: Model): Provider {
 
   if (provider.id === 'aihubmix') {
     actualProvider = createAihubmixProvider(model, actualProvider)
-    console.log('actualProvider', actualProvider)
   }
   if (actualProvider.type === 'gemini') {
     actualProvider.apiHost = formatApiHost(actualProvider.apiHost, 'v1beta')
@@ -67,13 +66,14 @@ function providerToAiSdkConfig(actualProvider: Provider): {
   const aiSdkProviderId = getAiSdkProviderId(actualProvider)
   // console.log('aiSdkProviderId', aiSdkProviderId)
   // 如果provider是openai，则使用strict模式并且默认responses api
-  const actualProviderType = actualProvider.type
+  const actualProviderId = actualProvider.id
   const openaiResponseOptions =
-    actualProviderType === 'openai-response'
+    // 对于实际是openai的需要走responses,aiCore内部会判断model是否可用responses
+    actualProviderId === 'openai'
       ? {
-          mode: 'response'
+          mode: 'responses'
         }
-      : actualProviderType === 'openai'
+      : aiSdkProviderId === 'openai'
         ? {
             mode: 'chat'
           }
@@ -86,10 +86,9 @@ function providerToAiSdkConfig(actualProvider: Provider): {
       aiSdkProviderId,
       {
         baseURL: actualProvider.apiHost,
-        apiKey: actualProvider.apiKey,
-        headers: actualProvider.extra_headers
+        apiKey: actualProvider.apiKey
       },
-      openaiResponseOptions
+      { ...openaiResponseOptions, headers: actualProvider.extra_headers }
     )
 
     return {
@@ -224,7 +223,9 @@ export default class ModernAiProvider {
     // try {
     // 根据条件构建插件数组
     const plugins = this.buildPlugins(middlewareConfig)
-
+    console.log('this.config.providerId', this.config.providerId)
+    console.log('this.config.options', this.config.options)
+    console.log('plugins', plugins)
     // 用构建好的插件数组创建executor
     const executor = createExecutor(this.config.providerId, this.config.options, plugins)
 

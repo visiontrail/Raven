@@ -35,7 +35,12 @@ export function buildProviderOptions(
   switch (providerId) {
     case 'openai':
     case 'azure':
-      providerSpecificOptions = buildOpenAIProviderOptions(assistant, model, capabilities)
+      providerSpecificOptions = {
+        ...buildOpenAIProviderOptions(assistant, model, capabilities),
+        // 函数内有对于真实provider.id的判断,应该不会影响原生provider
+        ...buildGenericProviderOptions(assistant, model, capabilities)
+      }
+
       break
 
     case 'anthropic':

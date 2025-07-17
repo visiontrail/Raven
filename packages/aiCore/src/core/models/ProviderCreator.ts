@@ -33,7 +33,7 @@ export async function createBaseModel<T extends ProviderId>({
 }: {
   providerId: T
   modelId: string
-  providerSettings: ProviderSettingsMap[T]
+  providerSettings: ProviderSettingsMap[T] & { mode?: 'chat' | 'responses' }
   extraModelConfig?: any
   // middlewares?: LanguageModelV1Middleware[]
 }): Promise<LanguageModelV2>
@@ -47,7 +47,7 @@ export async function createBaseModel({
 }: {
   providerId: string
   modelId: string
-  providerSettings: ProviderSettingsMap['openai-compatible']
+  providerSettings: ProviderSettingsMap['openai-compatible'] & { mode?: 'chat' | 'responses' }
   extraModelConfig?: any
   // middlewares?: LanguageModelV1Middleware[]
 }): Promise<LanguageModelV2>
@@ -61,7 +61,7 @@ export async function createBaseModel({
 }: {
   providerId: string
   modelId: string
-  providerSettings: ProviderSettingsMap[ProviderId]
+  providerSettings: ProviderSettingsMap[ProviderId] & { mode?: 'chat' | 'responses' }
   // middlewares?: LanguageModelV1Middleware[]
   extraModelConfig?: any
 }): Promise<LanguageModelV2> {
@@ -86,6 +86,7 @@ export async function createBaseModel({
         `Creator function "${providerConfig.creatorFunctionName}" not found in the imported module for provider "${effectiveProviderId}"`
       )
     }
+    // TODO: 对openai 的 providerSettings.mode参数是否要删除,目前看没毛病
     // 创建provider实例
     let provider = creatorFunction(providerSettings)
 
@@ -93,7 +94,7 @@ export async function createBaseModel({
     if (providerConfig.id === 'openai') {
       if (
         'mode' in providerSettings &&
-        providerSettings.mode === 'response' &&
+        providerSettings.mode === 'responses' &&
         !isOpenAIChatCompletionOnlyModel(modelId)
       ) {
         provider = provider.responses

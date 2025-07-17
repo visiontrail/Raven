@@ -10,7 +10,7 @@ import { type AiPlugin } from '../plugins'
  */
 export interface RuntimeConfig<T extends ProviderId = ProviderId> {
   providerId: T
-  providerSettings: ModelConfig<T>['providerSettings']
+  providerSettings: ModelConfig<T>['providerSettings'] & { mode?: 'chat' | 'responses' }
   plugins?: AiPlugin[]
 }
 

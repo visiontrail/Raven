@@ -133,11 +133,11 @@ export class AiSdkToChunkAdapter {
 
       // === 工具调用相关事件（原始 AI SDK 事件，如果没有被中间件处理） ===
 
-      case 'tool-input-start':
-      case 'tool-input-delta':
-      case 'tool-input-end':
-        this.toolCallHandler.handleToolCallCreated(chunk)
-        break
+      // case 'tool-input-start':
+      // case 'tool-input-delta':
+      // case 'tool-input-end':
+      //   this.toolCallHandler.handleToolCallCreated(chunk)
+      //   break
 
       // case 'tool-input-delta':
       //   this.toolCallHandler.handleToolCallCreated(chunk)

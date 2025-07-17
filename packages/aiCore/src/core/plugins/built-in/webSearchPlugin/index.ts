@@ -3,9 +3,10 @@
  * 提供统一的网络搜索能力，支持多个 AI Provider
  */
 import { anthropic } from '@ai-sdk/anthropic'
+import { google } from '@ai-sdk/google'
 import { openai } from '@ai-sdk/openai'
 
-import { createGoogleOptions, createXaiOptions, mergeProviderOptions } from '../../../options'
+import { createXaiOptions, mergeProviderOptions } from '../../../options'
 import { definePlugin } from '../../'
 import type { AiRequestContext } from '../../types'
 import { DEFAULT_WEB_SEARCH_CONFIG, WebSearchPluginConfig } from './helper'
@@ -22,15 +23,12 @@ export const webSearchPlugin = (config: WebSearchPluginConfig = DEFAULT_WEB_SEAR
 
     transformParams: async (params: any, context: AiRequestContext) => {
       const { providerId } = context
-      // console.log('providerId', providerId)
-      // const modelToProviderId = getModelToProviderId(modelId)
-      // console.log('modelToProviderId', modelToProviderId)
+      console.log('providerId', providerId)
       switch (providerId) {
         case 'openai': {
           if (config.openai) {
             if (!params.tools) params.tools = {}
             params.tools.web_search_preview = openai.tools.webSearchPreview(config.openai)
-            // console.log('params.tools', params.tools)
           }
           break
         }
@@ -45,11 +43,8 @@ export const webSearchPlugin = (config: WebSearchPluginConfig = DEFAULT_WEB_SEAR
 
         case 'google':
         case 'google-vertex': {
-          // @ts-ignore - providerId is a string that can be used to index config
-          if (config[providerId]) {
-            const searchOptions = createGoogleOptions({ useSearchGrounding: true })
-            params.providerOptions = mergeProviderOptions(params.providerOptions, searchOptions)
-          }
+          if (!params.tools) params.tools = {}
+          params.tools.web_search = google.tools.googleSearch(config.google || {})
           break
         }
 
@@ -62,23 +57,14 @@ export const webSearchPlugin = (config: WebSearchPluginConfig = DEFAULT_WEB_SEAR
           }
           break
         }
-        // default: {
-        //   if (!params.providerOptions) params.providerOptions = {}
-        //   params.providerOptions['aihubmix'] = {
-        //     web_search: anthropic.tools.webSearch_20250305()
-        //   }
-        //   console.log('params.providerOptions', params.providerOptions)
-        //   break
-        // }
       }
-      // console.log('params', params)
 
       return params
     }
   })
 
 // 导出类型定义供开发者使用
-export type { AnthropicSearchInput, AnthropicSearchOutput, WebSearchPluginConfig } from './helper'
+export type { WebSearchPluginConfig } from './helper'
 
 // 默认导出
 export default webSearchPlugin
