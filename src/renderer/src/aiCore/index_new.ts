@@ -25,7 +25,7 @@ import type { GenerateImageParams, Model, Provider } from '@renderer/types'
 import { formatApiHost } from '@renderer/utils/api'
 import { cloneDeep } from 'lodash'
 
-import AiSdkToChunkAdapter from './AiSdkToChunkAdapter'
+import AiSdkToChunkAdapter from './chunk/AiSdkToChunkAdapter'
 import LegacyAiProvider from './index'
 import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/aisdk/AiSdkMiddlewareBuilder'
 import { CompletionsResult } from './middleware/schemas'

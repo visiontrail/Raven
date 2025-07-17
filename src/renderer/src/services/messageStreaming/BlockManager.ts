@@ -76,7 +76,6 @@ export class BlockManager {
     blockType: MessageBlockType,
     isComplete: boolean = false
   ) {
-    console.log('smartBlockUpdate', blockId, changes, blockType, isComplete)
     const isBlockTypeChanged = this._lastBlockType !== null && this._lastBlockType !== blockType
     if (isBlockTypeChanged || isComplete) {
       // 如果块类型改变，则取消上一个块的节流更新

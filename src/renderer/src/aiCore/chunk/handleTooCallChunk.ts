@@ -40,6 +40,69 @@ export class ToolCallChunkHandler {
   //     this.onChunk = callback
   //   }
 
+  handleToolCallCreated(chunk: { type: 'tool-input-start' | 'tool-input-delta' | 'tool-input-end' }): void {
+    switch (chunk.type) {
+      case 'tool-input-start': {
+        this.activeToolCalls.set(chunk.id, {
+          toolCallId: chunk.id,
+          toolName: chunk.toolName,
+          args: '',
+          mcpTool: {
+            id: chunk.id,
+            name: chunk.toolName,
+            description: chunk.toolName,
+            type: chunk.toolName.startsWith('builtin_') ? 'builtin' : 'provider'
+          }
+        })
+        break
+      }
+      case 'tool-input-delta': {
+        const toolCall = this.activeToolCalls.get(chunk.id)
+        if (!toolCall) {
+          Logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
+          return
+        }
+        toolCall.args += chunk.delta
+        break
+      }
+      case 'tool-input-end': {
+        const toolCall = this.activeToolCalls.get(chunk.id)
+        this.activeToolCalls.delete(chunk.id)
+        if (!toolCall) {
+          Logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
+          return
+        }
+        const toolResponse: MCPToolResponse = {
+          id: toolCall.toolCallId,
+          tool: toolCall.mcpTool,
+          arguments: toolCall.args,
+          status: 'pending',
+          toolCallId: toolCall.toolCallId
+        }
+
+        this.onChunk({
+          type: ChunkType.MCP_TOOL_PENDING,
+          responses: [toolResponse]
+        })
+        break
+      }
+    }
+    // if (!toolCall) {
+    //   Logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
+    //   return
+    // }
+    // this.onChunk({
+    //   type: ChunkType.MCP_TOOL_CREATED,
+    //   tool_calls: [
+    //     {
+    //       id: chunk.id,
+    //       name: chunk.toolName,
+    //       status: 'pending'
+    //     }
+    //   ]
+    // })
+  }
+
   /**
    * 处理工具调用事件
    */
