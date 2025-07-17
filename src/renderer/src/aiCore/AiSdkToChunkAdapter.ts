@@ -85,17 +85,16 @@ export class AiSdkToChunkAdapter {
     console.log('AI SDK chunk type:', chunk.type, chunk)
     switch (chunk.type) {
       // === 文本相关事件 ===
-      // case 'text-start':
-      //   this.onChunk({
-      //     type: ChunkType.blo,
-      //     text: chunk.text || ''
-      //   })
-      //   break
+      case 'text-start':
+        this.onChunk({
+          type: ChunkType.TEXT_START
+        })
+        break
       case 'text':
         final.text += chunk.text || ''
         this.onChunk({
           type: ChunkType.TEXT_DELTA,
-          text: chunk.text || ''
+          text: final.text || ''
         })
         break
       case 'text-end':
@@ -105,12 +104,18 @@ export class AiSdkToChunkAdapter {
         })
         final.text = ''
         break
+      case 'reasoning-start':
+        this.onChunk({
+          type: ChunkType.THINKING_START
+        })
+        break
       case 'reasoning':
         this.onChunk({
           type: ChunkType.THINKING_DELTA,
-          text: chunk.text || '',
+          text: final.reasoningContent || '',
           thinking_millsec: (chunk.providerMetadata?.metadata?.thinking_millsec as number) || 0
         })
+        final.reasoningContent += chunk.text || ''
         break
       case 'reasoning-end':
         this.onChunk({
@@ -118,6 +123,7 @@ export class AiSdkToChunkAdapter {
           text: (chunk.providerMetadata?.metadata?.thinking_content as string) || '',
           thinking_millsec: (chunk.providerMetadata?.metadata?.thinking_millsec as number) || 0
         })
+        final.reasoningContent = ''
         break
 
       // === 工具调用相关事件（原始 AI SDK 事件，如果没有被中间件处理） ===
