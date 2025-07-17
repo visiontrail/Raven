@@ -12,10 +12,10 @@ const Packager: React.FC = () => {
   const { t } = useTranslation()
 
   const menuItems = [
-    { key: 'lingxi-10', label: '灵犀 10' },
-    { key: 'lingxi-07a', label: '灵犀 07A' },
-    { key: 'config', label: '配置文件包' },
-    { key: 'qiming', label: '启明' }
+    { key: 'lingxi-10', label: t('packager.types.lingxi-10') },
+    { key: 'lingxi-07a', label: t('packager.types.lingxi-07a') },
+    { key: 'config', label: t('packager.types.config') },
+    { key: 'qiming', label: t('packager.types.qiming') }
   ]
 
   const isRoute = (path: string): string => (pathname.includes(path) ? 'active' : '')
@@ -23,7 +23,7 @@ const Packager: React.FC = () => {
   return (
     <Container>
       <Navbar>
-        <NavbarCenter style={{ borderRight: 'none' }}>打包工具</NavbarCenter>
+        <NavbarCenter style={{ borderRight: 'none' }}>{t('packager.title')}</NavbarCenter>
       </Navbar>
       <ContentContainer>
         <SettingMenus>
@@ -65,8 +65,10 @@ const SettingMenus = styled.ul`
   flex-direction: column;
   min-width: var(--settings-width);
   border-right: 0.5px solid var(--color-border);
+  border-left: 0.5px solid var(--color-border);
   padding: 10px;
   user-select: none;
+  background: #fff;
 `
 
 const MenuItemLink = styled(Link)`

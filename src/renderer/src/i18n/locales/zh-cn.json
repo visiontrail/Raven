@@ -883,6 +883,73 @@
       "keep_alive_time.title": "保持活跃时间",
       "title": "Ollama"
     },
+    "packager": {
+      "title": "打包工具",
+      "controlPanel": "控制面板",
+      "packageVersion": "整包版本号",
+      "versionPlaceholder": "例如: 1.0.0.7",
+      "componentSelection": "组件选择",
+      "selectFile": "选择文件",
+      "versionInputPlaceholder": "自动识别或手动输入",
+      "isPatch": "是否为PATCH包",
+      "startPackaging": "开始打包",
+      "clearSelections": "清空选择",
+      "infoPreview": "信息预览",
+      "operationLog": "操作日志",
+      "siIniPreview": "si.ini 预览",
+      "configDescription": "配置文件包仅适用于灵犀07A和灵犀10AB卫星，不适用灵犀06一标段和三标段",
+      "types": {
+        "lingxi-10": "灵犀 10",
+        "lingxi-07a": "灵犀 07A",
+        "config": "配置文件包",
+        "qiming": "启明"
+      },
+      "components": {
+        "lingxi-07a": {
+          "oam": "OAM软件",
+          "sct_fpga": "主控板FPGA",
+          "bposc_fpga": "基带板FPGA",
+          "bpoqv_fpga": "QV基带FPGA",
+          "cucp": "协议栈CUCP",
+          "cuup": "协议栈CUUP",
+          "du": "协议栈DU"
+        },
+        "lingxi-10": {
+          "oam": "OAM软件",
+          "sct_fpga": "主控板FPGA",
+          "bposc_fpga": "基带板FPGA",
+          "bpodvb_fpga": "DVB基带FPGA",
+          "cucp": "协议栈CUCP",
+          "cuup": "协议栈CUUP",
+          "du": "协议栈DU",
+          "galaxy_core_network": "银河自研核心网",
+          "satellite_app_server": "星载应用服务器"
+        },
+        "config": {
+          "cwmp_data": "CWMP数据文件",
+          "cucp_gnb": "CUCP GNB配置",
+          "cucp_stack": "CUCP Stack配置",
+          "cuup_gnb": "CUUP GNB配置",
+          "cuup_stack": "CUUP Stack配置",
+          "du_gnb": "DU GNB配置",
+          "du_stack": "DU Stack配置"
+        }
+      },
+      "error": {
+        "autoVersion": "自动识别版本号失败",
+        "selectFile": "选择文件失败",
+        "noPackageType": "包类型未定义，无法打包。",
+        "noPackageVersion": "请输入整包版本号。",
+        "noComponents": "请至少选择一个组件进行打包。"
+      },
+      "log": {
+        "start": "开始打包...",
+        "success": "打包成功！输出路径:",
+        "failure": "打包失败",
+        "errorUnknown": "打包过程中发生未知错误",
+        "cleared": "已清空所有选择"
+      }
+    },
     "paintings": {
       "aspect_ratio": "画幅比例",
       "aspect_ratios": {

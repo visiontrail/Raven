@@ -18,49 +18,49 @@ const COMPONENT_CONFIGS = {
         file_name: 'gnb-oam-lx07a',
         file_attr: '301',
         file_types: ['gnb-oam-lx07a'],
-        description: 'OAM软件',
+        description: 'packager.components.lingxi-07a.oam',
         direct_include: false
       },
       sct_fpga: {
         file_name: 'sct.bin',
         file_attr: '303',
         file_types: ['.bin'],
-        description: '主控板FPGA',
+        description: 'packager.components.lingxi-07a.sct_fpga',
         direct_include: false
       },
       bposc_fpga: {
         file_name: 'bposc.bin',
         file_attr: '310',
         file_types: ['.bin'],
-        description: '基带板FPGA',
+        description: 'packager.components.lingxi-07a.bposc_fpga',
         direct_include: false
       },
       bpoqv_fpga: {
         file_name: 'bpoqv.bin',
         file_attr: '315',
         file_types: ['.bin'],
-        description: 'QV基带FPGA',
+        description: 'packager.components.lingxi-07a.bpoqv_fpga',
         direct_include: false
       },
       cucp: {
         file_name: 'cucp.deb',
         file_attr: '302',
         file_types: ['.deb'],
-        description: '协议栈CUCP',
+        description: 'packager.components.lingxi-07a.cucp',
         direct_include: false
       },
       cuup: {
         file_name: 'cuup.deb',
         file_attr: '307',
         file_types: ['.deb'],
-        description: '协议栈CUUP',
+        description: 'packager.components.lingxi-07a.cuup',
         direct_include: false
       },
       du: {
         file_name: 'du.deb',
         file_attr: '308',
         file_types: ['.deb'],
-        description: '协议栈DU',
+        description: 'packager.components.lingxi-07a.du',
         direct_include: false
       }
     }
@@ -75,63 +75,63 @@ const COMPONENT_CONFIGS = {
         file_name: 'gnb-oam-lx10',
         file_attr: '301',
         file_types: ['gnb-oam-lx10'],
-        description: 'OAM软件',
+        description: 'packager.components.lingxi-10.oam',
         direct_include: false
       },
       sct_fpga: {
         file_name: 'sct.bin',
         file_attr: '303',
         file_types: ['.bin'],
-        description: '主控板FPGA',
+        description: 'packager.components.lingxi-10.sct_fpga',
         direct_include: false
       },
       bposc_fpga: {
         file_name: 'bposc.bin',
         file_attr: '310',
         file_types: ['.bin'],
-        description: '基带板FPGA',
+        description: 'packager.components.lingxi-10.bposc_fpga',
         direct_include: false
       },
       bpodvb_fpga: {
         file_name: 'bpodvb.bin',
         file_attr: '315',
         file_types: ['.bin'],
-        description: 'DVB基带FPGA',
+        description: 'packager.components.lingxi-10.bpodvb_fpga',
         direct_include: false
       },
       cucp: {
         file_name: 'cucp.deb',
         file_attr: '302',
         file_types: ['.deb'],
-        description: '协议栈CUCP',
+        description: 'packager.components.lingxi-10.cucp',
         direct_include: false
       },
       cuup: {
         file_name: 'cuup.deb',
         file_attr: '307',
         file_types: ['.deb'],
-        description: '协议栈CUUP',
+        description: 'packager.components.lingxi-10.cuup',
         direct_include: false
       },
       du: {
         file_name: 'du.deb',
         file_attr: '308',
         file_types: ['.deb'],
-        description: '协议栈DU',
+        description: 'packager.components.lingxi-10.du',
         direct_include: false
       },
       galaxy_core_network: {
         file_name: 'galaxy_core_network.tgz',
         file_attr: '401',
         file_types: ['.tgz', '.tar.gz'],
-        description: '银河自研核心网',
+        description: 'packager.components.lingxi-10.galaxy_core_network',
         direct_include: true
       },
       satellite_app_server: {
         file_name: 'satellite_app_server.tgz',
         file_attr: '403',
         file_types: ['.tgz', '.tar.gz'],
-        description: '星载应用服务器',
+        description: 'packager.components.lingxi-10.satellite_app_server',
         direct_include: true
       }
     }
@@ -146,49 +146,49 @@ const COMPONENT_CONFIGS = {
         file_name: 'cwmp_data.xml',
         file_attr: '316',
         file_types: ['.xml'],
-        description: 'CWMP数据文件',
+        description: 'packager.components.config.cwmp_data',
         direct_include: false
       },
       cucp_gnb: {
         file_name: 'conf.gnb_cucp.gnb.json',
         file_attr: '317',
         file_types: ['.json'],
-        description: 'CUCP GNB配置',
+        description: 'packager.components.config.cucp_gnb',
         direct_include: false
       },
       cucp_stack: {
         file_name: 'conf.gnb_cucp.stack.json',
         file_attr: '318',
         file_types: ['.json'],
-        description: 'CUCP Stack配置',
+        description: 'packager.components.config.cucp_stack',
         direct_include: false
       },
       cuup_gnb: {
         file_name: 'conf.gnb_cuup.gnb.json',
         file_attr: '319',
         file_types: ['.json'],
-        description: 'CUUP GNB配置',
+        description: 'packager.components.config.cuup_gnb',
         direct_include: false
       },
       cuup_stack: {
         file_name: 'conf.gnb_cuup.stack.json',
         file_attr: '320',
         file_types: ['.json'],
-        description: 'CUUP Stack配置',
+        description: 'packager.components.config.cuup_stack',
         direct_include: false
       },
       du_gnb: {
         file_name: 'conf.gnb_du.gnb.json',
         file_attr: '321',
         file_types: ['.json'],
-        description: 'DU GNB配置',
+        description: 'packager.components.config.du_gnb',
         direct_include: false
       },
       du_stack: {
         file_name: 'conf.gnb_du.stack.json',
         file_attr: '322',
         file_types: ['.json'],
-        description: 'DU Stack配置',
+        description: 'packager.components.config.du_stack',
         direct_include: false
       }
     }

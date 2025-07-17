@@ -883,6 +883,73 @@
       "keep_alive_time.title": "Keep Alive Time",
       "title": "Ollama"
     },
+    "packager": {
+      "title": "Packager",
+      "controlPanel": "Control Panel",
+      "packageVersion": "Package Version",
+      "versionPlaceholder": "e.g., 1.0.0.7",
+      "componentSelection": "Component Selection",
+      "selectFile": "Select File",
+      "versionInputPlaceholder": "Auto-detect or manual input",
+      "isPatch": "Is it a PATCH package?",
+      "startPackaging": "Start Packaging",
+      "clearSelections": "Clear Selections",
+      "infoPreview": "Info Preview",
+      "operationLog": "Operation Log",
+      "siIniPreview": "si.ini Preview",
+      "configDescription": "The configuration file package is only applicable to Lingxi 07A and Lingxi 10AB satellites, not to Lingxi 06 Phase 1 and Phase 3.",
+      "types": {
+        "lingxi-10": "Lingxi 10",
+        "lingxi-07a": "Lingxi 07A",
+        "config": "Config Package",
+        "qiming": "Qiming"
+      },
+      "components": {
+        "lingxi-07a": {
+          "oam": "OAM Software",
+          "sct_fpga": "SCT FPGA",
+          "bposc_fpga": "BPOSC FPGA",
+          "bpoqv_fpga": "BPOQV FPGA",
+          "cucp": "Protocol Stack CUCP",
+          "cuup": "Protocol Stack CUUP",
+          "du": "Protocol Stack DU"
+        },
+        "lingxi-10": {
+          "oam": "OAM Software",
+          "sct_fpga": "SCT FPGA",
+          "bposc_fpga": "BPOSC FPGA",
+          "bpodvb_fpga": "BPODVB FPGA",
+          "cucp": "Protocol Stack CUCP",
+          "cuup": "Protocol Stack CUUP",
+          "du": "Protocol Stack DU",
+          "galaxy_core_network": "Galaxy Core Network",
+          "satellite_app_server": "Satellite App Server"
+        },
+        "config": {
+          "cwmp_data": "CWMP Data File",
+          "cucp_gnb": "CUCP GNB Config",
+          "cucp_stack": "CUCP Stack Config",
+          "cuup_gnb": "CUUP GNB Config",
+          "cuup_stack": "CUUP Stack Config",
+          "du_gnb": "DU GNB Config",
+          "du_stack": "DU Stack Config"
+        }
+      },
+      "error": {
+        "autoVersion": "Failed to auto-detect version",
+        "selectFile": "Failed to select file",
+        "noPackageType": "Package type not defined, cannot package.",
+        "noPackageVersion": "Please enter the package version.",
+        "noComponents": "Please select at least one component to package."
+      },
+      "log": {
+        "start": "Starting packaging...",
+        "success": "Packaging successful! Output path:",
+        "failure": "Packaging failed",
+        "errorUnknown": "An unknown error occurred during packaging",
+        "cleared": "All selections have been cleared"
+      }
+    },
     "paintings": {
       "aspect_ratio": "Aspect Ratio",
       "aspect_ratios": {

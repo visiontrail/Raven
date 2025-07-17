@@ -882,6 +882,73 @@
       "keep_alive_time.title": "Время жизни модели",
       "title": "Ollama"
     },
+    "packager": {
+      "title": "Инструмент упаковки",
+      "controlPanel": "Панель управления",
+      "packageVersion": "Версия пакета",
+      "versionPlaceholder": "Например: 1.0.0.7",
+      "componentSelection": "Выбор компонентов",
+      "selectFile": "Выбрать файл",
+      "versionInputPlaceholder": "Автоматическое распознавание или ручной ввод",
+      "isPatch": "Является ли PATCH пакетом",
+      "startPackaging": "Начать упаковку",
+      "clearSelections": "Очистить выбор",
+      "infoPreview": "Предварительный просмотр информации",
+      "operationLog": "Журнал операций",
+      "siIniPreview": "Предварительный просмотр si.ini",
+      "configDescription": "Пакет конфигурации применим только к спутникам Lingxi 07A и Lingxi 10AB, не применим к Lingxi 06 первой и третьей секции",
+      "types": {
+        "lingxi-10": "Lingxi 10",
+        "lingxi-07a": "Lingxi 07A",
+        "config": "Пакет конфигурации",
+        "qiming": "Qiming"
+      },
+      "components": {
+        "lingxi-07a": {
+          "oam": "OAM программное обеспечение",
+          "sct_fpga": "FPGA основной платы",
+          "bposc_fpga": "FPGA базовой платы",
+          "bpoqv_fpga": "QV FPGA базовой платы",
+          "cucp": "Стек протоколов CUCP",
+          "cuup": "Стек протоколов CUUP",
+          "du": "Стек протоколов DU"
+        },
+        "lingxi-10": {
+          "oam": "OAM программное обеспечение",
+          "sct_fpga": "FPGA основной платы",
+          "bposc_fpga": "FPGA базовой платы",
+          "bpodvb_fpga": "DVB FPGA базовой платы",
+          "cucp": "Стек протоколов CUCP",
+          "cuup": "Стек протоколов CUUP",
+          "du": "Стек протоколов DU",
+          "galaxy_core_network": "Самодельная ядерная сеть Galaxy",
+          "satellite_app_server": "Сервер приложений на спутнике"
+        },
+        "config": {
+          "cwmp_data": "Файл данных CWMP",
+          "cucp_gnb": "Конфигурация CUCP GNB",
+          "cucp_stack": "Конфигурация CUCP Stack",
+          "cuup_gnb": "Конфигурация CUUP GNB",
+          "cuup_stack": "Конфигурация CUUP Stack",
+          "du_gnb": "Конфигурация DU GNB",
+          "du_stack": "Конфигурация DU Stack"
+        }
+      },
+      "error": {
+        "autoVersion": "Автоматическое распознавание версии не удалось",
+        "selectFile": "Не удалось выбрать файл",
+        "noPackageType": "Тип пакета не определен, упаковка невозможна.",
+        "noPackageVersion": "Пожалуйста, введите версию пакета.",
+        "noComponents": "Пожалуйста, выберите хотя бы один компонент для упаковки."
+      },
+      "log": {
+        "start": "Начинаем упаковку...",
+        "success": "Упаковка успешна! Путь вывода:",
+        "failure": "Упаковка не удалась",
+        "errorUnknown": "Произошла неизвестная ошибка во время упаковки",
+        "cleared": "Весь выбор очищен"
+      }
+    },
     "paintings": {
       "aspect_ratio": "Пропорции изображения",
       "aspect_ratios": {

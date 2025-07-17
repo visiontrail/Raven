@@ -13,6 +13,7 @@ import {
   Typography
 } from 'antd'
 import React, { useEffect, useReducer, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 
 const { TextArea } = Input
@@ -108,6 +109,7 @@ function packagerReducer(state: PackagerState, action: PackagerAction): Packager
 
 const PackageTab: React.FC = () => {
   const { packageType } = useParams<{ packageType: string }>()
+  const { t } = useTranslation()
   const [state, dispatch] = useReducer(packagerReducer, initialState)
   const { packageVersion, isPatch, components } = state
 
@@ -115,7 +117,7 @@ const PackageTab: React.FC = () => {
   const [log, setLog] = useState('')
   const [packaging, setPackaging] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [packageVersionError, setPackageVersionError] = useState(false);
+  const [packageVersionError, setPackageVersionError] = useState(false)
 
   // Effect to fetch component definitions when packageType changes
   useEffect(() => {
@@ -161,7 +163,8 @@ const PackageTab: React.FC = () => {
   }, [packageVersion, isPatch, components, packageType])
 
   const handleLog = (msg: string) => {
-    setLog((prev) => `${prev}[${new Date().toLocaleTimeString()}] ${msg}\n`)
+    setLog((prev) => `${prev}[${new Date().toLocaleTimeString()}] ${msg}
+`)
   }
 
   const handleSelectFile = async (componentName: string) => {
@@ -182,7 +185,7 @@ const PackageTab: React.FC = () => {
         console.log(`[Renderer] Detected version for ${componentName}: ${detectedVersion}`)
       } catch (error) {
         console.error('[Renderer] Failed to get auto version', error)
-        message.error('自动识别版本号失败')
+        message.error(t('packager.error.autoVersion'))
       }
 
       dispatch({
@@ -190,7 +193,7 @@ const PackageTab: React.FC = () => {
         payload: { componentName, filePath, fileName, version: detectedVersion }
       })
     } catch (error) {
-      message.error(`选择文件失败: ${error.message}`)
+      message.error(`${t('packager.error.selectFile')}: ${error.message}`)
       console.error('[Renderer] Error selecting file:', error)
     }
   }
@@ -209,98 +212,101 @@ const PackageTab: React.FC = () => {
 
   const handleStartPackaging = async () => {
     if (!packageType) {
-      message.error('包类型未定义，无法打包。');
-      return;
+      message.error(t('packager.error.noPackageType'))
+      return
     }
     if (!packageVersion) {
-      message.error('请输入整包版本号。');
-      setPackageVersionError(true);
-      return;
+      message.error(t('packager.error.noPackageVersion'))
+      setPackageVersionError(true)
+      return
     }
-    const selectedComponents = components.filter(c => c.selectedFilePath);
+    const selectedComponents = components.filter((c) => c.selectedFilePath)
     if (selectedComponents.length === 0) {
-      message.error('请至少选择一个组件进行打包。');
-      return;
+      message.error(t('packager.error.noComponents'))
+      return
     }
 
-    setPackaging(true);
-    setProgress(0);
-    handleLog('开始打包...');
+    setPackaging(true)
+    setProgress(0)
+    handleLog(t('packager.log.start'))
 
     const config = {
       package_type: packageType,
       package_version: packageVersion,
       is_patch: isPatch,
-      selected_components: selectedComponents.map(c => ({
+      selected_components: selectedComponents.map((c) => ({
         name: c.component.name,
-        description: c.component.description,
+        description: t(c.component.description),
         selected_file: c.selectedFilePath,
-        version: c.version,
-      })),
-    };
+        version: c.version
+      }))
+    }
 
     try {
       // This is a simplified progress simulation.
       // A real implementation would require more complex IPC communication for progress updates.
-      setProgress(30);
-      const result = await window.api.packager.createPackage(config);
-      setProgress(100);
+      setProgress(30)
+      const result = await window.api.packager.createPackage(config)
+      setProgress(100)
 
       if (result.success) {
-        message.success(result.message);
-        handleLog(`打包成功！输出路径: ${result.outputPath}`);
+        message.success(result.message)
+        handleLog(`${t('packager.log.success')} ${result.outputPath}`)
         if (result.outputPath) {
-          window.api.openPath(result.outputPath);
+          window.api.openPath(result.outputPath)
         }
       } else {
-        message.error(result.message);
-        handleLog(`打包失败: ${result.message}`);
+        message.error(result.message)
+        handleLog(`${t('packager.log.failure')}: ${result.message}`)
       }
     } catch (error) {
-      const errorMessage = `打包过程中发生未知错误: ${error.message}`;
-      message.error(errorMessage);
-      handleLog(errorMessage);
-      console.error('[Renderer] Packaging error:', error);
+      const errorMessage = `${t('packager.log.errorUnknown')}: ${error.message}`
+      message.error(errorMessage)
+      handleLog(errorMessage)
+      console.error('[Renderer] Packaging error:', error)
     } finally {
-      setPackaging(false);
+      setPackaging(false)
     }
-  };
+  }
 
   const handleClear = () => {
     dispatch({ type: 'RESET_FIELDS' })
     setLog('')
-    handleLog('已清空所有选择')
+    handleLog(t('packager.log.cleared'))
   }
 
   return (
     <Row gutter={16} style={{ width: '100%' }}>
       <Col span={14}>
-        <Card title="控制面板">
+        <Card title={t('packager.controlPanel')}>
           {packageType === 'config' && (
             <Typography.Paragraph type="secondary" style={{ marginTop: '-10px', marginBottom: '20px' }}>
-              配置文件包仅适用于灵犀07A和灵犀10AB卫星，不适用灵犀06一标段和三标段
+              {t('packager.configDescription')}
             </Typography.Paragraph>
           )}
           <Form layout="vertical">
-            <Form.Item label="整包版本号" required>
+            <Form.Item label={t('packager.packageVersion')} required>
               <Input
-                placeholder="例如: 1.0.0.7"
+                placeholder={t('packager.versionPlaceholder')}
                 value={packageVersion}
                 status={packageVersionError ? 'error' : ''}
                 onChange={(e) => {
-                  if (packageVersionError) setPackageVersionError(false);
-                  dispatch({ type: 'SET_PACKAGE_VERSION', payload: e.target.value });
+                  if (packageVersionError) setPackageVersionError(false)
+                  dispatch({ type: 'SET_PACKAGE_VERSION', payload: e.target.value })
                 }}
               />
             </Form.Item>
-            <Card title="组件选择" type="inner">
+            <Card title={t('packager.componentSelection')} type="inner">
               {components.map((compState) => (
-                <Form.Item key={compState.component.name} label={compState.component.description}>
+                <Form.Item key={compState.component.name} label={t(compState.component.description)}>
                   <Row gutter={8} align="middle">
                     <Col span={19}>
                       <Space>
-                        <Button icon={<UploadOutlined />} onClick={() => handleSelectFile(compState.component.name)}>
-                          选择文件
+                        <Button
+                          icon={<UploadOutlined />}
+                          onClick={() => handleSelectFile(compState.component.name)}
+                        >
+                          {t('packager.selectFile')}
                         </Button>
                         {compState.fileName && (
                           <>
@@ -311,19 +317,24 @@ const PackageTab: React.FC = () => {
                               type="text"
                               danger
                             />
-                            <Text ellipsis={{ tooltip: compState.selectedFilePath }}>{compState.fileName}</Text>
+                            <Text ellipsis={{ tooltip: compState.selectedFilePath }}>
+                              {compState.fileName}
+                            </Text>
                           </>
                         )}
                       </Space>
                     </Col>
                     <Col span={5}>
                       <Input
-                        placeholder="自动识别或手动输入"
+                        placeholder={t('packager.versionInputPlaceholder')}
                         value={compState.version ?? ''}
                         onChange={(e) =>
                           dispatch({
                             type: 'SET_VERSION',
-                            payload: { componentName: compState.component.name, version: e.target.value }
+                            payload: {
+                              componentName: compState.component.name,
+                              version: e.target.value
+                            }
                           })
                         }
                       />
@@ -333,17 +344,20 @@ const PackageTab: React.FC = () => {
               ))}
             </Card>
             <Form.Item style={{ marginTop: 16 }}>
-              <Checkbox checked={isPatch} onChange={(e) => dispatch({ type: 'SET_IS_PATCH', payload: e.target.checked })}>
-                是否为PATCH包
+              <Checkbox
+                checked={isPatch}
+                onChange={(e) => dispatch({ type: 'SET_IS_PATCH', payload: e.target.checked })}
+              >
+                {t('packager.isPatch')}
               </Checkbox>
             </Form.Item>
             <Form.Item>
               <Space>
                 <Button type="primary" onClick={handleStartPackaging} loading={packaging}>
-                  开始打包
+                  {t('packager.startPackaging')}
                 </Button>
                 <Button onClick={handleClear}>
-                  清空选择
+                  {t('packager.clearSelections')}
                 </Button>
               </Space>
             </Form.Item>
@@ -356,10 +370,15 @@ const PackageTab: React.FC = () => {
         </Card>
       </Col>
       <Col span={10}>
-        <Card title="信息预览">
-          <Title level={5}>操作日志</Title>
-          <TextArea rows={8} value={log} readOnly style={{ marginBottom: 16, backgroundColor: '#f0f2f5' }} />
-          <Title level={5}>si.ini 预览</Title>
+        <Card title={t('packager.infoPreview')}>
+          <Title level={5}>{t('packager.operationLog')}</Title>
+          <TextArea
+            rows={8}
+            value={log}
+            readOnly
+            style={{ marginBottom: 16, backgroundColor: '#f0f2f5' }}
+          />
+          <Title level={5}>{t('packager.siIniPreview')}</Title>
           <TextArea
             autoSize={{ minRows: 10 }}
             value={siIniPreview}
@@ -373,3 +392,4 @@ const PackageTab: React.FC = () => {
 }
 
 export default PackageTab
+

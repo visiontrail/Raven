@@ -882,6 +882,73 @@
       "keep_alive_time.title": "保持時間",
       "title": "Ollama"
     },
+    "packager": {
+      "title": "パッケージングツール",
+      "controlPanel": "コントロールパネル",
+      "packageVersion": "パッケージバージョン",
+      "versionPlaceholder": "例: 1.0.0.7",
+      "componentSelection": "コンポーネント選択",
+      "selectFile": "ファイル選択",
+      "versionInputPlaceholder": "自動認識または手動入力",
+      "isPatch": "PATCHパッケージかどうか",
+      "startPackaging": "パッケージング開始",
+      "clearSelections": "選択をクリア",
+      "infoPreview": "情報プレビュー",
+      "operationLog": "操作ログ",
+      "siIniPreview": "si.ini プレビュー",
+      "configDescription": "設定ファイルパッケージはLingxi 07AとLingxi 10AB衛星にのみ適用され、Lingxi 06の第1段階と第3段階には適用されません",
+      "types": {
+        "lingxi-10": "Lingxi 10",
+        "lingxi-07a": "Lingxi 07A",
+        "config": "設定ファイルパッケージ",
+        "qiming": "Qiming"
+      },
+      "components": {
+        "lingxi-07a": {
+          "oam": "OAMソフトウェア",
+          "sct_fpga": "メインコントロールボードFPGA",
+          "bposc_fpga": "ベースボードFPGA",
+          "bpoqv_fpga": "QVベースFPGA",
+          "cucp": "プロトコルスタックCUCP",
+          "cuup": "プロトコルスタックCUUP",
+          "du": "プロトコルスタックDU"
+        },
+        "lingxi-10": {
+          "oam": "OAMソフトウェア",
+          "sct_fpga": "メインコントロールボードFPGA",
+          "bposc_fpga": "ベースボードFPGA",
+          "bpodvb_fpga": "DVBベースFPGA",
+          "cucp": "プロトコルスタックCUCP",
+          "cuup": "プロトコルスタックCUUP",
+          "du": "プロトコルスタックDU",
+          "galaxy_core_network": "Galaxy自社開発コアネットワーク",
+          "satellite_app_server": "衛星搭載アプリケーションサーバー"
+        },
+        "config": {
+          "cwmp_data": "CWMPデータファイル",
+          "cucp_gnb": "CUCP GNB設定",
+          "cucp_stack": "CUCP Stack設定",
+          "cuup_gnb": "CUUP GNB設定",
+          "cuup_stack": "CUUP Stack設定",
+          "du_gnb": "DU GNB設定",
+          "du_stack": "DU Stack設定"
+        }
+      },
+      "error": {
+        "autoVersion": "バージョン自動認識に失敗しました",
+        "selectFile": "ファイル選択に失敗しました",
+        "noPackageType": "パッケージタイプが定義されていません。パッケージングできません。",
+        "noPackageVersion": "パッケージバージョンを入力してください。",
+        "noComponents": "パッケージングするために少なくとも1つのコンポーネントを選択してください。"
+      },
+      "log": {
+        "start": "パッケージングを開始...",
+        "success": "パッケージング成功！出力パス:",
+        "failure": "パッケージングに失敗しました",
+        "errorUnknown": "パッケージング中に不明なエラーが発生しました",
+        "cleared": "すべての選択がクリアされました"
+      }
+    },
     "paintings": {
       "aspect_ratio": "画幅比例",
       "aspect_ratios": {
