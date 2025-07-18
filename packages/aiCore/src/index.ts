@@ -9,14 +9,15 @@ import {
   getSupportedProviders as factoryGetSupportedProviders
 } from './core/models'
 import { aiProviderRegistry, isProviderSupported } from './core/providers/registry'
+import type { ProviderId } from './core/providers/types'
+import type { ProviderSettingsMap } from './core/providers/types'
 import { createExecutor } from './core/runtime'
-import type { ProviderId, ProviderSettingsMap } from './types'
 
 // ==================== 主要用户接口 ====================
 export { createExecutor, createOpenAICompatibleExecutor } from './core/runtime'
 
 // ==================== 高级API ====================
-export { createModel, type ModelConfig } from './core/models'
+export { createModel } from './core/models'
 
 // ==================== 插件系统 ====================
 export type { AiPlugin, AiRequestContext, HookResult, PluginManagerConfig } from './core/plugins'
@@ -30,43 +31,27 @@ export {
   createImageModel,
   getProviderInfo as getClientInfo,
   getSupportedProviders,
-  ProviderCreationError
+  ModelCreationError
 } from './core/models'
 export { aiProviderRegistry } from './core/providers/registry'
 
 // ==================== 类型定义 ====================
-export type { ProviderConfig } from './core/providers/registry'
+export type { ProviderConfig } from './core/providers/types'
 export type { ProviderError } from './core/providers/types'
 export type {
-  AmazonBedrockProviderSettings,
   AnthropicProviderSettings,
-  AnthropicVertexProviderSettings,
   AzureOpenAIProviderSettings,
-  CerebrasProviderSettings,
-  CohereProviderSettings,
-  DeepInfraProviderSettings,
   DeepSeekProviderSettings,
-  FalProviderSettings,
-  FireworksProviderSettings,
   GenerateObjectParams,
   GenerateTextParams,
   GoogleGenerativeAIProviderSettings,
-  GoogleVertexProviderSettings,
-  GroqProviderSettings,
-  MistralProviderSettings,
-  OllamaProviderSettings,
   OpenAICompatibleProviderSettings,
   OpenAIProviderSettings,
-  OpenRouterProviderSettings,
-  PerplexityProviderSettings,
   ProviderId,
   ProviderSettings,
   ProviderSettingsMap,
-  ReplicateProviderSettings,
   StreamObjectParams,
   StreamTextParams,
-  TogetherAIProviderSettings,
-  VercelProviderSettings,
   XaiProviderSettings
 } from './types'
 export * as aiSdk from 'ai'

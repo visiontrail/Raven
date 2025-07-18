@@ -41,8 +41,8 @@ export const webSearchPlugin = (config: WebSearchPluginConfig = DEFAULT_WEB_SEAR
           break
         }
 
-        case 'google':
-        case 'google-vertex': {
+        case 'google': {
+          // case 'google-vertex':
           if (!params.tools) params.tools = {}
           params.tools.web_search = google.tools.googleSearch(config.google || {})
           break

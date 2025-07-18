@@ -1,9 +1,9 @@
 /**
  * Runtime 层类型定义
  */
-import { type ProviderId } from '../../types'
-import { type ModelConfig } from '../models'
+import { type ModelConfig } from '../models/types'
 import { type AiPlugin } from '../plugins'
+import { type ProviderId } from '../providers/types'
 
 /**
  * 运行时执行器配置
@@ -13,14 +13,3 @@ export interface RuntimeConfig<T extends ProviderId = ProviderId> {
   providerSettings: ModelConfig<T>['providerSettings'] & { mode?: 'chat' | 'responses' }
   plugins?: AiPlugin[]
 }
-
-/**
- * 执行选项
- */
-export interface ExecutionOptions {
-  // 未来可以添加执行级别的选项
-  // 比如：超时设置、重试机制等
-}
-
-// 保留旧类型以保持向后兼容
-export interface ExecutorConfig<T extends ProviderId = ProviderId> extends RuntimeConfig<T> {}

@@ -3,7 +3,7 @@
  */
 import { LanguageModelV2Middleware } from '@ai-sdk/provider'
 
-import type { ProviderId, ProviderSettingsMap } from '../../types'
+import type { ProviderId, ProviderSettingsMap } from '../providers/types'
 
 export interface ModelConfig<T extends ProviderId = ProviderId> {
   providerId: T

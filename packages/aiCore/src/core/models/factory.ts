@@ -6,7 +6,7 @@ import { LanguageModelV2 } from '@ai-sdk/provider'
 import { LanguageModel } from 'ai'
 
 import { wrapModelWithMiddlewares } from '../middleware'
-import { createBaseModel } from './ProviderCreator'
+import { createBaseModel } from './ModelCreator'
 import { ModelConfig } from './types'
 
 /**

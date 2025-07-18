@@ -7,19 +7,14 @@
 export { RuntimeExecutor } from './executor'
 
 // 导出类型
-export type {
-  ExecutionOptions,
-  // 向后兼容的类型别名
-  ExecutorConfig,
-  RuntimeConfig
-} from './types'
+export type { RuntimeConfig } from './types'
 
 // === 便捷工厂函数 ===
 
 import { LanguageModelV2Middleware } from '@ai-sdk/provider'
 
-import { type ProviderId, type ProviderSettingsMap } from '../../types'
 import { type AiPlugin } from '../plugins'
+import { type ProviderId, type ProviderSettingsMap } from '../providers/types'
 import { RuntimeExecutor } from './executor'
 
 /**

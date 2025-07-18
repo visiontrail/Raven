@@ -1,6 +1,6 @@
 import type { LanguageModel, TextStreamPart, ToolSet } from 'ai'
 
-import { ProviderId } from '../providers/registry'
+import { type ProviderId } from '../providers/types'
 
 /**
  * 递归调用函数类型

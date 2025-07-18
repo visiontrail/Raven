@@ -17,7 +17,7 @@ import {
   type ProviderSettingsMap,
   StreamTextParams
 } from '@cherrystudio/ai-core'
-import { createPromptToolUsePlugin, webSearchPlugin } from '@cherrystudio/ai-core'
+import { createPromptToolUsePlugin, webSearchPlugin } from '@cherrystudio/ai-core/built-in/plugins'
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
 import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
 import { getProviderByModel } from '@renderer/services/AssistantService'

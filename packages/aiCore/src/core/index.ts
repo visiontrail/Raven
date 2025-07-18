@@ -8,17 +8,17 @@ export type { NamedMiddleware } from './middleware'
 export { createMiddlewares, wrapModelWithMiddlewares } from './middleware'
 
 // 创建管理
-export type { ModelConfig } from './models'
 export {
   createBaseModel,
   createImageModel,
   createModel,
   getProviderInfo,
   getSupportedProviders,
-  ProviderCreationError
+  ModelCreationError
 } from './models'
+export type { ModelConfig } from './models/types'
 
 // 执行管理
 export type { ToolUseRequestContext } from './plugins/built-in/toolUsePlugin/type'
-export type { ExecutionOptions, ExecutorConfig } from './runtime'
 export { createExecutor, createOpenAICompatibleExecutor } from './runtime'
+export type { RuntimeConfig } from './runtime/types'

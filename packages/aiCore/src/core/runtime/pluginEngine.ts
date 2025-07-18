@@ -1,8 +1,8 @@
 import { LanguageModel } from 'ai'
 
-import { type ProviderId, type ProviderSettingsMap } from '../../types'
 import { type AiPlugin, createContext, PluginManager } from '../plugins'
 import { isProviderSupported } from '../providers/registry'
+import { type ProviderId, type ProviderSettingsMap } from '../providers/types'
 
 /**
  * 插件增强的 AI 客户端

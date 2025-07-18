@@ -1,19 +1,18 @@
 /**
- * Models 模块导出
- * 提供统一的模型创建和配置管理能力
+ * Models 模块统一导出
  */
 
-// 主要的模型创建API
-export { createModel, createModels } from './factory'
-
-// 底层Provider创建功能（供高级用户使用）
+// Model 创建相关
 export {
   createBaseModel,
   createImageModel,
   getProviderInfo,
   getSupportedProviders,
-  ProviderCreationError
-} from './ProviderCreator'
+  ModelCreationError
+} from './ModelCreator'
 
-// 保留原有类型
-export type { ModelConfig } from './types'
+// Model 配置和工厂
+export { createModel } from './factory'
+
+// 类型定义
+export type { ModelConfig as ModelConfigType } from './types'
