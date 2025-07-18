@@ -24,12 +24,14 @@ export class ProviderCreationError extends Error {
 export async function createProvider(config: ProviderConfig, options: any): Promise<any> {
   try {
     // 验证配置
-    if (!config.creator && !(config.import && config.creatorFunctionName)) {
+    if (!validateProviderConfig(config)) {
       throw new ProviderCreationError(
         'Invalid provider configuration: must provide either creator function or import configuration',
         config.id
       )
     }
+
+    config.validateOptions?.(options)
 
     // 方式一：直接使用 creator 函数
     if (config.creator) {
