@@ -38,3 +38,6 @@ export type {
   VercelProviderSettings,
   XaiProviderSettings
 } from './core/providers/registry'
+
+// 重新导出插件类型
+export type { AiPlugin, AiRequestContext, HookResult, PluginManagerConfig } from './core/plugins/types'

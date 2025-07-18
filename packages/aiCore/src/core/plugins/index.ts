@@ -1,5 +1,5 @@
 // 核心类型和接口
-export type { AiPlugin, AiRequestContext, HookResult, HookType, PluginManagerConfig } from './types'
+export type { AiPlugin, AiRequestContext, HookResult, PluginManagerConfig } from './types'
 import type { ProviderId } from '../../types'
 import type { AiPlugin, AiRequestContext } from './types'
 
@@ -30,5 +30,3 @@ export function definePlugin<T extends (...args: any[]) => AiPlugin>(pluginFacto
 export function definePlugin(plugin: AiPlugin | ((...args: any[]) => AiPlugin)) {
   return plugin
 }
-
-export { createLoggingPlugin } from './built-in/logging'

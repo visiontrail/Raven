@@ -10,7 +10,7 @@ import {
 } from './core/models'
 import { aiProviderRegistry, isProviderSupported } from './core/providers/registry'
 import { createExecutor } from './core/runtime'
-import { ProviderId, type ProviderSettingsMap } from './types'
+import type { ProviderId, ProviderSettingsMap } from './types'
 
 // ==================== 主要用户接口 ====================
 export { createExecutor, createOpenAICompatibleExecutor } from './core/runtime'
@@ -19,9 +19,9 @@ export { createExecutor, createOpenAICompatibleExecutor } from './core/runtime'
 export { createModel, type ModelConfig } from './core/models'
 
 // ==================== 插件系统 ====================
-export type { AiPlugin, AiRequestContext, HookResult, HookType, PluginManagerConfig } from './core/plugins'
+export type { AiPlugin, AiRequestContext, HookResult, PluginManagerConfig } from './core/plugins'
 export { createContext, definePlugin, PluginManager } from './core/plugins'
-export { createPromptToolUsePlugin, webSearchPlugin } from './core/plugins/built-in'
+// export { createPromptToolUsePlugin, webSearchPlugin } from './core/plugins/built-in'
 export { PluginEngine } from './core/runtime/pluginEngine'
 
 // ==================== 低级 API ====================
@@ -38,11 +38,36 @@ export { aiProviderRegistry } from './core/providers/registry'
 export type { ProviderConfig } from './core/providers/registry'
 export type { ProviderError } from './core/providers/types'
 export type {
+  AmazonBedrockProviderSettings,
+  AnthropicProviderSettings,
+  AnthropicVertexProviderSettings,
+  AzureOpenAIProviderSettings,
+  CerebrasProviderSettings,
+  CohereProviderSettings,
+  DeepInfraProviderSettings,
+  DeepSeekProviderSettings,
+  FalProviderSettings,
+  FireworksProviderSettings,
   GenerateObjectParams,
   GenerateTextParams,
+  GoogleGenerativeAIProviderSettings,
+  GoogleVertexProviderSettings,
+  GroqProviderSettings,
+  MistralProviderSettings,
+  OllamaProviderSettings,
+  OpenAICompatibleProviderSettings,
+  OpenAIProviderSettings,
+  OpenRouterProviderSettings,
+  PerplexityProviderSettings,
+  ProviderId,
   ProviderSettings,
+  ProviderSettingsMap,
+  ReplicateProviderSettings,
   StreamObjectParams,
-  StreamTextParams
+  StreamTextParams,
+  TogetherAIProviderSettings,
+  VercelProviderSettings,
+  XaiProviderSettings
 } from './types'
 export * as aiSdk from 'ai'
 
@@ -90,35 +115,6 @@ export {
 } from 'ai'
 // 重新导出 Agent
 export { Experimental_Agent as Agent } from 'ai'
-
-// 重新导出所有 Provider Settings 类型
-export type {
-  AmazonBedrockProviderSettings,
-  AnthropicProviderSettings,
-  AnthropicVertexProviderSettings,
-  AzureOpenAIProviderSettings,
-  CerebrasProviderSettings,
-  CohereProviderSettings,
-  DeepInfraProviderSettings,
-  DeepSeekProviderSettings,
-  FalProviderSettings,
-  FireworksProviderSettings,
-  GoogleGenerativeAIProviderSettings,
-  GoogleVertexProviderSettings,
-  GroqProviderSettings,
-  MistralProviderSettings,
-  OllamaProviderSettings,
-  OpenAICompatibleProviderSettings,
-  OpenAIProviderSettings,
-  OpenRouterProviderSettings,
-  PerplexityProviderSettings,
-  ProviderId,
-  ProviderSettingsMap,
-  ReplicateProviderSettings,
-  TogetherAIProviderSettings,
-  VercelProviderSettings,
-  XaiProviderSettings
-} from './types'
 
 // ==================== 选项 ====================
 export {

@@ -67,11 +67,6 @@ export interface PluginManagerConfig {
 }
 
 /**
- * 钩子执行器类型
- */
-export type HookType = 'first' | 'sequential' | 'parallel' | 'stream'
-
-/**
  * 钩子执行结果
  */
 export interface HookResult<T = any> {
