@@ -32,21 +32,6 @@ export interface ProviderConfig {
   validateOptions?: (options: any) => boolean
 }
 
-// API 客户端工厂接口
-export interface ApiClientFactory {
-  createAiSdkClient(providerId: string, options?: any): Promise<any>
-  getCachedClient(providerId: string, options?: any): any
-  clearCache(): void
-}
-
-// 客户端配置
-export interface ClientConfig {
-  providerId: string
-  apiKey?: string
-  baseURL?: string
-  [key: string]: any
-}
-
 // 错误类型
 export class ProviderError extends Error {
   constructor(
@@ -58,13 +43,6 @@ export class ProviderError extends Error {
     super(message)
     this.name = 'ProviderError'
   }
-}
-
-// 缓存统计信息
-export interface CacheStats {
-  size: number
-  keys: string[]
-  lastCleanup?: Date
 }
 
 // 类型安全的 Provider Settings 映射

@@ -14,30 +14,21 @@ Cherry Studio AI Core 是一个基于 Vercel AI SDK 的统一 AI Provider 接口
 
 基于 [AI SDK 官方支持的 providers](https://ai-sdk.dev/providers/ai-sdk-providers)：
 
-**核心 Providers:**
+**核心 Providers（内置支持）:**
 
 - OpenAI
 - Anthropic
 - Google Generative AI
-- Google Vertex AI
-- Mistral AI
+- OpenAI-Compatible
 - xAI (Grok)
 - Azure OpenAI
-- Amazon Bedrock
-
-**扩展 Providers:**
-
-- Cohere
-- Groq
-- Together.ai
-- Fireworks
 - DeepSeek
-- Cerebras
-- DeepInfra
-- Replicate
-- Perplexity
-- Fal AI
-- Vercel
+
+**扩展 Providers（通过注册API支持）:**
+
+- Google Vertex AI
+- ...
+- 自定义 Provider
 
 ## 安装
 
@@ -51,15 +42,15 @@ npm install @cherrystudio/ai-core ai
 
 ```javascript
 // metro.config.js
-const { getDefaultConfig } = require('expo/metro-config');
+const { getDefaultConfig } = require('expo/metro-config')
 
-const config = getDefaultConfig(__dirname);
+const config = getDefaultConfig(__dirname)
 
 // 添加对 @cherrystudio/ai-core 的支持
-config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
-config.resolver.platforms = ['ios', 'android', 'native', 'web'];
+config.resolver.resolverMainFields = ['react-native', 'browser', 'main']
+config.resolver.platforms = ['ios', 'android', 'native', 'web']
 
-module.exports = config;
+module.exports = config
 ```
 
 还需要安装你要使用的 AI SDK provider:
@@ -73,22 +64,20 @@ npm install @ai-sdk/openai @ai-sdk/anthropic @ai-sdk/google
 ### 基础用法
 
 ```typescript
-import { createAiSdkClient } from '@cherrystudio/ai-core'
+import { AiCore } from '@cherrystudio/ai-core'
 
-// 创建 OpenAI 客户端
-const client = await createAiSdkClient('openai', {
+// 创建 OpenAI executor
+const executor = AiCore.create('openai', {
   apiKey: 'your-api-key'
 })
 
 // 流式生成
-const result = await client.stream({
-  modelId: 'gpt-4',
+const result = await executor.streamText('gpt-4', {
   messages: [{ role: 'user', content: 'Hello!' }]
 })
 
 // 非流式生成
-const response = await client.generate({
-  modelId: 'gpt-4',
+const response = await executor.generateText('gpt-4', {
   messages: [{ role: 'user', content: 'Hello!' }]
 })
 ```
@@ -96,29 +85,60 @@ const response = await client.generate({
 ### 便捷函数
 
 ```typescript
-import { createOpenAIClient, streamGeneration } from '@cherrystudio/ai-core'
+import { createOpenAIExecutor } from '@cherrystudio/ai-core'
 
-// 快速创建 OpenAI 客户端
-const client = await createOpenAIClient({
+// 快速创建 OpenAI executor
+const executor = createOpenAIExecutor({
   apiKey: 'your-api-key'
 })
 
-// 便捷流式生成
-const result = await streamGeneration('openai', 'gpt-4', [{ role: 'user', content: 'Hello!' }], {
-  apiKey: 'your-api-key'
+// 使用 executor
+const result = await executor.streamText('gpt-4', {
+  messages: [{ role: 'user', content: 'Hello!' }]
 })
 ```
 
 ### 多 Provider 支持
 
 ```typescript
-import { createAiSdkClient } from '@cherrystudio/ai-core'
+import { AiCore } from '@cherrystudio/ai-core'
 
 // 支持多种 AI providers
-const openaiClient = await createAiSdkClient('openai', { apiKey: 'openai-key' })
-const anthropicClient = await createAiSdkClient('anthropic', { apiKey: 'anthropic-key' })
-const googleClient = await createAiSdkClient('google', { apiKey: 'google-key' })
-const xaiClient = await createAiSdkClient('xai', { apiKey: 'xai-key' })
+const openaiExecutor = AiCore.create('openai', { apiKey: 'openai-key' })
+const anthropicExecutor = AiCore.create('anthropic', { apiKey: 'anthropic-key' })
+const googleExecutor = AiCore.create('google', { apiKey: 'google-key' })
+const xaiExecutor = AiCore.create('xai', { apiKey: 'xai-key' })
+```
+
+### 扩展 Provider 注册
+
+对于非内置的 providers，可以通过注册 API 扩展支持：
+
+```typescript
+import { registerProvider, AiCore } from '@cherrystudio/ai-core'
+
+// 方式一：导入并注册第三方 provider
+import { createGroq } from '@ai-sdk/groq'
+
+registerProvider({
+  id: 'groq',
+  name: 'Groq',
+  creator: createGroq,
+  supportsImageGeneration: false
+})
+
+// 现在可以使用 Groq
+const groqExecutor = AiCore.create('groq', { apiKey: 'groq-key' })
+
+// 方式二：动态导入方式注册
+registerProvider({
+  id: 'mistral',
+  name: 'Mistral AI',
+  import: () => import('@ai-sdk/mistral'),
+  creatorFunctionName: 'createMistral'
+})
+
+const mistralExecutor = AiCore.create('mistral', { apiKey: 'mistral-key' })
 ```
 
 ### 使用 AI SDK 原生 Provider 注册表
