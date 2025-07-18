@@ -1,6 +1,35 @@
 # @cherrystudio/ai-core
 
-Cherry Studio AI Core 是一个基于 Vercel AI SDK 的统一 AI Provider 接口包。
+Cherry Studio AI Core 是一个基于 Vercel AI SDK 的统一 AI Provider 接口包，为 AI 应用提供强大的抽象层和插件化架构。
+
+## ✨ 核心亮点
+
+### 🏗️ 优雅的架构设计
+- **简化分层**：`models`（模型层）→ `runtime`（运行时层），清晰的职责分离
+- **函数式优先**：避免过度抽象，提供简洁直观的 API
+- **类型安全**：完整的 TypeScript 支持，直接复用 AI SDK 类型系统
+- **最小包装**：直接使用 AI SDK 的接口，避免重复定义和性能损耗
+
+### 🔌 强大的插件系统
+- **生命周期钩子**：支持请求全生命周期的扩展点
+- **流转换支持**：基于 AI SDK 的 `experimental_transform` 实现流处理
+- **插件分类**：First、Sequential、Parallel 三种钩子类型，满足不同场景
+- **内置插件**：webSearch、logging、toolUse 等开箱即用的功能
+
+### 🌐 统一多 Provider 接口
+- **扩展注册**：支持自定义 Provider 注册，无限扩展能力
+- **配置统一**：统一的配置接口，简化多 Provider 管理
+
+### 🚀 多种使用方式
+- **函数式调用**：适合简单场景的直接函数调用
+- **执行器实例**：适合复杂场景的可复用执行器
+- **静态工厂**：便捷的静态创建方法
+- **原生兼容**：完全兼容 AI SDK 原生 Provider Registry
+
+### 🔮 面向未来
+- **Agent 就绪**：为 OpenAI Agents SDK 集成预留架构空间
+- **模块化设计**：独立包结构，支持跨项目复用
+- **渐进式迁移**：可以逐步从现有 AI SDK 代码迁移
 
 ## 特性
 
@@ -9,6 +38,10 @@ Cherry Studio AI Core 是一个基于 Vercel AI SDK 的统一 AI Provider 接口
 - 🛠️ TypeScript 支持
 - 📦 强大的插件系统
 - 🌍 内置webSearch(Openai,Google,Anthropic,xAI)
+- 🎯 多种使用模式（函数式/实例式/静态工厂）
+- 🔌 可扩展的 Provider 注册系统
+- 🧩 完整的中间件支持
+- 📊 插件统计和调试功能
 
 ## 支持的 Providers
 
@@ -141,6 +174,114 @@ registerProvider({
 const mistralExecutor = AiCore.create('mistral', { apiKey: 'mistral-key' })
 ```
 
+## 🔌 插件系统
+
+AI Core 提供了强大的插件系统，支持请求全生命周期的扩展。
+
+### 内置插件
+
+#### webSearchPlugin - 网络搜索插件
+为不同 AI Provider 提供统一的网络搜索能力：
+
+```typescript
+import { webSearchPlugin } from '@cherrystudio/ai-core/built-in/plugins'
+
+const executor = AiCore.create('openai', { apiKey: 'your-key' }, [
+  webSearchPlugin({
+    openai: { /* OpenAI 搜索配置 */ },
+    anthropic: { maxUses: 5 },
+    google: { /* Google 搜索配置 */ },
+    xai: {
+      mode: 'on',
+      returnCitations: true,
+      maxSearchResults: 5,
+      sources: [{ type: 'web' }, { type: 'x' }, { type: 'news' }]
+    }
+  })
+])
+```
+
+#### loggingPlugin - 日志插件
+提供详细的请求日志记录：
+
+```typescript
+import { createLoggingPlugin } from '@cherrystudio/ai-core/built-in/plugins'
+
+const executor = AiCore.create('openai', { apiKey: 'your-key' }, [
+  createLoggingPlugin({
+    logLevel: 'info',
+    includeParams: true,
+    includeResult: false
+  })
+])
+```
+
+#### promptToolUsePlugin - 提示工具使用插件
+为不支持原生 Function Call 的模型提供 prompt 方式的工具调用：
+
+```typescript
+import { createPromptToolUsePlugin } from '@cherrystudio/ai-core/built-in/plugins'
+
+// 对于不支持 function call 的模型
+const executor = AiCore.create('providerId', {
+  apiKey: 'your-key',
+  baseURL: 'https://your-model-endpoint'
+}, [
+  createPromptToolUsePlugin({
+    enabled: true,
+    // 可选：自定义系统提示符构建
+    buildSystemPrompt: (userPrompt, tools) => {
+      return `${userPrompt}\n\nAvailable tools: ${Object.keys(tools).join(', ')}`
+    }
+  })
+])
+```
+
+### 自定义插件
+
+创建自定义插件非常简单：
+
+```typescript
+import { definePlugin } from '@cherrystudio/ai-core'
+
+const customPlugin = definePlugin({
+  name: 'custom-plugin',
+  enforce: 'pre', // 'pre' | 'post' | undefined
+
+  // 在请求开始时记录日志
+  onRequestStart: async (context) => {
+    console.log(`Starting request for model: ${context.modelId}`)
+  },
+
+  // 转换请求参数
+  transformParams: async (params, context) => {
+    // 添加自定义系统消息
+    if (params.messages) {
+      params.messages.unshift({
+        role: 'system',
+        content: 'You are a helpful assistant.'
+      })
+    }
+    return params
+  },
+
+  // 处理响应结果
+  transformResult: async (result, context) => {
+    // 添加元数据
+    if (result.text) {
+      result.metadata = {
+        processedAt: new Date().toISOString(),
+        modelId: context.modelId
+      }
+    }
+    return result
+  }
+})
+
+// 使用自定义插件
+const executor = AiCore.create('openai', { apiKey: 'your-key' }, [customPlugin])
+```
+
 ### 使用 AI SDK 原生 Provider 注册表
 
 > https://ai-sdk.dev/docs/reference/ai-sdk-core/provider-registry
@@ -251,9 +392,25 @@ await client.streamObject({
 - **灵活性**：可以根据需要选择使用内建逻辑或自定义注册表
 - **兼容性**：完全兼容 AI SDK 的 `createProviderRegistry` API
 - **渐进式**：可以逐步迁移现有代码，无需一次性重构
-- **插件支持**：自定义注册表仍可享受 Cherry Studio 插件系统的部分功能
+- **插件支持**：自定义注册表仍可享受插件系统的部分功能
 - **最佳实践**：结合两种方式的优点，既有动态加载的性能优势，又有统一注册表的便利性
 
-## License
+## 📚 相关资源
 
-MIT
+- [Vercel AI SDK 文档](https://ai-sdk.dev/)
+- [Cherry Studio 项目](https://github.com/CherryHQ/cherry-studio)
+- [AI SDK Providers](https://ai-sdk.dev/providers/ai-sdk-providers)
+
+## 未来版本
+- 🔮 多 Agent 编排
+- 🔮 可视化插件配置
+- 🔮 实时监控和分析
+- 🔮 云端插件同步
+
+## 📄 License
+
+MIT License - 详见 [LICENSE](https://github.com/CherryHQ/cherry-studio/blob/main/LICENSE) 文件
+
+---
+
+**Cherry Studio AI Core** - 让 AI 开发更简单、更强大、更灵活 🚀

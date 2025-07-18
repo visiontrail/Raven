@@ -93,7 +93,7 @@ graph TD
     Factory --> XAI
     Factory --> Others
 
-    PluginEngine --> AICore
+    RuntimeExecutor --> AICore
     AICore --> streamText
     AICore --> generateText
     AICore --> streamObject
@@ -117,31 +117,44 @@ packages/aiCore/
 │   ├── core/                        # 核心层 - 内部实现
 │   │   ├── models/                  # 模型层 - 模型创建和配置
 │   │   │   ├── factory.ts           # 模型工厂函数 ✅
-│   │   │   ├── ProviderCreator.ts   # 提供商创建器 ✅
+│   │   │   ├── ModelCreator.ts      # 模型创建器 ✅
+│   │   │   ├── ConfigManager.ts     # 配置管理器 ✅
 │   │   │   ├── types.ts             # 模型类型定义 ✅
 │   │   │   └── index.ts             # 模型层导出 ✅
 │   │   ├── runtime/                 # 运行时层 - 执行和用户API
 │   │   │   ├── executor.ts          # 运行时执行器 ✅
-│   │   │   ├── plugin-engine.ts     # 插件引擎 ✅
+│   │   │   ├── pluginEngine.ts      # 插件引擎 ✅
 │   │   │   ├── types.ts             # 运行时类型定义 ✅
 │   │   │   └── index.ts             # 运行时导出 ✅
 │   │   ├── middleware/              # 中间件系统
-│   │   │   ├── ModelWrapper.ts      # 模型包装器 ✅
+│   │   │   ├── wrapper.ts           # 模型包装器 ✅
+│   │   │   ├── manager.ts           # 中间件管理器 ✅
+│   │   │   ├── types.ts             # 中间件类型 ✅
 │   │   │   └── index.ts             # 中间件导出 ✅
 │   │   ├── plugins/                 # 插件系统
 │   │   │   ├── types.ts             # 插件类型定义 ✅
 │   │   │   ├── manager.ts           # 插件管理器 ✅
 │   │   │   ├── built-in/            # 内置插件 ✅
 │   │   │   │   ├── logging.ts       # 日志插件 ✅
+│   │   │   │   ├── webSearchPlugin/ # 网络搜索插件 ✅
+│   │   │   │   ├── toolUsePlugin/   # 工具使用插件 ✅
 │   │   │   │   └── index.ts         # 内置插件导出 ✅
-│   │   │   ├── examples/            # 示例插件 ✅
 │   │   │   ├── README.md            # 插件文档 ✅
 │   │   │   └── index.ts             # 插件导出 ✅
 │   │   ├── providers/               # 提供商管理
 │   │   │   ├── registry.ts          # 提供商注册表 ✅
 │   │   │   ├── factory.ts           # 提供商工厂 ✅
+│   │   │   ├── creator.ts           # 提供商创建器 ✅
 │   │   │   ├── types.ts             # 提供商类型 ✅
-│   │   │   └── utils.ts             # 工具函数 ✅
+│   │   │   ├── utils.ts             # 工具函数 ✅
+│   │   │   └── index.ts             # 提供商导出 ✅
+│   │   ├── options/                 # 配置选项
+│   │   │   ├── factory.ts           # 选项工厂 ✅
+│   │   │   ├── types.ts             # 选项类型 ✅
+│   │   │   ├── xai.ts               # xAI 选项 ✅
+│   │   │   ├── openrouter.ts        # OpenRouter 选项 ✅
+│   │   │   ├── examples.ts          # 示例配置 ✅
+│   │   │   └── index.ts             # 选项导出 ✅
 │   │   └── index.ts                 # 核心层导出 ✅
 │   ├── types.ts                     # 全局类型定义 ✅
 │   └── index.ts                     # 包主入口文件 ✅
