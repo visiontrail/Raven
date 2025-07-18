@@ -3,7 +3,9 @@
   "version": "1.0.0-alpha.0",
   "description": "Cherry Studio AI Core - Unified AI Provider Interface Based on Vercel AI SDK",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "react-native": "dist/index.js",
   "scripts": {
     "build": "tsdown",
     "dev": "tsc -w",
@@ -120,19 +122,27 @@
     "tsdown": "^0.12.9",
     "typescript": "^5.0.0"
   },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "files": [
     "dist"
   ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "react-native": "./dist/index.js",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./core/plugins/built-in": {
       "types": "./dist/core/plugins/built-in/index.d.ts",
+      "react-native": "./dist/core/plugins/built-in/index.js",
       "import": "./dist/core/plugins/built-in/index.mjs",
-      "require": "./dist/core/plugins/built-in/index.js"
+      "require": "./dist/core/plugins/built-in/index.js",
+      "default": "./dist/core/plugins/built-in/index.js"
     }
   }
 }

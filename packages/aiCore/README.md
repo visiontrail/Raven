@@ -45,6 +45,23 @@ Cherry Studio AI Core 是一个基于 Vercel AI SDK 的统一 AI Provider 接口
 npm install @cherrystudio/ai-core ai
 ```
 
+### React Native
+
+如果你在 React Native 项目中使用此包，需要在 `metro.config.js` 中添加以下配置：
+
+```javascript
+// metro.config.js
+const { getDefaultConfig } = require('expo/metro-config');
+
+const config = getDefaultConfig(__dirname);
+
+// 添加对 @cherrystudio/ai-core 的支持
+config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
+config.resolver.platforms = ['ios', 'android', 'native', 'web'];
+
+module.exports = config;
+```
+
 还需要安装你要使用的 AI SDK provider:
 
 ```bash
