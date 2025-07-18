@@ -3,6 +3,14 @@
  * 静态类型 + 动态导入模式：所有类型静态导入，所有实现动态导入
  */
 
+import { createAnthropic } from '@ai-sdk/anthropic'
+import { createAzure } from '@ai-sdk/azure'
+import { createDeepSeek } from '@ai-sdk/deepseek'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { createOpenAI } from '@ai-sdk/openai'
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
+import { createXai } from '@ai-sdk/xai'
+
 import { type ProviderConfig } from './types'
 
 export class AiProviderRegistry {
@@ -30,29 +38,25 @@ export class AiProviderRegistry {
       {
         id: 'openai',
         name: 'OpenAI',
-        import: () => import('@ai-sdk/openai'),
-        creatorFunctionName: 'createOpenAI',
+        creator: createOpenAI,
         supportsImageGeneration: true
       },
       {
         id: 'openai-compatible',
         name: 'OpenAI Compatible',
-        import: () => import('@ai-sdk/openai-compatible'),
-        creatorFunctionName: 'createOpenAICompatible',
+        creator: createOpenAICompatible,
         supportsImageGeneration: true
       },
       {
         id: 'anthropic',
         name: 'Anthropic',
-        import: () => import('@ai-sdk/anthropic'),
-        creatorFunctionName: 'createAnthropic',
+        creator: createAnthropic,
         supportsImageGeneration: false
       },
       {
         id: 'google',
         name: 'Google Generative AI',
-        import: () => import('@ai-sdk/google'),
-        creatorFunctionName: 'createGoogleGenerativeAI',
+        creator: createGoogleGenerativeAI,
         supportsImageGeneration: true
       },
       // {
@@ -72,15 +76,13 @@ export class AiProviderRegistry {
       {
         id: 'xai',
         name: 'xAI (Grok)',
-        import: () => import('@ai-sdk/xai'),
-        creatorFunctionName: 'createXai',
+        creator: createXai,
         supportsImageGeneration: true
       },
       {
         id: 'azure',
         name: 'Azure OpenAI',
-        import: () => import('@ai-sdk/azure'),
-        creatorFunctionName: 'createAzure',
+        creator: createAzure,
         supportsImageGeneration: true
       },
       // {
@@ -121,8 +123,7 @@ export class AiProviderRegistry {
       {
         id: 'deepseek',
         name: 'DeepSeek',
-        import: () => import('@ai-sdk/deepseek'),
-        creatorFunctionName: 'createDeepSeek',
+        creator: createDeepSeek,
         supportsImageGeneration: false
       }
       // {
@@ -266,6 +267,5 @@ export const getProvider = (id: string) => aiProviderRegistry.getProvider(id)
 export const getAllProviders = () => aiProviderRegistry.getAllProviders()
 export const isProviderSupported = (id: string) => aiProviderRegistry.isSupported(id)
 export const registerProvider = (config: ProviderConfig) => aiProviderRegistry.registerProvider(config)
-
 // 兼容现有实现的导出
 // export const PROVIDER_REGISTRY = aiProviderRegistry.getCompatibleRegistry()
