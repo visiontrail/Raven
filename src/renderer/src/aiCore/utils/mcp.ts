@@ -1,19 +1,20 @@
 import { aiSdk, Tool } from '@cherrystudio/ai-core'
-import { AiSdkTool, ToolCallResult } from '@renderer/aiCore/tools/types'
+// import { AiSdkTool, ToolCallResult } from '@renderer/aiCore/tools/types'
 import { SYSTEM_PROMPT_THRESHOLD } from '@renderer/config/constant'
 import { isFunctionCallingModel } from '@renderer/config/models'
 import { MCPTool, MCPToolResponse, Model } from '@renderer/types'
 import { callMCPTool } from '@renderer/utils/mcp-tools'
+import { tool } from 'ai'
 import { JSONSchema7 } from 'json-schema'
 
 // Setup tools configuration based on provided parameters
 export function setupToolsConfig(params: { mcpTools?: MCPTool[]; model: Model; enableToolUse?: boolean }): {
-  tools: Record<string, AiSdkTool>
+  tools: Record<string, Tool>
   useSystemPromptForTools?: boolean
 } {
   const { mcpTools, model, enableToolUse } = params
 
-  let tools: Record<string, AiSdkTool> = {}
+  let tools: Record<string, Tool> = {}
 
   if (!mcpTools?.length) {
     return { tools }
@@ -35,15 +36,15 @@ export function setupToolsConfig(params: { mcpTools?: MCPTool[]; model: Model; e
 /**
  * 将 MCPTool 转换为 AI SDK 工具格式
  */
-export function convertMcpToolsToAiSdkTools(mcpTools: MCPTool[]): Record<string, Tool<any, ToolCallResult>> {
-  const tools: Record<string, Tool<any, ToolCallResult>> = {}
+export function convertMcpToolsToAiSdkTools(mcpTools: MCPTool[]): Record<string, Tool> {
+  const tools: Record<string, Tool> = {}
 
   for (const mcpTool of mcpTools) {
     console.log('mcpTool', mcpTool.inputSchema)
-    tools[mcpTool.name] = aiSdk.tool<any, ToolCallResult>({
+    tools[mcpTool.name] = tool({
       description: mcpTool.description || `Tool from ${mcpTool.serverName}`,
       inputSchema: aiSdk.jsonSchema(mcpTool.inputSchema as JSONSchema7),
-      execute: async (params): Promise<ToolCallResult> => {
+      execute: async (params) => {
         console.log('execute_params', params)
         // 创建适配的 MCPToolResponse 对象
         const toolResponse: MCPToolResponse = {
@@ -64,15 +65,10 @@ export function convertMcpToolsToAiSdkTools(mcpTools: MCPTool[]): Record<string,
           }
           console.log('result', result)
           // 返回工具执行结果
-          return {
-            success: true,
-            data: result
-          }
+          return result
         } catch (error) {
           console.error(`MCP Tool execution failed: ${mcpTool.name}`, error)
-          throw new Error(
-            `Tool ${mcpTool.name} execution failed: ${error instanceof Error ? error.message : String(error)}`
-          )
+          throw error
         }
       }
     })

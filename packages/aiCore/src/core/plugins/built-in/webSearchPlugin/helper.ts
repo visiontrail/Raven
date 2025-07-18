@@ -41,3 +41,27 @@ export const DEFAULT_WEB_SEARCH_CONFIG: WebSearchPluginConfig = {
     maxUses: 5
   }
 }
+
+export type WebSearchToolOutputSchema = {
+  // Anthropic 工具 - 手动定义
+  anthropicWebSearch: Array<{
+    url: string
+    title: string
+    pageAge: string | null
+    encryptedContent: string
+    type: string
+  }>
+
+  // OpenAI 工具 - 基于实际输出
+  openaiWebSearch: {
+    status: 'completed' | 'failed'
+  }
+
+  // Google 工具
+  googleSearch: {
+    webSearchQueries?: string[]
+    groundingChunks?: Array<{
+      web?: { uri: string; title: string }
+    }>
+  }
+}

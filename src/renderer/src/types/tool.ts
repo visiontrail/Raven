@@ -1,3 +1,6 @@
+import { WebSearchToolOutputSchema } from '@cherrystudio/ai-core/built-in/plugins'
+import type { WebSearchToolOutput } from '@renderer/aiCore/tools/WebSearchTool'
+
 import type { MCPToolInputSchema } from './index'
 
 export type ToolType = 'builtin' | 'provider' | 'mcp'
@@ -30,3 +33,5 @@ export interface MCPTool extends BaseTool {
   inputSchema: MCPToolInputSchema
   type: 'mcp'
 }
+
+export type WebSearchToolOutputSchema = WebSearchToolOutput | WebSearchToolOutputSchema
