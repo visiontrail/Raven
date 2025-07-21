@@ -1,3 +1,5 @@
+import { type ProviderId } from '../types'
+
 export function isOpenAIChatCompletionOnlyModel(modelId: string): boolean {
   if (!modelId) {
     return false
@@ -28,7 +30,7 @@ export function isOpenAILLMModel(modelId: string): boolean {
   return false
 }
 
-export function getModelToProviderId(modelId: string): string | 'openai-compatible' {
+export function getModelToProviderId(modelId: string): ProviderId | 'openai-compatible' {
   const id = modelId.toLowerCase()
 
   if (id.startsWith('claude')) {

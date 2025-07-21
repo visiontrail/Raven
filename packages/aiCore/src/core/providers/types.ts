@@ -48,6 +48,7 @@ export class ProviderError extends Error {
 // 类型安全的 Provider Settings 映射
 export type ProviderSettingsMap = {
   openai: OpenAIProviderSettings
+  'openai-responses': OpenAIProviderSettings
   'openai-compatible': OpenAICompatibleProviderSettings
   // openrouter: OpenRouterProviderSettings
   anthropic: AnthropicProviderSettings

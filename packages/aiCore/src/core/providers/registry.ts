@@ -7,7 +7,7 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { createAzure } from '@ai-sdk/azure'
 import { createDeepSeek } from '@ai-sdk/deepseek'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
-import { createOpenAI } from '@ai-sdk/openai'
+import { createOpenAI, type OpenAIProviderSettings } from '@ai-sdk/openai'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import { createXai } from '@ai-sdk/xai'
 
@@ -39,6 +39,14 @@ export class AiProviderRegistry {
         id: 'openai',
         name: 'OpenAI',
         creator: createOpenAI,
+        supportsImageGeneration: true
+      },
+      {
+        id: 'openai-responses',
+        name: 'OpenAI Responses',
+        creator: (options: OpenAIProviderSettings) => {
+          return createOpenAI(options).responses
+        },
         supportsImageGeneration: true
       },
       {
@@ -208,7 +216,7 @@ export class AiProviderRegistry {
    * 根据 ID 获取 Provider 配置
    */
   public getProvider(id: string): ProviderConfig | undefined {
-    return this.registry.get(id)
+    return this.registry.get(id) || this.registry.get('openai-compatible')
   }
 
   /**
