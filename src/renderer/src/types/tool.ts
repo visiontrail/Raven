@@ -1,6 +1,3 @@
-import { WebSearchToolOutputSchema } from '@cherrystudio/ai-core/built-in/plugins'
-import type { WebSearchToolOutput } from '@renderer/aiCore/tools/WebSearchTool'
-
 import type { MCPToolInputSchema } from './index'
 
 export type ToolType = 'builtin' | 'provider' | 'mcp'
@@ -12,15 +9,15 @@ export interface BaseTool {
   type: ToolType
 }
 
-export interface ToolCallResponse {
-  id: string
-  toolName: string
-  arguments: Record<string, unknown> | undefined
-  status: 'invoking' | 'completed' | 'error'
-  result?: any // AI SDK的工具执行结果
-  error?: string
-  providerExecuted?: boolean // 标识是Provider端执行还是客户端执行
-}
+// export interface ToolCallResponse {
+//   id: string
+//   toolName: string
+//   arguments: Record<string, unknown> | undefined
+//   status: 'invoking' | 'completed' | 'error'
+//   result?: any // AI SDK的工具执行结果
+//   error?: string
+//   providerExecuted?: boolean // 标识是Provider端执行还是客户端执行
+// }
 
 export interface BuiltinTool extends BaseTool {
   inputSchema: MCPToolInputSchema
@@ -33,5 +30,3 @@ export interface MCPTool extends BaseTool {
   inputSchema: MCPToolInputSchema
   type: 'mcp'
 }
-
-export type WebSearchToolOutputSchema = WebSearchToolOutput | WebSearchToolOutputSchema

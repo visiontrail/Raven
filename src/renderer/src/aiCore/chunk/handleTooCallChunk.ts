@@ -8,6 +8,7 @@ import { ToolCallUnion, ToolResultUnion, ToolSet } from '@cherrystudio/ai-core'
 import Logger from '@renderer/config/logger'
 import { BaseTool, MCPToolResponse, ToolCallResponse } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
+import { type ProviderMetadata } from 'ai'
 // import type {
 //   AnthropicSearchOutput,
 //   WebSearchPluginConfig
@@ -40,7 +41,27 @@ export class ToolCallChunkHandler {
   //     this.onChunk = callback
   //   }
 
-  handleToolCallCreated(chunk: { type: 'tool-input-start' | 'tool-input-delta' | 'tool-input-end' }): void {
+  handleToolCallCreated(
+    chunk:
+      | {
+          type: 'tool-input-start'
+          id: string
+          toolName: string
+          providerMetadata?: ProviderMetadata
+          providerExecuted?: boolean
+        }
+      | {
+          type: 'tool-input-end'
+          id: string
+          providerMetadata?: ProviderMetadata
+        }
+      | {
+          type: 'tool-input-delta'
+          id: string
+          delta: string
+          providerMetadata?: ProviderMetadata
+        }
+  ): void {
     switch (chunk.type) {
       case 'tool-input-start': {
         // 能拿到说明是mcpTool
