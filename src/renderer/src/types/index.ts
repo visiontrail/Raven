@@ -4,6 +4,7 @@ import type OpenAI from 'openai'
 import type { CSSProperties } from 'react'
 
 export * from './file'
+export * from './package'
 import type { FileMetadata } from './file'
 import type { Message } from './newMessage'
 

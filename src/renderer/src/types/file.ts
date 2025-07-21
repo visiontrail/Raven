@@ -98,5 +98,6 @@ export enum FileTypes {
   AUDIO = 'audio',
   TEXT = 'text',
   DOCUMENT = 'document',
+  PACKAGE = 'package',
   OTHER = 'other'
 }

@@ -1,9 +1,10 @@
 import { FileMetadata, KnowledgeItem, QuickPhrase, TranslateHistory } from '@renderer/types'
 // Import necessary types for blocks and new message structure
 import type { Message as NewMessage, MessageBlock } from '@renderer/types/newMessage'
+import type { Package } from '@renderer/types/package'
 import { Dexie, type EntityTable } from 'dexie'
 
-import { upgradeToV5, upgradeToV7, upgradeToV8 } from './upgrades'
+import { upgradeToV5, upgradeToV7, upgradeToV8, upgradeToV9 } from './upgrades'
 
 // Database declaration (move this to its own module also)
 export const db = new Dexie('CherryStudio') as Dexie & {
@@ -14,6 +15,7 @@ export const db = new Dexie('CherryStudio') as Dexie & {
   translate_history: EntityTable<TranslateHistory, 'id'>
   quick_phrases: EntityTable<QuickPhrase, 'id'>
   message_blocks: EntityTable<MessageBlock, 'id'> // Correct type for message_blocks
+  packages: EntityTable<Package, 'id'> // Package management table
 }
 
 db.version(1).stores({
@@ -86,5 +88,20 @@ db.version(8)
     message_blocks: 'id, messageId, file.id' // Correct syntax with comma separator
   })
   .upgrade((tx) => upgradeToV8(tx))
+
+// --- NEW VERSION 9: Add packages table for TGZ Package Management ---
+db.version(9)
+  .stores({
+    // Re-declare all tables for the new version
+    files: 'id, name, origin_name, path, size, ext, type, created_at, count',
+    topics: '&id',
+    settings: '&id, value',
+    knowledge_notes: '&id, baseId, type, content, created_at, updated_at',
+    translate_history: '&id, sourceText, targetText, sourceLanguage, targetLanguage, createdAt',
+    quick_phrases: 'id',
+    message_blocks: 'id, messageId, file.id',
+    packages: 'id, name, path, size, createdAt, packageType, version' // New packages table
+  })
+  .upgrade((tx) => upgradeToV9(tx))
 
 export default db
