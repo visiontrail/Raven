@@ -15,7 +15,7 @@ const Packager: React.FC = () => {
     { key: 'lingxi-10', label: t('packager.types.lingxi-10') },
     { key: 'lingxi-07a', label: t('packager.types.lingxi-07a') },
     { key: 'config', label: t('packager.types.config') },
-    { key: 'qiming', label: t('packager.types.qiming') }
+    { key: 'lingxi-06-thrid', label: t('packager.types.lingxi-06-thrid') }
   ]
 
   const isRoute = (path: string): string => (pathname.includes(path) ? 'active' : '')

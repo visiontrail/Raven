@@ -1,10 +1,11 @@
 // src/main/services/packagingService.ts
 
-import { IpcMainInvokeEvent, app } from 'electron';
-import * as fs from 'fs-extra';
-import * as path from 'path';
-import { FileProcessor } from './packaging/FileProcessor';
-import { VersionParser } from './packaging/VersionParser';
+import { app, IpcMainInvokeEvent } from 'electron'
+import * as fs from 'fs-extra'
+import * as path from 'path'
+
+import { FileProcessor } from './packaging/FileProcessor'
+import { VersionParser } from './packaging/VersionParser'
 
 // This is a TypeScript version of the COMPONENT_CONFIGS from the Python script.
 const COMPONENT_CONFIGS = {
@@ -193,7 +194,7 @@ const COMPONENT_CONFIGS = {
       }
     }
   },
-  qiming: {
+  'lingxi-06-thrid': {
     name: '三标段升级包',
     packet_attr: 3001,
     patch_packet_attr: 3002,
@@ -202,186 +203,202 @@ const COMPONENT_CONFIGS = {
       // TODO: Add components later
     }
   }
-};
+}
 
 const MONTH_ABBR = {
-  1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
-  7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
-};
+  1: 'Jan',
+  2: 'Feb',
+  3: 'Mar',
+  4: 'Apr',
+  5: 'May',
+  6: 'Jun',
+  7: 'Jul',
+  8: 'Aug',
+  9: 'Sep',
+  10: 'Oct',
+  11: 'Nov',
+  12: 'Dec'
+}
 
 export interface Component {
-  name: string;
-  description: string;
-  selected_file?: string;
-  version?: string;
-  auto_version?: string;
+  name: string
+  description: string
+  selected_file?: string
+  version?: string
+  auto_version?: string
 }
 
 export interface PackageConfig {
-  package_type: string;
-  package_version: string;
-  is_patch: boolean;
-  selected_components: Component[];
+  package_type: string
+  package_version: string
+  is_patch: boolean
+  selected_components: Component[]
 }
 
 class PackagingService {
-  private fileProcessor: FileProcessor;
-  private versionParser: VersionParser;
+  private fileProcessor: FileProcessor
+  private versionParser: VersionParser
 
   constructor() {
-    this.fileProcessor = new FileProcessor();
-    this.versionParser = new VersionParser();
+    this.fileProcessor = new FileProcessor()
+    this.versionParser = new VersionParser()
   }
 
   async handleGenerateSiIni(event: IpcMainInvokeEvent, config: PackageConfig): Promise<string> {
-    return this.generateSiIni(config);
+    return this.generateSiIni(config)
   }
 
-  async handleCreatePackage(event: IpcMainInvokeEvent, config: PackageConfig): Promise<{ success: boolean; message: string; outputPath?: string }> {
-    const workDir = path.join(app.getPath('temp'), `package_${Date.now()}`);
-    await fs.ensureDir(workDir);
+  async handleCreatePackage(
+    event: IpcMainInvokeEvent,
+    config: PackageConfig
+  ): Promise<{ success: boolean; message: string; outputPath?: string }> {
+    const workDir = path.join(app.getPath('temp'), `package_${Date.now()}`)
+    await fs.ensureDir(workDir)
 
     try {
       // Process each selected component
       for (const component of config.selected_components) {
-        if (!component.selected_file) continue;
-        await this._processComponent(component, workDir, config.package_type);
+        if (!component.selected_file) continue
+        await this._processComponent(component, workDir, config.package_type)
       }
 
       // Generate si.ini
-      const siIniContent = this.generateSiIni(config);
-      await fs.writeFile(path.join(workDir, 'si.ini'), siIniContent);
+      const siIniContent = this.generateSiIni(config)
+      await fs.writeFile(path.join(workDir, 'si.ini'), siIniContent)
 
       // Generate output filename
-      const outputFilename = this._generateOutputFilename(config);
-      const outputPath = path.join(app.getPath('downloads'), outputFilename); // Save to Downloads folder
+      const outputFilename = this._generateOutputFilename(config)
+      const outputPath = path.join(app.getPath('downloads'), outputFilename) // Save to Downloads folder
 
       // Create final package
-      await this.fileProcessor.createTgzPackage(workDir, outputPath);
+      await this.fileProcessor.createTgzPackage(workDir, outputPath)
 
-      return { success: true, message: `打包成功: ${outputFilename}`, outputPath };
+      return { success: true, message: `打包成功: ${outputFilename}`, outputPath }
     } catch (error) {
-      return { success: false, message: `打包失败: ${error.message}` };
+      return { success: false, message: `打包失败: ${error.message}` }
     } finally {
-      await fs.remove(workDir); // Cleanup
+      await fs.remove(workDir) // Cleanup
     }
   }
 
   async getAutoVersion(filePath: string): Promise<string | null> {
-    console.log(`[Main] getAutoVersion called with filePath: ${filePath}`);
-    const version = VersionParser.parseVersionFromFilename(path.basename(filePath));
-    const formattedVersion = version ? VersionParser.formatVersion(version) : null;
-    console.log(`[Main] Parsed version: ${version}, Formatted version: ${formattedVersion}`);
-    return formattedVersion;
+    console.log(`[Main] getAutoVersion called with filePath: ${filePath}`)
+    const version = VersionParser.parseVersionFromFilename(path.basename(filePath))
+    const formattedVersion = version ? VersionParser.formatVersion(version) : null
+    console.log(`[Main] Parsed version: ${version}, Formatted version: ${formattedVersion}`)
+    return formattedVersion
   }
 
   async getAutoVersionFromFilename(filename: string): Promise<string | null> {
-    console.log(`[Main] getAutoVersionFromFilename called with filename: ${filename}`);
-    const version = VersionParser.parseVersionFromFilename(filename);
-    const formattedVersion = version ? VersionParser.formatVersion(version) : null;
-    console.log(`[Main] Parsed version from filename: ${version}, Formatted version: ${formattedVersion}`);
-    return formattedVersion;
+    console.log(`[Main] getAutoVersionFromFilename called with filename: ${filename}`)
+    const version = VersionParser.parseVersionFromFilename(filename)
+    const formattedVersion = version ? VersionParser.formatVersion(version) : null
+    console.log(`[Main] Parsed version from filename: ${version}, Formatted version: ${formattedVersion}`)
+    return formattedVersion
   }
 
   private async _processComponent(component: Component, workDir: string, packageType: string) {
-    const componentConfig = COMPONENT_CONFIGS[packageType]?.components[component.name];
+    const componentConfig = COMPONENT_CONFIGS[packageType]?.components[component.name]
     if (!componentConfig || !component.selected_file) {
-      throw new Error(`配置或文件缺失: ${component.name}`);
+      throw new Error(`配置或文件缺失: ${component.name}`)
     }
 
-    let sourceFile = component.selected_file;
+    let sourceFile = component.selected_file
 
     if (this.fileProcessor.isArchiveFile(sourceFile) && !componentConfig.direct_include) {
-      const extractDir = await this.fileProcessor.extractArchive(sourceFile);
-      const foundFiles = await this.fileProcessor.findFilesByType(extractDir, componentConfig.file_types, componentConfig.file_name);
+      const extractDir = await this.fileProcessor.extractArchive(sourceFile)
+      const foundFiles = await this.fileProcessor.findFilesByType(
+        extractDir,
+        componentConfig.file_types,
+        componentConfig.file_name
+      )
       if (foundFiles.length === 0) {
-        throw new Error(`在压缩包中未找到组件 ${component.description} 的文件`);
+        throw new Error(`在压缩包中未找到组件 ${component.description} 的文件`)
       }
-      sourceFile = foundFiles[0];
-    }
-    
-    // Auto-detect version if not manually provided
-    if (!component.version) {
-        const autoVersion = VersionParser.parseVersionFromFilename(path.basename(sourceFile));
-        if (autoVersion) {
-            component.auto_version = VersionParser.formatVersion(autoVersion);
-        }
+      sourceFile = foundFiles[0]
     }
 
-    await this.fileProcessor.copyAndRenameFile(sourceFile, workDir, componentConfig.file_name);
+    // Auto-detect version if not manually provided
+    if (!component.version) {
+      const autoVersion = VersionParser.parseVersionFromFilename(path.basename(sourceFile))
+      if (autoVersion) {
+        component.auto_version = VersionParser.formatVersion(autoVersion)
+      }
+    }
+
+    await this.fileProcessor.copyAndRenameFile(sourceFile, workDir, componentConfig.file_name)
   }
 
   private _generateOutputFilename(packageConfig: PackageConfig): string {
-    const now = new Date();
-    const month = MONTH_ABBR[now.getMonth() + 1];
-    const dateStr = `${now.getFullYear()}${month}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
-    
-    const configInfo = COMPONENT_CONFIGS[packageConfig.package_type];
+    const now = new Date()
+    const month = MONTH_ABBR[now.getMonth() + 1]
+    const dateStr = `${now.getFullYear()}${month}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`
+
+    const configInfo = COMPONENT_CONFIGS[packageConfig.package_type]
     if (!configInfo) {
-      throw new Error(`未知的包类型: ${packageConfig.package_type}`);
+      throw new Error(`未知的包类型: ${packageConfig.package_type}`)
     }
 
-    const baseName = configInfo.prefix || 'GalaxySpace-Unknown';
-    let suffix = "";
+    const baseName = configInfo.prefix || 'GalaxySpace-Unknown'
+    let suffix = ''
     if (packageConfig.is_patch) {
-      suffix = "-Patch";
+      suffix = '-Patch'
     } else if (configInfo.suffix) {
-      suffix = `-${configInfo.suffix}`;
+      suffix = `-${configInfo.suffix}`
     }
 
-    const version = VersionParser.versionToNumeric(packageConfig.package_version);
-    return `${baseName}-${dateStr}-V${version}${suffix}.tgz`;
+    const version = VersionParser.versionToNumeric(packageConfig.package_version)
+    return `${baseName}-${dateStr}-V${version}${suffix}.tgz`
   }
-  
+
   getComponentTemplate(packageType: string): Component[] {
-    const config = COMPONENT_CONFIGS[packageType];
+    const config = COMPONENT_CONFIGS[packageType]
     if (!config) {
-      throw new Error(`Unknown package type: ${packageType}`);
+      throw new Error(`Unknown package type: ${packageType}`)
     }
     return Object.entries(config.components).map(([name, details]) => ({
       name,
-      description: details.description,
-    }));
+      description: details.description
+    }))
   }
 
   generateSiIni(config: PackageConfig): string {
-    console.log('[Main] generateSiIni called with config:', JSON.stringify(config, null, 2));
-    const packageTypeConfig = COMPONENT_CONFIGS[config.package_type];
+    console.log('[Main] generateSiIni called with config:', JSON.stringify(config, null, 2))
+    const packageTypeConfig = COMPONENT_CONFIGS[config.package_type]
     if (!packageTypeConfig) {
-      const errorMsg = `Error: Unknown package type ${config.package_type}`;
-      console.error(`[Main] ${errorMsg}`);
-      return errorMsg;
+      const errorMsg = `Error: Unknown package type ${config.package_type}`
+      console.error(`[Main] ${errorMsg}`)
+      return errorMsg
     }
 
-    const { packet_attr, patch_packet_attr, components: allComponentsConfig } = packageTypeConfig;
-    const final_packet_attr = config.is_patch ? patch_packet_attr : packet_attr;
-    const selectedComponents = config.selected_components.filter(c => c.selected_file);
+    const { packet_attr, patch_packet_attr, components: allComponentsConfig } = packageTypeConfig
+    const final_packet_attr = config.is_patch ? patch_packet_attr : packet_attr
+    const selectedComponents = config.selected_components.filter((c) => c.selected_file)
 
-    let content = '';
-    content += `Packet_Ver=V${config.package_version};\n`;
-    content += `PacketAttr=${final_packet_attr};\n`;
-    content += `Publisher=yinhe;\n`;
-    content += `FileNumInPacket=${selectedComponents.length};\n\n`;
+    let content = ''
+    content += `Packet_Ver=V${config.package_version};\n`
+    content += `PacketAttr=${final_packet_attr};\n`
+    content += `Publisher=yinhe;\n`
+    content += `FileNumInPacket=${selectedComponents.length};\n\n`
 
     selectedComponents.forEach((component, index) => {
-      const componentConfig = allComponentsConfig[component.name];
-      if (!componentConfig) return;
+      const componentConfig = allComponentsConfig[component.name]
+      if (!componentConfig) return
 
-      const fileVersion = component.version || 'V0.0.0.0';
+      const fileVersion = component.version || 'V0.0.0.0'
 
-      content += `FileName_${index + 1}=${componentConfig.file_name};\n`;
-      content += `FileAttr_${index + 1}=${componentConfig.file_attr};\n`;
-      content += `FileVer_${index + 1}=${fileVersion};\n\n`;
-    });
+      content += `FileName_${index + 1}=${componentConfig.file_name};\n`
+      content += `FileAttr_${index + 1}=${componentConfig.file_attr};\n`
+      content += `FileVer_${index + 1}=${fileVersion};\n\n`
+    })
 
-    console.log('[Main] Generated si.ini content:\n', content);
-    return content;
+    console.log('[Main] Generated si.ini content:\n', content)
+    return content
   }
 
   cleanup() {
-    this.fileProcessor.cleanupTempFiles();
+    this.fileProcessor.cleanupTempFiles()
   }
 }
 
-export const packagingService = new PackagingService();
-
+export const packagingService = new PackagingService()
