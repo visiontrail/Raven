@@ -6,7 +6,7 @@
  * 2. transformParams: 根据意图分析结果动态添加对应的工具
  * 3. onRequestEnd: 自动记忆存储
  */
-import type { AiRequestContext } from '@cherrystudio/ai-core'
+import type { AiRequestContext, ModelMessage } from '@cherrystudio/ai-core'
 import { definePlugin } from '@cherrystudio/ai-core'
 import { RuntimeExecutor } from '@cherrystudio/ai-core/core/runtime/executor'
 // import { generateObject } from '@cherrystudio/ai-core'
@@ -18,8 +18,7 @@ import {
 import { getDefaultModel, getProviderByModel } from '@renderer/services/AssistantService'
 import store from '@renderer/store'
 import { selectCurrentUserId, selectGlobalMemoryEnabled, selectMemoryConfig } from '@renderer/store/memory'
-import type { Assistant, Message } from '@renderer/types'
-import { getMainTextContent } from '@renderer/utils/messageUtils/find'
+import type { Assistant } from '@renderer/types'
 import { isEmpty } from 'lodash'
 import { z } from 'zod'
 
@@ -27,15 +26,15 @@ import { MemoryProcessor } from '../../services/MemoryProcessor'
 import { memorySearchTool } from '../tools/MemorySearchTool'
 import { webSearchTool } from '../tools/WebSearchTool'
 
-// const getMessageContent = (message: Message) => {
-//   if (typeof message.content === 'string') return message.content
-//   return message.content.reduce((acc, part) => {
-//     if (part.type === 'text') {
-//       return acc + part.text + '\n'
-//     }
-//     return acc
-//   }, '')
-// }
+const getMessageContent = (message: ModelMessage) => {
+  if (typeof message.content === 'string') return message.content
+  return message.content.reduce((acc, part) => {
+    if (part.type === 'text') {
+      return acc + part.text + '\n'
+    }
+    return acc
+  }, '')
+}
 
 // === Schema Definitions ===
 
@@ -66,13 +65,13 @@ type SearchIntentResult = z.infer<typeof SearchIntentAnalysisSchema>
  * 🧠 意图分析函数 - 使用结构化输出重构
  */
 async function analyzeSearchIntent(
-  lastUserMessage: Message,
+  lastUserMessage: ModelMessage,
   assistant: Assistant,
   options: {
     shouldWebSearch?: boolean
     shouldKnowledgeSearch?: boolean
     shouldMemorySearch?: boolean
-    lastAnswer?: Message
+    lastAnswer?: ModelMessage
     context?:
       | AiRequestContext
       | {
@@ -146,7 +145,7 @@ async function analyzeSearchIntent(
   }
 
   function getFallbackResult(): SearchIntentResult {
-    const fallbackContent = getMainTextContent(lastUserMessage)
+    const fallbackContent = getMessageContent(lastUserMessage)
     return {
       websearch: shouldWebSearch ? { question: [fallbackContent || 'search'] } : undefined,
       knowledge: shouldKnowledgeSearch
@@ -162,7 +161,7 @@ async function analyzeSearchIntent(
 /**
  * 🧠 记忆存储函数 - 基于注释代码中的 processConversationMemory
  */
-async function storeConversationMemory(messages: Message[], assistant: Assistant): Promise<void> {
+async function storeConversationMemory(messages: ModelMessage[], assistant: Assistant): Promise<void> {
   const globalMemoryEnabled = selectGlobalMemoryEnabled(store.getState())
 
   if (!globalMemoryEnabled || !assistant.enableMemory) {
@@ -177,8 +176,8 @@ async function storeConversationMemory(messages: Message[], assistant: Assistant
     const conversationMessages = messages
       .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
       .map((msg) => ({
-        role: msg.role as 'user' | 'assistant',
-        content: getMainTextContent(msg) || ''
+        role: msg.role,
+        content: getMessageContent(msg) || ''
       }))
       .filter((msg) => msg.content.trim().length > 0)
 
@@ -194,6 +193,7 @@ async function storeConversationMemory(messages: Message[], assistant: Assistant
       memoryConfig,
       assistant.id,
       currentUserId,
+      // TODO
       lastUserMessage?.id
     )
 
@@ -227,7 +227,7 @@ async function storeConversationMemory(messages: Message[], assistant: Assistant
 export const searchOrchestrationPlugin = (assistant: Assistant) => {
   // 存储意图分析结果
   const intentAnalysisResults: { [requestId: string]: SearchIntentResult } = {}
-  const userMessages: { [requestId: string]: Message } = {}
+  const userMessages: { [requestId: string]: ModelMessage } = {}
   console.log('searchOrchestrationPlugin', assistant)
   return definePlugin({
     name: 'search-orchestration',
@@ -355,8 +355,8 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
       console.log('💾 [SearchOrchestration] Starting memory storage...', context.requestId)
 
       try {
-        const assistant = context.originalParams.assistant as Assistant
-        const messages = context.originalParams.messages as Message[]
+        const assistant = context.originalParams.assistant
+        const messages = context.originalParams.messages
 
         if (messages && assistant) {
           await storeConversationMemory(messages, assistant)
