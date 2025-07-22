@@ -3,7 +3,7 @@ import WebSearchService from '@renderer/services/WebSearchService'
 import { Assistant, Message, WebSearchProvider } from '@renderer/types'
 import { UserMessageStatus } from '@renderer/types/newMessage'
 import { ExtractResults } from '@renderer/utils/extract'
-import { type InferToolOutput, tool } from 'ai'
+import { type InferToolInput, type InferToolOutput, tool } from 'ai'
 import { z } from 'zod'
 
 // import { AiSdkTool, ToolCallResult } from './types'
@@ -18,15 +18,16 @@ const WebSearchProviderResult = z.object({
     })
   )
 })
+const webSearchToolInputSchema = z.object({
+  query: z.string().describe('The query to search for')
+})
 
 export const webSearchTool = (webSearchProviderId: WebSearchProvider['id']) => {
   const webSearchService = WebSearchService.getInstance(webSearchProviderId)
   return tool({
     name: 'builtin_web_search',
     description: 'Search the web for information',
-    inputSchema: z.object({
-      query: z.string().describe('The query to search for')
-    }),
+    inputSchema: webSearchToolInputSchema,
     outputSchema: WebSearchProviderResult,
     execute: async ({ query }) => {
       console.log('webSearchTool', query)
@@ -36,6 +37,7 @@ export const webSearchTool = (webSearchProviderId: WebSearchProvider['id']) => {
     }
   })
 }
+export type WebSearchToolInput = InferToolInput<ReturnType<typeof webSearchTool>>
 export type WebSearchToolOutput = InferToolOutput<ReturnType<typeof webSearchTool>>
 
 export const webSearchToolWithExtraction = (

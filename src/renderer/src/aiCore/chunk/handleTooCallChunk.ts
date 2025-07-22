@@ -229,10 +229,7 @@ export class ToolCallChunkHandler {
       tool: toolCallInfo.tool,
       arguments: input,
       status: 'done',
-      response: {
-        data: output,
-        success: true
-      },
+      response: output,
       toolCallId: toolCallId
     }
     // 从活跃调用中移除（交互结束后整个实例会被丢弃）
