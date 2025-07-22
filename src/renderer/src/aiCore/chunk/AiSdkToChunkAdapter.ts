@@ -153,11 +153,11 @@ export class AiSdkToChunkAdapter {
         break
 
       // === 步骤相关事件 ===
-      case 'start':
-        this.onChunk({
-          type: ChunkType.LLM_RESPONSE_CREATED
-        })
-        break
+      // case 'start':
+      //   this.onChunk({
+      //     type: ChunkType.LLM_RESPONSE_CREATED
+      //   })
+      //   break
       // TODO: 需要区分接口开始和步骤开始
       // case 'start-step':
       //   this.onChunk({

@@ -14,7 +14,13 @@ import type { ProviderSettingsMap } from './core/providers/types'
 import { createExecutor } from './core/runtime'
 
 // ==================== 主要用户接口 ====================
-export { createExecutor, createOpenAICompatibleExecutor } from './core/runtime'
+export {
+  createExecutor,
+  createOpenAICompatibleExecutor,
+  generateObject,
+  generateText,
+  streamText
+} from './core/runtime'
 
 // ==================== 高级API ====================
 export { createModel } from './core/models'
@@ -136,11 +142,6 @@ export const AiCore = {
 
   // 创建主要执行器（推荐使用）
   create(providerId: ProviderId, options: ProviderSettingsMap[ProviderId], plugins: any[] = []) {
-    return createExecutor(providerId, options, plugins)
-  },
-
-  // 创建底层客户端（高级用法）
-  createClient(providerId: ProviderId, options: ProviderSettingsMap[ProviderId], plugins: any[] = []) {
     return createExecutor(providerId, options, plugins)
   },
 

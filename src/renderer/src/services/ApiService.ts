@@ -16,7 +16,7 @@ import { getStoreSetting } from '@renderer/hooks/useSettings'
 import i18n from '@renderer/i18n'
 import store from '@renderer/store'
 import { Assistant, MCPServer, MCPTool, Model, Provider } from '@renderer/types'
-import { type Chunk } from '@renderer/types/chunk'
+import { type Chunk, ChunkType } from '@renderer/types/chunk'
 import { Message } from '@renderer/types/newMessage'
 import { SdkModel } from '@renderer/types/sdk'
 import { removeSpecialCharactersForTopicName } from '@renderer/utils'
@@ -432,14 +432,16 @@ export async function fetchChatCompletion({
     enableReasoning: capabilities.enableReasoning,
     enableTool: assistant.settings?.toolUseMode === 'prompt',
     enableWebSearch: capabilities.enableWebSearch,
-    mcpTools
+    mcpTools,
+    assistant
   }
-  // --- Call AI Completions ---
-  // onChunkReceived({ type: ChunkType.LLM_RESPONSE_CREATED })
-  await AI.completions(modelId, aiSdkParams, middlewareConfig)
-  // if (enableWebSearch) {
+  // if (capabilities.enableWebSearch) {
   //   onChunkReceived({ type: ChunkType.LLM_WEB_SEARCH_IN_PROGRESS })
   // }
+  // --- Call AI Completions ---
+  onChunkReceived({ type: ChunkType.LLM_RESPONSE_CREATED })
+  await AI.completions(modelId, aiSdkParams, middlewareConfig)
+
   // await AI.completions(
   //   {
   //     callType: 'chat',

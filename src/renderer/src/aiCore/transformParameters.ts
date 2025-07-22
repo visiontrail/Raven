@@ -50,7 +50,7 @@ import { buildSystemPrompt } from '@renderer/utils/prompt'
 import { defaultTimeout } from '@shared/config/constant'
 import { isEmpty } from 'lodash'
 
-import { webSearchTool } from './tools/WebSearchTool'
+// import { webSearchTool } from './tools/WebSearchTool'
 // import { jsonSchemaToZod } from 'json-schema-to-zod'
 import { setupToolsConfig } from './utils/mcp'
 import { buildProviderOptions } from './utils/options'
@@ -298,9 +298,9 @@ export async function buildStreamTextParams(
     enableToolUse: enableTools
   })
 
-  if (webSearchProviderId) {
-    tools['builtin_web_search'] = webSearchTool(webSearchProviderId)
-  }
+  // if (webSearchProviderId) {
+  //   tools['builtin_web_search'] = webSearchTool(webSearchProviderId)
+  // }
 
   // 构建真正的 providerOptions
   const providerOptions = buildProviderOptions(assistant, model, provider, {

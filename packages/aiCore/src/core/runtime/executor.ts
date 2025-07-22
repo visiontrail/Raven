@@ -42,6 +42,15 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     })
   }
 
+  createConfigureContextPlugin() {
+    return definePlugin({
+      name: '_internal_configureContext',
+      configureContext: async (context: AiRequestContext) => {
+        context.executor = this
+      }
+    })
+  }
+
   // === 高阶重载：直接使用模型 ===
 
   /**
@@ -51,10 +60,6 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     model: LanguageModel,
     params: Omit<Parameters<typeof streamText>[0], 'model'>
   ): Promise<ReturnType<typeof streamText>>
-
-  /**
-   * 流式文本生成 - 使用modelId + 可选middleware（灵活用法）
-   */
   async streamText(
     modelId: string,
     params: Omit<Parameters<typeof streamText>[0], 'model'>,
@@ -62,10 +67,6 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof streamText>>
-
-  /**
-   * 流式文本生成 - 内部实现（统一处理重载）
-   */
   async streamText(
     modelOrId: LanguageModel,
     params: Omit<Parameters<typeof streamText>[0], 'model'>,
@@ -73,7 +74,10 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof streamText>> {
-    this.pluginEngine.use(this.createResolveModelPlugin(options?.middlewares))
+    this.pluginEngine.usePlugins([
+      this.createResolveModelPlugin(options?.middlewares),
+      this.createConfigureContextPlugin()
+    ])
 
     // 2. 执行插件处理
     return this.pluginEngine.executeStreamWithPlugins(
@@ -102,10 +106,6 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     model: LanguageModel,
     params: Omit<Parameters<typeof generateText>[0], 'model'>
   ): Promise<ReturnType<typeof generateText>>
-
-  /**
-   * 生成文本 - 使用modelId + 可选middleware
-   */
   async generateText(
     modelId: string,
     params: Omit<Parameters<typeof generateText>[0], 'model'>,
@@ -113,10 +113,6 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof generateText>>
-
-  /**
-   * 生成文本 - 内部实现
-   */
   async generateText(
     modelOrId: LanguageModel | string,
     params: Omit<Parameters<typeof generateText>[0], 'model'>,
@@ -124,7 +120,10 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof generateText>> {
-    this.pluginEngine.use(this.createResolveModelPlugin(options?.middlewares))
+    this.pluginEngine.usePlugins([
+      this.createResolveModelPlugin(options?.middlewares),
+      this.createConfigureContextPlugin()
+    ])
 
     return this.pluginEngine.executeWithPlugins(
       'generateText',
@@ -143,10 +142,6 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     model: LanguageModel,
     params: Omit<Parameters<typeof generateObject>[0], 'model'>
   ): Promise<ReturnType<typeof generateObject>>
-
-  /**
-   * 生成结构化对象 - 使用modelId + 可选middleware
-   */
   async generateObject(
     modelOrId: string,
     params: Omit<Parameters<typeof generateObject>[0], 'model'>,
@@ -154,10 +149,6 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof generateObject>>
-
-  /**
-   * 生成结构化对象 - 内部实现
-   */
   async generateObject(
     modelOrId: LanguageModel | string,
     params: Omit<Parameters<typeof generateObject>[0], 'model'>,
@@ -165,7 +156,10 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof generateObject>> {
-    this.pluginEngine.use(this.createResolveModelPlugin(options?.middlewares))
+    this.pluginEngine.usePlugins([
+      this.createResolveModelPlugin(options?.middlewares),
+      this.createConfigureContextPlugin()
+    ])
 
     return this.pluginEngine.executeWithPlugins(
       'generateObject',
@@ -184,10 +178,6 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     model: LanguageModel,
     params: Omit<Parameters<typeof streamObject>[0], 'model'>
   ): Promise<ReturnType<typeof streamObject>>
-
-  /**
-   * 流式生成结构化对象 - 使用modelId + 可选middleware
-   */
   async streamObject(
     modelId: string,
     params: Omit<Parameters<typeof streamObject>[0], 'model'>,
@@ -195,10 +185,6 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof streamObject>>
-
-  /**
-   * 流式生成结构化对象 - 内部实现
-   */
   async streamObject(
     modelOrId: LanguageModel | string,
     params: Omit<Parameters<typeof streamObject>[0], 'model'>,
@@ -206,7 +192,10 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       middlewares?: LanguageModelV2Middleware[]
     }
   ): Promise<ReturnType<typeof streamObject>> {
-    this.pluginEngine.use(this.createResolveModelPlugin(options?.middlewares))
+    this.pluginEngine.usePlugins([
+      this.createResolveModelPlugin(options?.middlewares),
+      this.createConfigureContextPlugin()
+    ])
 
     return this.pluginEngine.executeWithPlugins(
       'streamObject',
