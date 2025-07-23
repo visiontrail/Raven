@@ -23,6 +23,7 @@ import { isEmpty } from 'lodash'
 import { z } from 'zod'
 
 import { MemoryProcessor } from '../../services/MemoryProcessor'
+import { knowledgeSearchTool } from '../tools/KnowledgeSearchTool'
 import { memorySearchTool } from '../tools/MemorySearchTool'
 import { webSearchTool } from '../tools/WebSearchTool'
 
@@ -61,6 +62,7 @@ const SearchIntentAnalysisSchema = z.object({
 
 type SearchIntentResult = z.infer<typeof SearchIntentAnalysisSchema>
 
+let isAnalyzing = false
 /**
  * 🧠 意图分析函数 - 使用结构化输出重构
  */
@@ -104,21 +106,12 @@ async function analyzeSearchIntent(
     schema = SearchIntentAnalysisSchema
   }
 
-  // 构建消息上下文
-  const messages = lastAnswer ? [lastAnswer, lastUserMessage] : [lastUserMessage]
-  console.log('messagesmessagesmessagesmessagesmessagesmessagesmessages', messages)
-  // 格式化消息为提示词期望的格式
-  // const chatHistory =
-  //   messages.length > 1
-  //     ? messages
-  //         .slice(0, -1)
-  //         .map((msg) => `${msg.role}: ${getMainTextContent(msg)}`)
-  //         .join('\n')
-  //     : ''
-  // const question = getMainTextContent(lastUserMessage) || ''
+  // 构建消息上下文 - 简化逻辑
+  const chatHistory = lastAnswer ? `assistant: ${getMessageContent(lastAnswer)}` : ''
+  const question = getMessageContent(lastUserMessage) || ''
 
-  // // 使用模板替换变量
-  // const formattedPrompt = prompt.replace('{chat_history}', chatHistory).replace('{question}', question)
+  // 使用模板替换变量
+  const formattedPrompt = prompt.replace('{chat_history}', chatHistory).replace('{question}', question)
 
   // 获取模型和provider信息
   const model = assistant.model || getDefaultModel()
@@ -130,7 +123,12 @@ async function analyzeSearchIntent(
   }
 
   try {
-    const result = await context?.executor?.generateObject(model.id, { schema, prompt })
+    isAnalyzing = true
+    const result = await context?.executor?.generateObject(model.id, {
+      schema,
+      prompt: formattedPrompt
+    })
+    isAnalyzing = false
     console.log('result', context)
     const parsedResult = result?.object as SearchIntentResult
 
@@ -165,7 +163,7 @@ async function storeConversationMemory(messages: ModelMessage[], assistant: Assi
   const globalMemoryEnabled = selectGlobalMemoryEnabled(store.getState())
 
   if (!globalMemoryEnabled || !assistant.enableMemory) {
-    console.log('Memory storage is disabled')
+    // console.log('Memory storage is disabled')
     return
   }
 
@@ -237,10 +235,10 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
      * 🔍 Step 1: 意图识别阶段
      */
     onRequestStart: async (context: AiRequestContext) => {
+      if (isAnalyzing) return
       console.log('🧠 [SearchOrchestration] Starting intent analysis...', context.requestId)
 
       try {
-        // 从参数中提取信息
         const messages = context.originalParams.messages
 
         if (!messages || messages.length === 0) {
@@ -256,7 +254,9 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
 
         // 判断是否需要各种搜索
         const knowledgeBaseIds = assistant.knowledge_bases?.map((base) => base.id)
+        console.log('knowledgeBaseIds', knowledgeBaseIds)
         const hasKnowledgeBase = !isEmpty(knowledgeBaseIds)
+        console.log('hasKnowledgeBase', hasKnowledgeBase)
         const knowledgeRecognition = assistant.knowledgeRecognition || 'on'
         const globalMemoryEnabled = selectGlobalMemoryEnabled(store.getState())
 
@@ -266,12 +266,11 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
 
         console.log('🧠 [SearchOrchestration] Search capabilities:', {
           shouldWebSearch,
-          shouldKnowledgeSearch,
+          hasKnowledgeBase,
           shouldMemorySearch
         })
-
         // 执行意图分析
-        if (shouldWebSearch || shouldKnowledgeSearch) {
+        if (shouldWebSearch || hasKnowledgeBase) {
           const analysisResult = await analyzeSearchIntent(lastUserMessage, assistant, {
             shouldWebSearch,
             shouldKnowledgeSearch,
@@ -295,15 +294,15 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
      * 🔧 Step 2: 工具配置阶段
      */
     transformParams: async (params: any, context: AiRequestContext) => {
+      if (isAnalyzing) return
       console.log('🔧 [SearchOrchestration] Configuring tools based on intent...', context.requestId)
 
       try {
         const analysisResult = intentAnalysisResults[context.requestId]
-        console.log('analysisResult', analysisResult)
-        if (!analysisResult || !assistant) {
-          console.log('🔧 [SearchOrchestration] No analysis result or assistant, skipping tool configuration')
-          return params
-        }
+        // if (!analysisResult || !assistant) {
+        //   console.log('🔧 [SearchOrchestration] No analysis result or assistant, skipping tool configuration')
+        //   return params
+        // }
 
         // 确保 tools 对象存在
         if (!params.tools) {
@@ -311,7 +310,7 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
         }
 
         // 🌐 网络搜索工具配置
-        if (analysisResult.websearch && assistant.webSearchProviderId) {
+        if (analysisResult?.websearch && assistant.webSearchProviderId) {
           const needsSearch = analysisResult.websearch.question && analysisResult.websearch.question[0] !== 'not_needed'
 
           if (needsSearch) {
@@ -321,14 +320,27 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
         }
 
         // 📚 知识库搜索工具配置
-        if (analysisResult.knowledge) {
-          const needsKnowledgeSearch =
-            analysisResult.knowledge.question && analysisResult.knowledge.question[0] !== 'not_needed'
+        const knowledgeBaseIds = assistant.knowledge_bases?.map((base) => base.id)
+        const hasKnowledgeBase = !isEmpty(knowledgeBaseIds)
+        const knowledgeRecognition = assistant.knowledgeRecognition || 'on'
 
-          if (needsKnowledgeSearch) {
-            console.log('📚 [SearchOrchestration] Adding knowledge search tool')
-            // TODO: 添加知识库搜索工具
-            // params.tools['builtin_knowledge_search'] = knowledgeSearchTool(assistant.knowledge_bases)
+        if (hasKnowledgeBase) {
+          if (knowledgeRecognition === 'off') {
+            // off 模式：直接添加知识库搜索工具，跳过意图识别
+            console.log('📚 [SearchOrchestration] Adding knowledge search tool (force mode)')
+            params.tools['builtin_knowledge_search'] = knowledgeSearchTool(assistant)
+            params.toolChoice = { type: 'tool', toolName: 'builtin_knowledge_search' }
+          } else {
+            // on 模式：根据意图识别结果决定是否添加工具
+            const needsKnowledgeSearch =
+              analysisResult?.knowledge &&
+              analysisResult.knowledge.question &&
+              analysisResult.knowledge.question[0] !== 'not_needed'
+
+            if (needsKnowledgeSearch) {
+              console.log('📚 [SearchOrchestration] Adding knowledge search tool (intent-based)')
+              params.tools['builtin_knowledge_search'] = knowledgeSearchTool(assistant)
+            }
           }
         }
 
@@ -355,7 +367,6 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
       console.log('💾 [SearchOrchestration] Starting memory storage...', context.requestId)
 
       try {
-        const assistant = context.originalParams.assistant
         const messages = context.originalParams.messages
 
         if (messages && assistant) {
