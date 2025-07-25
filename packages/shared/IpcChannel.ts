@@ -87,6 +87,13 @@ export enum IpcChannel {
   Packager_GetAutoVersion = 'packager:get-auto-version',
   Packager_GetAutoVersionFromFilename = 'packager:get-auto-version-from-filename',
   Packager_SelectFile = 'packager:select-file',
+  
+  // Package Management
+  Package_GetAll = 'package:get-all',
+  Package_GetById = 'package:get-by-id',
+  Package_UpdateMetadata = 'package:update-metadata',
+  Package_Delete = 'package:delete',
+  Package_ScanForPackages = 'package:scan-for-packages',
 
   //copilot
   Copilot_GetAuthMessage = 'copilot:get-auth-message',

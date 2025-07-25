@@ -1,10 +1,14 @@
-// src/main/services/packagingService.ts
+// src/main/services/PackagingService.ts
 
 import { app, IpcMainInvokeEvent } from 'electron'
 import * as fs from 'fs-extra'
 import * as path from 'path'
+import { v4 as uuidv4 } from 'uuid'
 
+import { Package, PackageMetadata, PackageType } from '../../renderer/src/types/package'
+import { extractMetadataFromTGZ } from '../utils/packageUtils'
 import { FileProcessor } from './packaging/FileProcessor'
+import { PackageScanner } from './packaging/PackageScanner'
 import { VersionParser } from './packaging/VersionParser'
 
 // This is a TypeScript version of the COMPONENT_CONFIGS from the Python script.
@@ -237,19 +241,174 @@ export interface PackageConfig {
 
 class PackagingService {
   private fileProcessor: FileProcessor
-  private versionParser: VersionParser
+  private packageScanner: PackageScanner
+  private packageWatcherStop: (() => void) | null = null
+  
+  // In-memory package storage
+  private packages: Map<string, Package> = new Map()
 
   constructor() {
     this.fileProcessor = new FileProcessor()
-    this.versionParser = new VersionParser()
+    this.packageScanner = new PackageScanner()
   }
 
-  async handleGenerateSiIni(event: IpcMainInvokeEvent, config: PackageConfig): Promise<string> {
+  /**
+   * Initialize the packaging service
+   */
+  async initialize(): Promise<void> {
+    // Scan for existing packages and index them
+    await this.indexExistingPackages()
+
+    // Start watching for new packages
+    this.startWatchingForPackages()
+  }
+
+  /**
+   * Scan for existing packages and add them to the in-memory storage
+   */
+  async indexExistingPackages(): Promise<void> {
+    try {
+      console.log('Scanning for existing packages...')
+      const packages = await this.packageScanner.scanForPackages()
+      console.log(`Found ${packages.length} packages`)
+
+      // Add each package to the in-memory storage
+      for (const pkg of packages) {
+        await this.addOrUpdatePackage(pkg)
+      }
+
+      console.log('Package indexing complete')
+    } catch (error) {
+      console.error('Error indexing packages:', error)
+    }
+  }
+
+  /**
+   * Start watching for new packages
+   */
+  startWatchingForPackages(): void {
+    // Stop any existing watcher
+    if (this.packageWatcherStop) {
+      this.packageWatcherStop()
+    }
+
+    // Start a new watcher
+    this.packageWatcherStop = this.packageScanner.watchForNewPackages(async (packageInfo) => {
+      console.log('New package detected:', packageInfo.name)
+      await this.addOrUpdatePackage(packageInfo)
+    })
+  }
+
+  /**
+   * Stop watching for new packages
+   */
+  stopWatchingForPackages(): void {
+    if (this.packageWatcherStop) {
+      this.packageWatcherStop()
+      this.packageWatcherStop = null
+    }
+  }
+
+  /**
+   * Add a package to the in-memory storage or update if it already exists
+   * @param packageInfo Package information
+   */
+  async addOrUpdatePackage(packageInfo: Package): Promise<void> {
+    try {
+      // Check if the package already exists by path
+      const existingPackage = Array.from(this.packages.values()).find(pkg => pkg.path === packageInfo.path)
+      
+      if (existingPackage) {
+        // Update the existing package
+        this.packages.set(existingPackage.id, {
+          ...existingPackage,
+          name: packageInfo.name,
+          size: packageInfo.size,
+          createdAt: packageInfo.createdAt,
+          packageType: packageInfo.packageType,
+          version: packageInfo.version,
+          metadata: packageInfo.metadata
+        })
+        console.log(`Updated package in memory: ${packageInfo.name}`)
+      } else {
+        // Add the new package
+        this.packages.set(packageInfo.id, packageInfo)
+        console.log(`Added package to memory: ${packageInfo.name}`)
+      }
+    } catch (error) {
+      console.error(`Error adding/updating package ${packageInfo.name}:`, error)
+    }
+  }
+
+  /**
+   * Get all packages from the in-memory storage
+   * @returns Array of packages
+   */
+  async getAllPackages(): Promise<Package[]> {
+    return Array.from(this.packages.values())
+  }
+
+  /**
+   * Get a package by ID
+   * @param id Package ID
+   * @returns Package information or null if not found
+   */
+  async getPackageById(id: string): Promise<Package | null> {
+    return this.packages.get(id) || null
+  }
+
+  /**
+   * Update package metadata
+   * @param id Package ID
+   * @param metadata New metadata
+   * @returns True if successful, false otherwise
+   */
+  async updatePackageMetadata(id: string, metadata: PackageMetadata): Promise<boolean> {
+    try {
+      const pkg = this.packages.get(id)
+      if (!pkg) return false
+      
+      this.packages.set(id, {
+        ...pkg,
+        metadata
+      })
+      return true
+    } catch (error) {
+      console.error(`Error updating package metadata ${id}:`, error)
+      return false
+    }
+  }
+
+  /**
+   * Delete a package
+   * @param id Package ID
+   * @returns True if successful, false otherwise
+   */
+  async deletePackage(id: string): Promise<boolean> {
+    try {
+      const pkg = this.packages.get(id)
+      if (!pkg) return false
+      
+      // Delete the file from the file system
+      if (await fs.pathExists(pkg.path)) {
+        await fs.unlink(pkg.path)
+      }
+      
+      // Delete from the in-memory storage
+      this.packages.delete(id)
+      return true
+    } catch (error) {
+      console.error(`Error deleting package ${id}:`, error)
+      return false
+    }
+  }
+
+  async handleGenerateSiIni(_event: IpcMainInvokeEvent, config: PackageConfig): Promise<string> {
     return this.generateSiIni(config)
   }
 
   async handleCreatePackage(
-    event: IpcMainInvokeEvent,
+    _event: IpcMainInvokeEvent,
     config: PackageConfig
   ): Promise<{ success: boolean; message: string; outputPath?: string }> {
     const workDir = path.join(app.getPath('temp'), `package_${Date.now()}`)
@@ -273,8 +432,12 @@ class PackagingService {
       // Create final package
       await this.fileProcessor.createTgzPackage(workDir, outputPath)
 
+      // Index the newly created package
+      const packageInfo = await extractMetadataFromTGZ(outputPath)
+      await this.addOrUpdatePackage(packageInfo)
+
       return { success: true, message: `打包成功: ${outputFilename}`, outputPath }
-    } catch (error) {
+    } catch (error: any) {
       return { success: false, message: `打包失败: ${error.message}` }
     } finally {
       await fs.remove(workDir) // Cleanup
@@ -397,6 +560,7 @@ class PackagingService {
   }
 
   cleanup() {
+    this.stopWatchingForPackages()
     this.fileProcessor.cleanupTempFiles()
   }
 }

@@ -15,6 +15,7 @@ import { isDev, isWin } from './constant'
 import { registerIpc } from './ipc'
 import { configManager } from './services/ConfigManager'
 import mcpService from './services/MCPService'
+import { packagingService } from './services/PackagingService'
 import {
   CHERRY_STUDIO_PROTOCOL,
   handleProtocolUrl,
@@ -127,6 +128,14 @@ if (!app.requestSingleInstanceLock()) {
 
     //start selection assistant service
     initSelectionService()
+    
+    // Initialize packaging service
+    try {
+      await packagingService.initialize();
+      console.log('Packaging service initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize packaging service:', error);
+    }
   })
 
   registerProtocolClient(app)
@@ -172,8 +181,9 @@ if (!app.requestSingleInstanceLock()) {
     // event.preventDefault()
     try {
       await mcpService.cleanup()
+      packagingService.cleanup()
     } catch (error) {
-      Logger.error('Error cleaning up MCP service:', error)
+      Logger.error('Error cleaning up services:', error)
     }
   })
 

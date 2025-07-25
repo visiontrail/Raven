@@ -540,6 +540,23 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
     }
     return filePaths[0]
   })
+  
+  // Package Management
+  ipcMain.handle(IpcChannel.Package_GetAll, () => {
+    return packagingService.getAllPackages()
+  })
+  ipcMain.handle(IpcChannel.Package_GetById, (_, id: string) => {
+    return packagingService.getPackageById(id)
+  })
+  ipcMain.handle(IpcChannel.Package_UpdateMetadata, (_, id: string, metadata: any) => {
+    return packagingService.updatePackageMetadata(id, metadata)
+  })
+  ipcMain.handle(IpcChannel.Package_Delete, (_, id: string) => {
+    return packagingService.deletePackage(id)
+  })
+  ipcMain.handle(IpcChannel.Package_ScanForPackages, () => {
+    return packagingService.indexExistingPackages()
+  })
 
   ipcMain.handle(IpcChannel.App_IsBinaryExist, (_, name: string) => isBinaryExists(name))
   ipcMain.handle(IpcChannel.App_GetBinaryPath, (_, name: string) => getBinaryPath(name))
