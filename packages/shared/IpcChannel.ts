@@ -94,6 +94,10 @@ export enum IpcChannel {
   Package_UpdateMetadata = 'package:update-metadata',
   Package_Delete = 'package:delete',
   Package_ScanForPackages = 'package:scan-for-packages',
+  Package_UploadToFTP = 'package:upload-to-ftp',
+  Package_UploadToHTTP = 'package:upload-to-http',
+  Package_ScanDirectory = 'package:scan-directory',
+  Package_ExtractMetadata = 'package:extract-metadata',
 
   //copilot
   Copilot_GetAuthMessage = 'copilot:get-auth-message',

@@ -3,10 +3,10 @@
 import { app, IpcMainInvokeEvent } from 'electron'
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import { v4 as uuidv4 } from 'uuid'
 
-import { Package, PackageMetadata, PackageType } from '../../renderer/src/types/package'
+import { Package, PackageMetadata } from '../../renderer/src/types/package'
 import { extractMetadataFromTGZ } from '../utils/packageUtils'
+import { packageService } from './PackageService'
 import { FileProcessor } from './packaging/FileProcessor'
 import { PackageScanner } from './packaging/PackageScanner'
 import { VersionParser } from './packaging/VersionParser'
@@ -243,7 +243,7 @@ class PackagingService {
   private fileProcessor: FileProcessor
   private packageScanner: PackageScanner
   private packageWatcherStop: (() => void) | null = null
-  
+
   // In-memory package storage
   private packages: Map<string, Package> = new Map()
 
@@ -316,8 +316,8 @@ class PackagingService {
   async addOrUpdatePackage(packageInfo: Package): Promise<void> {
     try {
       // Check if the package already exists by path
-      const existingPackage = Array.from(this.packages.values()).find(pkg => pkg.path === packageInfo.path)
-      
+      const existingPackage = Array.from(this.packages.values()).find((pkg) => pkg.path === packageInfo.path)
+
       if (existingPackage) {
         // Update the existing package
         this.packages.set(existingPackage.id, {
@@ -367,7 +367,7 @@ class PackagingService {
     try {
       const pkg = this.packages.get(id)
       if (!pkg) return false
-      
+
       this.packages.set(id, {
         ...pkg,
         metadata
@@ -388,12 +388,12 @@ class PackagingService {
     try {
       const pkg = this.packages.get(id)
       if (!pkg) return false
-      
+
       // Delete the file from the file system
       if (await fs.pathExists(pkg.path)) {
         await fs.unlink(pkg.path)
       }
-      
+
       // Delete from the in-memory storage
       this.packages.delete(id)
       return true
@@ -435,6 +435,9 @@ class PackagingService {
       // Index the newly created package
       const packageInfo = await extractMetadataFromTGZ(outputPath)
       await this.addOrUpdatePackage(packageInfo)
+
+      // Also add to the new PackageService
+      await packageService.addPackage(packageInfo)
 
       return { success: true, message: `打包成功: ${outputFilename}`, outputPath }
     } catch (error: any) {

@@ -26,6 +26,7 @@ import NotificationService from './services/NotificationService'
 import * as NutstoreService from './services/NutstoreService'
 import ObsidianVaultService from './services/ObsidianVaultService'
 import { packagingService } from './services/PackagingService'
+import { packageService } from './services/PackageService'
 import { ProxyConfig, proxyManager } from './services/ProxyManager'
 import { pythonService } from './services/PythonService'
 import { FileServiceManager } from './services/remotefile/FileServiceManager'
@@ -543,19 +544,31 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
   
   // Package Management
   ipcMain.handle(IpcChannel.Package_GetAll, () => {
-    return packagingService.getAllPackages()
+    return packageService.getPackages()
   })
   ipcMain.handle(IpcChannel.Package_GetById, (_, id: string) => {
-    return packagingService.getPackageById(id)
+    return packageService.getPackageById(id)
   })
   ipcMain.handle(IpcChannel.Package_UpdateMetadata, (_, id: string, metadata: any) => {
-    return packagingService.updatePackageMetadata(id, metadata)
+    return packageService.updatePackageMetadata(id, metadata)
   })
   ipcMain.handle(IpcChannel.Package_Delete, (_, id: string) => {
-    return packagingService.deletePackage(id)
+    return packageService.deletePackage(id)
   })
   ipcMain.handle(IpcChannel.Package_ScanForPackages, () => {
     return packagingService.indexExistingPackages()
+  })
+  ipcMain.handle(IpcChannel.Package_UploadToFTP, (_, id: string, ftpConfig: any) => {
+    return packageService.uploadPackageToFTP(id, ftpConfig)
+  })
+  ipcMain.handle(IpcChannel.Package_UploadToHTTP, (_, id: string, httpConfig: any) => {
+    return packageService.uploadPackageToHTTP(id, httpConfig)
+  })
+  ipcMain.handle(IpcChannel.Package_ScanDirectory, (_, directoryPath: string) => {
+    return packageService.scanPackagesInDirectory(directoryPath)
+  })
+  ipcMain.handle(IpcChannel.Package_ExtractMetadata, (_, filePath: string) => {
+    return packageService.extractPackageMetadata(filePath)
   })
 
   ipcMain.handle(IpcChannel.App_IsBinaryExist, (_, name: string) => isBinaryExists(name))
