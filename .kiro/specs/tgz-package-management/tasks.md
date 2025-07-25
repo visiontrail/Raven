@@ -18,13 +18,13 @@
   - Implement metadata extraction and management
   - _Requirements: 1.3, 1.4, 2.1, 2.2, 2.3_
 
-- [ ] 4. Integrate with Files section UI
+- [x] 4. Integrate with Files section UI
   - Add "Packages" category to Files section
   - Create PackageListView component
   - Implement package list display with metadata
   - _Requirements: 1.1, 1.2, 1.5_
 
-- [ ] 5. Implement package detail view
+- [x] 5. Implement package detail view
   - Create PackageDetailView component
   - Display detailed package information
   - Add metadata editing functionality

@@ -2,7 +2,7 @@ import Logger from '@renderer/config/logger'
 import { LanguagesEnum } from '@renderer/config/translate'
 import type { LanguageCode, LegacyMessage as OldMessage, Topic } from '@renderer/types'
 import { FileTypes, WebSearchSource } from '@renderer/types' // Import FileTypes enum
-import type { Package } from '@renderer/types/package'
+
 import type {
   BaseMessageBlock,
   CitationMessageBlock,

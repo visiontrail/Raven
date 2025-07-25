@@ -3,7 +3,7 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { PackageType, PackageMetadata, Package } from '../../renderer/src/types/package';
+import { PackageType, Package } from '../../renderer/src/types/package';
 import { VersionParser } from '../services/packaging/VersionParser';
 
 /**
@@ -108,7 +108,7 @@ function extractComponentsFromFilename(fileName: string): string[] {
  * Note: This would require extracting the TGZ file first, which might be expensive
  * Consider implementing this as an async operation or on-demand
  */
-export async function parseSiIniFromTGZ(filePath: string): Promise<Record<string, any> | null> {
+export async function parseSiIniFromTGZ(_filePath: string): Promise<Record<string, any> | null> {
   // This would be implemented if we want to extract metadata from the si.ini file
   // For now, return null as this would require extracting the TGZ file
   return null;

@@ -524,7 +524,7 @@ class PackagingService {
     }
     return Object.entries(config.components).map(([name, details]) => ({
       name,
-      description: details.description
+      description: (details as any).description
     }))
   }
 

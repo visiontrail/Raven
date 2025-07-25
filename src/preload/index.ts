@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import type { ExtractChunkData } from '@cherrystudio/embedjs-interfaces'
 import { electronAPI } from '@electron-toolkit/preload'
 import { UpgradeChannel } from '@shared/config/constant'
@@ -16,7 +18,6 @@ import {
   WebDavConfig
 } from '@types'
 import { contextBridge, ipcRenderer, OpenDialogOptions, shell, webUtils } from 'electron'
-import path from 'node:path'
 import { Notification } from 'src/renderer/src/types/notification'
 import { CreateDirectoryOptions } from 'webdav'
 
@@ -248,13 +249,23 @@ const api = {
   },
   packager: {
     getInfo: (packageType: string) => ipcRenderer.invoke(IpcChannel.Packager_GetInfo, packageType),
-    getComponentTemplate: (packageType: string) => ipcRenderer.invoke(IpcChannel.Packager_GetComponentTemplate, packageType),
     getAutoVersion: (filePath: string) => ipcRenderer.invoke(IpcChannel.Packager_GetAutoVersion, filePath),
     getAutoVersionFromFilename: (filename: string) =>
       ipcRenderer.invoke(IpcChannel.Packager_GetAutoVersionFromFilename, filename),
     generateSiIni: (config) => ipcRenderer.invoke(IpcChannel.Packager_GenerateSiIni, config),
     createPackage: (config) => ipcRenderer.invoke(IpcChannel.Packager_CreatePackage, config),
     selectFile: () => ipcRenderer.invoke(IpcChannel.Packager_SelectFile)
+  },
+  package: {
+    getAll: () => ipcRenderer.invoke(IpcChannel.Package_GetAll),
+    getById: (id: string) => ipcRenderer.invoke(IpcChannel.Package_GetById, id),
+    updateMetadata: (id: string, metadata: any) => ipcRenderer.invoke(IpcChannel.Package_UpdateMetadata, id, metadata),
+    delete: (id: string) => ipcRenderer.invoke(IpcChannel.Package_Delete, id),
+    scanForPackages: () => ipcRenderer.invoke(IpcChannel.Package_ScanForPackages),
+    uploadToFTP: (id: string, ftpConfig: any) => ipcRenderer.invoke(IpcChannel.Package_UploadToFTP, id, ftpConfig),
+    uploadToHTTP: (id: string, httpConfig: any) => ipcRenderer.invoke(IpcChannel.Package_UploadToHTTP, id, httpConfig),
+    scanDirectory: (directoryPath: string) => ipcRenderer.invoke(IpcChannel.Package_ScanDirectory, directoryPath),
+    extractMetadata: (filePath: string) => ipcRenderer.invoke(IpcChannel.Package_ExtractMetadata, filePath)
   },
   path: {
     basename: (filePath: string) => path.basename(filePath)

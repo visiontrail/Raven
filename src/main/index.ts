@@ -15,7 +15,7 @@ import { isDev, isWin } from './constant'
 import { registerIpc } from './ipc'
 import { configManager } from './services/ConfigManager'
 import mcpService from './services/MCPService'
-import { packagingService } from './services/PackagingService'
+import { packagingService } from './services/packagingService'
 import {
   CHERRY_STUDIO_PROTOCOL,
   handleProtocolUrl,

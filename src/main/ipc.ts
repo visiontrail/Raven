@@ -25,8 +25,8 @@ import mcpService from './services/MCPService'
 import NotificationService from './services/NotificationService'
 import * as NutstoreService from './services/NutstoreService'
 import ObsidianVaultService from './services/ObsidianVaultService'
-import { packagingService } from './services/PackagingService'
 import { packageService } from './services/PackageService'
+import { packagingService } from './services/packagingService'
 import { ProxyConfig, proxyManager } from './services/ProxyManager'
 import { pythonService } from './services/PythonService'
 import { FileServiceManager } from './services/remotefile/FileServiceManager'
@@ -541,7 +541,7 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
     }
     return filePaths[0]
   })
-  
+
   // Package Management
   ipcMain.handle(IpcChannel.Package_GetAll, () => {
     return packageService.getPackages()
