@@ -30,7 +30,7 @@
   - Add metadata editing functionality
   - _Requirements: 2.1, 2.2, 2.3_
 
-- [ ] 6. Add package operations
+- [x] 6. Add package operations
   - Implement open package location functionality
   - Add package deletion with confirmation
   - _Requirements: 3.1, 3.2, 3.3_
