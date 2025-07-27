@@ -35,7 +35,7 @@
   - Add package deletion with confirmation
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 7. Implement sorting and filtering
+- [x] 7. Implement sorting and filtering
   - Add sorting options by date, name, size, and package type
   - Implement filtering functionality
   - Add search capability for packages

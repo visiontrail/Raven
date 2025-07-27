@@ -96,10 +96,7 @@ const FilesPage: FC = () => {
         </SideNav>
         <MainContent>
           {fileType === FileTypes.PACKAGE ? (
-            <PackageListView
-              sortField={sortField as 'created_at' | 'size' | 'name' | 'package_type'}
-              sortOrder={sortOrder}
-            />
+            <PackageListView />
           ) : (
             <>
               <SortContainer>

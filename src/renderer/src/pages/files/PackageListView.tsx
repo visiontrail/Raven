@@ -18,27 +18,68 @@ import { usePackages } from '../../hooks/usePackages'
 import { Package, PackageType } from '../../types/package'
 import { formatFileSize } from '../../utils'
 import PackageDetailView from './PackageDetailView'
+import PackageFilterBar, { PackageFilters, PackageSorting } from './PackageFilterBar'
 
-interface PackageListViewProps {
-  sortField?: 'created_at' | 'size' | 'name' | 'package_type'
-  sortOrder?: 'asc' | 'desc'
-}
+interface PackageListViewProps {}
 
-const PackageListView: FC<PackageListViewProps> = ({ sortField = 'created_at', sortOrder = 'desc' }) => {
+const PackageListView: FC<PackageListViewProps> = () => {
   const { t } = useTranslation()
   const { packages, loading, error, deletePackage, scanForPackages, openPackageLocation } = usePackages()
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null)
+  
+  // State for filters and sorting
+  const [filters, setFilters] = useState<PackageFilters>({
+    search: '',
+    packageType: 'all',
+    isPatch: 'all'
+  })
+  
+  const [sorting, setSorting] = useState<PackageSorting>({
+    field: 'created_at',
+    order: 'desc'
+  })
 
-  // Sort packages based on sortField and sortOrder
-  const sortedPackages = useMemo(() => {
+  // Filter and sort packages based on current filters and sorting
+  const filteredAndSortedPackages = useMemo(() => {
     if (!packages) return []
 
-    return [...packages].sort((a, b) => {
+    // First apply filters
+    let filtered = packages.filter((pkg) => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase()
+        const matchesName = pkg.name.toLowerCase().includes(searchLower)
+        const matchesDescription = pkg.metadata?.description?.toLowerCase().includes(searchLower) || false
+        const matchesTags = pkg.metadata?.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || false
+        const matchesComponents = pkg.metadata?.components?.some(component => component.toLowerCase().includes(searchLower)) || false
+        
+        if (!matchesName && !matchesDescription && !matchesTags && !matchesComponents) {
+          return false
+        }
+      }
+
+      // Package type filter
+      if (filters.packageType !== 'all' && pkg.packageType !== filters.packageType) {
+        return false
+      }
+
+      // Patch filter
+      if (filters.isPatch !== 'all') {
+        const isPatch = pkg.metadata?.isPatch || false
+        if (filters.isPatch === 'patch' && !isPatch) return false
+        if (filters.isPatch === 'full' && isPatch) return false
+      }
+
+      return true
+    })
+
+    // Then apply sorting
+    return filtered.sort((a, b) => {
       let aValue: any
       let bValue: any
 
-      switch (sortField) {
+      switch (sorting.field) {
         case 'created_at':
           aValue = new Date(a.createdAt).getTime()
           bValue = new Date(b.createdAt).getTime()
@@ -59,11 +100,11 @@ const PackageListView: FC<PackageListViewProps> = ({ sortField = 'created_at', s
           return 0
       }
 
-      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1
-      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1
+      if (aValue < bValue) return sorting.order === 'asc' ? -1 : 1
+      if (aValue > bValue) return sorting.order === 'asc' ? 1 : -1
       return 0
     })
-  }, [packages, sortField, sortOrder])
+  }, [packages, filters, sorting])
 
   // Get package type color for tags
   const getPackageTypeColor = (packageType: PackageType): string => {
@@ -229,10 +270,20 @@ const PackageListView: FC<PackageListViewProps> = ({ sortField = 'created_at', s
 
   return (
     <Container>
+      <PackageFilterBar
+        filters={filters}
+        sorting={sorting}
+        onFiltersChange={setFilters}
+        onSortingChange={setSorting}
+        totalCount={filteredAndSortedPackages.length}
+      />
+
       <HeaderContainer>
         <Flex justify="space-between" align="center">
           <span>
-            {t('files.packages')} ({sortedPackages.length})
+            {filteredAndSortedPackages.length > 0 && packages && filteredAndSortedPackages.length !== packages.length
+              ? t('files.packages_count', { count: filteredAndSortedPackages.length }) + ` / ${packages.length}`
+              : t('files.packages_count', { count: filteredAndSortedPackages.length })}
           </span>
           <Button type="text" icon={<ReloadOutlined />} onClick={handleRefresh} loading={loading}>
             {t('common.refresh')}
@@ -240,10 +291,10 @@ const PackageListView: FC<PackageListViewProps> = ({ sortField = 'created_at', s
         </Flex>
       </HeaderContainer>
 
-      {sortedPackages.length > 0 ? (
+      {filteredAndSortedPackages.length > 0 ? (
         <Table
           columns={columns}
-          dataSource={sortedPackages}
+          dataSource={filteredAndSortedPackages}
           rowKey="id"
           loading={loading}
           pagination={{
