@@ -5,6 +5,7 @@ import * as path from 'path'
 
 import { FTPConfig, HTTPConfig, Package, PackageMetadata } from '../../renderer/src/types/package'
 import { extractMetadataFromTGZ } from '../utils/packageUtils'
+import { ftpService, FTPUploadProgress } from './FTPService'
 
 /**
  * Interface for the Package Service
@@ -42,9 +43,10 @@ export interface IPackageService {
    * Upload package to FTP server
    * @param id Package ID
    * @param ftpConfig FTP configuration
+   * @param onProgress Progress callback
    * @returns Promise<boolean> True if successful
    */
-  uploadPackageToFTP(id: string, ftpConfig: FTPConfig): Promise<boolean>
+  uploadPackageToFTP(id: string, ftpConfig: FTPConfig, onProgress?: (progress: FTPUploadProgress) => void): Promise<boolean>
 
   /**
    * Upload package to HTTP server
@@ -227,7 +229,7 @@ export class PackageService implements IPackageService {
   /**
    * Upload package to FTP server
    */
-  async uploadPackageToFTP(id: string, ftpConfig: FTPConfig): Promise<boolean> {
+  async uploadPackageToFTP(id: string, ftpConfig: FTPConfig, onProgress?: (progress: FTPUploadProgress) => void): Promise<boolean> {
     try {
       const pkg = this.packages.get(id)
       if (!pkg) {
@@ -238,15 +240,28 @@ export class PackageService implements IPackageService {
         throw new Error(`Package file not found: ${pkg.path}`)
       }
 
-      // TODO: Implement FTP upload functionality
-      // This requires adding an FTP client dependency like 'basic-ftp'
-      // For now, we'll log the operation and return false
-      console.log(
-        `FTP upload requested for package ${pkg.name} to ${ftpConfig.host}:${ftpConfig.port}${ftpConfig.remotePath}`
-      )
-      console.log('FTP upload functionality not yet implemented - requires FTP client dependency')
+      // Create remote path with package filename if not specified
+      let remotePath = ftpConfig.remotePath
+      if (!remotePath.endsWith(pkg.name)) {
+        remotePath = path.posix.join(remotePath, pkg.name)
+      }
 
-      return false
+      // Create updated FTP config with the full remote path
+      const updatedFtpConfig: FTPConfig = {
+        ...ftpConfig,
+        remotePath
+      }
+
+      console.log(`Starting FTP upload for package ${pkg.name} to ${ftpConfig.host}:${ftpConfig.port}${remotePath}`)
+
+      // Use FTP service to upload the file
+      const success = await ftpService.uploadFile(pkg.path, updatedFtpConfig, onProgress)
+
+      if (success) {
+        console.log(`Successfully uploaded package ${pkg.name} to FTP server`)
+      }
+
+      return success
     } catch (error) {
       console.error(`Error uploading package ${id} to FTP:`, error)
       return false

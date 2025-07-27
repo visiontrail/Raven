@@ -3,7 +3,6 @@
 import { vi } from 'vitest'
 
 import { Package, PackageMetadata, PackageType } from '../../../renderer/src/types/package'
-import { PackageService } from '../PackageService'
 
 // Mock electron app
 const mockApp = {
@@ -15,7 +14,7 @@ vi.mock('electron', () => ({
 }))
 
 // Mock fs-extra
-const mockedFs = {
+vi.mock('fs-extra', () => ({
   pathExists: vi.fn(),
   readJSON: vi.fn(),
   writeJSON: vi.fn(),
@@ -23,15 +22,27 @@ const mockedFs = {
   stat: vi.fn(),
   unlink: vi.fn(),
   readFile: vi.fn()
-}
-
-vi.mock('fs-extra', () => mockedFs)
+}))
 
 // Mock extractMetadataFromTGZ
-const mockExtractMetadata = vi.fn()
 vi.mock('../../utils/packageUtils', () => ({
-  extractMetadataFromTGZ: mockExtractMetadata
+  extractMetadataFromTGZ: vi.fn()
 }))
+
+// Mock FTPService
+vi.mock('../FTPService', () => ({
+  ftpService: {
+    uploadFile: vi.fn(),
+    testConnection: vi.fn()
+  },
+  FTPUploadProgress: {}
+}))
+
+// Import after mocking
+const { PackageService } = await import('../PackageService')
+const mockedFs = vi.mocked(await import('fs-extra'))
+const { extractMetadataFromTGZ: mockExtractMetadata } = vi.mocked(await import('../../utils/packageUtils'))
+const { ftpService: mockFtpService } = vi.mocked(await import('../FTPService'))
 
 describe('PackageService', () => {
   let packageService: PackageService
@@ -63,6 +74,10 @@ describe('PackageService', () => {
     mockedFs.readdir.mockResolvedValue([])
     mockedFs.stat.mockResolvedValue({ isFile: () => true } as any)
     mockedFs.unlink.mockResolvedValue()
+
+    // Reset FTP service mocks
+    mockFtpService.uploadFile.mockReset()
+    mockFtpService.testConnection.mockReset()
     mockedFs.readFile.mockResolvedValue(Buffer.from('test'))
   })
 
@@ -241,7 +256,7 @@ describe('PackageService', () => {
       expect(result).toBe(false)
     })
 
-    it('should log FTP upload request (not implemented)', async () => {
+    it('should handle FTP upload successfully', async () => {
       await packageService.addPackage(mockPackage)
 
       const ftpConfig = {
@@ -252,13 +267,42 @@ describe('PackageService', () => {
         remotePath: '/uploads'
       }
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      // Mock successful FTP upload
+      mockFtpService.uploadFile.mockResolvedValue(true)
 
       const result = await packageService.uploadPackageToFTP(mockPackage.id, ftpConfig)
-      expect(result).toBe(false) // Not implemented yet
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('FTP upload requested'))
 
-      consoleSpy.mockRestore()
+      expect(result).toBe(true)
+      expect(mockFtpService.uploadFile).toHaveBeenCalledWith(
+        mockPackage.path,
+        expect.objectContaining({
+          host: ftpConfig.host,
+          port: ftpConfig.port,
+          username: ftpConfig.username,
+          password: ftpConfig.password,
+          remotePath: '/uploads/test-package.tgz'
+        }),
+        undefined
+      )
+    })
+
+    it('should handle FTP upload failures', async () => {
+      await packageService.addPackage(mockPackage)
+
+      const ftpConfig = {
+        host: 'ftp.example.com',
+        port: 21,
+        username: 'user',
+        password: 'pass',
+        remotePath: '/uploads'
+      }
+
+      // Mock FTP upload failure
+      mockFtpService.uploadFile.mockRejectedValue(new Error('FTP connection failed'))
+
+      const result = await packageService.uploadPackageToFTP(mockPackage.id, ftpConfig)
+
+      expect(result).toBe(false)
     })
   })
 
