@@ -6,6 +6,7 @@ import * as path from 'path'
 import { FTPConfig, HTTPConfig, Package, PackageMetadata } from '../../renderer/src/types/package'
 import { extractMetadataFromTGZ } from '../utils/packageUtils'
 import { ftpService, FTPUploadProgress } from './FTPService'
+import { httpService, HTTPUploadProgress } from './HTTPService'
 
 /**
  * Interface for the Package Service
@@ -52,9 +53,10 @@ export interface IPackageService {
    * Upload package to HTTP server
    * @param id Package ID
    * @param httpConfig HTTP configuration
+   * @param onProgress Progress callback
    * @returns Promise<boolean> True if successful
    */
-  uploadPackageToHTTP(id: string, httpConfig: HTTPConfig): Promise<boolean>
+  uploadPackageToHTTP(id: string, httpConfig: HTTPConfig, onProgress?: (progress: HTTPUploadProgress) => void): Promise<boolean>
 
   /**
    * Add a package to the service
@@ -271,7 +273,7 @@ export class PackageService implements IPackageService {
   /**
    * Upload package to HTTP server
    */
-  async uploadPackageToHTTP(id: string, httpConfig: HTTPConfig): Promise<boolean> {
+  async uploadPackageToHTTP(id: string, httpConfig: HTTPConfig, onProgress?: (progress: HTTPUploadProgress) => void): Promise<boolean> {
     try {
       const pkg = this.packages.get(id)
       if (!pkg) {
@@ -282,64 +284,16 @@ export class PackageService implements IPackageService {
         throw new Error(`Package file not found: ${pkg.path}`)
       }
 
-      // Use axios for HTTP requests (already available in the project)
-      const axios = require('axios')
+      console.log(`Starting HTTP upload for package ${pkg.name} to ${httpConfig.url}`)
 
-      // Read the file as buffer for upload
-      const fileBuffer = await fs.readFile(pkg.path)
+      // Use HTTP service to upload the file with metadata
+      const success = await httpService.uploadFile(pkg.path, pkg.metadata, httpConfig, onProgress)
 
-      // Prepare headers
-      const headers = {
-        'Content-Type': 'application/octet-stream',
-        'Content-Length': fileBuffer.length.toString(),
-        'X-Package-Name': pkg.name,
-        'X-Package-Version': pkg.version,
-        'X-Package-Type': pkg.packageType,
-        'X-Package-Metadata': JSON.stringify(pkg.metadata),
-        ...httpConfig.headers
+      if (success) {
+        console.log(`Successfully uploaded package ${pkg.name} to HTTP server`)
       }
 
-      // Add authentication if provided
-      if (httpConfig.authentication) {
-        switch (httpConfig.authentication.type) {
-          case 'Basic':
-            if (httpConfig.authentication.username && httpConfig.authentication.password) {
-              const auth = Buffer.from(
-                `${httpConfig.authentication.username}:${httpConfig.authentication.password}`
-              ).toString('base64')
-              headers['Authorization'] = `Basic ${auth}`
-            }
-            break
-          case 'Bearer':
-            if (httpConfig.authentication.token) {
-              headers['Authorization'] = `Bearer ${httpConfig.authentication.token}`
-            }
-            break
-          case 'OAuth':
-            if (httpConfig.authentication.token) {
-              headers['Authorization'] = `OAuth ${httpConfig.authentication.token}`
-            }
-            break
-        }
-      }
-
-      // Make the HTTP request
-      const response = await axios({
-        method: httpConfig.method,
-        url: httpConfig.url,
-        data: fileBuffer,
-        headers,
-        timeout: 30000, // 30 second timeout
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity
-      })
-
-      if (response.status >= 200 && response.status < 300) {
-        console.log(`Successfully uploaded ${pkg.name} to HTTP server`)
-        return true
-      } else {
-        throw new Error(`HTTP upload failed with status: ${response.status}`)
-      }
+      return success
     } catch (error) {
       console.error(`Error uploading package ${id} to HTTP:`, error)
       return false
