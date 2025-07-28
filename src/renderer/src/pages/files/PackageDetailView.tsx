@@ -25,7 +25,7 @@ interface PackageDetailViewProps {
 
 const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, onPackageUpdated }) => {
   const { t } = useTranslation()
-  const { updatePackageMetadata, deletePackage, openPackageLocation } = usePackages()
+  const { updatePackageMetadata, deletePackage, openPackageLocation, uploadToFTP } = usePackages()
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [form] = Form.useForm()
@@ -111,8 +111,31 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
 
   // Handle upload to device (FTP)
   const handleUploadToDevice = async () => {
-    // TODO: Show FTP configuration modal
-    message.info(t('files.package.upload_device_todo'))
+    // Hardcoded FTP configuration
+    const ftpConfig = {
+      host: '172.16.9.224',
+      port: 10002,
+      username: 'anonymous',
+      password: 'anonymous',
+      remotePath: '/firmware'
+    }
+
+    try {
+      setLoading(true)
+      const success = await uploadToFTP(pkg.id, ftpConfig)
+      if (success) {
+        message.success(t('files.package.upload_success'))
+        console.log('Package uploaded successfully to FTP:', pkg.name)
+      } else {
+        message.error(t('files.package.upload_failed'))
+        console.error('Failed to upload package to FTP:', pkg.name)
+      }
+    } catch (error) {
+      message.error(t('files.package.upload_failed'))
+      console.error('Error uploading package to FTP:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Handle upload to server (HTTP)
@@ -261,7 +284,7 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
             <Button icon={<FolderOpenOutlined />} onClick={handleOpenLocation}>
               {t('files.open_location')}
             </Button>
-            <Button icon={<UploadOutlined />} onClick={handleUploadToDevice}>
+            <Button icon={<UploadOutlined />} onClick={handleUploadToDevice} loading={loading}>
               {t('files.package.upload_to_device')}
             </Button>
             <Button icon={<UploadOutlined />} onClick={handleUploadToServer}>

@@ -24,17 +24,18 @@ interface PackageListViewProps {}
 
 const PackageListView: FC<PackageListViewProps> = () => {
   const { t } = useTranslation()
-  const { packages, loading, error, deletePackage, scanForPackages, openPackageLocation } = usePackages()
+  const { packages, loading, error, deletePackage, scanForPackages, openPackageLocation, uploadToFTP } = usePackages()
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null)
-  
+  const [uploadingPackageId, setUploadingPackageId] = useState<string | null>(null)
+
   // State for filters and sorting
   const [filters, setFilters] = useState<PackageFilters>({
     search: '',
     packageType: 'all',
     isPatch: 'all'
   })
-  
+
   const [sorting, setSorting] = useState<PackageSorting>({
     field: 'created_at',
     order: 'desc'
@@ -45,15 +46,16 @@ const PackageListView: FC<PackageListViewProps> = () => {
     if (!packages) return []
 
     // First apply filters
-    let filtered = packages.filter((pkg) => {
+    const filtered = packages.filter((pkg) => {
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase()
         const matchesName = pkg.name.toLowerCase().includes(searchLower)
         const matchesDescription = pkg.metadata?.description?.toLowerCase().includes(searchLower) || false
-        const matchesTags = pkg.metadata?.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || false
-        const matchesComponents = pkg.metadata?.components?.some(component => component.toLowerCase().includes(searchLower)) || false
-        
+        const matchesTags = pkg.metadata?.tags?.some((tag) => tag.toLowerCase().includes(searchLower)) || false
+        const matchesComponents =
+          pkg.metadata?.components?.some((component) => component.toLowerCase().includes(searchLower)) || false
+
         if (!matchesName && !matchesDescription && !matchesTags && !matchesComponents) {
           return false
         }
@@ -134,6 +136,35 @@ const PackageListView: FC<PackageListViewProps> = () => {
   // Handle opening package location
   const handleOpenLocation = async (pkg: Package) => {
     await openPackageLocation(pkg.path)
+  }
+
+  // Handle FTP upload
+  const handleUploadToFTP = async (pkg: Package) => {
+    // Hardcoded FTP configuration
+    const ftpConfig = {
+      host: '172.16.9.224',
+      port: 10002,
+      username: 'anonymous',
+      password: 'anonymous',
+      remotePath: '/firmware'
+    }
+
+    try {
+      setUploadingPackageId(pkg.id)
+      const success = await uploadToFTP(pkg.id, ftpConfig)
+      if (success) {
+        console.log('Package uploaded successfully to FTP:', pkg.name)
+        // TODO: Show success notification
+      } else {
+        console.error('Failed to upload package to FTP:', pkg.name)
+        // TODO: Show error notification
+      }
+    } catch (error) {
+      console.error('Error uploading package to FTP:', error)
+      // TODO: Show error notification
+    } finally {
+      setUploadingPackageId(null)
+    }
   }
 
   // Handle refresh/scan for packages
@@ -220,10 +251,8 @@ const PackageListView: FC<PackageListViewProps> = () => {
               type="text"
               size="small"
               icon={<UploadOutlined />}
-              onClick={() => {
-                // TODO: Implement upload functionality
-                console.log('Upload package:', record.id)
-              }}
+              loading={uploadingPackageId === record.id}
+              onClick={() => handleUploadToFTP(record)}
             />
           </Tooltip>
           <Popconfirm
