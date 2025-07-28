@@ -10,7 +10,7 @@ import {
 import { useAppDispatch } from '@renderer/store'
 import { setSidebarIcons } from '@renderer/store/settings'
 import { message } from 'antd'
-import { FileSearch, Folder, LayoutGrid, MessageSquareQuote, Sparkle } from 'lucide-react'
+import { FileSearch, Folder, MessageSquareQuote, Sparkle } from 'lucide-react'
 import { FC, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'

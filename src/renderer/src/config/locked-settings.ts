@@ -35,7 +35,16 @@ export const LOCKED_SETTINGS = {
   DISABLE_API_KEY_EDITING: true,
   DISABLE_API_HOST_EDITING: true,
   DISABLE_PROVIDER_DELETION: true,
-  DISABLE_MODEL_DELETION: true
+  DISABLE_MODEL_DELETION: true,
+  // 添加缺失的属性
+  LMSTUDIO_KEEP_ALIVE: 0,
+  VERTEX_AI_SERVICE_ACCOUNT: {
+    clientEmail: '',
+    privateKey: ''
+  },
+  VERTEX_AI_PROJECT_ID: '',
+  VERTEX_AI_LOCATION: '',
+  DMXAPI_PLATFORM: ''
 } as const
 
 // 获取锁定的API Key

@@ -1,12 +1,9 @@
+import { isLockedModeEnabled } from '@renderer/config/locked-settings'
 import { Input, InputRef, Tooltip } from 'antd'
 import { Search } from 'lucide-react'
 import { motion } from 'motion/react'
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { 
-  isLockedModeEnabled, 
-  isFeatureDisabled 
-} from '@renderer/config/locked-settings'
 
 interface ModelListSearchBarProps {
   onSearch: (text: string) => void
@@ -21,7 +18,7 @@ const ModelListSearchBar: React.FC<ModelListSearchBarProps> = ({ onSearch }) => 
   const [searchVisible, setSearchVisible] = useState(false)
   const [searchText, setSearchText] = useState('')
   const inputRef = useRef<InputRef>(null)
-  
+
   const isLocked = isLockedModeEnabled()
 
   const handleTextChange = useCallback(
@@ -90,7 +87,7 @@ const ModelListSearchBar: React.FC<ModelListSearchBarProps> = ({ onSearch }) => 
         style={{ cursor: isLocked ? 'not-allowed' : 'pointer', display: 'flex' }}
         onClick={() => !isLocked && setSearchVisible(true)}>
         <Tooltip title={isLocked ? t('settings.provider.locked_search') : t('models.search')} mouseEnterDelay={0.5}>
-          <Search size={14} color={isLocked ? "var(--color-text-disabled)" : "var(--color-icon)"} />
+          <Search size={14} color={isLocked ? 'var(--color-text-disabled)' : 'var(--color-icon)'} />
         </Tooltip>
       </motion.div>
     </div>

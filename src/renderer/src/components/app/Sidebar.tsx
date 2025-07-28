@@ -18,7 +18,6 @@ import {
   CircleHelp,
   FileSearch,
   Folder,
-  LayoutGrid,
   MessageSquare,
   Moon,
   Package,

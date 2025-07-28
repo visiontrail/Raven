@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import styled from 'styled-components'
 
-import { groupByCategories, useSystemAgents } from '.'
+import { useSystemAgents } from '.'
 import { groupTranslations } from './agentGroupTranslations'
 import AddAgentPopup from './components/AddAgentPopup'
 import AgentCard from './components/AgentCard'
@@ -31,7 +31,6 @@ const AgentsPage: FC = () => {
   const { agents: userAgents } = useAgents()
 
   useEffect(() => {
-    const systemAgentsGroupList = groupByCategories(systemAgents)
     const agentsGroupList = {
       我的: userAgents,
       精选: []

@@ -10,8 +10,8 @@ import { HTTPService } from '../HTTPService'
 
 // Mock dependencies
 vi.mock('fs-extra', () => ({
-  pathExists: vi.fn(),
-  stat: vi.fn(),
+  pathExists: vi.fn().mockImplementation(() => Promise.resolve(undefined)),
+  stat: vi.fn().mockImplementation(() => Promise.resolve(undefined)),
   createReadStream: vi.fn()
 }))
 
@@ -59,10 +59,10 @@ describe('HTTPService', () => {
     vi.clearAllMocks()
     httpService = new HTTPService()
 
-    // Mock fs methods
-    mockedFs.pathExists = vi.fn().mockResolvedValue(true)
-    mockedFs.stat = vi.fn().mockResolvedValue({ size: 1024 })
-    mockedFs.createReadStream = vi.fn().mockReturnValue('mock-stream' as any)
+    // Mock fs methods - use mockImplementation instead of mockResolvedValue to avoid type issues
+    vi.spyOn(mockedFs, 'pathExists').mockImplementation(() => Promise.resolve(true as any))
+    vi.spyOn(mockedFs, 'stat').mockImplementation(() => Promise.resolve({ size: 1024 } as any))
+    vi.spyOn(mockedFs, 'createReadStream').mockReturnValue('mock-stream' as any)
 
     // Reset FormData mock
     MockFormDataInstance.append.mockClear()
@@ -105,7 +105,7 @@ describe('HTTPService', () => {
     })
 
     it('should throw error when file does not exist', async () => {
-      mockedFs.pathExists = vi.fn().mockResolvedValue(false)
+      vi.spyOn(mockedFs, 'pathExists').mockImplementation(() => Promise.resolve(false as any))
 
       await expect(httpService.uploadFile(mockFilePath, mockPackageMetadata, mockHttpConfig)).rejects.toThrow(
         'File not found: /path/to/package.tgz'

@@ -521,7 +521,7 @@ export interface TranslateHistory {
   createdAt: string
 }
 
-export type SidebarIcon = 'assistants' | 'agents' | 'knowledge' | 'files'
+export type SidebarIcon = 'assistants' | 'agents' | 'knowledge' | 'files' | 'packager' | 'minapp'
 
 export type ExternalToolResult = {
   mcpTools?: MCPTool[]

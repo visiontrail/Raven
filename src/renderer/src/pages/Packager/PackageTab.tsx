@@ -1,17 +1,5 @@
 import { DeleteOutlined, UploadOutlined } from '@ant-design/icons'
-import {
-  Button,
-  Card,
-  Checkbox,
-  Col,
-  Form,
-  Input,
-  message,
-  Progress,
-  Row,
-  Space,
-  Typography
-} from 'antd'
+import { Button, Card, Checkbox, Col, Form, Input, message, Progress, Row, Space, Typography } from 'antd'
 import React, { useEffect, useReducer, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
@@ -126,7 +114,7 @@ const PackageTab: React.FC = () => {
       try {
         const componentDefs = await window.api.packager.getInfo(packageType)
         dispatch({ type: 'SET_COMPONENTS', payload: componentDefs })
-      } catch (error) {
+      } catch (error: any) {
         message.error(`获取组件信息失败: ${error.message}`)
       }
     }
@@ -153,7 +141,7 @@ const PackageTab: React.FC = () => {
         const preview = await window.api.packager.generateSiIni(config)
         setSiIniPreview(preview)
         console.log('[Renderer] si.ini preview updated.')
-      } catch (error) {
+      } catch (error: any) {
         const errorMessage = `预览生成失败: ${error.message}`
         setSiIniPreview(errorMessage)
         console.error('[Renderer] Error generating si.ini preview:', error)
@@ -163,8 +151,10 @@ const PackageTab: React.FC = () => {
   }, [packageVersion, isPatch, components, packageType])
 
   const handleLog = (msg: string) => {
-    setLog((prev) => `${prev}[${new Date().toLocaleTimeString()}] ${msg}
-`)
+    setLog(
+      (prev) => `${prev}[${new Date().toLocaleTimeString()}] ${msg}
+`
+    )
   }
 
   const handleSelectFile = async (componentName: string) => {
@@ -192,7 +182,7 @@ const PackageTab: React.FC = () => {
         type: 'SET_FILE',
         payload: { componentName, filePath, fileName, version: detectedVersion }
       })
-    } catch (error) {
+    } catch (error: any) {
       message.error(`${t('packager.error.selectFile')}: ${error.message}`)
       console.error('[Renderer] Error selecting file:', error)
     }
@@ -259,7 +249,7 @@ const PackageTab: React.FC = () => {
         message.error(result.message)
         handleLog(`${t('packager.log.failure')}: ${result.message}`)
       }
-    } catch (error) {
+    } catch (error: any) {
       const errorMessage = `${t('packager.log.errorUnknown')}: ${error.message}`
       message.error(errorMessage)
       handleLog(errorMessage)
@@ -302,10 +292,7 @@ const PackageTab: React.FC = () => {
                   <Row gutter={8} align="middle">
                     <Col span={19}>
                       <Space>
-                        <Button
-                          icon={<UploadOutlined />}
-                          onClick={() => handleSelectFile(compState.component.name)}
-                        >
+                        <Button icon={<UploadOutlined />} onClick={() => handleSelectFile(compState.component.name)}>
                           {t('packager.selectFile')}
                         </Button>
                         {compState.fileName && (
@@ -317,9 +304,7 @@ const PackageTab: React.FC = () => {
                               type="text"
                               danger
                             />
-                            <Text ellipsis={{ tooltip: compState.selectedFilePath }}>
-                              {compState.fileName}
-                            </Text>
+                            <Text ellipsis={{ tooltip: compState.selectedFilePath }}>{compState.fileName}</Text>
                           </>
                         )}
                       </Space>
@@ -346,8 +331,7 @@ const PackageTab: React.FC = () => {
             <Form.Item style={{ marginTop: 16 }}>
               <Checkbox
                 checked={isPatch}
-                onChange={(e) => dispatch({ type: 'SET_IS_PATCH', payload: e.target.checked })}
-              >
+                onChange={(e) => dispatch({ type: 'SET_IS_PATCH', payload: e.target.checked })}>
                 {t('packager.isPatch')}
               </Checkbox>
             </Form.Item>
@@ -356,9 +340,7 @@ const PackageTab: React.FC = () => {
                 <Button type="primary" onClick={handleStartPackaging} loading={packaging}>
                   {t('packager.startPackaging')}
                 </Button>
-                <Button onClick={handleClear}>
-                  {t('packager.clearSelections')}
-                </Button>
+                <Button onClick={handleClear}>{t('packager.clearSelections')}</Button>
               </Space>
             </Form.Item>
             {packaging && (
@@ -372,12 +354,7 @@ const PackageTab: React.FC = () => {
       <Col span={10}>
         <Card title={t('packager.infoPreview')}>
           <Title level={5}>{t('packager.operationLog')}</Title>
-          <TextArea
-            rows={8}
-            value={log}
-            readOnly
-            style={{ marginBottom: 16, backgroundColor: '#f0f2f5' }}
-          />
+          <TextArea rows={8} value={log} readOnly style={{ marginBottom: 16, backgroundColor: '#f0f2f5' }} />
           <Title level={5}>{t('packager.siIniPreview')}</Title>
           <TextArea
             autoSize={{ minRows: 10 }}
@@ -392,4 +369,3 @@ const PackageTab: React.FC = () => {
 }
 
 export default PackageTab
-

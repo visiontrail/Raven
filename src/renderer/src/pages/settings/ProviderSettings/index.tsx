@@ -1,17 +1,14 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import { DragDropContext, Draggable, Droppable, DropResult } from '@hello-pangea/dnd'
 import Scrollbar from '@renderer/components/Scrollbar'
-import { 
-  isLockedModeEnabled, 
-  isFeatureDisabled 
-} from '@renderer/config/locked-settings'
+import { isFeatureDisabled, isLockedModeEnabled } from '@renderer/config/locked-settings'
 import { getProviderLogo } from '@renderer/config/providers'
 import { useAllProviders, useProviders } from '@renderer/hooks/useProvider'
 import ImageStorage from '@renderer/services/ImageStorage'
 import { INITIAL_PROVIDERS } from '@renderer/store/llm'
 import { Provider, ProviderType } from '@renderer/types'
-import { droppableReorder, generateColorFromChar, getFirstCharacter, uuid } from '@renderer/utils'
-import { Avatar, Button, Card, Dropdown, Input, MenuProps, Tag } from 'antd'
+import { droppableReorder, generateColorFromChar, getFirstCharacter } from '@renderer/utils'
+import { Avatar, Card, Dropdown, Input, MenuProps, Tag } from 'antd'
 import { Eye, EyeOff, Search, UserPen } from 'lucide-react'
 import { FC, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -31,7 +28,7 @@ const ProvidersList: FC = () => {
   const [searchText, setSearchText] = useState<string>('')
   const [dragging, setDragging] = useState(false)
   const [providerLogos, setProviderLogos] = useState<Record<string, string>>({})
-  
+
   const isLocked = isLockedModeEnabled()
 
   useEffect(() => {
@@ -293,7 +290,7 @@ const ProvidersList: FC = () => {
       disabled: isLocked || isFeatureDisabled('DISABLE_PROVIDER_DELETION'),
       async onClick() {
         if (isLocked || isFeatureDisabled('DISABLE_PROVIDER_DELETION')) return
-        
+
         const { name, type, logoFile, logo } = await AddProviderPopup.show(provider)
 
         if (name) {
@@ -335,7 +332,7 @@ const ProvidersList: FC = () => {
       disabled: isLocked || isFeatureDisabled('DISABLE_PROVIDER_DELETION'),
       async onClick() {
         if (isLocked || isFeatureDisabled('DISABLE_PROVIDER_DELETION')) return
-        
+
         window.modal.confirm({
           title: t('settings.provider.delete.title'),
           content: t('settings.provider.delete.content'),
@@ -444,11 +441,11 @@ const ProvidersList: FC = () => {
                 {(provided) => (
                   <div {...provided.droppableProps} ref={provided.innerRef}>
                     {filteredProviders.map((provider, index) => (
-                                              <Draggable
-                          key={`draggable_${provider.id}_${index}`}
-                          draggableId={provider.id}
-                          index={index}
-                          isDragDisabled={searchText.length > 0 || isLocked}>
+                      <Draggable
+                        key={`draggable_${provider.id}_${index}`}
+                        draggableId={provider.id}
+                        index={index}
+                        isDragDisabled={searchText.length > 0 || isLocked}>
                         {(provided) => (
                           <div
                             ref={provided.innerRef}
@@ -481,7 +478,6 @@ const ProvidersList: FC = () => {
             </DragDropContext>
           </ProviderList>
         </Scrollbar>
-
       </ProviderListContainer>
       <ProviderSetting providerId={selectedProvider.id} key={selectedProvider.id} />
     </Container>

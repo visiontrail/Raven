@@ -1,11 +1,7 @@
-import { 
-  isLockedModeEnabled, 
-  isFeatureDisabled,
-  LOCKED_SETTINGS
-} from '@renderer/config/locked-settings'
+import { isFeatureDisabled, isLockedModeEnabled, LOCKED_SETTINGS } from '@renderer/config/locked-settings'
 import { useLMStudioSettings } from '@renderer/hooks/useLMStudio'
 import { InputNumber } from 'antd'
-import { FC, useState, useEffect } from 'react'
+import { FC, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
@@ -15,7 +11,7 @@ const LMStudioSettings: FC = () => {
   const { keepAliveTime, setKeepAliveTime } = useLMStudioSettings()
   const isLocked = isLockedModeEnabled()
   const lockedKeepAlive = LOCKED_SETTINGS.LMSTUDIO_KEEP_ALIVE
-  
+
   const [keepAliveMinutes, setKeepAliveMinutes] = useState(isLocked ? lockedKeepAlive : keepAliveTime)
   const { t } = useTranslation()
 
@@ -34,8 +30,8 @@ const LMStudioSettings: FC = () => {
         style={{ width: '100%' }}
         value={isLocked ? lockedKeepAlive : keepAliveMinutes}
         min={0}
-        onChange={(e) => !isLocked && setKeepAliveMinutes(Math.floor(Number(e)))}
-        onBlur={() => !isLocked && setKeepAliveTime(keepAliveMinutes)}
+        onChange={(value) => !isLocked && setKeepAliveMinutes(value ? Math.floor(Number(value)) : 0)}
+        onBlur={() => !isLocked && setKeepAliveTime(keepAliveMinutes || 0)}
         suffix={t('lmstudio.keep_alive_time.placeholder')}
         step={5}
         disabled={isLocked || isFeatureDisabled('DISABLE_API_HOST_EDITING')}

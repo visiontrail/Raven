@@ -4,13 +4,12 @@ import OpenAIAlert from '@renderer/components/Alert/OpenAIAlert'
 import { StreamlineGoodHealthAndWellBeing } from '@renderer/components/Icons/SVGIcon'
 import { HStack } from '@renderer/components/Layout'
 import { ApiKeyConnectivity, ApiKeyListPopup } from '@renderer/components/Popups/ApiKeyListPopup'
-import { 
-  getLockedApiKey, 
-  getLockedApiHost, 
-  getLockedApiVersion, 
-  isLockedModeEnabled, 
+import {
+  getLockedApiHost,
+  getLockedApiKey,
+  getLockedApiVersion,
   isFeatureDisabled,
-  LOCKED_SETTINGS
+  isLockedModeEnabled
 } from '@renderer/config/locked-settings'
 import { isEmbeddingModel, isRerankModel } from '@renderer/config/models'
 import { PROVIDER_CONFIG } from '@renderer/config/providers'
@@ -61,13 +60,13 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
   const { provider, updateProvider, models } = useProvider(providerId)
   const allProviders = useAllProviders()
   const { updateProviders } = useProviders()
-  
+
   // 使用锁定设置或原始值
   const isLocked = isLockedModeEnabled()
   const lockedApiKey = getLockedApiKey(provider.id)
   const lockedApiHost = getLockedApiHost(provider.id)
   const lockedApiVersion = getLockedApiVersion(provider.id)
-  
+
   const [apiHost, setApiHost] = useState(isLocked && lockedApiHost ? lockedApiHost : provider.apiHost)
   const [apiVersion, setApiVersion] = useState(isLocked && lockedApiVersion ? lockedApiVersion : provider.apiVersion)
   const [modelSearchText, setModelSearchText] = useState('')
@@ -116,7 +115,7 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
       if (lockedApiVersion && provider.apiVersion !== lockedApiVersion) {
         updates.apiVersion = lockedApiVersion
       }
-      
+
       if (Object.keys(updates).length > 0) {
         updateProvider({ ...provider, ...updates })
       }
@@ -410,7 +409,9 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
               type={isApiKeyConnectable ? 'primary' : 'default'}
               ghost={isApiKeyConnectable}
               onClick={onCheckApi}
-              disabled={!apiHost || apiKeyConnectivity.checking || (isLocked && isFeatureDisabled('DISABLE_API_KEY_EDITING'))}>
+              disabled={
+                !apiHost || apiKeyConnectivity.checking || (isLocked && isFeatureDisabled('DISABLE_API_KEY_EDITING'))
+              }>
               {apiKeyConnectivity.checking ? (
                 <LoadingOutlined spin />
               ) : apiKeyConnectivity.status === 'success' ? (
@@ -480,7 +481,7 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
           <Space.Compact style={{ width: '100%', marginTop: 5 }}>
             <Input
               value={apiVersion}
-              placeholder={isLocked ? t('settings.provider.locked_api_version') : "2024-xx-xx-preview"}
+              placeholder={isLocked ? t('settings.provider.locked_api_version') : '2024-xx-xx-preview'}
               onChange={(e) => !isLocked && setApiVersion(e.target.value)}
               onBlur={!isLocked ? onUpdateApiVersion : undefined}
               disabled={isLocked || isFeatureDisabled('DISABLE_API_HOST_EDITING')}

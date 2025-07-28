@@ -2,7 +2,6 @@ import Logger from '@renderer/config/logger'
 import { LanguagesEnum } from '@renderer/config/translate'
 import type { LanguageCode, LegacyMessage as OldMessage, Topic } from '@renderer/types'
 import { FileTypes, WebSearchSource } from '@renderer/types' // Import FileTypes enum
-
 import type {
   BaseMessageBlock,
   CitationMessageBlock,
@@ -385,11 +384,11 @@ export async function upgradeToV8(tx: Transaction): Promise<void> {
   }
   Logger.log('DB migration to version 8 finished.')
 }
-export async function upgradeToV9(tx: Transaction): Promise<void> {
+export async function upgradeToV9(_tx: Transaction): Promise<void> {
   Logger.log('DB migration to version 9 started: Adding packages table for TGZ Package Management')
-  
+
   // No data migration needed for this version as we're just adding a new table
   // The packages table will be created automatically by Dexie based on the schema definition
-  
+
   Logger.log('DB migration to version 9 finished successfully.')
 }

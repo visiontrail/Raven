@@ -1,8 +1,8 @@
 // src/main/services/FTPService.ts
 
+import { Client as FTPClient } from 'basic-ftp'
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import { Client as FTPClient } from 'basic-ftp'
 
 import { FTPConfig } from '../../renderer/src/types/package'
 
@@ -14,12 +14,12 @@ export interface FTPUploadProgress {
    * Number of bytes transferred
    */
   bytesTransferred: number
-  
+
   /**
    * Total number of bytes to transfer
    */
   totalBytes: number
-  
+
   /**
    * Progress percentage (0-100)
    */
@@ -38,8 +38,8 @@ export interface IFTPService {
    * @returns Promise<boolean> True if successful
    */
   uploadFile(
-    filePath: string, 
-    ftpConfig: FTPConfig, 
+    filePath: string,
+    ftpConfig: FTPConfig,
     onProgress?: (progress: FTPUploadProgress) => void
   ): Promise<boolean>
 
@@ -59,12 +59,12 @@ export class FTPService implements IFTPService {
    * Upload a file to FTP server
    */
   async uploadFile(
-    filePath: string, 
-    ftpConfig: FTPConfig, 
+    filePath: string,
+    ftpConfig: FTPConfig,
     onProgress?: (progress: FTPUploadProgress) => void
   ): Promise<boolean> {
     const client = new FTPClient()
-    
+
     try {
       // Check if file exists
       if (!(await fs.pathExists(filePath))) {
@@ -78,16 +78,21 @@ export class FTPService implements IFTPService {
 
       // Set up progress tracking if callback provided
       if (onProgress) {
-        client.trackingBytes = (info) => {
-          bytesTransferred = info.bytesOverall
-          const percentage = totalBytes > 0 ? Math.round((bytesTransferred / totalBytes) * 100) : 0
-          
-          onProgress({
-            bytesTransferred,
-            totalBytes,
-            percentage
-          })
-        }
+        // Use the proper progress tracking API for basic-ftp
+        client.trackProgress((info) => {
+          // info may be undefined in some implementations, add a check
+          if (info) {
+            // Use transferred as the property name instead of bytesOverall
+            bytesTransferred = info.bytes || 0
+            const percentage = totalBytes > 0 ? Math.round((bytesTransferred / totalBytes) * 100) : 0
+
+            onProgress({
+              bytesTransferred,
+              totalBytes,
+              percentage
+            })
+          }
+        })
       }
 
       // Connect to FTP server
@@ -114,7 +119,6 @@ export class FTPService implements IFTPService {
 
       console.log(`Successfully uploaded ${path.basename(filePath)} to ${ftpConfig.host}:${ftpConfig.remotePath}`)
       return true
-
     } catch (error) {
       console.error('FTP upload failed:', error)
       throw error
@@ -129,7 +133,7 @@ export class FTPService implements IFTPService {
    */
   async testConnection(ftpConfig: FTPConfig): Promise<boolean> {
     const client = new FTPClient()
-    
+
     try {
       // Connect to FTP server
       await client.access({
@@ -142,10 +146,9 @@ export class FTPService implements IFTPService {
 
       // Test by listing current directory
       await client.list()
-      
+
       console.log(`FTP connection test successful for ${ftpConfig.host}:${ftpConfig.port}`)
       return true
-
     } catch (error) {
       console.error('FTP connection test failed:', error)
       return false
