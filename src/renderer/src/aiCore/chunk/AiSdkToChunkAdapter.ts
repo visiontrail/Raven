@@ -97,7 +97,6 @@ export class AiSdkToChunkAdapter {
           type: ChunkType.TEXT_DELTA,
           text: final.text || ''
         })
-        console.log('final.text', final.text)
         break
       case 'text-end':
         this.onChunk({

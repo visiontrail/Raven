@@ -17,14 +17,16 @@ export const MessageWebSearchToolTitle = ({ toolResponse }: { toolResponse: MCPT
       text={
         <PrepareToolWrapper>
           {i18n.t('message.searching')}
-          <span>{toolInput?.query ?? ''}</span>
+          <span>{toolInput?.additionalContext ?? ''}</span>
         </PrepareToolWrapper>
       }
     />
   ) : (
     <MessageWebSearchToolTitleTextWrapper type="secondary">
       <Search size={16} style={{ color: 'unset' }} />
-      {i18n.t('message.websearch.fetch_complete', { count: toolOutput.results.length ?? 0 })}
+      {i18n.t('message.websearch.fetch_complete', {
+        count: toolOutput?.searchResults?.reduce((acc, result) => acc + result.results.length, 0) ?? 0
+      })}
     </MessageWebSearchToolTitleTextWrapper>
   )
 }
@@ -32,15 +34,17 @@ export const MessageWebSearchToolTitle = ({ toolResponse }: { toolResponse: MCPT
 export const MessageWebSearchToolBody = ({ toolResponse }: { toolResponse: MCPToolResponse }) => {
   const toolOutput = toolResponse.response as WebSearchToolOutput
 
-  return toolResponse.status === 'done' ? (
-    <MessageWebSearchToolBodyUlWrapper>
-      {toolOutput.results.map((result) => (
-        <li key={result.url}>
-          <Link href={result.url}>{result.title}</Link>
-        </li>
-      ))}
-    </MessageWebSearchToolBodyUlWrapper>
-  ) : null
+  return toolResponse.status === 'done'
+    ? toolOutput?.searchResults?.map((result, index) => (
+        <MessageWebSearchToolBodyUlWrapper key={result?.query ?? '' + index}>
+          {result.results.map((item, index) => (
+            <li key={item.url + index}>
+              <Link href={item.url}>{item.title}</Link>
+            </li>
+          ))}
+        </MessageWebSearchToolBodyUlWrapper>
+      ))
+    : null
 }
 
 const PrepareToolWrapper = styled.span`

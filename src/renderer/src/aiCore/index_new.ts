@@ -21,7 +21,7 @@ import { createPromptToolUsePlugin, webSearchPlugin } from '@cherrystudio/ai-cor
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
 import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
 import { getProviderByModel } from '@renderer/services/AssistantService'
-import type { Assistant, GenerateImageParams, Model, Provider } from '@renderer/types'
+import type { GenerateImageParams, Model, Provider } from '@renderer/types'
 import { formatApiHost } from '@renderer/utils/api'
 import { cloneDeep } from 'lodash'
 
@@ -163,7 +163,7 @@ export default class ModernAiProvider {
       // 内置了默认搜索参数，如果改的话可以传config进去
       plugins.push(webSearchPlugin())
     }
-    plugins.push(searchOrchestrationPlugin(middlewareConfig.assistant as Assistant))
+    plugins.push(searchOrchestrationPlugin(middlewareConfig.assistant))
 
     // 2. 推理模型时添加推理插件
     if (middlewareConfig.enableReasoning) {

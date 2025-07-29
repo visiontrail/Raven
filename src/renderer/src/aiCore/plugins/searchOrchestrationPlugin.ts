@@ -8,7 +8,6 @@
  */
 import type { AiRequestContext, ModelMessage } from '@cherrystudio/ai-core'
 import { definePlugin } from '@cherrystudio/ai-core'
-import { RuntimeExecutor } from '@cherrystudio/ai-core/core/runtime/executor'
 // import { generateObject } from '@cherrystudio/ai-core'
 import {
   SEARCH_SUMMARY_PROMPT,
@@ -19,13 +18,13 @@ import { getDefaultModel, getProviderByModel } from '@renderer/services/Assistan
 import store from '@renderer/store'
 import { selectCurrentUserId, selectGlobalMemoryEnabled, selectMemoryConfig } from '@renderer/store/memory'
 import type { Assistant } from '@renderer/types'
+import { extractInfoFromXML, ExtractResults } from '@renderer/utils/extract'
 import { isEmpty } from 'lodash'
-import { z } from 'zod'
 
 import { MemoryProcessor } from '../../services/MemoryProcessor'
 import { knowledgeSearchTool } from '../tools/KnowledgeSearchTool'
 import { memorySearchTool } from '../tools/MemorySearchTool'
-import { webSearchTool } from '../tools/WebSearchTool'
+import { webSearchToolWithPreExtractedKeywords } from '../tools/WebSearchTool'
 
 const getMessageContent = (message: ModelMessage) => {
   if (typeof message.content === 'string') return message.content
@@ -39,32 +38,32 @@ const getMessageContent = (message: ModelMessage) => {
 
 // === Schema Definitions ===
 
-const WebSearchSchema = z.object({
-  question: z
-    .array(z.string())
-    .describe('Search queries for web search. Use "not_needed" if no web search is required.'),
-  links: z.array(z.string()).optional().describe('Specific URLs to search or summarize if mentioned in the query.')
-})
+// const WebSearchSchema = z.object({
+//   question: z
+//     .array(z.string())
+//     .describe('Search queries for web search. Use "not_needed" if no web search is required.'),
+//   links: z.array(z.string()).optional().describe('Specific URLs to search or summarize if mentioned in the query.')
+// })
 
-const KnowledgeSearchSchema = z.object({
-  question: z
-    .array(z.string())
-    .describe('Search queries for knowledge base. Use "not_needed" if no knowledge search is required.'),
-  rewrite: z
-    .string()
-    .describe('Rewritten query with alternative phrasing while preserving original intent and meaning.')
-})
+// const KnowledgeSearchSchema = z.object({
+//   question: z
+//     .array(z.string())
+//     .describe('Search queries for knowledge base. Use "not_needed" if no knowledge search is required.'),
+//   rewrite: z
+//     .string()
+//     .describe('Rewritten query with alternative phrasing while preserving original intent and meaning.')
+// })
 
-const SearchIntentAnalysisSchema = z.object({
-  websearch: WebSearchSchema.optional().describe('Web search intent analysis results.'),
-  knowledge: KnowledgeSearchSchema.optional().describe('Knowledge base search intent analysis results.')
-})
+// const SearchIntentAnalysisSchema = z.object({
+//   websearch: WebSearchSchema.optional().describe('Web search intent analysis results.'),
+//   knowledge: KnowledgeSearchSchema.optional().describe('Knowledge base search intent analysis results.')
+// })
 
-type SearchIntentResult = z.infer<typeof SearchIntentAnalysisSchema>
+// type SearchIntentResult = z.infer<typeof SearchIntentAnalysisSchema>
 
-let isAnalyzing = false
+// let isAnalyzing = false
 /**
- * 🧠 意图分析函数 - 使用结构化输出重构
+ * 🧠 意图分析函数 - 使用 XML 解析
  */
 async function analyzeSearchIntent(
   lastUserMessage: ModelMessage,
@@ -74,13 +73,11 @@ async function analyzeSearchIntent(
     shouldKnowledgeSearch?: boolean
     shouldMemorySearch?: boolean
     lastAnswer?: ModelMessage
-    context?:
-      | AiRequestContext
-      | {
-          executor: RuntimeExecutor
-        }
-  } = {}
-): Promise<SearchIntentResult | undefined> {
+    context: AiRequestContext & {
+      isAnalyzing?: boolean
+    }
+  }
+): Promise<ExtractResults | undefined> {
   const { shouldWebSearch = false, shouldKnowledgeSearch = false, lastAnswer, context } = options
 
   if (!lastUserMessage) return undefined
@@ -91,19 +88,19 @@ async function analyzeSearchIntent(
 
   if (!needWebExtract && !needKnowledgeExtract) return undefined
 
-  // 选择合适的提示词和schema
+  // 选择合适的提示词
   let prompt: string
-  let schema: z.Schema
+  // let schema: z.Schema
 
   if (needWebExtract && !needKnowledgeExtract) {
     prompt = SEARCH_SUMMARY_PROMPT_WEB_ONLY
-    schema = z.object({ websearch: WebSearchSchema })
+    // schema = z.object({ websearch: WebSearchSchema })
   } else if (!needWebExtract && needKnowledgeExtract) {
     prompt = SEARCH_SUMMARY_PROMPT_KNOWLEDGE_ONLY
-    schema = z.object({ knowledge: KnowledgeSearchSchema })
+    // schema = z.object({ knowledge: KnowledgeSearchSchema })
   } else {
     prompt = SEARCH_SUMMARY_PROMPT
-    schema = SearchIntentAnalysisSchema
+    // schema = SearchIntentAnalysisSchema
   }
 
   // 构建消息上下文 - 简化逻辑
@@ -121,16 +118,15 @@ async function analyzeSearchIntent(
     console.error('Provider not found or missing API key')
     return getFallbackResult()
   }
-
+  // console.log('formattedPrompt', schema)
   try {
-    isAnalyzing = true
-    const result = await context?.executor?.generateObject(model.id, {
-      schema,
+    context.isAnalyzing = true
+    const { text: result } = await context.executor.generateText(model.id, {
       prompt: formattedPrompt
     })
-    isAnalyzing = false
-    console.log('result', context)
-    const parsedResult = result?.object as SearchIntentResult
+    context.isAnalyzing = false
+    const parsedResult = extractInfoFromXML(result)
+    console.log('parsedResult', parsedResult)
 
     // 根据需求过滤结果
     return {
@@ -142,7 +138,7 @@ async function analyzeSearchIntent(
     return getFallbackResult()
   }
 
-  function getFallbackResult(): SearchIntentResult {
+  function getFallbackResult(): ExtractResults {
     const fallbackContent = getMessageContent(lastUserMessage)
     return {
       websearch: shouldWebSearch ? { question: [fallbackContent || 'search'] } : undefined,
@@ -159,7 +155,11 @@ async function analyzeSearchIntent(
 /**
  * 🧠 记忆存储函数 - 基于注释代码中的 processConversationMemory
  */
-async function storeConversationMemory(messages: ModelMessage[], assistant: Assistant): Promise<void> {
+async function storeConversationMemory(
+  messages: ModelMessage[],
+  assistant: Assistant,
+  context: AiRequestContext
+): Promise<void> {
   const globalMemoryEnabled = selectGlobalMemoryEnabled(store.getState())
 
   if (!globalMemoryEnabled || !assistant.enableMemory) {
@@ -185,14 +185,13 @@ async function storeConversationMemory(messages: ModelMessage[], assistant: Assi
     }
 
     const currentUserId = selectCurrentUserId(store.getState())
-    const lastUserMessage = messages.findLast((m) => m.role === 'user')
+    // const lastUserMessage = messages.findLast((m) => m.role === 'user')
 
     const processorConfig = MemoryProcessor.getProcessorConfig(
       memoryConfig,
       assistant.id,
       currentUserId,
-      // TODO
-      lastUserMessage?.id
+      context.requestId
     )
 
     console.log('Processing conversation memory...', { messageCount: conversationMessages.length })
@@ -224,9 +223,10 @@ async function storeConversationMemory(messages: ModelMessage[], assistant: Assi
  */
 export const searchOrchestrationPlugin = (assistant: Assistant) => {
   // 存储意图分析结果
-  const intentAnalysisResults: { [requestId: string]: SearchIntentResult } = {}
+  const intentAnalysisResults: { [requestId: string]: ExtractResults } = {}
   const userMessages: { [requestId: string]: ModelMessage } = {}
   console.log('searchOrchestrationPlugin', assistant)
+
   return definePlugin({
     name: 'search-orchestration',
     enforce: 'pre', // 确保在其他插件之前执行
@@ -235,7 +235,8 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
      * 🔍 Step 1: 意图识别阶段
      */
     onRequestStart: async (context: AiRequestContext) => {
-      if (isAnalyzing) return
+      console.log('onRequestStart', context.isAnalyzing)
+      if (context.isAnalyzing) return
       console.log('🧠 [SearchOrchestration] Starting intent analysis...', context.requestId)
 
       try {
@@ -294,7 +295,7 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
      * 🔧 Step 2: 工具配置阶段
      */
     transformParams: async (params: any, context: AiRequestContext) => {
-      if (isAnalyzing) return
+      if (context.isAnalyzing) return params
       console.log('🔧 [SearchOrchestration] Configuring tools based on intent...', context.requestId)
 
       try {
@@ -314,8 +315,13 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
           const needsSearch = analysisResult.websearch.question && analysisResult.websearch.question[0] !== 'not_needed'
 
           if (needsSearch) {
-            console.log('🌐 [SearchOrchestration] Adding web search tool')
-            params.tools['builtin_web_search'] = webSearchTool(assistant.webSearchProviderId)
+            // onChunk({ type: ChunkType.EXTERNEL_TOOL_IN_PROGRESS })
+            console.log('🌐 [SearchOrchestration] Adding web search tool with pre-extracted keywords')
+            params.tools['builtin_web_search'] = webSearchToolWithPreExtractedKeywords(
+              assistant.webSearchProviderId,
+              analysisResult.websearch,
+              context.requestId
+            )
           }
         }
 
@@ -370,7 +376,7 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
         const messages = context.originalParams.messages
 
         if (messages && assistant) {
-          await storeConversationMemory(messages, assistant)
+          await storeConversationMemory(messages, assistant, context)
         }
 
         // 清理缓存

@@ -20,7 +20,7 @@ export interface AiSdkMiddlewareConfig {
   enableWebSearch?: boolean
   mcpTools?: BaseTool[]
   // TODO assistant
-  assistant?: Assistant
+  assistant: Assistant
 }
 
 /**

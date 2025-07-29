@@ -881,7 +881,6 @@ const fetchAndProcessAssistantResponseImpl = async (
       saveUpdatesToDB,
       assistant
     })
-    console.log('callbacks', callbacks)
     const streamProcessorCallbacks = createStreamProcessor(callbacks)
 
     const abortController = new AbortController()

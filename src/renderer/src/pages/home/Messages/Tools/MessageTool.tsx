@@ -1,11 +1,14 @@
+import { MCPToolResponse } from '@renderer/types'
 import type { ToolMessageBlock } from '@renderer/types/newMessage'
 import { Collapse } from 'antd'
 
+import { MessageKnowledgeSearchToolBody, MessageKnowledgeSearchToolTitle } from './MessageKnowledgeSearch'
 import { MessageWebSearchToolBody, MessageWebSearchToolTitle } from './MessageWebSearchTool'
 
 interface Props {
   block: ToolMessageBlock
 }
+const prefix = 'builtin_'
 
 // const toolNameMapText = {
 //   web_search: i18n.t('message.searching')
@@ -41,18 +44,62 @@ interface Props {
 //   return <p>{toolDoneNameText}</p>
 // }
 
+// const ToolLabelComponents = ({ toolResponse }: { toolResponse: MCPToolResponse }) => {
+//   if (webSearchToolNames.includes(toolResponse.tool.name)) {
+//     return <MessageWebSearchToolTitle toolResponse={toolResponse} />
+//   }
+//   return <MessageWebSearchToolTitle toolResponse={toolResponse} />
+// }
+
+// const ToolBodyComponents = ({ toolResponse }: { toolResponse: MCPToolResponse }) => {
+//   if (webSearchToolNames.includes(toolResponse.tool.name)) {
+//     return <MessageWebSearchToolBody toolResponse={toolResponse} />
+//   }
+//   return <MessageWebSearchToolBody toolResponse={toolResponse} />
+// }
+
+const ChooseTool = (
+  toolResponse: MCPToolResponse
+): {
+  label: React.ReactNode
+  body: React.ReactNode
+} => {
+  let toolName = toolResponse.tool.name
+  if (toolName.startsWith(prefix)) {
+    toolName = toolName.slice(prefix.length)
+  }
+
+  switch (toolName) {
+    case 'web_search':
+    case 'web_search_preview':
+      return {
+        label: <MessageWebSearchToolTitle toolResponse={toolResponse} />,
+        body: <MessageWebSearchToolBody toolResponse={toolResponse} />
+      }
+    case 'knowledge_search':
+      return {
+        label: <MessageKnowledgeSearchToolTitle toolResponse={toolResponse} />,
+        body: <MessageKnowledgeSearchToolBody toolResponse={toolResponse} />
+      }
+    default:
+      return {
+        label: <MessageWebSearchToolTitle toolResponse={toolResponse} />,
+        body: <MessageWebSearchToolBody toolResponse={toolResponse} />
+      }
+  }
+}
+
 export default function MessageTool({ block }: Props) {
   const toolResponse = block.metadata?.rawMcpToolResponse
   if (!toolResponse) return null
-  console.log('toolResponse', toolResponse)
 
   return (
     <Collapse
       items={[
         {
           key: '1',
-          label: <MessageWebSearchToolTitle toolResponse={toolResponse} />,
-          children: <MessageWebSearchToolBody toolResponse={toolResponse} />,
+          label: ChooseTool(toolResponse).label,
+          children: ChooseTool(toolResponse).body,
           showArrow: false,
           styles: {
             header: {
