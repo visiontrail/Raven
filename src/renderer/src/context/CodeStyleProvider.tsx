@@ -5,8 +5,7 @@ import { HighlightChunkResult, ShikiPreProperties, shikiStreamService } from '@r
 import { ThemeMode } from '@renderer/types'
 import { getHighlighter, getMarkdownIt, getShiki, loadLanguageIfNeeded, loadThemeIfNeeded } from '@renderer/utils/shiki'
 import * as cmThemes from '@uiw/codemirror-themes-all'
-import type React from 'react'
-import { createContext, type PropsWithChildren, use, useCallback, useEffect, useMemo, useState } from 'react'
+import React, { createContext, type PropsWithChildren, use, useCallback, useEffect, useMemo, useState } from 'react'
 import type { BundledThemeInfo } from 'shiki/types'
 
 interface CodeStyleContextType {

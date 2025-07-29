@@ -39,6 +39,10 @@
     <script>
       console.time('init')
     </script>
+    <!-- 预先加载 React 19 兼容性补丁 -->
+    <script type="module">
+      import '@ant-design/v5-patch-for-react-19'
+    </script>
     <script type="module" src="/src/init.ts"></script>
     <script type="module" src="/src/entryPoint.tsx"></script>
   </body>
