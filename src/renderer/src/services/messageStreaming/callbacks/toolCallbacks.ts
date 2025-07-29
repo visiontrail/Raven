@@ -1,6 +1,7 @@
 import type { MCPToolResponse } from '@renderer/types'
+import { WebSearchSource } from '@renderer/types'
 import { MessageBlockStatus, MessageBlockType, ToolMessageBlock } from '@renderer/types/newMessage'
-import { createToolBlock } from '@renderer/utils/messageUtils/create'
+import { createCitationBlock, createToolBlock } from '@renderer/utils/messageUtils/create'
 
 import { BlockManager } from '../BlockManager'
 
@@ -15,6 +16,7 @@ export const createToolCallbacks = (deps: ToolCallbacksDependencies) => {
   // 内部维护的状态
   const toolCallIdToBlockIdMap = new Map<string, string>()
   let toolBlockId: string | null = null
+  let citationBlockId: string | null = null
 
   return {
     onToolCallPending: (toolResponse: MCPToolResponse) => {
@@ -94,6 +96,21 @@ export const createToolCallbacks = (deps: ToolCallbacksDependencies) => {
         }
 
         blockManager.smartBlockUpdate(existingBlockId, changes, MessageBlockType.TOOL, true)
+
+        // Handle citation block creation for web search results
+        if (toolResponse.tool.name === 'builtin_web_search' && toolResponse.response?.rawResults) {
+          const citationBlock = createCitationBlock(
+            assistantMsgId,
+            {
+              response: { results: toolResponse.response.rawResults, source: WebSearchSource.AISDK }
+            },
+            {
+              status: MessageBlockStatus.SUCCESS
+            }
+          )
+          citationBlockId = citationBlock.id
+          blockManager.handleBlockTransition(citationBlock, MessageBlockType.CITATION)
+        }
       } else {
         console.warn(
           `[onToolCallComplete] Received unhandled tool status: ${toolResponse.status} for ID: ${toolResponse.id}`
@@ -101,6 +118,9 @@ export const createToolCallbacks = (deps: ToolCallbacksDependencies) => {
       }
 
       toolBlockId = null
-    }
+    },
+
+    // 暴露给 textCallbacks 使用的方法
+    getCitationBlockId: () => citationBlockId
   }
 }

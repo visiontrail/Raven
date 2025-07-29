@@ -178,7 +178,7 @@ async function storeConversationMemory(
         content: getMessageContent(msg) || ''
       }))
       .filter((msg) => msg.content.trim().length > 0)
-
+    console.log('conversationMessages', conversationMessages)
     if (conversationMessages.length < 2) {
       console.log('Need at least a user message and assistant response for memory processing')
       return
@@ -368,10 +368,12 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
     /**
      * 💾 Step 3: 记忆存储阶段
      */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onRequestEnd: async (context: AiRequestContext, _result: any) => {
-      console.log('💾 [SearchOrchestration] Starting memory storage...', context.requestId)
 
+    onRequestEnd: async (context: AiRequestContext, result: any) => {
+      // context.isAnalyzing = false
+      console.log('context.isAnalyzing', context, result)
+      console.log('💾 [SearchOrchestration] Starting memory storage...', context.requestId)
+      if (context.isAnalyzing) return
       try {
         const messages = context.originalParams.messages
 

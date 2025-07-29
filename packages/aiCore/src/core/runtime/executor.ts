@@ -165,9 +165,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       'generateObject',
       typeof modelOrId === 'string' ? modelOrId : modelOrId.modelId,
       params,
-      async (model, transformedParams) => {
-        return await generateObject({ model, ...transformedParams })
-      }
+      async (model, transformedParams) => await generateObject({ model, ...transformedParams })
     )
   }
 
@@ -201,9 +199,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       'streamObject',
       typeof modelOrId === 'string' ? modelOrId : modelOrId.modelId,
       params,
-      async (model, transformedParams) => {
-        return await streamObject({ model, ...transformedParams })
-      }
+      async (model, transformedParams) => await streamObject({ model, ...transformedParams })
     )
   }
 

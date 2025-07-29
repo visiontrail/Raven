@@ -174,7 +174,7 @@ export class AiSdkToChunkAdapter {
       case 'finish-step': {
         const { providerMetadata } = chunk
         // googel web search
-        if (providerMetadata?.google) {
+        if (providerMetadata?.google?.groundingMetadata) {
           this.onChunk({
             type: ChunkType.LLM_WEB_SEARCH_COMPLETE,
             llm_web_search: {
@@ -182,15 +182,16 @@ export class AiSdkToChunkAdapter {
               source: WebSearchSource.GEMINI
             }
           })
-        } else {
-          this.onChunk({
-            type: ChunkType.LLM_WEB_SEARCH_COMPLETE,
-            llm_web_search: {
-              results: final.webSearchResults,
-              source: WebSearchSource.AISDK
-            }
-          })
         }
+        // else {
+        //   this.onChunk({
+        //     type: ChunkType.LLM_WEB_SEARCH_COMPLETE,
+        //     llm_web_search: {
+        //       results: final.webSearchResults,
+        //       source: WebSearchSource.AISDK
+        //     }
+        //   })
+        // }
         final.webSearchResults = []
         // final.reasoningId = ''
         break

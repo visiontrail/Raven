@@ -162,7 +162,7 @@ export class PluginEngine<T extends ProviderId = ProviderId> {
       const transformedResult = await this.pluginManager.executeSequential('transformResult', result, context)
 
       // 6. 触发完成事件（注意：对于流式调用，这里触发的是开始流式响应的事件）
-      await this.pluginManager.executeParallel('onRequestEnd', context, { stream: true })
+      await this.pluginManager.executeParallel('onRequestEnd', context, transformedResult)
 
       return transformedResult
     } catch (error) {
