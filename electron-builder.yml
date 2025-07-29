@@ -1,5 +1,5 @@
-appId: com.kangfenmao.CherryStudio
-productName: Cherry Studio
+appId: com.kangfenmao.Raven
+productName: Raven
 electronLanguages:
   - zh-CN
   - zh-TW
@@ -13,9 +13,9 @@ directories:
   buildResources: build
 
 protocols:
-  - name: Cherry Studio
+  - name: Raven
     schemes:
-      - cherrystudio
+      - raven
 files:
   - '**/*'
   - '!**/{.vscode,.yarn,.yarn-lock,.github,.cursorrules,.prettierrc}'
@@ -62,7 +62,7 @@ asarUnpack:
   - resources/**
   - '**/*.{metal,exp,lib}'
 win:
-  executableName: Cherry Studio
+  executableName: Raven
   artifactName: ${productName}-${version}-${arch}-setup.${ext}
   target:
     - target: nsis
@@ -104,9 +104,9 @@ linux:
   category: Utility
   desktop:
     entry:
-      StartupWMClass: CherryStudio
+      StartupWMClass: Raven
   mimeTypes:
-    - x-scheme-handler/cherrystudio
+    - x-scheme-handler/raven
 publish:
   provider: generic
   url: https://releases.cherry-ai.com
