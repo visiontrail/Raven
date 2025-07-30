@@ -243,7 +243,7 @@ const PackageTab: React.FC = () => {
         message.success(result.message)
         handleLog(`${t('packager.log.success')} ${result.outputPath}`)
         if (result.outputPath) {
-          window.api.openPath(result.outputPath)
+          window.api.file.openPath(result.outputPath)
         }
       } else {
         message.error(result.message)
