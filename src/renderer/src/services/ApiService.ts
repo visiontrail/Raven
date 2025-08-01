@@ -7,6 +7,7 @@ import { AiSdkMiddlewareConfig } from '@renderer/aiCore/middleware/aisdk/AiSdkMi
 import { CompletionsParams } from '@renderer/aiCore/middleware/schemas'
 import { buildStreamTextParams } from '@renderer/aiCore/transformParameters'
 import {
+  isDedicatedImageGenerationModel,
   isEmbeddingModel,
   isReasoningModel,
   isSupportedReasoningEffortModel,
@@ -20,7 +21,7 @@ import { type Chunk, ChunkType } from '@renderer/types/chunk'
 import { Message } from '@renderer/types/newMessage'
 import { SdkModel } from '@renderer/types/sdk'
 import { removeSpecialCharactersForTopicName } from '@renderer/utils'
-import { isEnabledToolUse } from '@renderer/utils/mcp-tools'
+import { isPromptToolUse, isSupportedToolUse } from '@renderer/utils/mcp-tools'
 import { findFileBlocks, getMainTextContent } from '@renderer/utils/messageUtils/find'
 import { isEmpty, takeRight } from 'lodash'
 
@@ -391,7 +392,11 @@ export async function fetchChatCompletion({
   const AI = new AiProviderNew(assistant.model || getDefaultModel())
   const provider = AI.getActualProvider()
 
-  const mcpTools = await fetchMcpTools(assistant)
+  const mcpTools: MCPTool[] = []
+
+  if (isSupportedToolUse(assistant)) {
+    mcpTools.push(...(await fetchMcpTools(assistant)))
+  }
 
   // 使用 transformParameters 模块构建参数
   const {
@@ -400,7 +405,6 @@ export async function fetchChatCompletion({
     capabilities
   } = await buildStreamTextParams(messages, assistant, provider, {
     mcpTools: mcpTools,
-    enableTools: isEnabledToolUse(assistant),
     webSearchProviderId: assistant.webSearchProviderId,
     requestOptions: options
   })
@@ -430,8 +434,11 @@ export async function fetchChatCompletion({
     model: assistant.model,
     provider: provider,
     enableReasoning: capabilities.enableReasoning,
-    enableTool: assistant.settings?.toolUseMode === 'prompt',
+    isPromptToolUse: isPromptToolUse(assistant),
+    isSupportedToolUse: isSupportedToolUse(assistant),
+    isImageGenerationEndpoint: isDedicatedImageGenerationModel(assistant.model || getDefaultModel()),
     enableWebSearch: capabilities.enableWebSearch,
+    enableGenerateImage: capabilities.enableGenerateImage,
     mcpTools,
     assistant
   }

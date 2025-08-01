@@ -1,6 +1,7 @@
 import { Assistant, Model, Provider } from '@renderer/types'
 
 import { getAiSdkProviderId } from '../provider/factory'
+import { buildGeminiGenerateImageParams } from './image'
 import {
   getAnthropicReasoningParams,
   getCustomParameters,
@@ -140,7 +141,7 @@ function buildGeminiProviderOptions(
     enableGenerateImage: boolean
   }
 ): Record<string, any> {
-  const { enableReasoning } = capabilities
+  const { enableReasoning, enableGenerateImage } = capabilities
   let providerOptions: Record<string, any> = {}
 
   // Gemini 推理参数
@@ -149,6 +150,13 @@ function buildGeminiProviderOptions(
     providerOptions = {
       ...providerOptions,
       ...reasoningParams
+    }
+  }
+
+  if (enableGenerateImage) {
+    providerOptions = {
+      ...providerOptions,
+      ...buildGeminiGenerateImageParams()
     }
   }
 

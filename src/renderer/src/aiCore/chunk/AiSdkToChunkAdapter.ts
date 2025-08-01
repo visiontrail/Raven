@@ -253,16 +253,16 @@ export class AiSdkToChunkAdapter {
           // })
         }
         break
-      // case 'file':
-      //   // 文件相关事件，可能是图片生成
-      //   this.onChunk({
-      //     type: ChunkType.IMAGE_COMPLETE,
-      //     image: {
-      //       type: 'base64',
-      //       images: [chunk.base64]
-      //     }
-      //   })
-      //   break
+      case 'file':
+        // 文件相关事件，可能是图片生成
+        this.onChunk({
+          type: ChunkType.IMAGE_COMPLETE,
+          image: {
+            type: 'base64',
+            images: [`data:${chunk.file.mediaType};base64,${chunk.file.base64}`]
+          }
+        })
+        break
       case 'error':
         this.onChunk({
           type: ChunkType.ERROR,

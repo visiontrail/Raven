@@ -255,8 +255,6 @@ export async function buildStreamTextParams(
   provider: Provider,
   options: {
     mcpTools?: MCPTool[]
-    enableTools?: boolean
-    enableWebSearch?: boolean
     webSearchProviderId?: string
     requestOptions?: {
       signal?: AbortSignal
@@ -267,9 +265,9 @@ export async function buildStreamTextParams(
 ): Promise<{
   params: StreamTextParams
   modelId: string
-  capabilities: { enableReasoning?: boolean; enableWebSearch?: boolean; enableGenerateImage?: boolean }
+  capabilities: { enableReasoning: boolean; enableWebSearch: boolean; enableGenerateImage: boolean }
 }> {
-  const { mcpTools, enableTools, webSearchProviderId } = options
+  const { mcpTools } = options
 
   const model = assistant.model || getDefaultModel()
 
@@ -291,12 +289,7 @@ export async function buildStreamTextParams(
     isGenerateImageModel(model) &&
     (isSupportedDisableGenerationModel(model) ? assistant.enableGenerateImage || false : true)
 
-  // 构建系统提示
-  const { tools } = setupToolsConfig({
-    mcpTools,
-    model,
-    enableToolUse: enableTools
-  })
+  const tools = setupToolsConfig(mcpTools)
 
   // if (webSearchProviderId) {
   //   tools['builtin_web_search'] = webSearchTool(webSearchProviderId)

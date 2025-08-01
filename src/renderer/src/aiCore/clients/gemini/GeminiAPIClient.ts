@@ -53,7 +53,7 @@ import {
 } from '@renderer/types/sdk'
 import {
   geminiFunctionCallToMcpTool,
-  isEnabledToolUse,
+  isSupportedToolUse,
   mcpToolCallResponseToGeminiMessage,
   mcpToolsToGeminiTools
 } from '@renderer/utils/mcp-tools'
@@ -451,7 +451,7 @@ export class GeminiAPIClient extends BaseApiClient<
         const { tools } = this.setupToolsConfig({
           mcpTools,
           model,
-          enableToolUse: isEnabledToolUse(assistant)
+          enableToolUse: isSupportedToolUse(assistant)
         })
 
         if (this.useSystemPromptForTools) {

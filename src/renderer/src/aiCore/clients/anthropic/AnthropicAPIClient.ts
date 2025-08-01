@@ -64,7 +64,7 @@ import {
 import { addImageFileToContents } from '@renderer/utils/formats'
 import {
   anthropicToolUseToMcpTool,
-  isEnabledToolUse,
+  isSupportedToolUse,
   mcpToolCallResponseToAnthropicMessage,
   mcpToolsToAnthropicTools
 } from '@renderer/utils/mcp-tools'
@@ -454,7 +454,7 @@ export class AnthropicAPIClient extends BaseApiClient<
         const { tools } = this.setupToolsConfig({
           mcpTools: mcpTools,
           model,
-          enableToolUse: isEnabledToolUse(assistant)
+          enableToolUse: isSupportedToolUse(assistant)
         })
 
         if (this.useSystemPromptForTools) {

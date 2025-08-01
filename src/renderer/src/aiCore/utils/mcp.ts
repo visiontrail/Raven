@@ -1,36 +1,21 @@
 import { aiSdk, Tool } from '@cherrystudio/ai-core'
 // import { AiSdkTool, ToolCallResult } from '@renderer/aiCore/tools/types'
-import { SYSTEM_PROMPT_THRESHOLD } from '@renderer/config/constant'
-import { isFunctionCallingModel } from '@renderer/config/models'
-import { MCPTool, MCPToolResponse, Model } from '@renderer/types'
+import { MCPTool, MCPToolResponse } from '@renderer/types'
 import { callMCPTool } from '@renderer/utils/mcp-tools'
 import { tool } from 'ai'
 import { JSONSchema7 } from 'json-schema'
 
 // Setup tools configuration based on provided parameters
-export function setupToolsConfig(params: { mcpTools?: MCPTool[]; model: Model; enableToolUse?: boolean }): {
-  tools: Record<string, Tool>
-  useSystemPromptForTools?: boolean
-} {
-  const { mcpTools, model, enableToolUse } = params
-
+export function setupToolsConfig(mcpTools?: MCPTool[]): Record<string, Tool> | undefined {
   let tools: Record<string, Tool> = {}
 
   if (!mcpTools?.length) {
-    return { tools }
+    return undefined
   }
 
   tools = convertMcpToolsToAiSdkTools(mcpTools)
 
-  if (mcpTools.length > SYSTEM_PROMPT_THRESHOLD) {
-    return { tools, useSystemPromptForTools: true }
-  }
-
-  if (isFunctionCallingModel(model) && enableToolUse) {
-    return { tools, useSystemPromptForTools: false }
-  }
-
-  return { tools, useSystemPromptForTools: true }
+  return tools
 }
 
 /**

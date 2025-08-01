@@ -1,9 +1,9 @@
 import { ApiClientFactory } from '@renderer/aiCore/clients/ApiClientFactory'
 import { BaseApiClient } from '@renderer/aiCore/clients/BaseApiClient'
-import { isDedicatedImageGenerationModel, isFunctionCallingModel } from '@renderer/config/models'
+import { isDedicatedImageGenerationModel } from '@renderer/config/models'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
 import { RequestOptions, SdkModel } from '@renderer/types/sdk'
-import { isEnabledToolUse } from '@renderer/utils/mcp-tools'
+import { isPromptToolUse } from '@renderer/utils/mcp-tools'
 
 import { OpenAIAPIClient } from './clients'
 import { AihubmixAPIClient } from './clients/AihubmixAPIClient'
@@ -93,7 +93,7 @@ export default class AiProvider {
         builder.remove(ToolUseExtractionMiddlewareName)
         builder.remove(McpToolChunkMiddlewareName)
       }
-      if (isEnabledToolUse(params.assistant) && isFunctionCallingModel(model)) {
+      if (!isPromptToolUse(params.assistant)) {
         builder.remove(ToolUseExtractionMiddlewareName)
       }
       if (params.callType !== 'chat') {

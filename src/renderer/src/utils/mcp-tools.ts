@@ -1006,12 +1006,30 @@ export function mcpToolCallResponseToGeminiMessage(
   return message
 }
 
-export function isEnabledToolUse(assistant: Assistant) {
+/**
+ * 是否启用工具使用
+ * 1. 如果模型支持函数调用，则启用工具使用
+ * 2. 如果工具使用模式为 prompt，则启用工具使用
+ * @param assistant
+ * @returns 是否启用工具使用
+ */
+export function isSupportedToolUse(assistant: Assistant) {
   if (assistant.model) {
     if (isFunctionCallingModel(assistant.model)) {
-      return assistant.settings?.toolUseMode === 'function'
+      return true
+    } else {
+      return assistant.settings?.toolUseMode === 'prompt'
     }
   }
 
   return false
+}
+
+/**
+ * 是否使用提示词工具使用
+ * @param assistant
+ * @returns 是否使用提示词工具使用
+ */
+export function isPromptToolUse(assistant: Assistant) {
+  return assistant.settings?.toolUseMode === 'prompt'
 }

@@ -30,7 +30,7 @@ import {
 } from '@renderer/types/sdk'
 import { addImageFileToContents } from '@renderer/utils/formats'
 import {
-  isEnabledToolUse,
+  isSupportedToolUse,
   mcpToolCallResponseToOpenAIMessage,
   mcpToolsToOpenAIResponseTools,
   openAIToolsToMcpTool
@@ -362,7 +362,7 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
         const { tools: extraTools } = this.setupToolsConfig({
           mcpTools: mcpTools,
           model,
-          enableToolUse: isEnabledToolUse(assistant)
+          enableToolUse: isSupportedToolUse(assistant)
         })
 
         if (this.useSystemPromptForTools) {

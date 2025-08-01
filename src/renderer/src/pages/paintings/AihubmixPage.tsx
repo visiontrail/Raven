@@ -1,5 +1,5 @@
 import { PlusOutlined, RedoOutlined } from '@ant-design/icons'
-import AiProvider from '@renderer/aiCore'
+import AiProviderNew from '@renderer/aiCore/index_new'
 import IcImageUp from '@renderer/assets/images/paintings/ic_ImageUp.svg'
 import { Navbar, NavbarCenter, NavbarRight } from '@renderer/components/app/Navbar'
 import { HStack } from '@renderer/components/Layout'
@@ -179,12 +179,17 @@ const AihubmixPage: FC<{ Options: string[] }> = ({ Options }) => {
     try {
       if (mode === 'generate') {
         if (painting.model.startsWith('imagen-')) {
-          const AI = new AiProvider(aihubmixProvider)
+          const AI = new AiProviderNew({
+            id: painting.model,
+            provider: 'aihubmix',
+            name: painting.model,
+            group: 'imagen'
+          })
           const base64s = await AI.generateImage({
             prompt,
             model: painting.model,
             imageSize: painting.aspectRatio?.replace('ASPECT_', '').replace('_', ':') || '1:1',
-            batchSize: painting.model.startsWith('imagen-4.0-ultra-generate-exp') ? 1 : painting.numberOfImages || 1,
+            batchSize: painting.model.startsWith('imagen-4.0-ultra') ? 1 : painting.numberOfImages || 1,
             personGeneration: painting.personGeneration
           })
           if (base64s?.length > 0) {

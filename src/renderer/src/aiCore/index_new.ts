@@ -19,7 +19,7 @@ import {
   StreamTextParams
 } from '@cherrystudio/ai-core'
 import { createPromptToolUsePlugin, webSearchPlugin } from '@cherrystudio/ai-core/built-in/plugins'
-import { isDedicatedImageGenerationModel } from '@renderer/config/models'
+import { isDedicatedImageGenerationModel, isNotSupportedImageSizeModel } from '@renderer/config/models'
 import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
 import { getProviderByModel } from '@renderer/services/AssistantService'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
@@ -69,10 +69,10 @@ function providerToAiSdkConfig(actualProvider: Provider): {
   const aiSdkProviderId = getAiSdkProviderId(actualProvider)
   // console.log('aiSdkProviderId', aiSdkProviderId)
   // 如果provider是openai，则使用strict模式并且默认responses api
-  const actualProviderId = actualProvider.id
+  const actualProviderId = actualProvider.type
   const openaiResponseOptions =
     // 对于实际是openai的需要走responses,aiCore内部会判断model是否可用responses
-    actualProviderId === 'openai'
+    actualProviderId === 'openai-response'
       ? {
           mode: 'responses'
         }
@@ -167,15 +167,18 @@ export default class ModernAiProvider {
       // 内置了默认搜索参数，如果改的话可以传config进去
       plugins.push(webSearchPlugin())
     }
-    plugins.push(searchOrchestrationPlugin(middlewareConfig.assistant))
+    // 2. 支持工具调用时添加搜索插件
+    if (middlewareConfig.isSupportedToolUse) {
+      plugins.push(searchOrchestrationPlugin(middlewareConfig.assistant))
+    }
 
-    // 2. 推理模型时添加推理插件
+    // 3. 推理模型时添加推理插件
     if (middlewareConfig.enableReasoning) {
       plugins.push(reasoningTimePlugin)
     }
 
-    // 3. 启用Prompt工具调用时添加工具插件
-    if (middlewareConfig.enableTool && middlewareConfig.mcpTools && middlewareConfig.mcpTools.length > 0) {
+    // 4. 启用Prompt工具调用时添加工具插件
+    if (middlewareConfig.isPromptToolUse && middlewareConfig.mcpTools && middlewareConfig.mcpTools.length > 0) {
       plugins.push(
         createPromptToolUsePlugin({
           enabled: true,
@@ -216,8 +219,7 @@ export default class ModernAiProvider {
   ): Promise<CompletionsResult> {
     console.log('completions', modelId, params, middlewareConfig)
 
-    // 检查是否为图像生成模型
-    if (middlewareConfig.model && isDedicatedImageGenerationModel(middlewareConfig.model)) {
+    if (middlewareConfig.isImageGenerationEndpoint) {
       return await this.modernImageGeneration(modelId, params, middlewareConfig)
     }
 
@@ -313,17 +315,17 @@ export default class ModernAiProvider {
         throw new Error('No prompt found in user message.')
       }
 
+      const startTime = Date.now()
+
       // 发送图像生成开始事件
       if (onChunk) {
         onChunk({ type: ChunkType.IMAGE_CREATED })
       }
 
-      const startTime = Date.now()
-
       // 构建图像生成参数
       const imageParams = {
         prompt,
-        size: '1024x1024' as `${number}x${number}`, // 默认尺寸，使用正确的类型
+        size: isNotSupportedImageSizeModel(middlewareConfig.model) ? undefined : ('1024x1024' as `${number}x${number}`), // 默认尺寸，使用正确的类型
         n: 1,
         ...(params.abortSignal && { abortSignal: params.abortSignal })
       }
@@ -338,7 +340,7 @@ export default class ModernAiProvider {
       if (result.images) {
         for (const image of result.images) {
           if ('base64' in image && image.base64) {
-            images.push(`data:image/png;base64,${image.base64}`)
+            images.push(`data:${image.mediaType};base64,${image.base64}`)
           }
         }
       }
@@ -351,14 +353,27 @@ export default class ModernAiProvider {
         })
       }
 
-      // 发送响应完成事件
+      // 发送块完成事件（类似于 modernCompletions 的处理）
       if (onChunk) {
         const usage = {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0
+          prompt_tokens: prompt.length, // 估算的 token 数量
+          completion_tokens: 0, // 图像生成没有 completion tokens
+          total_tokens: prompt.length
         }
 
+        onChunk({
+          type: ChunkType.BLOCK_COMPLETE,
+          response: {
+            usage,
+            metrics: {
+              completion_tokens: usage.completion_tokens,
+              time_first_token_millsec: 0,
+              time_completion_millsec: Date.now() - startTime
+            }
+          }
+        })
+
+        // 发送 LLM 响应完成事件
         onChunk({
           type: ChunkType.LLM_RESPONSE_COMPLETE,
           response: {

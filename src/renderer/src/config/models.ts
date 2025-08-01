@@ -204,9 +204,10 @@ export const VISION_REGEX = new RegExp(
 )
 
 // For middleware to identify models that must use the dedicated Image API
-export const DEDICATED_IMAGE_MODELS = ['grok-2-image', 'dall-e-3', 'dall-e-2', 'gpt-image-1']
-export const isDedicatedImageGenerationModel = (model: Model): boolean =>
-  DEDICATED_IMAGE_MODELS.filter((m) => model.id.includes(m)).length > 0
+export const DEDICATED_IMAGE_MODELS = ['grok-2-image', 'dall-e-3', 'dall-e-2', 'gpt-image-1', 'imagen(?:-[\\w-]+)?']
+const DEDICATED_IMAGE_MODELS_REGEX = new RegExp(DEDICATED_IMAGE_MODELS.join('|'), 'i')
+
+export const isDedicatedImageGenerationModel = (model: Model): boolean => DEDICATED_IMAGE_MODELS_REGEX.test(model.id)
 
 // Text to image models
 export const TEXT_TO_IMAGE_REGEX = /flux|diffusion|stabilityai|sd-|dall|cogview|janus|midjourney|mj-|image|gpt-image/i
@@ -272,7 +273,7 @@ export function isFunctionCallingModel(model?: Model): boolean {
     return true
   }
 
-  if (isEmbeddingModel(model)) {
+  if (isEmbeddingModel(model) || isGenerateImageModel(model)) {
     return false
   }
 
@@ -2773,6 +2774,16 @@ export function isGenerateImageModel(model: Model): boolean {
     return true
   }
   return false
+}
+
+export function isNotSupportedImageSizeModel(model?: Model): boolean {
+  if (!model) {
+    return false
+  }
+
+  const baseName = getLowerBaseModelName(model.id, '/')
+
+  return baseName.includes('grok-2-image')
 }
 
 export function isSupportedDisableGenerationModel(model: Model): boolean {

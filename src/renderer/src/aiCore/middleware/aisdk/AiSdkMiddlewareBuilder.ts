@@ -10,14 +10,19 @@ import type { Chunk } from '@renderer/types/chunk'
  * AI SDK 中间件配置项
  */
 export interface AiSdkMiddlewareConfig {
-  streamOutput?: boolean
+  streamOutput: boolean
   onChunk?: (chunk: Chunk) => void
   model?: Model
   provider?: Provider
-  enableReasoning?: boolean
+  enableReasoning: boolean
   // 是否开启提示词工具调用
-  enableTool?: boolean
-  enableWebSearch?: boolean
+  isPromptToolUse: boolean
+  // 是否支持工具调用
+  isSupportedToolUse: boolean
+  // image generation endpoint
+  isImageGenerationEndpoint: boolean
+  enableWebSearch: boolean
+  enableGenerateImage: boolean
   mcpTools?: BaseTool[]
   // TODO assistant
   assistant: Assistant
