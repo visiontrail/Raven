@@ -100,6 +100,21 @@ export async function streamObject<T extends ProviderId>(
   return executor.streamObject(modelId, params, { middlewares })
 }
 
+/**
+ * 直接生成图像 - 支持middlewares
+ */
+export async function generateImage<T extends ProviderId>(
+  providerId: T,
+  options: ProviderSettingsMap[T] & { mode?: 'chat' | 'responses' },
+  modelId: string,
+  params: Parameters<RuntimeExecutor<T>['generateImage']>[1],
+  plugins?: AiPlugin[],
+  middlewares?: LanguageModelV2Middleware[]
+): Promise<ReturnType<RuntimeExecutor<T>['generateImage']>> {
+  const executor = createExecutor(providerId, options, plugins)
+  return executor.generateImage(modelId, params, { middlewares })
+}
+
 // === Agent 功能预留 ===
 // 未来将在 ../agents/ 文件夹中添加：
 // - AgentExecutor.ts

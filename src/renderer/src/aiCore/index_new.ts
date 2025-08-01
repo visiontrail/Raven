@@ -12,6 +12,7 @@ import {
   AiCore,
   AiPlugin,
   createExecutor,
+  generateImage,
   ProviderConfigFactory,
   type ProviderId,
   type ProviderSettingsMap,
@@ -22,6 +23,7 @@ import { isDedicatedImageGenerationModel } from '@renderer/config/models'
 import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
 import { getProviderByModel } from '@renderer/services/AssistantService'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
+import { ChunkType } from '@renderer/types/chunk'
 import { formatApiHost } from '@renderer/utils/api'
 import { cloneDeep } from 'lodash'
 
@@ -127,9 +129,11 @@ function isModernSdkSupported(provider: Provider, model?: Model): boolean {
     return false
   }
 
-  // 检查是否为图像生成模型（暂时不支持）
+  // 图像生成模型现在支持新的 AI SDK
+  // （但需要确保 provider 是支持的
+
   if (model && isDedicatedImageGenerationModel(model)) {
-    return false
+    return true
   }
 
   return true
@@ -211,6 +215,12 @@ export default class ModernAiProvider {
     middlewareConfig: AiSdkMiddlewareConfig
   ): Promise<CompletionsResult> {
     console.log('completions', modelId, params, middlewareConfig)
+
+    // 检查是否为图像生成模型
+    if (middlewareConfig.model && isDedicatedImageGenerationModel(middlewareConfig.model)) {
+      return await this.modernImageGeneration(modelId, params, middlewareConfig)
+    }
+
     return await this.modernCompletions(modelId, params, middlewareConfig)
   }
 
@@ -271,6 +281,109 @@ export default class ModernAiProvider {
     // }
   }
 
+  /**
+   * 使用现代化 AI SDK 的图像生成实现，支持流式输出
+   */
+  private async modernImageGeneration(
+    modelId: string,
+    params: StreamTextParams,
+    middlewareConfig: AiSdkMiddlewareConfig
+  ): Promise<CompletionsResult> {
+    const { onChunk } = middlewareConfig
+
+    try {
+      // 检查 messages 是否存在
+      if (!params.messages || params.messages.length === 0) {
+        throw new Error('No messages provided for image generation.')
+      }
+
+      // 从最后一条用户消息中提取 prompt
+      const lastUserMessage = params.messages.findLast((m) => m.role === 'user')
+      if (!lastUserMessage) {
+        throw new Error('No user message found for image generation.')
+      }
+
+      // 直接使用消息内容，避免类型转换问题
+      const prompt =
+        typeof lastUserMessage.content === 'string'
+          ? lastUserMessage.content
+          : lastUserMessage.content?.map((part) => ('text' in part ? part.text : '')).join('') || ''
+
+      if (!prompt) {
+        throw new Error('No prompt found in user message.')
+      }
+
+      // 发送图像生成开始事件
+      if (onChunk) {
+        onChunk({ type: ChunkType.IMAGE_CREATED })
+      }
+
+      const startTime = Date.now()
+
+      // 构建图像生成参数
+      const imageParams = {
+        prompt,
+        size: '1024x1024' as `${number}x${number}`, // 默认尺寸，使用正确的类型
+        n: 1,
+        ...(params.abortSignal && { abortSignal: params.abortSignal })
+      }
+
+      // 调用新 AI SDK 的图像生成功能
+      const result = await generateImage(this.config.providerId, this.config.options, modelId, imageParams)
+
+      // 转换结果格式
+      const images: string[] = []
+      const imageType: 'url' | 'base64' = 'base64'
+
+      if (result.images) {
+        for (const image of result.images) {
+          if ('base64' in image && image.base64) {
+            images.push(`data:image/png;base64,${image.base64}`)
+          }
+        }
+      }
+
+      // 发送图像生成完成事件
+      if (onChunk && images.length > 0) {
+        onChunk({
+          type: ChunkType.IMAGE_COMPLETE,
+          image: { type: imageType, images }
+        })
+      }
+
+      // 发送响应完成事件
+      if (onChunk) {
+        const usage = {
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0
+        }
+
+        onChunk({
+          type: ChunkType.LLM_RESPONSE_COMPLETE,
+          response: {
+            usage,
+            metrics: {
+              completion_tokens: usage.completion_tokens,
+              time_first_token_millsec: 0,
+              time_completion_millsec: Date.now() - startTime
+            }
+          }
+        })
+      }
+
+      return {
+        getText: () => '' // 图像生成不返回文本
+      }
+    } catch (error) {
+      // 发送错误事件
+      if (onChunk) {
+        onChunk({ type: ChunkType.ERROR, error: error as any })
+      }
+      throw error
+    }
+  }
+
   // 代理其他方法到原有实现
   public async models() {
     return this.legacyProvider.models()
@@ -281,7 +394,49 @@ export default class ModernAiProvider {
   }
 
   public async generateImage(params: GenerateImageParams): Promise<string[]> {
+    // 如果支持新的 AI SDK，使用现代化实现
+    if (isModernSdkSupported(this.actualProvider)) {
+      try {
+        const result = await this.modernGenerateImage(params)
+        return result
+      } catch (error) {
+        console.warn('Modern AI SDK generateImage failed, falling back to legacy:', error)
+        // fallback 到传统实现
+        return this.legacyProvider.generateImage(params)
+      }
+    }
+
+    // 直接使用传统实现
     return this.legacyProvider.generateImage(params)
+  }
+
+  /**
+   * 使用现代化 AI SDK 的图像生成实现
+   */
+  private async modernGenerateImage(params: GenerateImageParams): Promise<string[]> {
+    const { model, prompt, imageSize, batchSize, signal } = params
+
+    // 转换参数格式
+    const aiSdkParams = {
+      prompt,
+      size: (imageSize || '1024x1024') as `${number}x${number}`,
+      n: batchSize || 1,
+      ...(signal && { abortSignal: signal })
+    }
+
+    const result = await generateImage(this.config.providerId, this.config.options, model, aiSdkParams)
+
+    // 转换结果格式
+    const images: string[] = []
+    if (result.images) {
+      for (const image of result.images) {
+        if ('base64' in image && image.base64) {
+          images.push(`data:image/png;base64,${image.base64}`)
+        }
+      }
+    }
+
+    return images
   }
 
   public getBaseURL(): string {

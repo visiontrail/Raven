@@ -1,3 +1,4 @@
+import { ImageModelV2 } from '@ai-sdk/provider'
 import { LanguageModel } from 'ai'
 
 import { type AiPlugin, createContext, PluginManager } from '../plugins'
@@ -100,6 +101,62 @@ export class PluginEngine<T extends ProviderId = ProviderId> {
       const result = await executor(model, transformedParams)
 
       // 5. 转换结果（对于非流式调用）
+      const transformedResult = await this.pluginManager.executeSequential('transformResult', result, context)
+
+      // 6. 触发完成事件
+      await this.pluginManager.executeParallel('onRequestEnd', context, transformedResult)
+
+      return transformedResult
+    } catch (error) {
+      // 7. 触发错误事件
+      await this.pluginManager.executeParallel('onError', context, undefined, error as Error)
+      throw error
+    }
+  }
+
+  /**
+   * 执行带插件的图像生成操作
+   * 提供给AiExecutor使用
+   */
+  async executeImageWithPlugins<TParams, TResult>(
+    methodName: string,
+    modelId: string,
+    params: TParams,
+    executor: (model: ImageModelV2, transformedParams: TParams) => Promise<TResult>,
+    _context?: ReturnType<typeof createContext>
+  ): Promise<TResult> {
+    // 使用正确的createContext创建请求上下文
+    const context = _context ? _context : createContext(this.providerId, modelId, params)
+
+    // 🔥 为上下文添加递归调用能力
+    context.recursiveCall = async (newParams: any): Promise<TResult> => {
+      // 递归调用自身，重新走完整的插件流程
+      context.isRecursiveCall = true
+      const result = await this.executeImageWithPlugins(methodName, modelId, newParams, executor, context)
+      context.isRecursiveCall = false
+      return result
+    }
+
+    try {
+      // 0. 配置上下文
+      await this.pluginManager.executeConfigureContext(context)
+
+      // 1. 触发请求开始事件
+      await this.pluginManager.executeParallel('onRequestStart', context)
+
+      // 2. 解析模型
+      const model = await this.pluginManager.executeFirst<ImageModelV2>('resolveModel', modelId, context)
+      if (!model) {
+        throw new Error(`Failed to resolve image model: ${modelId}`)
+      }
+
+      // 3. 转换请求参数
+      const transformedParams = await this.pluginManager.executeSequential('transformParams', params, context)
+
+      // 4. 执行具体的 API 调用
+      const result = await executor(model, transformedParams)
+
+      // 5. 转换结果
       const transformedResult = await this.pluginManager.executeSequential('transformResult', result, context)
 
       // 6. 触发完成事件

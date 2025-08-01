@@ -9,7 +9,9 @@
   "scripts": {
     "build": "tsdown",
     "dev": "tsc -w",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "ai",
@@ -45,7 +47,8 @@
   },
   "devDependencies": {
     "tsdown": "^0.12.9",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   },
   "sideEffects": false,
   "engines": {

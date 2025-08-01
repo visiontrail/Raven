@@ -1,3 +1,4 @@
+import type { ImageModelV2 } from '@ai-sdk/provider'
 import type { LanguageModel, TextStreamPart, ToolSet } from 'ai'
 
 import { type ProviderId } from '../providers/types'
@@ -32,7 +33,10 @@ export interface AiPlugin {
   enforce?: 'pre' | 'post'
 
   // 【First】首个钩子 - 只执行第一个返回值的插件
-  resolveModel?: (modelId: string, context: AiRequestContext) => Promise<LanguageModel | null> | LanguageModel | null
+  resolveModel?: (
+    modelId: string,
+    context: AiRequestContext
+  ) => Promise<LanguageModel | ImageModelV2 | null> | LanguageModel | ImageModelV2 | null
   loadTemplate?: (templateName: string, context: AiRequestContext) => any | null | Promise<any | null>
 
   // 【Sequential】串行钩子 - 链式执行，支持数据转换

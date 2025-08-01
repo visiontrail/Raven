@@ -2,13 +2,21 @@
  * 运行时执行器
  * 专注于插件化的AI调用处理
  */
-import { LanguageModelV2, LanguageModelV2Middleware } from '@ai-sdk/provider'
-import { generateObject, generateText, LanguageModel, streamObject, streamText } from 'ai'
+import { ImageModelV2, LanguageModelV2, LanguageModelV2Middleware } from '@ai-sdk/provider'
+import {
+  experimental_generateImage as generateImage,
+  generateObject,
+  generateText,
+  LanguageModel,
+  streamObject,
+  streamText
+} from 'ai'
 
 import { type ProviderId } from '../../types'
-import { createModel, getProviderInfo } from '../models'
+import { createImageModel, createModel, getProviderInfo } from '../models'
 import { type ModelConfig } from '../models/types'
 import { type AiPlugin, type AiRequestContext, definePlugin } from '../plugins'
+import { ImageGenerationError, ImageModelResolutionError } from './errors'
 import { PluginEngine } from './pluginEngine'
 import { type RuntimeConfig } from './types'
 
@@ -38,6 +46,17 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
         // 从 context 中读取由用户插件注入的 extraModelConfig
         const extraModelConfig = context.extraModelConfig || {}
         return await this.resolveModel(modelId, middlewares, extraModelConfig)
+      }
+    })
+  }
+
+  createResolveImageModelPlugin() {
+    return definePlugin({
+      name: '_internal_resolveImageModel',
+      enforce: 'post',
+
+      resolveModel: async (modelId: string) => {
+        return await this.resolveImageModel(modelId)
       }
     })
   }
@@ -203,6 +222,48 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     )
   }
 
+  /**
+   * 生成图像 - 使用已创建的图像模型
+   */
+  async generateImage(
+    model: ImageModelV2,
+    params: Omit<Parameters<typeof generateImage>[0], 'model'>
+  ): Promise<ReturnType<typeof generateImage>>
+  async generateImage(
+    modelId: string,
+    params: Omit<Parameters<typeof generateImage>[0], 'model'>,
+    options?: {
+      middlewares?: LanguageModelV2Middleware[]
+    }
+  ): Promise<ReturnType<typeof generateImage>>
+  async generateImage(
+    modelOrId: ImageModelV2 | string,
+    params: Omit<Parameters<typeof generateImage>[0], 'model'>
+  ): Promise<ReturnType<typeof generateImage>> {
+    try {
+      this.pluginEngine.usePlugins([this.createResolveImageModelPlugin(), this.createConfigureContextPlugin()])
+
+      return await this.pluginEngine.executeImageWithPlugins(
+        'generateImage',
+        typeof modelOrId === 'string' ? modelOrId : modelOrId.modelId,
+        params,
+        async (model, transformedParams) => {
+          return await generateImage({ model, ...transformedParams })
+        }
+      )
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new ImageGenerationError(
+          `Failed to generate image: ${error.message}`,
+          this.config.providerId,
+          typeof modelOrId === 'string' ? modelOrId : modelOrId.modelId,
+          error
+        )
+      }
+      throw error
+    }
+  }
+
   // === 辅助方法 ===
 
   /**
@@ -225,6 +286,27 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     } else {
       // 已经是模型，直接返回
       return modelOrId
+    }
+  }
+
+  /**
+   * 解析图像模型：如果是字符串则创建图像模型，如果是模型则直接返回
+   */
+  private async resolveImageModel(modelOrId: ImageModelV2 | string): Promise<ImageModelV2> {
+    try {
+      if (typeof modelOrId === 'string') {
+        // 字符串modelId，需要创建图像模型
+        return await createImageModel(this.config.providerId, modelOrId, this.config.providerSettings)
+      } else {
+        // 已经是模型，直接返回
+        return modelOrId
+      }
+    } catch (error) {
+      throw new ImageModelResolutionError(
+        typeof modelOrId === 'string' ? modelOrId : modelOrId.modelId,
+        this.config.providerId,
+        error instanceof Error ? error : undefined
+      )
     }
   }
 

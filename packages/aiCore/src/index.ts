@@ -17,6 +17,7 @@ import { createExecutor } from './core/runtime'
 export {
   createExecutor,
   createOpenAICompatibleExecutor,
+  generateImage,
   generateObject,
   generateText,
   streamText
