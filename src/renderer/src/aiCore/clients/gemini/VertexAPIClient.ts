@@ -1,23 +1,61 @@
 import { GoogleGenAI } from '@google/genai'
+import { loggerService } from '@logger'
 import { createVertexProvider, isVertexProvider } from '@renderer/hooks/useVertexAI'
-import { Provider, VertexProvider } from '@renderer/types'
+import { Model, Provider, VertexProvider } from '@renderer/types'
+import { isEmpty } from 'lodash'
 
+import { AnthropicVertexClient } from '../anthropic/AnthropicVertexClient'
 import { GeminiAPIClient } from './GeminiAPIClient'
 
+const logger = loggerService.withContext('VertexAPIClient')
 export class VertexAPIClient extends GeminiAPIClient {
   private authHeaders?: Record<string, string>
   private authHeadersExpiry?: number
+  private anthropicVertexClient: AnthropicVertexClient
   private vertexProvider: VertexProvider
 
   constructor(provider: Provider) {
     super(provider)
-
+    this.anthropicVertexClient = new AnthropicVertexClient(provider)
     // 如果传入的是普通 Provider，转换为 VertexProvider
     if (isVertexProvider(provider)) {
       this.vertexProvider = provider
     } else {
       this.vertexProvider = createVertexProvider(provider)
     }
+  }
+
+  override getClientCompatibilityType(model?: Model): string[] {
+    if (!model) {
+      return [this.constructor.name]
+    }
+
+    const actualClient = this.getClient(model)
+    if (actualClient === this) {
+      return [this.constructor.name]
+    }
+
+    return actualClient.getClientCompatibilityType(model)
+  }
+
+  public getClient(model: Model) {
+    if (model.id.includes('claude')) {
+      return this.anthropicVertexClient
+    }
+    return this
+  }
+
+  private formatApiHost(baseUrl: string) {
+    if (baseUrl.endsWith('/v1/')) {
+      baseUrl = baseUrl.slice(0, -4)
+    } else if (baseUrl.endsWith('/v1')) {
+      baseUrl = baseUrl.slice(0, -3)
+    }
+    return baseUrl
+  }
+
+  override getBaseURL() {
+    return this.formatApiHost(this.provider.apiHost)
   }
 
   override async getSdkInstance() {
@@ -39,7 +77,8 @@ export class VertexAPIClient extends GeminiAPIClient {
       location: location,
       httpOptions: {
         apiVersion: this.getApiVersion(),
-        headers: authHeaders
+        headers: authHeaders,
+        baseUrl: isEmpty(this.getBaseURL()) ? undefined : this.getBaseURL()
       }
     })
 
@@ -78,7 +117,7 @@ export class VertexAPIClient extends GeminiAPIClient {
 
       return this.authHeaders
     } catch (error: any) {
-      console.error('Failed to get auth headers:', error)
+      logger.error('Failed to get auth headers:', error)
       throw new Error(`Service Account authentication failed: ${error.message}`)
     }
   }

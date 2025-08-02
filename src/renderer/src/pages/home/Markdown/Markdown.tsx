@@ -36,22 +36,27 @@ const DISALLOWED_ELEMENTS = ['iframe']
 interface Props {
   // message: Message & { content: string }
   block: MainTextMessageBlock | TranslationMessageBlock | ThinkingMessageBlock
+  // 可选的后处理函数，用于在流式渲染过程中处理文本（如引用标签转换）
+  postProcess?: (text: string) => string
 }
 
-const Markdown: FC<Props> = ({ block }) => {
+const Markdown: FC<Props> = ({ block, postProcess }) => {
   const { t } = useTranslation()
   const { mathEngine } = useSettings()
 
-  // 修复1: 根据你的提示，更精确地判断消息是否已完成
   const isTrulyDone = 'status' in block && block.status === 'success'
-  const [displayedContent, setDisplayedContent] = useState(block.content)
+  const [displayedContent, setDisplayedContent] = useState(postProcess ? postProcess(block.content) : block.content)
   const [isStreamDone, setIsStreamDone] = useState(isTrulyDone)
 
   const prevContentRef = useRef(block.content)
   const prevBlockIdRef = useRef(block.id)
 
   const { addChunk, reset } = useSmoothStream({
-    onUpdate: setDisplayedContent,
+    onUpdate: (rawText) => {
+      // 如果提供了后处理函数就调用，否则直接使用原始文本
+      const finalText = postProcess ? postProcess(rawText) : rawText
+      setDisplayedContent(finalText)
+    },
     streamDone: isStreamDone,
     initialText: block.content
   })
@@ -77,7 +82,7 @@ const Markdown: FC<Props> = ({ block }) => {
     prevBlockIdRef.current = block.id
 
     // 更新 stream 状态
-    const isStreaming = 'status' in block && block.status === 'streaming'
+    const isStreaming = block.status === 'streaming'
     setIsStreamDone(!isStreaming)
   }, [block.content, block.id, block.status, addChunk, reset])
 
@@ -98,7 +103,7 @@ const Markdown: FC<Props> = ({ block }) => {
       return t('message.chat.completion.paused')
     }
     return removeSvgEmptyLines(processLatexBrackets(displayedContent))
-  }, [block, t, displayedContent])
+  }, [block, displayedContent, t])
 
   const rehypePlugins = useMemo(() => {
     const plugins: any[] = []

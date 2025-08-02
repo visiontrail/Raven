@@ -25,8 +25,6 @@ export const knowledgeSearchTool = (assistant: Assistant) => {
     description: 'Search the knowledge base for relevant information',
     inputSchema: KnowledgeSearchInputSchema,
     execute: async ({ query, rewrite, userMessage }) => {
-      console.log('🔍 [KnowledgeSearchTool] Executing search:', { query, rewrite, userMessage })
-
       try {
         // 获取助手的知识库配置
         const knowledgeBaseIds = assistant.knowledge_bases?.map((base) => base.id)
@@ -35,7 +33,6 @@ export const knowledgeSearchTool = (assistant: Assistant) => {
 
         // 检查是否有知识库
         if (!hasKnowledgeBase) {
-          console.log('🔍 [KnowledgeSearchTool] No knowledge bases found for assistant')
           return []
         }
 
@@ -49,19 +46,16 @@ export const knowledgeSearchTool = (assistant: Assistant) => {
             question: [directContent],
             rewrite: directContent
           }
-          console.log('🔍 [KnowledgeSearchTool] Direct mode - using user message:', directContent)
         } else {
           // 自动模式：使用意图识别的结果 (类似原逻辑的 extractResults.knowledge)
           searchCriteria = {
             question: [query],
             rewrite: rewrite || query
           }
-          console.log('🔍 [KnowledgeSearchTool] Auto mode - using intent analysis result')
         }
 
         // 检查是否需要搜索
         if (searchCriteria.question[0] === 'not_needed') {
-          console.log('🔍 [KnowledgeSearchTool] Search not needed')
           return []
         }
 
@@ -71,13 +65,8 @@ export const knowledgeSearchTool = (assistant: Assistant) => {
           knowledge: searchCriteria
         }
 
-        console.log('🔍 [KnowledgeSearchTool] Search criteria:', searchCriteria)
-        console.log('🔍 [KnowledgeSearchTool] Knowledge base IDs:', knowledgeBaseIds)
-
         // 执行知识库搜索
         const knowledgeReferences = await processKnowledgeSearch(extractResults, knowledgeBaseIds)
-
-        console.log('🔍 [KnowledgeSearchTool] Search results:', knowledgeReferences)
 
         // 返回结果数组
         return knowledgeReferences.map((ref: KnowledgeReference) => ({

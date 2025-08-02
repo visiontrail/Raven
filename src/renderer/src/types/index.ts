@@ -34,6 +34,10 @@ export type Assistant = {
   enableMemory?: boolean
 }
 
+export type TranslateAssistant = Assistant & {
+  targetLanguage?: Language
+}
+
 export type AssistantsSortType = 'tags' | 'list'
 
 export type AssistantMessage = {
@@ -51,24 +55,26 @@ export type ReasoningEffortOptions = 'low' | 'medium' | 'high' | 'auto'
 export type EffortRatio = Record<ReasoningEffortOptions, number>
 
 export const EFFORT_RATIO: EffortRatio = {
-  low: 0.2,
+  low: 0.05,
   medium: 0.5,
   high: 0.8,
   auto: 2
 }
 
 export type AssistantSettings = {
-  contextCount: number
+  maxTokens?: number
+  enableMaxTokens?: boolean
   temperature: number
+  enableTemperature?: boolean
   topP: number
-  maxTokens: number | undefined
-  enableMaxTokens: boolean
+  enableTopP?: boolean
+  contextCount: number
   streamOutput: boolean
   defaultModel?: Model
   customParameters?: AssistantSettingCustomParameters[]
   reasoning_effort?: ReasoningEffortOptions
   qwenThinkMode?: boolean
-  toolUseMode?: 'function' | 'prompt'
+  toolUseMode: 'function' | 'prompt'
 }
 
 export type Agent = Omit<Assistant, 'model'> & {
@@ -124,6 +130,8 @@ export type LegacyMessage = {
 
 export type Usage = OpenAI.Completions.CompletionUsage & {
   thoughts_tokens?: number
+  // OpenRouter specific fields
+  cost?: number
 }
 
 export type Metrics = {
@@ -191,8 +199,9 @@ export type ProviderType =
   | 'azure-openai'
   | 'vertexai'
   | 'mistral'
+  | 'aws-bedrock'
 
-export type ModelType = 'text' | 'vision' | 'embedding' | 'reasoning' | 'function_calling' | 'web_search'
+export type ModelType = 'text' | 'vision' | 'embedding' | 'reasoning' | 'function_calling' | 'web_search' | 'rerank'
 
 export type EndpointType = 'openai' | 'openai-response' | 'anthropic' | 'gemini' | 'image-generation' | 'jina-rerank'
 
@@ -202,6 +211,15 @@ export type ModelPricing = {
   currencySymbol?: string
 }
 
+export type ModelCapability = {
+  type: ModelType
+  /**
+   * 是否为用户手动选择，如果为true，则表示用户手动选择了该类型，否则表示用户手动禁止了该模型；如果为undefined，则表示使用默认值
+   * Is it manually selected by the user? If true, it means the user manually selected this type; otherwise, it means the user  * manually disabled the model.
+   */
+  isUserSelected?: boolean
+}
+
 export type Model = {
   id: string
   provider: string
@@ -209,10 +227,15 @@ export type Model = {
   group: string
   owned_by?: string
   description?: string
+  capabilities?: ModelCapability[]
+  /**
+   * @deprecated
+   */
   type?: ModelType[]
   pricing?: ModelPricing
   endpoint_type?: EndpointType
   supported_endpoint_types?: EndpointType[]
+  supported_text_delta?: boolean
 }
 
 export type Suggestion = {
@@ -311,6 +334,7 @@ export interface DmxapiPainting extends PaintingParams {
   style_type?: string
   autoCreate?: boolean
   generationMode?: generationModeType
+  priceModel?: string
 }
 
 export interface TokenFluxPainting extends PaintingParams {
@@ -432,9 +456,9 @@ export interface KnowledgeBase {
   rerankModel?: Model
   // topN?: number
   // preprocessing?: boolean
-  preprocessOrOcrProvider?: {
-    type: 'preprocess' | 'ocr'
-    provider: PreprocessProvider | OcrProvider
+  preprocessProvider?: {
+    type: 'preprocess'
+    provider: PreprocessProvider
   }
 }
 
@@ -455,23 +479,13 @@ export type KnowledgeBaseParams = {
   rerankApiClient?: ApiClient
   documentCount?: number
   // preprocessing?: boolean
-  preprocessOrOcrProvider?: {
-    type: 'preprocess' | 'ocr'
-    provider: PreprocessProvider | OcrProvider
+  preprocessProvider?: {
+    type: 'preprocess'
+    provider: PreprocessProvider
   }
 }
 
 export interface PreprocessProvider {
-  id: string
-  name: string
-  apiKey?: string
-  apiHost?: string
-  model?: string
-  options?: any
-  quota?: number
-}
-
-export interface OcrProvider {
   id: string
   name: string
   apiKey?: string
@@ -501,6 +515,7 @@ export type GenerateImageResponse = {
 }
 
 export type LanguageCode =
+  | 'unknown'
   | 'en-us'
   | 'zh-cn'
   | 'zh-tw'
@@ -520,6 +535,7 @@ export type LanguageCode =
   | 'id-id'
   | 'ur-pk'
   | 'ms-my'
+  | 'uk-ua'
 
 // langCode应当能够唯一确认一种语言
 export type Language = {
@@ -558,6 +574,9 @@ export type WebSearchProvider = {
   basicAuthUsername?: string
   basicAuthPassword?: string
   usingBrowser?: boolean
+  topicId?: string
+  parentSpanId?: string
+  modelName?: string
 }
 
 export type WebSearchProviderResult = {
@@ -642,6 +661,8 @@ export interface MCPServer {
   registryUrl?: string
   args?: string[]
   env?: Record<string, string>
+  shouldConfig?: boolean
+  getBuiltinDescription?: () => string
   isActive: boolean
   disabledTools?: string[] // List of tool names that are disabled for this server
   disabledAutoApproveTools?: string[] // Whether to auto-approve tools for this server
@@ -652,19 +673,12 @@ export interface MCPServer {
   providerUrl?: string // URL of the MCP server in provider's website or documentation
   logoUrl?: string // URL of the MCP server's logo
   tags?: string[] // List of tags associated with this server
+  longRunning?: boolean // Whether the server is long running
   timeout?: number // Timeout in seconds for requests to this server, default is 60 seconds
   dxtVersion?: string // Version of the DXT package
   dxtPath?: string // Path where the DXT package was extracted
+  reference?: string // Reference link for the server, e.g., documentation or homepage
 }
-
-export interface MCPToolInputSchema {
-  type: string
-  title: string
-  description?: string
-  required?: string[]
-  properties: Record<string, object>
-}
-
 export interface MCPPromptArguments {
   name: string
   description?: string
@@ -803,6 +817,13 @@ export type S3Config = {
 }
 
 export type { Message } from './newMessage'
+
+export interface ApiServerConfig {
+  enabled: boolean
+  host: string
+  port: number
+  apiKey: string
+}
 export * from './tool'
 
 // Memory Service Types

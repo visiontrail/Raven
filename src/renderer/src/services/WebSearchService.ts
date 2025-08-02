@@ -1,7 +1,8 @@
+import { loggerService } from '@logger'
 import { DEFAULT_WEBSEARCH_RAG_DOCUMENT_COUNT } from '@renderer/config/constant'
-import Logger from '@renderer/config/logger'
 import i18n from '@renderer/i18n'
 import WebSearchEngineProvider from '@renderer/providers/WebSearchProvider'
+import { addSpan, endSpan } from '@renderer/services/SpanManagerService'
 import store from '@renderer/store'
 import { setWebSearchStatus } from '@renderer/store/runtime'
 import { CompressionConfig, WebSearchState } from '@renderer/store/websearch'
@@ -26,6 +27,8 @@ import { sliceByTokens } from 'tokenx'
 
 import { getKnowledgeBaseParams } from './KnowledgeService'
 import { getKnowledgeSourceUrl, searchKnowledgeBase } from './KnowledgeService'
+
+const logger = loggerService.withContext('WebSearchService')
 
 interface RequestState {
   signal: AbortSignal | null
@@ -67,7 +70,7 @@ export default class WebSearchService {
       if (!requestState.searchBase) return
       window.api.knowledgeBase
         .delete(requestState.searchBase.id)
-        .catch((error) => Logger.warn(`[WebSearchService] Failed to cleanup search base for ${requestId}:`, error))
+        .catch((error) => logger.warn(`Failed to cleanup search base for ${requestId}:`, error))
     }
   })
 
@@ -172,13 +175,13 @@ export default class WebSearchService {
    * @param query 搜索查询
    * @returns 搜索响应
    */
-  public async search(query: string, httpOptions?: RequestInit): Promise<WebSearchProviderResponse> {
+  public async search(query: string, httpOptions?: RequestInit, spanId?: string): Promise<WebSearchProviderResponse> {
     const websearch = WebSearchService.getWebSearchState()
     const webSearchProvider = this.getWebSearchProvider(this.webSearchProviderId)
     if (!webSearchProvider) {
       throw new Error(`WebSearchProvider ${this.webSearchProviderId} not found`)
     }
-    const webSearchEngine = new WebSearchEngineProvider(webSearchProvider)
+    const webSearchEngine = new WebSearchEngineProvider(webSearchProvider, spanId)
 
     let formattedQuery = query
     // FIXME: 有待商榷，效果一般
@@ -203,7 +206,7 @@ export default class WebSearchService {
   public async checkSearch(): Promise<{ valid: boolean; error?: any }> {
     try {
       const response = await this.search('test query')
-      Logger.log('[checkSearch] Search response:', response)
+      logger.debug('Search response:', response)
       // 优化的判断条件：检查结果是否有效且没有错误
       return { valid: response.results !== undefined, error: undefined }
     } catch (error) {
@@ -370,7 +373,7 @@ export default class WebSearchService {
     // 4. 使用 Round Robin 策略选择引用
     const selectedReferences = selectReferences(rawResults, references, totalDocumentCount)
 
-    Logger.log('[WebSearchService] With RAG, the number of search results:', {
+    logger.verbose('With RAG, the number of search results:', {
       raw: rawResults.length,
       retrieved: references.length,
       selected: selectedReferences.length
@@ -392,7 +395,7 @@ export default class WebSearchService {
     config: CompressionConfig
   ): Promise<WebSearchProviderResult[]> {
     if (!config.cutoffLimit) {
-      Logger.warn('[WebSearchService] Cutoff limit is not set, skipping compression')
+      logger.warn('Cutoff limit is not set, skipping compression')
       return rawResults
     }
 
@@ -440,23 +443,43 @@ export default class WebSearchService {
 
     // 检查 websearch 和 question 是否有效
     if (!extractResults.websearch?.question || extractResults.websearch.question.length === 0) {
-      Logger.log('[processWebsearch] No valid question found in extractResults.websearch')
+      logger.info('No valid question found in extractResults.websearch')
       return { results: [] }
     }
 
     // 使用请求特定的signal，如果没有则回退到全局signal
     const signal = this.getRequestState(requestId).signal || this.signal
 
+    const span = webSearchProvider.topicId
+      ? addSpan({
+          topicId: webSearchProvider.topicId,
+          name: `WebSearch`,
+          inputs: {
+            question: extractResults.websearch.question,
+            provider: webSearchProvider.id
+          },
+          tag: `Web`,
+          parentSpanId: webSearchProvider.parentSpanId,
+          modelName: webSearchProvider.modelName
+        })
+      : undefined
     const questions = extractResults.websearch.question
     const links = extractResults.websearch.links
 
     // 处理 summarize
     if (questions[0] === 'summarize' && links && links.length > 0) {
       const contents = await fetchWebContents(links, undefined, undefined, { signal })
+      webSearchProvider.topicId &&
+        endSpan({
+          topicId: webSearchProvider.topicId,
+          outputs: contents,
+          modelName: webSearchProvider.modelName,
+          span
+        })
       return { query: 'summaries', results: contents }
     }
 
-    const searchPromises = questions.map((q) => this.search(q, { signal }))
+    const searchPromises = questions.map((q) => this.search(q, { signal }, span?.spanContext().spanId))
     const searchResults = await Promise.allSettled(searchPromises)
 
     // 统计成功完成的搜索数量
@@ -487,6 +510,14 @@ export default class WebSearchService {
     // 如果没有搜索结果，直接返回空结果
     if (finalResults.length === 0) {
       await this.setWebSearchStatus(requestId, { phase: 'default' })
+      if (webSearchProvider.topicId) {
+        endSpan({
+          topicId: webSearchProvider.topicId,
+          outputs: finalResults,
+          modelName: webSearchProvider.modelName,
+          span
+        })
+      }
       return {
         query: questions.join(' | '),
         results: []
@@ -513,7 +544,7 @@ export default class WebSearchService {
           1000
         )
       } catch (error) {
-        Logger.warn('[WebSearchService] RAG compression failed, will return empty results:', error)
+        logger.warn('RAG compression failed, will return empty results:', error as Error)
         window.message.error({
           key: 'websearch-rag-failed',
           duration: 10,
@@ -533,6 +564,14 @@ export default class WebSearchService {
     // 重置状态
     await this.setWebSearchStatus(requestId, { phase: 'default' })
 
+    if (webSearchProvider.topicId) {
+      endSpan({
+        topicId: webSearchProvider.topicId,
+        outputs: finalResults,
+        modelName: webSearchProvider.modelName,
+        span
+      })
+    }
     return {
       query: questions.join(' | '),
       results: finalResults

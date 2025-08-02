@@ -1,8 +1,8 @@
 /**
  * 职责：提供原子化的、无状态的API调用函数
  */
-
 import { StreamTextParams } from '@cherrystudio/ai-core'
+import { loggerService } from '@logger'
 import { AiSdkMiddlewareConfig } from '@renderer/aiCore/middleware/aisdk/AiSdkMiddlewareBuilder'
 import { CompletionsParams } from '@renderer/aiCore/middleware/schemas'
 import { buildStreamTextParams } from '@renderer/aiCore/transformParameters'
@@ -16,17 +16,17 @@ import {
 import { getStoreSetting } from '@renderer/hooks/useSettings'
 import i18n from '@renderer/i18n'
 import store from '@renderer/store'
-import { Assistant, MCPServer, MCPTool, Model, Provider } from '@renderer/types'
+import { Assistant, MCPServer, MCPTool, Model, Provider, TranslateAssistant } from '@renderer/types'
 import { type Chunk, ChunkType } from '@renderer/types/chunk'
 import { Message } from '@renderer/types/newMessage'
 import { SdkModel } from '@renderer/types/sdk'
 import { removeSpecialCharactersForTopicName } from '@renderer/utils'
 import { isPromptToolUse, isSupportedToolUse } from '@renderer/utils/mcp-tools'
 import { findFileBlocks, getMainTextContent } from '@renderer/utils/messageUtils/find'
+import { containsSupportedVariables, replacePromptVariables } from '@renderer/utils/prompt'
 import { isEmpty, takeRight } from 'lodash'
 
 import AiProvider from '../aiCore'
-import AiProviderNew from '../aiCore/index_new'
 import {
   // getAssistantProvider,
   // getAssistantSettings,
@@ -44,6 +44,8 @@ import {
 //   filterUserRoleStartMessages
 // } from './MessagesService'
 // import WebSearchService from './WebSearchService'
+
+const logger = loggerService.withContext('ApiService')
 
 // TODO：考虑拆开
 // async function fetchExternalTool(
@@ -358,7 +360,7 @@ export async function fetchMcpTools(assistant: Assistant) {
           const tools = await window.api.mcp.listTools(mcpServer)
           return tools.filter((tool: any) => !mcpServer.disabledTools?.includes(tool.name))
         } catch (error) {
-          console.error(`Error fetching tools from MCP server ${mcpServer.name}:`, error)
+          logger.error(`Error fetching tools from MCP server ${mcpServer.name}:`, error as Error)
           return []
         }
       })
@@ -368,7 +370,7 @@ export async function fetchMcpTools(assistant: Assistant) {
         .map((result) => result.value)
         .flat()
     } catch (toolError) {
-      console.error('Error fetching MCP tools:', toolError)
+      logger.error('Error fetching MCP tools:', toolError as Error)
     }
   }
   return mcpTools
@@ -388,9 +390,16 @@ export async function fetchChatCompletion({
     headers?: Record<string, string>
   }
   onChunkReceived: (chunk: Chunk) => void
+  // TODO
+  // onChunkStatus: (status: 'searching' | 'processing' | 'success' | 'error') => void
 }) {
-  const AI = new AiProviderNew(assistant.model || getDefaultModel())
-  const provider = AI.getActualProvider()
+  console.log('fetchChatCompletion', messages, assistant)
+
+  const provider = getAssistantProvider(assistant)
+  const AI = new AiProvider(provider)
+
+  // Make sure that 'Clear Context' works for all scenarios including external tool and normal chat.
+  messages = filterContextMessages(messages)
 
   const mcpTools: MCPTool[] = []
 
@@ -568,7 +577,7 @@ export async function fetchChatCompletion({
 
 interface FetchTranslateProps {
   content: string
-  assistant: Assistant
+  assistant: TranslateAssistant
   onResponse?: (text: string, isComplete: boolean) => void
 }
 
@@ -617,8 +626,12 @@ export async function fetchTranslate({ content, assistant, onResponse }: FetchTr
 }
 
 export async function fetchMessagesSummary({ messages, assistant }: { messages: Message[]; assistant: Assistant }) {
-  const prompt = (getStoreSetting('topicNamingPrompt') as string) || i18n.t('prompts.title')
+  let prompt = (getStoreSetting('topicNamingPrompt') as string) || i18n.t('prompts.title')
   const model = getTopNamingModel() || assistant.model || getDefaultModel()
+
+  if (prompt && containsSupportedVariables(prompt)) {
+    prompt = await replacePromptVariables(prompt, model.name)
+  }
 
   // 总结上下文总是取最后5条消息
   const contextMessages = takeRight(messages, 5)
@@ -630,6 +643,8 @@ export async function fetchMessagesSummary({ messages, assistant }: { messages: 
   }
 
   const AI = new AiProvider(provider)
+
+  const topicId = messages?.find((message) => message.topicId)?.topicId || undefined
 
   // LLM对多条消息的总结有问题，用单条结构化的消息表示会话内容会更好
   const structredMessages = contextMessages.map((message) => {
@@ -668,11 +683,12 @@ export async function fetchMessagesSummary({ messages, assistant }: { messages: 
     assistant: { ...summaryAssistant, prompt, model },
     maxTokens: 1000,
     streamOutput: false,
+    topicId,
     enableReasoning: false
   }
 
   try {
-    const { getText } = await AI.completions(params)
+    const { getText } = await AI.completionsForTrace(params)
     const text = getText()
     return removeSpecialCharactersForTopicName(text) || null
   } catch (error: any) {
@@ -688,16 +704,19 @@ export async function fetchSearchSummary({ messages, assistant }: { messages: Me
     return null
   }
 
+  const topicId = messages?.find((message) => message.topicId)?.topicId || undefined
+
   const AI = new AiProvider(provider)
 
   const params: CompletionsParams = {
     callType: 'search',
     messages: messages,
     assistant,
-    streamOutput: false
+    streamOutput: false,
+    topicId
   }
 
-  return await AI.completions(params)
+  return await AI.completionsForTrace(params)
 }
 
 export async function fetchGenerate({
@@ -782,8 +801,8 @@ export function checkApiProvider(provider: Provider): void {
     provider.id !== 'copilot'
   ) {
     if (!provider.apiKey) {
-      window.message.error({ content: i18n.t('message.error.enter.api.key'), key, style })
-      throw new Error(i18n.t('message.error.enter.api.key'))
+      window.message.error({ content: i18n.t('message.error.enter.api.label'), key, style })
+      throw new Error(i18n.t('message.error.enter.api.label'))
     }
   }
 
