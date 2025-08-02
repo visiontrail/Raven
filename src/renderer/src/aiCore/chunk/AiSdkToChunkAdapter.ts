@@ -91,7 +91,7 @@ export class AiSdkToChunkAdapter {
           type: ChunkType.TEXT_START
         })
         break
-      case 'text':
+      case 'text-delta':
         final.text += chunk.text || ''
         this.onChunk({
           type: ChunkType.TEXT_DELTA,
@@ -113,7 +113,7 @@ export class AiSdkToChunkAdapter {
           })
         }
         break
-      case 'reasoning':
+      case 'reasoning-delta':
         this.onChunk({
           type: ChunkType.THINKING_DELTA,
           text: final.reasoningContent || '',

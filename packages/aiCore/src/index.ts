@@ -91,11 +91,11 @@ export type {
   // 工具相关类型
   Tool,
   ToolCallPart,
-  ToolCallUnion,
   ToolModelMessage,
   ToolResultPart,
-  ToolResultUnion,
   ToolSet,
+  TypedToolCall,
+  TypedToolResult,
   UserModelMessage
 } from 'ai'
 export {

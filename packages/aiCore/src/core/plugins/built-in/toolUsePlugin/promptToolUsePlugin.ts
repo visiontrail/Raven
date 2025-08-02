@@ -3,7 +3,7 @@
  * 为不支持原生 Function Call 的模型提供 prompt 方式的工具调用
  * 内置默认逻辑，支持自定义覆盖
  */
-import type { ModelMessage, TextStreamPart, ToolErrorUnion, ToolSet } from 'ai'
+import type { ModelMessage, TextStreamPart, ToolSet, TypedToolError } from 'ai'
 
 import { definePlugin } from '../../index'
 import type { AiRequestContext } from '../../types'
@@ -301,7 +301,7 @@ export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
         ) {
           // console.log('chunk', chunk)
           // 收集文本内容
-          if (chunk.type === 'text') {
+          if (chunk.type === 'text-delta') {
             textBuffer += chunk.text || ''
             stepId = chunk.id || ''
             // console.log('textBuffer', textBuffer)
@@ -385,7 +385,7 @@ export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
                 console.error(`[MCP Prompt Stream] Tool execution failed: ${toolUse.toolName}`, error)
 
                 // 使用 AI SDK 标准错误格式
-                const toolError: ToolErrorUnion<typeof context.mcpTools> = {
+                const toolError: TypedToolError<typeof context.mcpTools> = {
                   type: 'tool-error',
                   toolCallId: toolUse.id,
                   toolName: toolUse.toolName,
@@ -505,7 +505,7 @@ export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
 
                 // 继续发送文本增量，保持流的连续性
                 controller.enqueue({
-                  type: 'text',
+                  type: 'text-delta',
                   id: stepId,
                   text: '\n\n[工具执行后递归调用失败，继续对话...]'
                 })

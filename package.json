@@ -79,6 +79,9 @@
     "@agentic/exa": "^7.3.3",
     "@agentic/searxng": "^7.3.3",
     "@agentic/tavily": "^7.3.3",
+    "@ai-sdk/amazon-bedrock": "^3.0.0",
+    "@ai-sdk/google-vertex": "^3.0.0",
+    "@ai-sdk/mistral": "^2.0.0",
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@anthropic-ai/sdk": "^0.41.0",
     "@cherrystudio/ai-core": "workspace:*",
@@ -113,6 +116,7 @@
     "@modelcontextprotocol/sdk": "^1.12.3",
     "@mozilla/readability": "^0.6.0",
     "@notionhq/client": "^2.2.15",
+    "@openrouter/ai-sdk-provider": "1.0.0-beta.6",
     "@playwright/test": "^1.52.0",
     "@reduxjs/toolkit": "^2.2.5",
     "@shikijs/markdown-it": "^3.7.0",
@@ -238,6 +242,7 @@
     "vitest": "^3.1.4",
     "webdav": "^5.8.0",
     "word-extractor": "^1.0.4",
+    "zhipu-ai-provider": "0.2.0-beta.1",
     "zipread": "^1.3.3"
   },
   "optionalDependencies": {
