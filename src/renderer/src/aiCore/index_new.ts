@@ -69,10 +69,10 @@ function providerToAiSdkConfig(actualProvider: Provider): {
   const aiSdkProviderId = getAiSdkProviderId(actualProvider)
   // console.log('aiSdkProviderId', aiSdkProviderId)
   // 如果provider是openai，则使用strict模式并且默认responses api
-  const actualProviderId = actualProvider.type
+  const actualProviderType = actualProvider.type
   const openaiResponseOptions =
     // 对于实际是openai的需要走responses,aiCore内部会判断model是否可用responses
-    actualProviderId === 'openai-response'
+    actualProviderType === 'openai-response'
       ? {
           mode: 'responses'
         }

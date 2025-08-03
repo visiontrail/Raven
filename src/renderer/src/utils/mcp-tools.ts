@@ -8,6 +8,7 @@ import store from '@renderer/store'
 import { addMCPServer } from '@renderer/store/mcp'
 import {
   Assistant,
+  BaseTool,
   MCPCallToolResponse,
   MCPServer,
   MCPTool,
@@ -492,12 +493,13 @@ export function getMcpServerByTool(tool: MCPTool) {
   return servers.find((s) => s.id === tool.serverId)
 }
 
-export function isToolAutoApproved(tool: MCPTool, server?: MCPServer): boolean {
-  if (tool.isBuiltIn) {
+export function isToolAutoApproved(tool: BaseTool, server?: MCPServer): boolean {
+  if (tool.type === 'builtin') {
     return true
   }
-  const effectiveServer = server ?? getMcpServerByTool(tool)
-  return effectiveServer ? !effectiveServer.disabledAutoApproveTools?.includes(tool.name) : false
+  const mcpTool = tool as MCPTool
+  const effectiveServer = server ?? getMcpServerByTool(mcpTool)
+  return effectiveServer ? !effectiveServer.disabledAutoApproveTools?.includes(mcpTool.name) : false
 }
 
 export function parseToolUse(content: string, mcpTools: MCPTool[], startIdx: number = 0): ToolUseResponse[] {

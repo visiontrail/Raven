@@ -13,14 +13,13 @@ export default definePlugin({
     return new TransformStream<TextStreamPart<ToolSet>, TextStreamPart<ToolSet>>({
       transform(chunk: TextStreamPart<ToolSet>, controller: TransformStreamDefaultController<TextStreamPart<ToolSet>>) {
         // === 处理 reasoning 类型 ===
-        if (chunk.type === 'reasoning') {
-          if (!hasStartedThinking) {
-            hasStartedThinking = true
-            thinkingStartTime = performance.now()
-            reasoningBlockId = chunk.id
-          }
+        if (chunk.type === 'reasoning-start') {
+          controller.enqueue(chunk)
+          hasStartedThinking = true
+          thinkingStartTime = performance.now()
+          reasoningBlockId = chunk.id
+        } else if (chunk.type === 'reasoning-delta') {
           accumulatedThinkingContent += chunk.text
-
           controller.enqueue({
             ...chunk,
             providerMetadata: {
@@ -32,7 +31,7 @@ export default definePlugin({
               }
             }
           })
-        } else if (hasStartedThinking) {
+        } else if (chunk.type === 'reasoning-end' && hasStartedThinking) {
           controller.enqueue({
             type: 'reasoning-end',
             id: reasoningBlockId,
@@ -47,28 +46,8 @@ export default definePlugin({
           hasStartedThinking = false
           thinkingStartTime = 0
           reasoningBlockId = ''
-          if (chunk.type !== 'reasoning-end') {
-            controller.enqueue(chunk)
-          }
         } else {
-          if (chunk.type !== 'reasoning-end') {
-            controller.enqueue(chunk)
-          }
-        }
-      },
-
-      flush(controller) {
-        if (hasStartedThinking) {
-          controller.enqueue({
-            type: 'reasoning-end',
-            id: reasoningBlockId,
-            providerMetadata: {
-              metadata: {
-                thinking_millsec: performance.now() - thinkingStartTime,
-                thinking_content: accumulatedThinkingContent
-              }
-            }
-          })
+          controller.enqueue(chunk)
         }
       }
     })

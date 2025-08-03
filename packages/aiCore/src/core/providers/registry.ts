@@ -16,6 +16,9 @@ import { type ProviderConfig } from './types'
 export class AiProviderRegistry {
   private static instance: AiProviderRegistry
   private registry = new Map<string, ProviderConfig>()
+  // 动态注册扩展
+  private dynamicMappings = new Map<string, string>()
+  private dynamicProviders = new Set<string>()
 
   private constructor() {
     this.initializeProviders()
@@ -30,11 +33,10 @@ export class AiProviderRegistry {
 
   /**
    * 初始化所有支持的 Providers
-   * 基于 AI SDK 官方文档: https://ai-sdk.dev/providers/ai-sdk-providers
+   * 基于 AI SDK 官方文档: https://v5.ai-sdk.dev/providers/ai-sdk-providers
    */
   private initializeProviders(): void {
     const providers: ProviderConfig[] = [
-      // 官方 AI SDK Providers (19个)
       {
         id: 'openai',
         name: 'OpenAI',
@@ -67,20 +69,6 @@ export class AiProviderRegistry {
         creator: createGoogleGenerativeAI,
         supportsImageGeneration: true
       },
-      // {
-      //   id: 'google-vertex',
-      //   name: 'Google Vertex AI',
-      //   import: () => import('@ai-sdk/google-vertex/edge'),
-      //   creatorFunctionName: 'createVertex',
-      //   supportsImageGeneration: true
-      // },
-      // {
-      //   id: 'mistral',
-      //   name: 'Mistral AI',
-      //   import: () => import('@ai-sdk/mistral'),
-      //   creatorFunctionName: 'createMistral',
-      //   supportsImageGeneration: false
-      // },
       {
         id: 'xai',
         name: 'xAI (Grok)',
@@ -93,111 +81,12 @@ export class AiProviderRegistry {
         creator: createAzure,
         supportsImageGeneration: true
       },
-      // {
-      //   id: 'bedrock',
-      //   name: 'Amazon Bedrock',
-      //   import: () => import('@ai-sdk/amazon-bedrock'),
-      //   creatorFunctionName: 'createAmazonBedrock',
-      //   supportsImageGeneration: false
-      // },
-      // {
-      //   id: 'cohere',
-      //   name: 'Cohere',
-      //   import: () => import('@ai-sdk/cohere'),
-      //   creatorFunctionName: 'createCohere',
-      //   supportsImageGeneration: false
-      // },
-      // {
-      //   id: 'groq',
-      //   name: 'Groq',
-      //   import: () => import('@ai-sdk/groq'),
-      //   creatorFunctionName: 'createGroq',
-      //   supportsImageGeneration: false
-      // },
-      // {
-      //   id: 'together',
-      //   name: 'Together.ai',
-      //   import: () => import('@ai-sdk/togetherai'),
-      //   creatorFunctionName: 'createTogetherAI',
-      //   supportsImageGeneration: true
-      // },
-      // {
-      //   id: 'fireworks',
-      //   name: 'Fireworks',
-      //   import: () => import('@ai-sdk/fireworks'),
-      //   creatorFunctionName: 'createFireworks',
-      //   supportsImageGeneration: true
-      // },
       {
         id: 'deepseek',
         name: 'DeepSeek',
         creator: createDeepSeek,
         supportsImageGeneration: false
       }
-      // {
-      //   id: 'cerebras',
-      //   name: 'Cerebras',
-      //   import: () => import('@ai-sdk/cerebras'),
-      //   creatorFunctionName: 'createCerebras',
-      //   supportsImageGeneration: false
-      // },
-      // {
-      //   id: 'deepinfra',
-      //   name: 'DeepInfra',
-      //   import: () => import('@ai-sdk/deepinfra'),
-      //   creatorFunctionName: 'createDeepInfra',
-      //   supportsImageGeneration: false
-      // },
-      // {
-      //   id: 'replicate',
-      //   name: 'Replicate',
-      //   import: () => import('@ai-sdk/replicate'),
-      //   creatorFunctionName: 'createReplicate',
-      //   supportsImageGeneration: true
-      // },
-      // {
-      //   id: 'perplexity',
-      //   name: 'Perplexity',
-      //   import: () => import('@ai-sdk/perplexity'),
-      //   creatorFunctionName: 'createPerplexity',
-      //   supportsImageGeneration: false
-      // },
-      // {
-      //   id: 'fal',
-      //   name: 'Fal AI',
-      //   import: () => import('@ai-sdk/fal'),
-      //   creatorFunctionName: 'createFal',
-      //   supportsImageGeneration: false
-      // },
-      // {
-      //   id: 'vercel',
-      //   name: 'Vercel',
-      //   import: () => import('@ai-sdk/vercel'),
-      //   creatorFunctionName: 'createVercel'
-      // },
-
-      // 社区 Providers (5个)
-      // {
-      //   id: 'ollama',
-      //   name: 'Ollama',
-      //   import: () => import('ollama-ai-provider'),
-      //   creatorFunctionName: 'createOllama',
-      //   supportsImageGeneration: false
-      // },
-      // {
-      //   id: 'anthropic-vertex',
-      //   name: 'Anthropic Vertex AI',
-      //   import: () => import('anthropic-vertex-ai'),
-      //   creatorFunctionName: 'createAnthropicVertex',
-      //   supportsImageGeneration: false
-      // },
-      // {
-      //   id: 'openrouter',
-      //   name: 'OpenRouter',
-      //   import: () => import('@openrouter/ai-sdk-provider'),
-      //   creatorFunctionName: 'createOpenRouter',
-      //   supportsImageGeneration: false
-      // }
     ]
 
     providers.forEach((config) => {
@@ -244,27 +133,91 @@ export class AiProviderRegistry {
   }
 
   /**
+   * 动态注册Provider并支持映射关系
+   */
+  public registerDynamicProvider(
+    config: ProviderConfig & {
+      mappings?: Record<string, string>
+    }
+  ): boolean {
+    try {
+      // 验证配置
+      if (!config.id || config.id.trim() === '') {
+        console.error('Provider ID cannot be empty')
+        return false
+      }
+
+      // 注册provider
+      this.registerProvider(config)
+
+      // 记录为动态provider
+      this.dynamicProviders.add(config.id)
+
+      // 添加映射关系（如果提供）
+      if (config.mappings) {
+        Object.entries(config.mappings).forEach(([key, value]) => {
+          this.dynamicMappings.set(key, value)
+        })
+      }
+
+      return true
+    } catch (error) {
+      console.error(`Failed to register provider ${config.id}:`, error)
+      return false
+    }
+  }
+
+  /**
+   * 批量注册多个动态Providers
+   */
+  public registerMultipleProviders(
+    configs: (ProviderConfig & {
+      mappings?: Record<string, string>
+    })[]
+  ): number {
+    let successCount = 0
+    configs.forEach((config) => {
+      if (this.registerDynamicProvider(config)) {
+        successCount++
+      }
+    })
+    return successCount
+  }
+
+  /**
+   * 获取Provider映射（包括动态映射）
+   */
+  public getProviderMapping(providerId: string): string | undefined {
+    return this.dynamicMappings.get(providerId) || (this.dynamicProviders.has(providerId) ? providerId : undefined)
+  }
+
+  /**
+   * 检查是否为动态注册的Provider
+   */
+  public isDynamicProvider(providerId: string): boolean {
+    return this.dynamicProviders.has(providerId)
+  }
+
+  /**
+   * 获取所有动态Provider映射
+   */
+  public getAllDynamicMappings(): Record<string, string> {
+    return Object.fromEntries(this.dynamicMappings)
+  }
+
+  /**
+   * 获取所有动态注册的Providers
+   */
+  public getDynamicProviders(): string[] {
+    return Array.from(this.dynamicProviders)
+  }
+
+  /**
    * 清理资源
    */
   public cleanup(): void {
     this.registry.clear()
   }
-
-  //   /**
-  //    * 获取兼容现有实现的注册表格式
-  //    */
-  //   public getCompatibleRegistry(): Record<string, { import: () => Promise<any>; creatorFunctionName: string }> {
-  //     const compatibleRegistry: Record<string, { import: () => Promise<any>; creatorFunctionName: string }> = {}
-
-  //     this.getAllProviders().forEach((provider) => {
-  //       compatibleRegistry[provider.id] = {
-  //         import: provider.import,
-  //         creatorFunctionName: provider.creatorFunctionName
-  //       }
-  //     })
-
-  //     return compatibleRegistry
-  //   }
 }
 
 // 导出单例实例
@@ -275,5 +228,16 @@ export const getProvider = (id: string) => aiProviderRegistry.getProvider(id)
 export const getAllProviders = () => aiProviderRegistry.getAllProviders()
 export const isProviderSupported = (id: string) => aiProviderRegistry.isSupported(id)
 export const registerProvider = (config: ProviderConfig) => aiProviderRegistry.registerProvider(config)
+
+// 动态注册相关便捷函数
+export const registerDynamicProvider = (config: ProviderConfig & { mappings?: Record<string, string> }) =>
+  aiProviderRegistry.registerDynamicProvider(config)
+export const registerMultipleProviders = (configs: (ProviderConfig & { mappings?: Record<string, string> })[]) =>
+  aiProviderRegistry.registerMultipleProviders(configs)
+export const getProviderMapping = (providerId: string) => aiProviderRegistry.getProviderMapping(providerId)
+export const isDynamicProvider = (providerId: string) => aiProviderRegistry.isDynamicProvider(providerId)
+export const getAllDynamicMappings = () => aiProviderRegistry.getAllDynamicMappings()
+export const getDynamicProviders = () => aiProviderRegistry.getDynamicProviders()
+
 // 兼容现有实现的导出
 // export const PROVIDER_REGISTRY = aiProviderRegistry.getCompatibleRegistry()

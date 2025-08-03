@@ -6,11 +6,30 @@ import { type OpenAIProviderSettings } from '@ai-sdk/openai'
 import { type OpenAICompatibleProviderSettings } from '@ai-sdk/openai-compatible'
 import { type XaiProviderSettings } from '@ai-sdk/xai'
 
+export interface ExtensibleProviderSettingsMap {
+  // 基础的静态providers
+  openai: OpenAIProviderSettings
+  'openai-responses': OpenAIProviderSettings
+  'openai-compatible': OpenAICompatibleProviderSettings
+  anthropic: AnthropicProviderSettings
+  google: GoogleGenerativeAIProviderSettings
+  xai: XaiProviderSettings
+  azure: AzureOpenAIProviderSettings
+  deepseek: DeepSeekProviderSettings
+}
+
+// 动态扩展的provider类型注册表
+export interface DynamicProviderRegistry {
+  [key: string]: any
+}
+
+// 合并基础和动态provider类型
+export type ProviderSettingsMap = ExtensibleProviderSettingsMap & DynamicProviderRegistry
+
 /**
  * Provider 相关核心类型定义
  * 只定义必要的接口，其他类型直接使用 AI SDK
  */
-export type ProviderId = keyof ProviderSettingsMap & string
 
 // Provider 配置接口 - 支持灵活的创建方式
 export interface ProviderConfig {
@@ -45,57 +64,23 @@ export class ProviderError extends Error {
   }
 }
 
-// 类型安全的 Provider Settings 映射
-export type ProviderSettingsMap = {
-  openai: OpenAIProviderSettings
-  'openai-responses': OpenAIProviderSettings
-  'openai-compatible': OpenAICompatibleProviderSettings
-  // openrouter: OpenRouterProviderSettings
-  anthropic: AnthropicProviderSettings
-  google: GoogleGenerativeAIProviderSettings
-  // 'google-vertex': GoogleVertexProviderSettings
-  // mistral: MistralProviderSettings
-  xai: XaiProviderSettings
-  azure: AzureOpenAIProviderSettings
-  // bedrock: AmazonBedrockProviderSettings
-  // cohere: CohereProviderSettings
-  // groq: GroqProviderSettings
-  // together: TogetherAIProviderSettings
-  // fireworks: FireworksProviderSettings
-  deepseek: DeepSeekProviderSettings
-  // cerebras: CerebrasProviderSettings
-  // deepinfra: DeepInfraProviderSettings
-  // replicate: ReplicateProviderSettings
-  // perplexity: PerplexityProviderSettings
-  // fal: FalProviderSettings
-  // vercel: VercelProviderSettings
-  // ollama: OllamaProviderSettings
-  // 'anthropic-vertex': AnthropicVertexProviderSettings
+// 动态ProviderId类型 - 支持运行时扩展
+export type ProviderId = keyof ExtensibleProviderSettingsMap | string
+
+// Provider类型注册工具
+export interface ProviderTypeRegistrar {
+  registerProviderType<T extends string, S>(providerId: T, settingsType: S): void
+  getProviderSettings<T extends string>(providerId: T): any
 }
 
 // 重新导出所有类型供外部使用
 export type {
-  // AmazonBedrockProviderSettings,
   AnthropicProviderSettings,
-  // AnthropicVertexProviderSettings,
   AzureOpenAIProviderSettings,
-  // CerebrasProviderSettings,
-  // CohereProviderSettings,
-  // DeepInfraProviderSettings,
   DeepSeekProviderSettings,
-  // FalProviderSettings,
-  // FireworksProviderSettings,
   GoogleGenerativeAIProviderSettings,
-  // GoogleVertexProviderSettings,
-  // GroqProviderSettings,
-  // MistralProviderSettings,
-  // OllamaProviderSettings,
   OpenAICompatibleProviderSettings,
   OpenAIProviderSettings,
-  // OpenRouterProviderSettings,
-  // PerplexityProviderSettings,
-  // ReplicateProviderSettings,
-  // TogetherAIProviderSettings,
-  // VercelProviderSettings,
   XaiProviderSettings
 }
+// 新的provider类型已经在上面直接export，不需要重复导出

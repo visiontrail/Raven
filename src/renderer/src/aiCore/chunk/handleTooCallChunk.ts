@@ -4,8 +4,8 @@
  * 提供工具调用相关的处理API，每个交互使用一个新的实例
  */
 
-import { ToolCallUnion, ToolResultUnion, ToolSet } from '@cherrystudio/ai-core'
-import Logger from '@renderer/config/logger'
+import { ToolSet, TypedToolCall, TypedToolResult } from '@cherrystudio/ai-core'
+import { loggerService } from '@logger'
 import { BaseTool, MCPToolResponse, ToolCallResponse } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
 import { type ProviderMetadata } from 'ai'
@@ -13,6 +13,8 @@ import { type ProviderMetadata } from 'ai'
 //   AnthropicSearchOutput,
 //   WebSearchPluginConfig
 // } from '@cherrystudio/ai-core/core/plugins/built-in/webSearchPlugin'
+
+const logger = loggerService.withContext('ToolCallChunkHandler')
 
 /**
  * 工具调用处理器类
@@ -84,7 +86,7 @@ export class ToolCallChunkHandler {
       case 'tool-input-delta': {
         const toolCall = this.activeToolCalls.get(chunk.id)
         if (!toolCall) {
-          Logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
+          logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
           return
         }
         toolCall.args += chunk.delta
@@ -94,7 +96,7 @@ export class ToolCallChunkHandler {
         const toolCall = this.activeToolCalls.get(chunk.id)
         this.activeToolCalls.delete(chunk.id)
         if (!toolCall) {
-          Logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
+          logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
           return
         }
         const toolResponse: ToolCallResponse = {
@@ -104,7 +106,7 @@ export class ToolCallChunkHandler {
           status: 'pending',
           toolCallId: toolCall.toolCallId
         }
-        console.log('toolResponse', toolResponse)
+        logger.debug('toolResponse', toolResponse)
         this.onChunk({
           type: ChunkType.MCP_TOOL_PENDING,
           responses: [toolResponse]
@@ -134,12 +136,12 @@ export class ToolCallChunkHandler {
   public handleToolCall(
     chunk: {
       type: 'tool-call'
-    } & ToolCallUnion<ToolSet>
+    } & TypedToolCall<ToolSet>
   ): void {
     const { toolCallId, toolName, input: args, providerExecuted } = chunk
 
     if (!toolCallId || !toolName) {
-      Logger.warn(`🔧 [ToolCallChunkHandler] Invalid tool call chunk: missing toolCallId or toolName`)
+      logger.warn(`🔧 [ToolCallChunkHandler] Invalid tool call chunk: missing toolCallId or toolName`)
       return
     }
 
@@ -148,7 +150,7 @@ export class ToolCallChunkHandler {
     // 根据 providerExecuted 标志区分处理逻辑
     if (providerExecuted) {
       // 如果是 Provider 执行的工具（如 web_search）
-      Logger.info(`[ToolCallChunkHandler] Handling provider-executed tool: ${toolName}`)
+      logger.info(`[ToolCallChunkHandler] Handling provider-executed tool: ${toolName}`)
       tool = {
         id: toolCallId,
         name: toolName,
@@ -157,7 +159,7 @@ export class ToolCallChunkHandler {
       }
     } else if (toolName.startsWith('builtin_')) {
       // 如果是内置工具，沿用现有逻辑
-      Logger.info(`[ToolCallChunkHandler] Handling builtin tool: ${toolName}`)
+      logger.info(`[ToolCallChunkHandler] Handling builtin tool: ${toolName}`)
       tool = {
         id: toolCallId,
         name: toolName,
@@ -166,10 +168,10 @@ export class ToolCallChunkHandler {
       }
     } else {
       // 如果是客户端执行的 MCP 工具，沿用现有逻辑
-      Logger.info(`[ToolCallChunkHandler] Handling client-side MCP tool: ${toolName}`)
+      logger.info(`[ToolCallChunkHandler] Handling client-side MCP tool: ${toolName}`)
       const mcpTool = this.mcpTools.find((t) => t.name === toolName)
       if (!mcpTool) {
-        Logger.warn(`[ToolCallChunkHandler] MCP tool not found: ${toolName}`)
+        logger.warn(`[ToolCallChunkHandler] MCP tool not found: ${toolName}`)
         return
       }
       tool = mcpTool
@@ -207,19 +209,19 @@ export class ToolCallChunkHandler {
   public handleToolResult(
     chunk: {
       type: 'tool-result'
-    } & ToolResultUnion<ToolSet>
+    } & TypedToolResult<ToolSet>
   ): void {
     const { toolCallId, output, input } = chunk
 
     if (!toolCallId) {
-      Logger.warn(`🔧 [ToolCallChunkHandler] Invalid tool result chunk: missing toolCallId`)
+      logger.warn(`🔧 [ToolCallChunkHandler] Invalid tool result chunk: missing toolCallId`)
       return
     }
 
     // 查找对应的工具调用信息
     const toolCallInfo = this.activeToolCalls.get(toolCallId)
     if (!toolCallInfo) {
-      Logger.warn(`🔧 [ToolCallChunkHandler] Tool call info not found for ID: ${toolCallId}`)
+      logger.warn(`🔧 [ToolCallChunkHandler] Tool call info not found for ID: ${toolCallId}`)
       return
     }
 

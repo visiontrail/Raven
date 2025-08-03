@@ -114,12 +114,12 @@ export class AiSdkToChunkAdapter {
         }
         break
       case 'reasoning-delta':
+        final.reasoningContent += chunk.text || ''
         this.onChunk({
           type: ChunkType.THINKING_DELTA,
           text: final.reasoningContent || '',
           thinking_millsec: (chunk.providerMetadata?.metadata?.thinking_millsec as number) || 0
         })
-        final.reasoningContent += chunk.text || ''
         break
       case 'reasoning-end':
         this.onChunk({

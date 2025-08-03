@@ -3,6 +3,7 @@
  */
 import { StreamTextParams } from '@cherrystudio/ai-core'
 import { loggerService } from '@logger'
+import AiProvider from '@renderer/aiCore'
 import { AiSdkMiddlewareConfig } from '@renderer/aiCore/middleware/aisdk/AiSdkMiddlewareBuilder'
 import { CompletionsParams } from '@renderer/aiCore/middleware/schemas'
 import { buildStreamTextParams } from '@renderer/aiCore/transformParameters'
@@ -26,7 +27,7 @@ import { findFileBlocks, getMainTextContent } from '@renderer/utils/messageUtils
 import { containsSupportedVariables, replacePromptVariables } from '@renderer/utils/prompt'
 import { isEmpty, takeRight } from 'lodash'
 
-import AiProvider from '../aiCore'
+import AiProviderNew from '../aiCore/index_new'
 import {
   // getAssistantProvider,
   // getAssistantSettings,
@@ -395,11 +396,8 @@ export async function fetchChatCompletion({
 }) {
   console.log('fetchChatCompletion', messages, assistant)
 
-  const provider = getAssistantProvider(assistant)
-  const AI = new AiProvider(provider)
-
-  // Make sure that 'Clear Context' works for all scenarios including external tool and normal chat.
-  messages = filterContextMessages(messages)
+  const AI = new AiProviderNew(assistant.model || getDefaultModel())
+  const provider = AI.getActualProvider()
 
   const mcpTools: MCPTool[] = []
 

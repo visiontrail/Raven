@@ -46,7 +46,6 @@ import {
   findThinkingBlocks,
   getMainTextContent
 } from '@renderer/utils/messageUtils/find'
-import { buildSystemPrompt } from '@renderer/utils/prompt'
 import { defaultTimeout } from '@shared/config/constant'
 import { isEmpty } from 'lodash'
 
@@ -77,17 +76,6 @@ export function getTimeout(model: Model): number {
     return 15 * 1000 * 60
   }
   return defaultTimeout
-}
-
-/**
- * 构建系统提示词
- */
-export async function buildSystemPromptWithTools(
-  prompt: string,
-  mcpTools?: MCPTool[],
-  assistant?: Assistant
-): Promise<string> {
-  return await buildSystemPrompt(prompt, mcpTools, assistant)
 }
 
 /**

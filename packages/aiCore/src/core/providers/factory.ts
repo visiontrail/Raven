@@ -37,19 +37,6 @@ const configHandlers: {
       resourceName: azureProvider.resourceName
     })
   }
-  // 'google-vertex': (builder, provider) => {
-  //   const vertexBuilder = builder as ProviderConfigBuilder<'google-vertex'>
-  //   const vertexProvider = provider as CompleteProviderConfig<'google-vertex'>
-  //   vertexBuilder
-  //     .withGoogleVertexConfig({
-  //       project: vertexProvider.project,
-  //       location: vertexProvider.location
-  //     })
-  //     .withGoogleCredentials({
-  //       clientEmail: vertexProvider.googleCredentials?.clientEmail || '',
-  //       privateKey: vertexProvider.googleCredentials?.privateKey || ''
-  //     })
-  // }
 }
 
 export class ProviderConfigBuilder<T extends ProviderId = ProviderId> {
@@ -114,42 +101,6 @@ export class ProviderConfigBuilder<T extends ProviderId = ProviderId> {
         azureConfig.resourceName = options.resourceName
       }
     }
-    return this
-  }
-
-  /**
-   * Google 特定配置
-   */
-  // withGoogleVertexConfig(options: { project?: string; location?: string }): T extends 'google-vertex' ? this : never
-  // withGoogleVertexConfig(options: any): any {
-  //   if (this.providerId === 'google-vertex') {
-  //     const googleConfig = this.config as CompleteProviderConfig<'google-vertex'>
-  //     if (options.project) {
-  //       googleConfig.project = options.project
-  //     }
-  //     if (options.location) {
-  //       googleConfig.location = options.location
-  //       if (options.location === 'global') {
-  //         googleConfig.baseURL = 'https://aiplatform.googleapis.com'
-  //       }
-  //     }
-  //   }
-  //   return this
-  // }
-
-  withGoogleCredentials(credentials: {
-    clientEmail: string
-    privateKey: string
-  }): T extends 'google-vertex' ? this : never
-  withGoogleCredentials(): any {
-    // withGoogleCredentials(credentials: any): any {
-    // if (this.providerId === 'google-vertex') {
-    //   const vertexConfig = this.config as CompleteProviderConfig<'google-vertex'>
-    //   vertexConfig.googleCredentials = {
-    //     clientEmail: credentials.clientEmail,
-    //     privateKey: formatPrivateKey(credentials.privateKey)
-    //   }
-    // }
     return this
   }
 

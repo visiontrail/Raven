@@ -37,7 +37,7 @@ import {
 import { convertBase64ImageToAwsBedrockFormat } from '@renderer/utils/aws-bedrock-utils'
 import {
   awsBedrockToolUseToMcpTool,
-  isEnabledToolUse,
+  isSupportedToolUse,
   mcpToolCallResponseToAwsBedrockMessage,
   mcpToolsToAwsBedrockTools
 } from '@renderer/utils/mcp-tools'
@@ -393,7 +393,7 @@ export class AwsBedrockAPIClient extends BaseApiClient<
         const { tools } = this.setupToolsConfig({
           mcpTools: mcpTools,
           model,
-          enableToolUse: isEnabledToolUse(assistant)
+          enableToolUse: isSupportedToolUse(assistant)
         })
 
         // 3. 处理消息

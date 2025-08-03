@@ -120,7 +120,19 @@ export {
 } from './core/options'
 
 // ==================== 工具函数 ====================
-export { getAllProviders, getProvider, isProviderSupported, registerProvider } from './core/providers/registry'
+export {
+  getAllDynamicMappings,
+  getAllProviders,
+  getDynamicProviders,
+  getProvider,
+  getProviderMapping,
+  isDynamicProvider,
+  isProviderSupported,
+  // 动态注册功能
+  registerDynamicProvider,
+  registerMultipleProviders,
+  registerProvider
+} from './core/providers/registry'
 
 // ==================== Provider 配置工厂 ====================
 export {
