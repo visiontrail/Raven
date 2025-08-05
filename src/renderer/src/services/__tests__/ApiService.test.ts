@@ -1,10 +1,10 @@
 import { FinishReason, MediaModality } from '@google/genai'
 import { FunctionCall } from '@google/genai'
 import AiProvider from '@renderer/aiCore'
-import { ApiClientFactory } from '@renderer/aiCore/clients/ApiClientFactory'
-import { BaseApiClient } from '@renderer/aiCore/clients/BaseApiClient'
-import { GeminiAPIClient } from '@renderer/aiCore/clients/gemini/GeminiAPIClient'
-import { GenericChunk } from '@renderer/aiCore/middleware/schemas'
+import { ApiClientFactory } from '@renderer/aiCore/legacy/clients/ApiClientFactory'
+import { BaseApiClient } from '@renderer/aiCore/legacy/clients/BaseApiClient'
+import { GeminiAPIClient } from '@renderer/aiCore/legacy/clients/gemini/GeminiAPIClient'
+import { GenericChunk } from '@renderer/aiCore/legacy/middleware/schemas'
 import { Assistant, Provider, WebSearchSource } from '@renderer/types'
 import {
   ChunkType,

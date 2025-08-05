@@ -13,8 +13,6 @@ import {
   TextPart,
   UserModelMessage
 } from '@cherrystudio/ai-core'
-import AiProvider from '@renderer/aiCore'
-import { CompletionsParams } from '@renderer/aiCore/middleware/schemas'
 import { DEFAULT_MAX_TOKENS } from '@renderer/config/constant'
 import {
   isGenerateImageModel,
@@ -50,6 +48,8 @@ import { buildSystemPrompt } from '@renderer/utils/prompt'
 import { defaultTimeout } from '@shared/config/constant'
 import { isEmpty } from 'lodash'
 
+import AiProvider from './legacy/index'
+import { CompletionsParams } from './legacy/middleware/schemas'
 // import { webSearchTool } from './tools/WebSearchTool'
 // import { jsonSchemaToZod } from 'json-schema-to-zod'
 import { setupToolsConfig } from './utils/mcp'

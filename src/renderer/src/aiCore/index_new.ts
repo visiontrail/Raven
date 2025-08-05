@@ -8,136 +8,17 @@
  * 3. 暂时保持接口兼容性
  */
 
-import {
-  AiCore,
-  AiPlugin,
-  createExecutor,
-  generateImage,
-  ProviderConfigFactory,
-  type ProviderId,
-  type ProviderSettingsMap,
-  StreamTextParams
-} from '@cherrystudio/ai-core'
-import { createPromptToolUsePlugin, webSearchPlugin } from '@cherrystudio/ai-core/built-in/plugins'
-import { isDedicatedImageGenerationModel, isNotSupportedImageSizeModel } from '@renderer/config/models'
-import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
-import { getProviderByModel } from '@renderer/services/AssistantService'
+import { createExecutor, generateImage, StreamTextParams } from '@cherrystudio/ai-core'
+import { isNotSupportedImageSizeModel } from '@renderer/config/models'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
 import { ChunkType } from '@renderer/types/chunk'
-import { formatApiHost } from '@renderer/utils/api'
-import { cloneDeep } from 'lodash'
 
 import AiSdkToChunkAdapter from './chunk/AiSdkToChunkAdapter'
-import LegacyAiProvider from './index'
-import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/aisdk/AiSdkMiddlewareBuilder'
-import { CompletionsResult } from './middleware/schemas'
-import reasoningTimePlugin from './plugins/reasoningTimePlugin'
-import { searchOrchestrationPlugin } from './plugins/searchOrchestrationPlugin'
-import { createAihubmixProvider } from './provider/aihubmix'
-import { getAiSdkProviderId } from './provider/factory'
-
-function getActualProvider(model: Model): Provider {
-  const provider = getProviderByModel(model)
-  // 如果是 vertexai 类型且没有 googleCredentials，转换为 VertexProvider
-  let actualProvider = cloneDeep(provider)
-  if (provider.type === 'vertexai' && !isVertexProvider(provider)) {
-    if (!isVertexAIConfigured()) {
-      throw new Error('VertexAI is not configured. Please configure project, location and service account credentials.')
-    }
-    actualProvider = createVertexProvider(provider)
-  }
-
-  if (provider.id === 'aihubmix') {
-    actualProvider = createAihubmixProvider(model, actualProvider)
-  }
-  if (actualProvider.type === 'gemini') {
-    actualProvider.apiHost = formatApiHost(actualProvider.apiHost, 'v1beta')
-  } else {
-    actualProvider.apiHost = formatApiHost(actualProvider.apiHost)
-  }
-  return actualProvider
-}
-
-/**
- * 将 Provider 配置转换为新 AI SDK 格式
- */
-function providerToAiSdkConfig(actualProvider: Provider): {
-  providerId: ProviderId | 'openai-compatible'
-  options: ProviderSettingsMap[keyof ProviderSettingsMap]
-} {
-  // console.log('actualProvider', actualProvider)
-  const aiSdkProviderId = getAiSdkProviderId(actualProvider)
-  // console.log('aiSdkProviderId', aiSdkProviderId)
-  // 如果provider是openai，则使用strict模式并且默认responses api
-  const actualProviderId = actualProvider.type
-  const openaiResponseOptions =
-    // 对于实际是openai的需要走responses,aiCore内部会判断model是否可用responses
-    actualProviderId === 'openai-response'
-      ? {
-          mode: 'responses'
-        }
-      : aiSdkProviderId === 'openai'
-        ? {
-            mode: 'chat'
-          }
-        : undefined
-  console.log('openaiResponseOptions', openaiResponseOptions)
-  console.log('actualProvider', actualProvider)
-  console.log('aiSdkProviderId', aiSdkProviderId)
-  if (AiCore.isSupported(aiSdkProviderId) && aiSdkProviderId !== 'openai-compatible') {
-    const options = ProviderConfigFactory.fromProvider(
-      aiSdkProviderId,
-      {
-        baseURL: actualProvider.apiHost,
-        apiKey: actualProvider.apiKey
-      },
-      { ...openaiResponseOptions, headers: actualProvider.extra_headers }
-    )
-
-    return {
-      providerId: aiSdkProviderId as ProviderId,
-      options
-    }
-  } else {
-    console.log(`Using openai-compatible fallback for provider: ${actualProvider.type}`)
-    const options = ProviderConfigFactory.createOpenAICompatible(actualProvider.apiHost, actualProvider.apiKey)
-
-    return {
-      providerId: 'openai-compatible',
-      options: {
-        ...options,
-        name: actualProvider.id
-      }
-    }
-  }
-}
-
-/**
- * 检查是否支持使用新的AI SDK
- */
-function isModernSdkSupported(provider: Provider, model?: Model): boolean {
-  // 目前支持主要的providers
-  const supportedProviders = ['openai', 'anthropic', 'gemini', 'azure-openai', 'vertexai']
-
-  // 检查provider类型
-  if (!supportedProviders.includes(provider.type)) {
-    return false
-  }
-
-  // 对于 vertexai，检查配置是否完整
-  if (provider.type === 'vertexai' && !isVertexAIConfigured()) {
-    return false
-  }
-
-  // 图像生成模型现在支持新的 AI SDK
-  // （但需要确保 provider 是支持的
-
-  if (model && isDedicatedImageGenerationModel(model)) {
-    return true
-  }
-
-  return true
-}
+import LegacyAiProvider from './legacy/index'
+import { CompletionsResult } from './legacy/middleware/schemas'
+import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/AiSdkMiddlewareBuilder'
+import { buildPlugins } from './plugins/PluginBuilder'
+import { getActualProvider, isModernSdkSupported, providerToAiSdkConfig } from './provider/ProviderConfigProcessor'
 
 export default class ModernAiProvider {
   private legacyProvider: LegacyAiProvider
@@ -154,62 +35,6 @@ export default class ModernAiProvider {
 
   public getActualProvider() {
     return this.actualProvider
-  }
-
-  /**
-   * 根据条件构建插件数组
-   */
-  private buildPlugins(middlewareConfig: AiSdkMiddlewareConfig) {
-    const plugins: AiPlugin[] = []
-    // 1. 总是添加通用插件
-    // plugins.push(textPlugin)
-    if (middlewareConfig.enableWebSearch) {
-      // 内置了默认搜索参数，如果改的话可以传config进去
-      plugins.push(webSearchPlugin())
-    }
-    // 2. 支持工具调用时添加搜索插件
-    if (middlewareConfig.isSupportedToolUse) {
-      plugins.push(searchOrchestrationPlugin(middlewareConfig.assistant))
-    }
-
-    // 3. 推理模型时添加推理插件
-    if (middlewareConfig.enableReasoning) {
-      plugins.push(reasoningTimePlugin)
-    }
-
-    // 4. 启用Prompt工具调用时添加工具插件
-    if (middlewareConfig.isPromptToolUse && middlewareConfig.mcpTools && middlewareConfig.mcpTools.length > 0) {
-      plugins.push(
-        createPromptToolUsePlugin({
-          enabled: true,
-          createSystemMessage: (systemPrompt, params, context) => {
-            if (context.modelId.includes('o1-mini') || context.modelId.includes('o1-preview')) {
-              if (context.isRecursiveCall) {
-                return null
-              }
-              params.messages = [
-                {
-                  role: 'assistant',
-                  content: systemPrompt
-                },
-                ...params.messages
-              ]
-              return null
-            }
-            return systemPrompt
-          }
-        })
-      )
-    }
-
-    // if (!middlewareConfig.enableTool && middlewareConfig.mcpTools && middlewareConfig.mcpTools.length > 0) {
-    //   plugins.push(createNativeToolUsePlugin())
-    // }
-    console.log(
-      '最终插件列表:',
-      plugins.map((p) => p.name)
-    )
-    return plugins
   }
 
   public async completions(
@@ -236,7 +61,7 @@ export default class ModernAiProvider {
   ): Promise<CompletionsResult> {
     // try {
     // 根据条件构建插件数组
-    const plugins = this.buildPlugins(middlewareConfig)
+    const plugins = buildPlugins(middlewareConfig)
     console.log('this.config.providerId', this.config.providerId)
     console.log('this.config.options', this.config.options)
     console.log('plugins', plugins)

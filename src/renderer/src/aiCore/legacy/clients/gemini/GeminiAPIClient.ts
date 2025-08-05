@@ -17,7 +17,6 @@ import {
   Tool
 } from '@google/genai'
 import { nanoid } from '@reduxjs/toolkit'
-import { GenericChunk } from '@renderer/aiCore/middleware/schemas'
 import {
   findTokenLimit,
   GEMINI_FLASH_MODEL_REGEX,
@@ -61,6 +60,7 @@ import { findFileBlocks, findImageBlocks, getMainTextContent } from '@renderer/u
 import { buildSystemPrompt } from '@renderer/utils/prompt'
 import { defaultTimeout, MB } from '@shared/config/constant'
 
+import { GenericChunk } from '../../middleware/schemas'
 import { BaseApiClient } from '../BaseApiClient'
 import { RequestTransformer, ResponseChunkTransformer } from '../types'
 

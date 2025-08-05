@@ -1,5 +1,3 @@
-import { GenericChunk } from '@renderer/aiCore/middleware/schemas'
-import { CompletionsContext } from '@renderer/aiCore/middleware/types'
 import {
   isOpenAIChatCompletionOnlyModel,
   isOpenAILLMModel,
@@ -42,6 +40,8 @@ import { isEmpty } from 'lodash'
 import OpenAI, { AzureOpenAI } from 'openai'
 import { ResponseInput } from 'openai/resources/responses/responses'
 
+import { GenericChunk } from '../../middleware/schemas'
+import { CompletionsContext } from '../../middleware/types'
 import { RequestTransformer, ResponseChunkTransformer } from '../types'
 import { OpenAIAPIClient } from './OpenAIApiClient'
 import { OpenAIBaseClient } from './OpenAIBaseClient'

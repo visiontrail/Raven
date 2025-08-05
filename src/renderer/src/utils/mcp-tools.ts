@@ -26,7 +26,7 @@ import {
   ChatCompletionTool
 } from 'openai/resources'
 
-import { CompletionsParams } from '../aiCore/middleware/schemas'
+import { CompletionsParams } from '../aiCore/legacy/middleware/schemas'
 import { confirmSameNameTools, requestToolConfirmation, setToolIdToNameMapping } from './userConfirmation'
 
 const MCP_AUTO_INSTALL_SERVER_NAME = '@cherry/mcp-auto-install'

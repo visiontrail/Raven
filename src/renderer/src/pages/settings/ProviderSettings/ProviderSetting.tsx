@@ -1,5 +1,5 @@
 import { CheckOutlined, CloseCircleFilled, LoadingOutlined } from '@ant-design/icons'
-import { isOpenAIProvider } from '@renderer/aiCore/clients/ApiClientFactory'
+import { isOpenAIProvider } from '@renderer/aiCore/legacy/clients/ApiClientFactory'
 import OpenAIAlert from '@renderer/components/Alert/OpenAIAlert'
 import { StreamlineGoodHealthAndWellBeing } from '@renderer/components/Icons/SVGIcon'
 import { HStack } from '@renderer/components/Layout'

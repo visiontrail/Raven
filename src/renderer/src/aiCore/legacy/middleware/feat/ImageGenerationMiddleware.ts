@@ -1,4 +1,4 @@
-import { BaseApiClient } from '@renderer/aiCore/clients/BaseApiClient'
+import { BaseApiClient } from '../../clients/BaseApiClient'
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
 import FileManager from '@renderer/services/FileManager'
 import { ChunkType } from '@renderer/types/chunk'

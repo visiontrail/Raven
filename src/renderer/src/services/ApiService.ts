@@ -3,8 +3,8 @@
  */
 
 import { StreamTextParams } from '@cherrystudio/ai-core'
-import { AiSdkMiddlewareConfig } from '@renderer/aiCore/middleware/aisdk/AiSdkMiddlewareBuilder'
-import { CompletionsParams } from '@renderer/aiCore/middleware/schemas'
+import { CompletionsParams } from '@renderer/aiCore/legacy/middleware/schemas'
+import { AiSdkMiddlewareConfig } from '@renderer/aiCore/middleware/AiSdkMiddlewareBuilder'
 import { buildStreamTextParams } from '@renderer/aiCore/transformParameters'
 import {
   isDedicatedImageGenerationModel,

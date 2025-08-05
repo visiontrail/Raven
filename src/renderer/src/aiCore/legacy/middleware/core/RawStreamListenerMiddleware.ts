@@ -1,4 +1,4 @@
-import { AnthropicAPIClient } from '@renderer/aiCore/clients/anthropic/AnthropicAPIClient'
+import { AnthropicAPIClient } from '../../clients/anthropic/AnthropicAPIClient'
 import { AnthropicSdkRawChunk, AnthropicSdkRawOutput } from '@renderer/types/sdk'
 
 import { AnthropicStreamListener } from '../../clients/types'
