@@ -1,4 +1,3 @@
-import { BaseApiClient } from '@renderer/aiCore/clients/BaseApiClient'
 import { isDedicatedImageGenerationModel } from '@renderer/config/models'
 import FileManager from '@renderer/services/FileManager'
 import { ChunkType } from '@renderer/types/chunk'
@@ -7,6 +6,7 @@ import { defaultTimeout } from '@shared/config/constant'
 import OpenAI from 'openai'
 import { toFile } from 'openai/uploads'
 
+import { BaseApiClient } from '../../clients/BaseApiClient'
 import { CompletionsParams, CompletionsResult, GenericChunk } from '../schemas'
 import { CompletionsContext, CompletionsMiddleware } from '../types'
 
