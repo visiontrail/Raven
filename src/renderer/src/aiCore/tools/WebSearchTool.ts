@@ -5,42 +5,6 @@ import { ExtractResults } from '@renderer/utils/extract'
 import { InferToolInput, InferToolOutput, tool } from 'ai'
 import { z } from 'zod'
 
-// import { AiSdkTool, ToolCallResult } from './types'
-
-// const WebSearchResult = z.array(
-//   z.object({
-//     query: z.string().optional(),
-//     results: z.array(
-//       z.object({
-//         title: z.string(),
-//         content: z.string(),
-//         url: z.string()
-//       })
-//     )
-//   })
-// )
-// const webSearchToolInputSchema = z.object({
-//   query: z.string().describe('The query to search for')
-// })
-
-// export const webSearchTool = (webSearchProviderId: WebSearchProvider['id']) => {
-//   const webSearchService = WebSearchService.getInstance(webSearchProviderId)
-//   return tool({
-//     name: 'builtin_web_search',
-//     description: 'Search the web for information',
-//     inputSchema: webSearchToolInputSchema,
-//     outputSchema: WebSearchProviderResult,
-//     execute: async ({ query }) => {
-//       console.log('webSearchTool', query)
-//       const response = await webSearchService.search(query)
-//       console.log('webSearchTool response', response)
-//       return response
-//     }
-//   })
-// }
-// export type WebSearchToolInput = InferToolInput<ReturnType<typeof webSearchTool>>
-// export type WebSearchToolOutput = InferToolOutput<ReturnType<typeof webSearchTool>>
-
 /**
  * 使用预提取关键词的网络搜索工具
  * 这个工具直接使用插件阶段分析的搜索意图，避免重复分析
@@ -53,7 +17,7 @@ export const webSearchToolWithPreExtractedKeywords = (
   },
   requestId: string
 ) => {
-  const webSearchService = WebSearchService.getInstance(webSearchProviderId)
+  const webSearchProvider = WebSearchService.getWebSearchProvider(webSearchProviderId)
 
   return tool({
     name: 'builtin_web_search',
@@ -112,7 +76,8 @@ Call this tool to execute the search. You can optionally provide additional cont
           }
         }
         console.log('extractResults', extractResults)
-        const response = await webSearchService.processWebsearch(extractResults, requestId)
+        console.log('webSearchProvider', webSearchProvider)
+        const response = await WebSearchService.processWebsearch(webSearchProvider!, extractResults, requestId)
         searchResults.push(response)
       } catch (error) {
         console.error(`Web search failed for query "${finalQueries}":`, error)

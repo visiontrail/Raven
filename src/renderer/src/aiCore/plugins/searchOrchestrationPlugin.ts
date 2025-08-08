@@ -332,9 +332,18 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
 
         if (hasKnowledgeBase) {
           if (knowledgeRecognition === 'off') {
-            // off 模式：直接添加知识库搜索工具，跳过意图识别
+            // off 模式：直接添加知识库搜索工具，使用用户消息作为搜索关键词
+            const userMessage = userMessages[context.requestId]
+            const fallbackKeywords = {
+              question: [getMessageContent(userMessage) || 'search'],
+              rewrite: getMessageContent(userMessage) || 'search'
+            }
             console.log('📚 [SearchOrchestration] Adding knowledge search tool (force mode)')
-            params.tools['builtin_knowledge_search'] = knowledgeSearchTool(assistant)
+            params.tools['builtin_knowledge_search'] = knowledgeSearchTool(
+              assistant,
+              fallbackKeywords,
+              getMessageContent(userMessage)
+            )
             params.toolChoice = { type: 'tool', toolName: 'builtin_knowledge_search' }
           } else {
             // on 模式：根据意图识别结果决定是否添加工具
@@ -343,9 +352,14 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
               analysisResult.knowledge.question &&
               analysisResult.knowledge.question[0] !== 'not_needed'
 
-            if (needsKnowledgeSearch) {
+            if (needsKnowledgeSearch && analysisResult.knowledge) {
               console.log('📚 [SearchOrchestration] Adding knowledge search tool (intent-based)')
-              params.tools['builtin_knowledge_search'] = knowledgeSearchTool(assistant)
+              const userMessage = userMessages[context.requestId]
+              params.tools['builtin_knowledge_search'] = knowledgeSearchTool(
+                assistant,
+                analysisResult.knowledge,
+                getMessageContent(userMessage)
+              )
             }
           }
         }

@@ -1,30 +1,37 @@
 import { processKnowledgeSearch } from '@renderer/services/KnowledgeService'
 import type { Assistant, KnowledgeReference } from '@renderer/types'
-import { ExtractResults } from '@renderer/utils/extract'
+import { ExtractResults, KnowledgeExtractResults } from '@renderer/utils/extract'
 import { type InferToolInput, type InferToolOutput, tool } from 'ai'
 import { isEmpty } from 'lodash'
 import { z } from 'zod'
 
-// Schema definitions - 添加 userMessage 字段来获取用户消息
-const KnowledgeSearchInputSchema = z.object({
-  query: z.string().describe('The search query for knowledge base'),
-  rewrite: z.string().optional().describe('Optional rewritten query with alternative phrasing'),
-  userMessage: z.string().describe('The original user message content for direct search mode')
-})
-
-export type KnowledgeSearchToolInput = InferToolInput<ReturnType<typeof knowledgeSearchTool>>
-export type KnowledgeSearchToolOutput = InferToolOutput<ReturnType<typeof knowledgeSearchTool>>
-
 /**
  * 知识库搜索工具
- * 基于 ApiService.ts 中的 searchKnowledgeBase 逻辑实现
+ * 使用预提取关键词，直接使用插件阶段分析的搜索意图，避免重复分析
  */
-export const knowledgeSearchTool = (assistant: Assistant) => {
+export const knowledgeSearchTool = (
+  assistant: Assistant,
+  extractedKeywords: KnowledgeExtractResults,
+  userMessage?: string
+) => {
   return tool({
     name: 'builtin_knowledge_search',
-    description: 'Search the knowledge base for relevant information',
-    inputSchema: KnowledgeSearchInputSchema,
-    execute: async ({ query, rewrite, userMessage }) => {
+    description: `Search the knowledge base for relevant information using pre-analyzed search intent.
+
+Pre-extracted search queries: "${extractedKeywords.question.join(', ')}"
+Rewritten query: "${extractedKeywords.rewrite}"
+
+This tool searches your knowledge base for relevant documents and returns results for easy reference. 
+Call this tool to execute the search. You can optionally provide additional context to refine the search.`,
+
+    inputSchema: z.object({
+      additionalContext: z
+        .string()
+        .optional()
+        .describe('Optional additional context or specific focus to enhance the knowledge search')
+    }),
+
+    execute: async ({ additionalContext }) => {
       try {
         // 获取助手的知识库配置
         const knowledgeBaseIds = assistant.knowledge_bases?.map((base) => base.id)
@@ -36,34 +43,50 @@ export const knowledgeSearchTool = (assistant: Assistant) => {
           return []
         }
 
-        // 构建搜索条件 - 复制原逻辑
+        let finalQueries = [...extractedKeywords.question]
+        let finalRewrite = extractedKeywords.rewrite
+
+        if (additionalContext?.trim()) {
+          // 如果大模型提供了额外上下文，使用更具体的描述
+          console.log(`🔍 AI enhanced knowledge search with: ${additionalContext}`)
+          const cleanContext = additionalContext.trim()
+          if (cleanContext) {
+            finalQueries = [cleanContext]
+            finalRewrite = cleanContext
+            console.log(`➕ Added additional context: ${cleanContext}`)
+          }
+        }
+
+        // 检查是否需要搜索
+        if (finalQueries[0] === 'not_needed') {
+          return []
+        }
+
+        // 构建搜索条件
         let searchCriteria: { question: string[]; rewrite: string }
 
         if (knowledgeRecognition === 'off') {
-          // 直接模式：使用用户消息内容 (类似原逻辑的 getMainTextContent(lastUserMessage))
-          const directContent = userMessage || query || 'search'
+          // 直接模式：使用用户消息内容
+          const directContent = userMessage || finalQueries[0] || 'search'
           searchCriteria = {
             question: [directContent],
             rewrite: directContent
           }
         } else {
-          // 自动模式：使用意图识别的结果 (类似原逻辑的 extractResults.knowledge)
+          // 自动模式：使用意图识别的结果
           searchCriteria = {
-            question: [query],
-            rewrite: rewrite || query
+            question: finalQueries,
+            rewrite: finalRewrite
           }
         }
 
-        // 检查是否需要搜索
-        if (searchCriteria.question[0] === 'not_needed') {
-          return []
-        }
-
-        // 构建 ExtractResults 对象 - 与原逻辑一致
+        // 构建 ExtractResults 对象
         const extractResults: ExtractResults = {
           websearch: undefined,
           knowledge: searchCriteria
         }
+
+        console.log('Knowledge search extractResults:', extractResults)
 
         // 执行知识库搜索
         const knowledgeReferences = await processKnowledgeSearch(extractResults, knowledgeBaseIds)
@@ -85,5 +108,8 @@ export const knowledgeSearchTool = (assistant: Assistant) => {
     }
   })
 }
+
+export type KnowledgeSearchToolInput = InferToolInput<ReturnType<typeof knowledgeSearchTool>>
+export type KnowledgeSearchToolOutput = InferToolOutput<ReturnType<typeof knowledgeSearchTool>>
 
 export default knowledgeSearchTool
