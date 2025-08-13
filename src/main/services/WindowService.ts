@@ -300,7 +300,7 @@ export class WindowService {
     } else {
       mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
       // 添加这行用于生产环境调试
-      mainWindow.webContents.openDevTools()
+      // mainWindow.webContents.openDevTools()
     }
   }
 

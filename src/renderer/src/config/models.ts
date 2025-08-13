@@ -459,11 +459,7 @@ export const SYSTEM_MODELS: Record<string, Model[]> = {
     }
   ],
   bailian: [
-    { id: 'qwen-vl-plus', name: 'qwen-vl-plus', provider: 'dashscope', group: 'qwen-vl', owned_by: 'system' },
-    { id: 'qwen-coder-plus', name: 'qwen-coder-plus', provider: 'dashscope', group: 'qwen-coder', owned_by: 'system' },
-    { id: 'qwen-turbo', name: 'qwen-turbo', provider: 'dashscope', group: 'qwen-turbo', owned_by: 'system' },
-    { id: 'qwen-plus', name: 'qwen-plus', provider: 'dashscope', group: 'qwen-plus', owned_by: 'system' },
-    { id: 'qwen-max', name: 'qwen-max', provider: 'dashscope', group: 'qwen-max', owned_by: 'system' }
+    { id: 'qwen-plus-0806', name: 'qwen-plus-0806', provider: 'dashscope', group: 'qwen-plus-0806', owned_by: 'system' }
   ],
   gemini: [
     {

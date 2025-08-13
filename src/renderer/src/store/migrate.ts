@@ -1827,6 +1827,25 @@ const migrateConfig = {
     } catch (error) {
       return state
     }
+  },
+  '126': (state: RootState) => {
+    try {
+      // 强制更新阿里云百炼提供商的模型列表为只包含 qwen-plus
+      if (state.llm && state.llm.providers) {
+        state.llm.providers = state.llm.providers.map(provider => {
+          if (provider.id === 'bailian' || provider.id === 'dashscope') {
+            return {
+              ...provider,
+              models: SYSTEM_MODELS.bailian || []
+            }
+          }
+          return provider
+        })
+      }
+      return state
+    } catch (error) {
+      return state
+    }
   }
 }
 
