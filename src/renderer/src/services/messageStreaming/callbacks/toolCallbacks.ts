@@ -114,6 +114,18 @@ export const createToolCallbacks = (deps: ToolCallbacksDependencies) => {
           citationBlockId = citationBlock.id
           blockManager.handleBlockTransition(citationBlock, MessageBlockType.CITATION)
         }
+        if (toolResponse.tool.name === 'builtin_knowledge_search' && toolResponse.response?.knowledgeReferences) {
+          const citationBlock = createCitationBlock(
+            assistantMsgId,
+            { knowledge: toolResponse.response.knowledgeReferences },
+            {
+              status: MessageBlockStatus.SUCCESS
+            }
+          )
+          citationBlockId = citationBlock.id
+          blockManager.handleBlockTransition(citationBlock, MessageBlockType.CITATION)
+        }
+        // TODO: 处理 memory 引用
       } else {
         logger.warn(
           `[onToolCallComplete] Received unhandled tool status: ${toolResponse.status} for ID: ${toolResponse.id}`
