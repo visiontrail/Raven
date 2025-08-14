@@ -381,7 +381,8 @@ export async function fetchChatCompletion({
   messages,
   assistant,
   options,
-  onChunkReceived
+  onChunkReceived,
+  topicId
 }: {
   messages: StreamTextParams['messages']
   assistant: Assistant
@@ -391,10 +392,18 @@ export async function fetchChatCompletion({
     headers?: Record<string, string>
   }
   onChunkReceived: (chunk: Chunk) => void
+  topicId?: string // 添加 topicId 参数
   // TODO
   // onChunkStatus: (status: 'searching' | 'processing' | 'success' | 'error') => void
 }) {
-  console.log('fetchChatCompletion', messages, assistant)
+  logger.info('fetchChatCompletion called with detailed context', {
+    messageCount: messages?.length || 0,
+    assistantId: assistant.id,
+    topicId,
+    hasTopicId: !!topicId,
+    modelId: assistant.model?.id,
+    modelName: assistant.model?.name
+  })
 
   const AI = new AiProviderNew(assistant.model || getDefaultModel())
   const provider = AI.getActualProvider()
@@ -446,15 +455,57 @@ export async function fetchChatCompletion({
     isImageGenerationEndpoint: isDedicatedImageGenerationModel(assistant.model || getDefaultModel()),
     enableWebSearch: capabilities.enableWebSearch,
     enableGenerateImage: capabilities.enableGenerateImage,
-    mcpTools,
-    assistant
+    mcpTools
   }
   // if (capabilities.enableWebSearch) {
   //   onChunkReceived({ type: ChunkType.LLM_WEB_SEARCH_IN_PROGRESS })
   // }
   // --- Call AI Completions ---
   onChunkReceived({ type: ChunkType.LLM_RESPONSE_CREATED })
-  await AI.completions(modelId, aiSdkParams, middlewareConfig)
+
+  // 在 AI SDK 调用时设置正确的 OpenTelemetry 上下文
+  if (topicId) {
+    logger.info('Attempting to set OpenTelemetry context', { topicId })
+    const { currentSpan } = await import('@renderer/services/SpanManagerService')
+
+    const parentSpan = currentSpan(topicId, modelId)
+    logger.info('Parent span lookup result', {
+      topicId,
+      hasParentSpan: !!parentSpan,
+      parentSpanId: parentSpan?.spanContext().spanId,
+      parentTraceId: parentSpan?.spanContext().traceId
+    })
+
+    if (parentSpan) {
+      logger.info('Found parent span, using completionsForTrace for proper span hierarchy', {
+        topicId,
+        parentSpanId: parentSpan.spanContext().spanId,
+        parentTraceId: parentSpan.spanContext().traceId
+      })
+    } else {
+      logger.warn('No parent span found for topicId, using completionsForTrace anyway', { topicId })
+    }
+
+    // 使用带trace支持的completions方法，它会自动创建子span并关联到父span
+    await AI.completionsForTrace(modelId, aiSdkParams, {
+      ...middlewareConfig,
+      assistant,
+      topicId,
+      callType: 'chat'
+    })
+  } else {
+    logger.warn('No topicId provided, using regular completions')
+    // 没有topicId时，禁用telemetry以避免警告
+    const configWithoutTelemetry = {
+      ...middlewareConfig,
+      topicId: undefined // 确保telemetryPlugin不会尝试查找span
+    }
+    await AI.completions(modelId, aiSdkParams, {
+      ...configWithoutTelemetry,
+      assistant,
+      callType: 'chat'
+    })
+  }
 
   // await AI.completions(
   //   {
@@ -640,7 +691,7 @@ export async function fetchMessagesSummary({ messages, assistant }: { messages: 
     return null
   }
 
-  const AI = new AiProvider(provider)
+  const AI = new AiProviderNew(model)
 
   const topicId = messages?.find((message) => message.topicId)?.topicId || undefined
 
@@ -665,28 +716,63 @@ export async function fetchMessagesSummary({ messages, assistant }: { messages: 
   })
   const conversation = JSON.stringify(structredMessages)
 
-  // 复制 assistant 对象，并强制关闭思考预算
+  // // 复制 assistant 对象，并强制关闭思考预算
+  // const summaryAssistant = {
+  //   ...assistant,
+  //   settings: {
+  //     ...assistant.settings,
+  //     reasoning_effort: undefined,
+  //     qwenThinkMode: false
+  //   }
+  // }
   const summaryAssistant = {
     ...assistant,
     settings: {
       ...assistant.settings,
       reasoning_effort: undefined,
       qwenThinkMode: false
-    }
+    },
+    prompt,
+    model
+  }
+  // const params: CompletionsParams = {
+  //   callType: 'summary',
+  //   messages: conversation,
+  //   assistant: { ...summaryAssistant, prompt, model },
+  //   maxTokens: 1000,
+  //   streamOutput: false,
+  //   topicId,
+  //   enableReasoning: false
+  // }
+  const llmMessages = {
+    system: prompt,
+    prompt: conversation
   }
 
-  const params: CompletionsParams = {
-    callType: 'summary',
-    messages: conversation,
-    assistant: { ...summaryAssistant, prompt, model },
-    maxTokens: 1000,
+  // const llmMessages = await ConversationService.prepareMessagesForModel(messages, summaryAssistant)
+
+  // 使用 transformParameters 模块构建参数
+  // const { params: aiSdkParams, modelId } = await buildStreamTextParams(llmMessages, summaryAssistant, provider)
+
+  const middlewareConfig: AiSdkMiddlewareConfig = {
     streamOutput: false,
-    topicId,
-    enableReasoning: false
+    enableReasoning: false,
+    isPromptToolUse: false,
+    isSupportedToolUse: false,
+    isImageGenerationEndpoint: false,
+    enableWebSearch: false,
+    enableGenerateImage: false,
+    mcpTools: []
   }
-
+  console.log('fetchMessagesSummary', '开始总结')
   try {
-    const { getText } = await AI.completionsForTrace(params)
+    const { getText } = await AI.completionsForTrace(model.id, llmMessages, {
+      ...middlewareConfig,
+      assistant: summaryAssistant,
+      topicId,
+      callType: 'summary'
+    })
+    console.log('fetchMessagesSummary', '总结完成', getText())
     const text = getText()
     return removeSpecialCharactersForTopicName(text) || null
   } catch (error: any) {

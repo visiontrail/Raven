@@ -15,6 +15,7 @@ export interface OrchestrationRequest {
     timeout?: number
     headers?: Record<string, string>
   }
+  topicId?: string // 添加 topicId 用于 trace
 }
 
 /**
@@ -45,7 +46,8 @@ export class OrchestrationService {
         messages: llmMessages,
         assistant: assistant,
         options: request.options,
-        onChunkReceived
+        onChunkReceived,
+        topicId: request.topicId
       })
     } catch (error: any) {
       onChunkReceived({ type: ChunkType.ERROR, error })
@@ -67,7 +69,8 @@ export async function transformMessagesAndFetch(
       messages: llmMessages,
       assistant: assistant,
       options: request.options,
-      onChunkReceived
+      onChunkReceived,
+      topicId: request.topicId
     })
   } catch (error: any) {
     onChunkReceived({ type: ChunkType.ERROR, error })

@@ -8,6 +8,7 @@
  */
 import type { AiRequestContext, ModelMessage } from '@cherrystudio/ai-core'
 import { definePlugin } from '@cherrystudio/ai-core'
+import { loggerService } from '@logger'
 // import { generateObject } from '@cherrystudio/ai-core'
 import {
   SEARCH_SUMMARY_PROMPT,
@@ -25,6 +26,8 @@ import { MemoryProcessor } from '../../services/MemoryProcessor'
 import { knowledgeSearchTool } from '../tools/KnowledgeSearchTool'
 import { memorySearchTool } from '../tools/MemorySearchTool'
 import { webSearchToolWithPreExtractedKeywords } from '../tools/WebSearchTool'
+
+const logger = loggerService.withContext('SearchOrchestrationPlugin')
 
 const getMessageContent = (message: ModelMessage) => {
   if (typeof message.content === 'string') return message.content
@@ -76,6 +79,7 @@ async function analyzeSearchIntent(
     context: AiRequestContext & {
       isAnalyzing?: boolean
     }
+    topicId: string
   }
 ): Promise<ExtractResults | undefined> {
   const { shouldWebSearch = false, shouldKnowledgeSearch = false, lastAnswer, context } = options
@@ -121,12 +125,28 @@ async function analyzeSearchIntent(
   // console.log('formattedPrompt', schema)
   try {
     context.isAnalyzing = true
-    const { text: result } = await context.executor.generateText(model.id, {
-      prompt: formattedPrompt
+    logger.info('Starting intent analysis generateText call', {
+      modelId: model.id,
+      topicId: options.topicId,
+      requestId: context.requestId,
+      hasWebSearch: needWebExtract,
+      hasKnowledgeSearch: needKnowledgeExtract
     })
-    context.isAnalyzing = false
+
+    const { text: result } = await context.executor
+      .generateText(model.id, {
+        prompt: formattedPrompt
+      })
+      .finally(() => {
+        context.isAnalyzing = false
+        logger.info('Intent analysis generateText call completed', {
+          modelId: model.id,
+          topicId: options.topicId,
+          requestId: context.requestId
+        })
+      })
     const parsedResult = extractInfoFromXML(result)
-    console.log('parsedResult', parsedResult)
+    logger.debug('Intent analysis result', { parsedResult })
 
     // 根据需求过滤结果
     return {
@@ -134,7 +154,7 @@ async function analyzeSearchIntent(
       knowledge: needKnowledgeExtract ? parsedResult?.knowledge : undefined
     }
   } catch (e: any) {
-    console.error('analyze search intent error', e)
+    logger.error('Intent analysis failed', e as Error)
     return getFallbackResult()
   }
 
@@ -221,27 +241,36 @@ async function storeConversationMemory(
 /**
  * 🎯 搜索编排插件
  */
-export const searchOrchestrationPlugin = (assistant: Assistant) => {
+export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string) => {
   // 存储意图分析结果
   const intentAnalysisResults: { [requestId: string]: ExtractResults } = {}
   const userMessages: { [requestId: string]: ModelMessage } = {}
+  let currentContext: AiRequestContext | null = null
+
   console.log('searchOrchestrationPlugin', assistant)
 
   return definePlugin({
     name: 'search-orchestration',
     enforce: 'pre', // 确保在其他插件之前执行
 
+    configureContext: (context: AiRequestContext) => {
+      if (currentContext) {
+        context.isAnalyzing = currentContext.isAnalyzing
+      }
+      currentContext = context
+    },
+
     /**
      * 🔍 Step 1: 意图识别阶段
      */
     onRequestStart: async (context: AiRequestContext) => {
-      console.log('onRequestStart', context.isAnalyzing)
+      console.log('onRequestStart', context)
       if (context.isAnalyzing) return
-      console.log('🧠 [SearchOrchestration] Starting intent analysis...', context.requestId)
+      // console.log('🧠 [SearchOrchestration] Starting intent analysis...', context.requestId)
 
       try {
         const messages = context.originalParams.messages
-
+        // console.log('🧠 [SearchOrchestration]', context.isAnalyzing)
         if (!messages || messages.length === 0) {
           console.log('🧠 [SearchOrchestration] No messages found, skipping analysis')
           return
@@ -255,9 +284,9 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
 
         // 判断是否需要各种搜索
         const knowledgeBaseIds = assistant.knowledge_bases?.map((base) => base.id)
-        console.log('knowledgeBaseIds', knowledgeBaseIds)
+        // console.log('knowledgeBaseIds', knowledgeBaseIds)
         const hasKnowledgeBase = !isEmpty(knowledgeBaseIds)
-        console.log('hasKnowledgeBase', hasKnowledgeBase)
+        // console.log('hasKnowledgeBase', hasKnowledgeBase)
         const knowledgeRecognition = assistant.knowledgeRecognition || 'on'
         const globalMemoryEnabled = selectGlobalMemoryEnabled(store.getState())
 
@@ -265,11 +294,11 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
         const shouldKnowledgeSearch = hasKnowledgeBase && knowledgeRecognition === 'on'
         const shouldMemorySearch = globalMemoryEnabled && assistant.enableMemory
 
-        console.log('🧠 [SearchOrchestration] Search capabilities:', {
-          shouldWebSearch,
-          hasKnowledgeBase,
-          shouldMemorySearch
-        })
+        // console.log('🧠 [SearchOrchestration] Search capabilities:', {
+        //   shouldWebSearch,
+        //   hasKnowledgeBase,
+        //   shouldMemorySearch
+        // })
         // 执行意图分析
         if (shouldWebSearch || hasKnowledgeBase) {
           const analysisResult = await analyzeSearchIntent(lastUserMessage, assistant, {
@@ -277,12 +306,13 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
             shouldKnowledgeSearch,
             shouldMemorySearch,
             lastAnswer: lastAssistantMessage,
-            context
+            context,
+            topicId
           })
 
           if (analysisResult) {
             intentAnalysisResults[context.requestId] = analysisResult
-            console.log('🧠 [SearchOrchestration] Intent analysis completed:', analysisResult)
+            // console.log('🧠 [SearchOrchestration] Intent analysis completed:', analysisResult)
           }
         }
       } catch (error) {
@@ -296,7 +326,7 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
      */
     transformParams: async (params: any, context: AiRequestContext) => {
       if (context.isAnalyzing) return params
-      console.log('🔧 [SearchOrchestration] Configuring tools based on intent...', context.requestId)
+      // console.log('🔧 [SearchOrchestration] Configuring tools based on intent...', context.requestId)
 
       try {
         const analysisResult = intentAnalysisResults[context.requestId]
@@ -316,7 +346,7 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
 
           if (needsSearch) {
             // onChunk({ type: ChunkType.EXTERNEL_TOOL_IN_PROGRESS })
-            console.log('🌐 [SearchOrchestration] Adding web search tool with pre-extracted keywords')
+            // console.log('🌐 [SearchOrchestration] Adding web search tool with pre-extracted keywords')
             params.tools['builtin_web_search'] = webSearchToolWithPreExtractedKeywords(
               assistant.webSearchProviderId,
               analysisResult.websearch,
@@ -338,11 +368,12 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
               question: [getMessageContent(userMessage) || 'search'],
               rewrite: getMessageContent(userMessage) || 'search'
             }
-            console.log('📚 [SearchOrchestration] Adding knowledge search tool (force mode)')
+            // console.log('📚 [SearchOrchestration] Adding knowledge search tool (force mode)')
             params.tools['builtin_knowledge_search'] = knowledgeSearchTool(
               assistant,
               fallbackKeywords,
-              getMessageContent(userMessage)
+              getMessageContent(userMessage),
+              topicId
             )
             params.toolChoice = { type: 'tool', toolName: 'builtin_knowledge_search' }
           } else {
@@ -353,12 +384,13 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
               analysisResult.knowledge.question[0] !== 'not_needed'
 
             if (needsKnowledgeSearch && analysisResult.knowledge) {
-              console.log('📚 [SearchOrchestration] Adding knowledge search tool (intent-based)')
+              // console.log('📚 [SearchOrchestration] Adding knowledge search tool (intent-based)')
               const userMessage = userMessages[context.requestId]
               params.tools['builtin_knowledge_search'] = knowledgeSearchTool(
                 assistant,
                 analysisResult.knowledge,
-                getMessageContent(userMessage)
+                getMessageContent(userMessage),
+                topicId
               )
             }
           }
@@ -367,11 +399,11 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
         // 🧠 记忆搜索工具配置
         const globalMemoryEnabled = selectGlobalMemoryEnabled(store.getState())
         if (globalMemoryEnabled && assistant.enableMemory) {
-          console.log('🧠 [SearchOrchestration] Adding memory search tool')
+          // console.log('🧠 [SearchOrchestration] Adding memory search tool')
           params.tools['builtin_memory_search'] = memorySearchTool()
         }
 
-        console.log('🔧 [SearchOrchestration] Tools configured:', Object.keys(params.tools))
+        // console.log('🔧 [SearchOrchestration] Tools configured:', Object.keys(params.tools))
         return params
       } catch (error) {
         console.error('🔧 [SearchOrchestration] Tool configuration failed:', error)
@@ -383,10 +415,10 @@ export const searchOrchestrationPlugin = (assistant: Assistant) => {
      * 💾 Step 3: 记忆存储阶段
      */
 
-    onRequestEnd: async (context: AiRequestContext, result: any) => {
+    onRequestEnd: async (context: AiRequestContext) => {
       // context.isAnalyzing = false
-      console.log('context.isAnalyzing', context, result)
-      console.log('💾 [SearchOrchestration] Starting memory storage...', context.requestId)
+      // console.log('context.isAnalyzing', context, result)
+      // console.log('💾 [SearchOrchestration] Starting memory storage...', context.requestId)
       if (context.isAnalyzing) return
       try {
         const messages = context.originalParams.messages

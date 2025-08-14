@@ -3,7 +3,7 @@ import {
   LanguageModelV2Middleware,
   simulateStreamingMiddleware
 } from '@cherrystudio/ai-core'
-import type { Assistant, BaseTool, Model, Provider } from '@renderer/types'
+import type { BaseTool, Model, Provider } from '@renderer/types'
 import type { Chunk } from '@renderer/types/chunk'
 
 /**
@@ -24,8 +24,6 @@ export interface AiSdkMiddlewareConfig {
   enableWebSearch: boolean
   enableGenerateImage: boolean
   mcpTools?: BaseTool[]
-  // TODO assistant
-  assistant: Assistant
 }
 
 /**

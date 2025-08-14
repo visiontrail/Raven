@@ -896,6 +896,7 @@ const fetchAndProcessAssistantResponseImpl = async (
       {
         messages: messagesForContext,
         assistant,
+        topicId,
         options: {
           signal: abortController.signal,
           timeout: 30000

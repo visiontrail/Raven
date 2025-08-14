@@ -9,8 +9,11 @@
  */
 
 import { createExecutor, generateImage, StreamTextParams } from '@cherrystudio/ai-core'
+import { loggerService } from '@logger'
 import { isNotSupportedImageSizeModel } from '@renderer/config/models'
-import type { GenerateImageParams, Model, Provider } from '@renderer/types'
+import { addSpan, endSpan } from '@renderer/services/SpanManagerService'
+import { StartSpanParams } from '@renderer/trace/types/ModelSpanEntity'
+import type { Assistant, GenerateImageParams, Model, Provider } from '@renderer/types'
 import { ChunkType } from '@renderer/types/chunk'
 
 import AiSdkToChunkAdapter from './chunk/AiSdkToChunkAdapter'
@@ -19,6 +22,8 @@ import { CompletionsResult } from './legacy/middleware/schemas'
 import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/AiSdkMiddlewareBuilder'
 import { buildPlugins } from './plugins/PluginBuilder'
 import { getActualProvider, isModernSdkSupported, providerToAiSdkConfig } from './provider/ProviderConfigProcessor'
+
+const logger = loggerService.withContext('ModernAiProvider')
 
 export default class ModernAiProvider {
   private legacyProvider: LegacyAiProvider
@@ -40,15 +45,112 @@ export default class ModernAiProvider {
   public async completions(
     modelId: string,
     params: StreamTextParams,
-    middlewareConfig: AiSdkMiddlewareConfig
+    config: AiSdkMiddlewareConfig & {
+      assistant: Assistant
+      // topicId for tracing
+      topicId?: string
+      callType: string
+    }
   ): Promise<CompletionsResult> {
-    console.log('completions', modelId, params, middlewareConfig)
-
-    if (middlewareConfig.isImageGenerationEndpoint) {
-      return await this.modernImageGeneration(modelId, params, middlewareConfig)
+    if (config.isImageGenerationEndpoint) {
+      return await this.modernImageGeneration(modelId, params, config)
     }
 
-    return await this.modernCompletions(modelId, params, middlewareConfig)
+    return await this.modernCompletions(modelId, params, config)
+  }
+
+  /**
+   * 带trace支持的completions方法
+   * 类似于legacy的completionsForTrace，确保AI SDK spans在正确的trace上下文中
+   */
+  public async completionsForTrace(
+    modelId: string,
+    params: StreamTextParams,
+    config: AiSdkMiddlewareConfig & {
+      assistant: Assistant
+      // topicId for tracing
+      topicId?: string
+      callType: string
+    }
+  ): Promise<CompletionsResult> {
+    if (!config.topicId) {
+      logger.warn('No topicId provided, falling back to regular completions')
+      return await this.completions(modelId, params, config)
+    }
+
+    const traceName = `${this.actualProvider.name}.${modelId}.${config.callType}`
+    const traceParams: StartSpanParams = {
+      name: traceName,
+      tag: 'LLM',
+      topicId: config.topicId,
+      modelName: config.assistant.model?.name, // 使用modelId而不是provider名称
+      inputs: params
+    }
+
+    logger.info('Starting AI SDK trace span', {
+      traceName,
+      topicId: config.topicId,
+      modelId,
+      hasTools: !!params.tools && Object.keys(params.tools).length > 0,
+      toolNames: params.tools ? Object.keys(params.tools) : [],
+      isImageGeneration: config.isImageGenerationEndpoint
+    })
+
+    const span = addSpan(traceParams)
+    if (!span) {
+      logger.warn('Failed to create span, falling back to regular completions', {
+        topicId: config.topicId,
+        modelId,
+        traceName
+      })
+      return await this.completions(modelId, params, config)
+    }
+
+    try {
+      logger.info('Created parent span, now calling completions', {
+        spanId: span.spanContext().spanId,
+        traceId: span.spanContext().traceId,
+        topicId: config.topicId,
+        modelId,
+        parentSpanCreated: true
+      })
+
+      const result = await this.completions(modelId, params, config)
+
+      logger.info('Completions finished, ending parent span', {
+        spanId: span.spanContext().spanId,
+        traceId: span.spanContext().traceId,
+        topicId: config.topicId,
+        modelId,
+        resultLength: result.getText().length
+      })
+
+      // 标记span完成
+      endSpan({
+        topicId: config.topicId,
+        outputs: result,
+        span,
+        modelName: modelId // 使用modelId保持一致性
+      })
+
+      return result
+    } catch (error) {
+      logger.error('Error in completionsForTrace, ending parent span with error', error as Error, {
+        spanId: span.spanContext().spanId,
+        traceId: span.spanContext().traceId,
+        topicId: config.topicId,
+        modelId
+      })
+
+      // 标记span出错
+      endSpan({
+        topicId: config.topicId,
+        error: error as Error,
+        span,
+        modelName: modelId // 使用modelId保持一致性
+      })
+      throw error
+    }
   }
 
   /**
@@ -57,45 +159,122 @@ export default class ModernAiProvider {
   private async modernCompletions(
     modelId: string,
     params: StreamTextParams,
-    middlewareConfig: AiSdkMiddlewareConfig
+    config: AiSdkMiddlewareConfig & {
+      assistant: Assistant
+      // topicId for tracing
+      topicId?: string
+      callType: string
+    }
   ): Promise<CompletionsResult> {
-    // try {
+    logger.info('Starting modernCompletions', {
+      modelId,
+      providerId: this.config.providerId,
+      topicId: config.topicId,
+      hasOnChunk: !!config.onChunk,
+      hasTools: !!params.tools && Object.keys(params.tools).length > 0,
+      toolCount: params.tools ? Object.keys(params.tools).length : 0
+    })
+
     // 根据条件构建插件数组
-    const plugins = buildPlugins(middlewareConfig)
-    console.log('this.config.providerId', this.config.providerId)
-    console.log('this.config.options', this.config.options)
-    console.log('plugins', plugins)
+    const plugins = buildPlugins(config)
+    logger.debug('Built plugins for AI SDK', {
+      pluginCount: plugins.length,
+      pluginNames: plugins.map((p) => p.name),
+      providerId: this.config.providerId,
+      topicId: config.topicId
+    })
+
     // 用构建好的插件数组创建executor
     const executor = createExecutor(this.config.providerId, this.config.options, plugins)
+    logger.debug('Created AI SDK executor', {
+      providerId: this.config.providerId,
+      hasOptions: !!this.config.options,
+      pluginCount: plugins.length
+    })
 
     // 动态构建中间件数组
-    const middlewares = buildAiSdkMiddlewares(middlewareConfig)
-    // console.log('构建的中间件:', middlewares)
+    const middlewares = buildAiSdkMiddlewares(config)
+    logger.debug('Built AI SDK middlewares', {
+      middlewareCount: middlewares.length,
+      topicId: config.topicId
+    })
 
     // 创建带有中间件的执行器
-    if (middlewareConfig.onChunk) {
+    if (config.onChunk) {
       // 流式处理 - 使用适配器
-      const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk, middlewareConfig.mcpTools)
-      console.log('最终params', params)
+      logger.info('Starting streaming with chunk adapter', {
+        modelId,
+        hasMiddlewares: middlewares.length > 0,
+        middlewareCount: middlewares.length,
+        hasMcpTools: !!config.mcpTools,
+        mcpToolCount: config.mcpTools?.length || 0,
+        topicId: config.topicId
+      })
+
+      const adapter = new AiSdkToChunkAdapter(config.onChunk, config.mcpTools)
+
+      logger.debug('Final params before streamText', {
+        modelId,
+        hasMessages: !!params.messages,
+        messageCount: params.messages?.length || 0,
+        hasTools: !!params.tools && Object.keys(params.tools).length > 0,
+        toolNames: params.tools ? Object.keys(params.tools) : [],
+        hasSystem: !!params.system,
+        topicId: config.topicId
+      })
+
       const streamResult = await executor.streamText(
         modelId,
         params,
         middlewares.length > 0 ? { middlewares } : undefined
       )
 
+      logger.info('StreamText call successful, processing stream', {
+        modelId,
+        topicId: config.topicId,
+        hasFullStream: !!streamResult.fullStream
+      })
+
       const finalText = await adapter.processStream(streamResult)
+
+      logger.info('Stream processing completed', {
+        modelId,
+        topicId: config.topicId,
+        finalTextLength: finalText.length
+      })
 
       return {
         getText: () => finalText
       }
     } else {
       // 流式处理但没有 onChunk 回调
+      logger.info('Starting streaming without chunk callback', {
+        modelId,
+        hasMiddlewares: middlewares.length > 0,
+        middlewareCount: middlewares.length,
+        topicId: config.topicId
+      })
+
       const streamResult = await executor.streamText(
         modelId,
         params,
         middlewares.length > 0 ? { middlewares } : undefined
       )
+
+      logger.info('StreamText call successful, waiting for text', {
+        modelId,
+        topicId: config.topicId
+      })
+      // 强制消费流,不然await streamResult.text会阻塞
+      await streamResult?.consumeStream()
+
       const finalText = await streamResult.text
+
+      logger.info('Text extraction completed', {
+        modelId,
+        topicId: config.topicId,
+        finalTextLength: finalText.length
+      })
 
       return {
         getText: () => finalText
@@ -114,9 +293,14 @@ export default class ModernAiProvider {
   private async modernImageGeneration(
     modelId: string,
     params: StreamTextParams,
-    middlewareConfig: AiSdkMiddlewareConfig
+    config: AiSdkMiddlewareConfig & {
+      assistant: Assistant
+      // topicId for tracing
+      topicId?: string
+      callType: string
+    }
   ): Promise<CompletionsResult> {
-    const { onChunk } = middlewareConfig
+    const { onChunk } = config
 
     try {
       // 检查 messages 是否存在
@@ -150,7 +334,7 @@ export default class ModernAiProvider {
       // 构建图像生成参数
       const imageParams = {
         prompt,
-        size: isNotSupportedImageSizeModel(middlewareConfig.model) ? undefined : ('1024x1024' as `${number}x${number}`), // 默认尺寸，使用正确的类型
+        size: isNotSupportedImageSizeModel(config.model) ? undefined : ('1024x1024' as `${number}x${number}`), // 默认尺寸，使用正确的类型
         n: 1,
         ...(params.abortSignal && { abortSignal: params.abortSignal })
       }

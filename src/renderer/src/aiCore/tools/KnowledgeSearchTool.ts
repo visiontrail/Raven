@@ -1,3 +1,4 @@
+import { REFERENCE_PROMPT } from '@renderer/config/prompts'
 import { processKnowledgeSearch } from '@renderer/services/KnowledgeService'
 import type { Assistant, KnowledgeReference } from '@renderer/types'
 import { ExtractResults, KnowledgeExtractResults } from '@renderer/utils/extract'
@@ -12,6 +13,7 @@ import { z } from 'zod'
 export const knowledgeSearchTool = (
   assistant: Assistant,
   extractedKeywords: KnowledgeExtractResults,
+  topicId: string,
   userMessage?: string
 ) => {
   return tool({
@@ -21,7 +23,8 @@ export const knowledgeSearchTool = (
 Pre-extracted search queries: "${extractedKeywords.question.join(', ')}"
 Rewritten query: "${extractedKeywords.rewrite}"
 
-This tool searches your knowledge base for relevant documents and returns results for easy reference. 
+This tool searches for relevant information and formats results for easy citation. The returned sources should be cited using [1], [2], etc. format in your response.
+
 Call this tool to execute the search. You can optionally provide additional context to refine the search.`,
 
     inputSchema: z.object({
@@ -40,7 +43,13 @@ Call this tool to execute the search. You can optionally provide additional cont
 
         // 检查是否有知识库
         if (!hasKnowledgeBase) {
-          return []
+          return {
+            summary: 'No knowledge base configured for this assistant.',
+            knowledgeReferences: [],
+            sources: '',
+            instructions: '',
+            rawResults: []
+          }
         }
 
         let finalQueries = [...extractedKeywords.question]
@@ -59,7 +68,13 @@ Call this tool to execute the search. You can optionally provide additional cont
 
         // 检查是否需要搜索
         if (finalQueries[0] === 'not_needed') {
-          return []
+          return {
+            summary: 'No search needed based on the query analysis.',
+            knowledgeReferences: [],
+            sources: '',
+            instructions: '',
+            rawResults: []
+          }
         }
 
         // 构建搜索条件
@@ -89,21 +104,42 @@ Call this tool to execute the search. You can optionally provide additional cont
         console.log('Knowledge search extractResults:', extractResults)
 
         // 执行知识库搜索
-        const knowledgeReferences = await processKnowledgeSearch(extractResults, knowledgeBaseIds)
-
-        // 返回结果数组
-        return knowledgeReferences.map((ref: KnowledgeReference) => ({
+        const knowledgeReferences = await processKnowledgeSearch(extractResults, knowledgeBaseIds, topicId)
+        const knowledgeReferencesData = knowledgeReferences.map((ref: KnowledgeReference) => ({
           id: ref.id,
           content: ref.content,
           sourceUrl: ref.sourceUrl,
           type: ref.type,
           file: ref.file
         }))
+
+        const referenceContent = `\`\`\`json\n${JSON.stringify(knowledgeReferencesData, null, 2)}\n\`\`\``
+
+        const fullInstructions = REFERENCE_PROMPT.replace(
+          '{question}',
+          "Based on the knowledge references, please answer the user's question with proper citations."
+        ).replace('{references}', referenceContent)
+
+        // 返回结果
+        return {
+          summary: `Found ${knowledgeReferencesData.length} relevant sources. Use [number] format to cite specific information.`,
+          knowledgeReferences: knowledgeReferencesData,
+          // sources: citationData
+          //   .map((source) => `[${source.number}] ${source.title}\n${source.content}\nURL: ${source.url}`)
+          //   .join('\n\n'),
+          instructions: fullInstructions
+          // rawResults: citationData
+        }
       } catch (error) {
         console.error('🔍 [KnowledgeSearchTool] Search failed:', error)
 
-        // 返回空数组而不是抛出错误，避免中断对话流程
-        return []
+        // 返回空对象而不是抛出错误，避免中断对话流程
+        return {
+          summary: `Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          knowledgeReferences: [],
+          instructions: ''
+          // rawResults: []
+        }
       }
     }
   })
