@@ -44,13 +44,13 @@ if [ "$(docker images -q $IMAGE_NAME:$IMAGE_TAG)" ]; then
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "🔨 重新构建 Docker 镜像: $IMAGE_NAME:$IMAGE_TAG"
-        docker build -t $IMAGE_NAME:$IMAGE_TAG .
+        docker build -t $IMAGE_NAME:$IMAGE_TAG ..
     else
         echo "📦 使用现有镜像: $IMAGE_NAME:$IMAGE_TAG"
     fi
 else
     echo "🔨 构建 Docker 镜像: $IMAGE_NAME:$IMAGE_TAG"
-    docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    docker build -t $IMAGE_NAME:$IMAGE_TAG ..
 fi
 
 # 检查 .env 文件

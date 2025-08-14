@@ -41,7 +41,7 @@ fi
 
 # 构建 Docker 镜像
 echo "🔨 构建 Docker 镜像: $IMAGE_NAME:$IMAGE_TAG"
-docker build -t $IMAGE_NAME:$IMAGE_TAG .
+docker build -t $IMAGE_NAME:$IMAGE_TAG ..
 
 # 创建必要的目录
 echo "📁 创建数据目录..."

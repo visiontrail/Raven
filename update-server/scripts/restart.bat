@@ -53,7 +53,7 @@ if defined IMAGE_EXISTS (
     set /p REBUILD="🤔 是否重新构建镜像？(y/N): "
     if /i "!REBUILD!"=="y" (
         echo 🔨 重新构建 Docker 镜像: %IMAGE_NAME%:%IMAGE_TAG%
-        docker build -t %IMAGE_NAME%:%IMAGE_TAG% .
+    docker build -t %IMAGE_NAME%:%IMAGE_TAG% ..
         if errorlevel 1 (
             echo ❌ Docker 镜像构建失败！
             exit /b 1
@@ -63,7 +63,7 @@ if defined IMAGE_EXISTS (
     )
 ) else (
     echo 🔨 构建 Docker 镜像: %IMAGE_NAME%:%IMAGE_TAG%
-    docker build -t %IMAGE_NAME%:%IMAGE_TAG% .
+    docker build -t %IMAGE_NAME%:%IMAGE_TAG% ..
     if errorlevel 1 (
         echo ❌ Docker 镜像构建失败！
         exit /b 1

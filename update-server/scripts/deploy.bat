@@ -40,7 +40,7 @@ for /f "tokens=*" %%i in ('docker ps -aq -f name=%CONTAINER_NAME% 2^>nul') do (
 
 REM 构建 Docker 镜像
 echo 🔨 构建 Docker 镜像: %IMAGE_NAME%:%IMAGE_TAG%
-docker build -t %IMAGE_NAME%:%IMAGE_TAG% .
+docker build -t %IMAGE_NAME%:%IMAGE_TAG% ..
 if errorlevel 1 (
     echo ❌ Docker 镜像构建失败！
     exit /b 1
