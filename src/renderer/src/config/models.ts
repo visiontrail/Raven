@@ -424,10 +424,10 @@ export const SYSTEM_MODELS: Record<string, Model[]> = {
     },
     {
       // 默认话题命名模型
-      id: 'Qwen/Qwen3-8B',
-      name: 'Qwen/Qwen3-8B',
-      provider: 'dashscope',
-      group: 'Qwen'
+      id: 'qwen-plus-0806', 
+      name: 'qwen-plus-0806', 
+      provider: 'dashscope', 
+      group: 'qwen-plus-0806', 
     },
     {
       // 默认翻译模型
@@ -459,27 +459,15 @@ export const SYSTEM_MODELS: Record<string, Model[]> = {
     }
   ],
   bailian: [
-    { id: 'qwen-plus-0806', name: 'qwen-plus-0806', provider: 'dashscope', group: 'qwen-plus-0806', owned_by: 'system' }
+    { 
+      id: 'qwen-plus-0806', 
+      name: 'qwen-plus-0806', 
+      provider: 'dashscope', 
+      group: 'qwen-plus-0806', 
+      owned_by: 'system' 
+    }
   ],
   gemini: [
-    {
-      id: 'gemini-1.5-flash',
-      provider: 'gemini',
-      name: 'Gemini 1.5 Flash',
-      group: 'Gemini 1.5'
-    },
-    {
-      id: 'gemini-1.5-flash-8b',
-      provider: 'gemini',
-      name: 'Gemini 1.5 Flash (8B)',
-      group: 'Gemini 1.5'
-    },
-    {
-      id: 'gemini-1.5-pro',
-      name: 'Gemini 1.5 Pro',
-      provider: 'gemini',
-      group: 'Gemini 1.5'
-    },
     {
       id: 'gemini-2.0-flash',
       provider: 'gemini',
