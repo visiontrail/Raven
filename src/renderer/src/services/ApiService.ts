@@ -7,18 +7,12 @@ import AiProvider from '@renderer/aiCore'
 import { CompletionsParams } from '@renderer/aiCore/legacy/middleware/schemas'
 import { AiSdkMiddlewareConfig } from '@renderer/aiCore/middleware/AiSdkMiddlewareBuilder'
 import { buildStreamTextParams } from '@renderer/aiCore/transformParameters'
-import {
-  isDedicatedImageGenerationModel,
-  isEmbeddingModel,
-  isReasoningModel,
-  isSupportedReasoningEffortModel,
-  isSupportedThinkingTokenModel
-} from '@renderer/config/models'
+import { isDedicatedImageGenerationModel, isEmbeddingModel } from '@renderer/config/models'
 import { getStoreSetting } from '@renderer/hooks/useSettings'
 import i18n from '@renderer/i18n'
 import store from '@renderer/store'
-import { Assistant, MCPServer, MCPTool, Model, Provider, TranslateAssistant } from '@renderer/types'
-import { type Chunk, ChunkType } from '@renderer/types/chunk'
+import { Assistant, MCPServer, MCPTool, Model, Provider } from '@renderer/types'
+import { type Chunk } from '@renderer/types/chunk'
 import { Message } from '@renderer/types/newMessage'
 import { SdkModel } from '@renderer/types/sdk'
 import { removeSpecialCharactersForTopicName } from '@renderer/utils'
@@ -34,8 +28,7 @@ import {
   getDefaultAssistant,
   getDefaultModel,
   getProviderByModel,
-  getTopNamingModel,
-  getTranslateModel
+  getTopNamingModel
 } from './AssistantService'
 // import { processKnowledgeSearch } from './KnowledgeService'
 // import {
@@ -164,7 +157,6 @@ export async function fetchChatCompletion({
   //   onChunkReceived({ type: ChunkType.LLM_WEB_SEARCH_IN_PROGRESS })
   // }
   // --- Call AI Completions ---
-  onChunkReceived({ type: ChunkType.LLM_RESPONSE_CREATED })
 
   // 在 AI SDK 调用时设置正确的 OpenTelemetry 上下文
   if (topicId) {
@@ -211,78 +203,78 @@ export async function fetchChatCompletion({
   }
 }
 
-interface FetchTranslateProps {
-  content: string
-  assistant: TranslateAssistant
-  onResponse?: (text: string, isComplete: boolean) => void
-}
+// interface FetchTranslateProps {
+//   content: string
+//   assistant: TranslateAssistant
+//   onResponse?: (text: string, isComplete: boolean) => void
+// }
 
-export async function fetchTranslate({ content, assistant, onResponse }: FetchTranslateProps) {
-  const model = getTranslateModel() || assistant.model || getDefaultModel()
+// export async function fetchTranslate({ content, assistant, onResponse }: FetchTranslateProps) {
+//   const model = getTranslateModel() || assistant.model || getDefaultModel()
 
-  if (!model) {
-    throw new Error(i18n.t('error.provider_disabled'))
-  }
+//   if (!model) {
+//     throw new Error(i18n.t('error.provider_disabled'))
+//   }
 
-  const provider = getProviderByModel(model)
+//   const provider = getProviderByModel(model)
 
-  if (!hasApiKey(provider)) {
-    throw new Error(i18n.t('error.no_api_key'))
-  }
+//   if (!hasApiKey(provider)) {
+//     throw new Error(i18n.t('error.no_api_key'))
+//   }
 
-  const isSupportedStreamOutput = () => {
-    if (!onResponse) {
-      return false
-    }
-    return true
-  }
+//   const isSupportedStreamOutput = () => {
+//     if (!onResponse) {
+//       return false
+//     }
+//     return true
+//   }
 
-  const stream = isSupportedStreamOutput()
-  const enableReasoning =
-    ((isSupportedThinkingTokenModel(model) || isSupportedReasoningEffortModel(model)) &&
-      assistant.settings?.reasoning_effort !== undefined) ||
-    (isReasoningModel(model) && (!isSupportedThinkingTokenModel(model) || !isSupportedReasoningEffortModel(model)))
+//   const stream = isSupportedStreamOutput()
+//   const enableReasoning =
+//     ((isSupportedThinkingTokenModel(model) || isSupportedReasoningEffortModel(model)) &&
+//       assistant.settings?.reasoning_effort !== undefined) ||
+//     (isReasoningModel(model) && (!isSupportedThinkingTokenModel(model) || !isSupportedReasoningEffortModel(model)))
 
-  const params: StreamTextParams = {
-    system: assistant.prompt,
-    prompt: content
-  }
+//   const params: StreamTextParams = {
+//     system: assistant.prompt,
+//     prompt: content
+//   }
 
-  const AI = new AiProviderNew(model)
+//   const AI = new AiProviderNew(model)
 
-  const middlewareConfig: AiSdkMiddlewareConfig = {
-    streamOutput: stream,
-    enableReasoning,
-    isPromptToolUse: false,
-    isSupportedToolUse: false,
-    isImageGenerationEndpoint: false,
-    enableWebSearch: false,
-    enableGenerateImage: false,
-    onChunk: onResponse
-      ? (chunk) => {
-          if (chunk.type === ChunkType.TEXT_DELTA) {
-            onResponse(chunk.text, false)
-          } else if (chunk.type === ChunkType.TEXT_COMPLETE) {
-            onResponse(chunk.text, true)
-          }
-        }
-      : undefined
-  }
+//   const middlewareConfig: AiSdkMiddlewareConfig = {
+//     streamOutput: stream,
+//     enableReasoning,
+//     isPromptToolUse: false,
+//     isSupportedToolUse: false,
+//     isImageGenerationEndpoint: false,
+//     enableWebSearch: false,
+//     enableGenerateImage: false,
+//     onChunk: onResponse
+//       ? (chunk) => {
+//           if (chunk.type === ChunkType.TEXT_DELTA) {
+//             onResponse(chunk.text, false)
+//           } else if (chunk.type === ChunkType.TEXT_COMPLETE) {
+//             onResponse(chunk.text, true)
+//           }
+//         }
+//       : undefined
+//   }
 
-  try {
-    return (
-      (
-        await AI.completions(model.id, params, {
-          ...middlewareConfig,
-          assistant,
-          callType: 'translate'
-        })
-      ).getText() || ''
-    )
-  } catch (error: any) {
-    return ''
-  }
-}
+//   try {
+//     return (
+//       (
+//         await AI.completions(model.id, params, {
+//           ...middlewareConfig,
+//           assistant,
+//           callType: 'translate'
+//         })
+//       ).getText() || ''
+//     )
+//   } catch (error: any) {
+//     return ''
+//   }
+// }
 
 export async function fetchMessagesSummary({ messages, assistant }: { messages: Message[]; assistant: Assistant }) {
   let prompt = (getStoreSetting('topicNamingPrompt') as string) || i18n.t('prompts.title')
@@ -434,7 +426,7 @@ export async function fetchGenerate({
   }
 }
 
-function hasApiKey(provider: Provider) {
+export function hasApiKey(provider: Provider) {
   if (!provider) return false
   if (provider.id === 'ollama' || provider.id === 'lmstudio' || provider.type === 'vertexai') return true
   return !isEmpty(provider.apiKey)
@@ -493,7 +485,7 @@ export function checkApiProvider(provider: Provider): void {
   }
 }
 
-export async function checkApi(provider: Provider, model: Model): Promise<void> {
+export async function checkApi(provider: Provider, model: Model, timeout = 15000): Promise<void> {
   checkApiProvider(provider)
 
   const ai = new AiProviderNew(model)
@@ -502,7 +494,10 @@ export async function checkApi(provider: Provider, model: Model): Promise<void> 
   assistant.model = model
   try {
     if (isEmbeddingModel(model)) {
-      await ai.getEmbeddingDimensions(model)
+      // race 超时 15s
+      logger.silly("it's a embedding model")
+      const timerPromise = new Promise((_, reject) => setTimeout(() => reject('Timeout'), timeout))
+      await Promise.race([ai.getEmbeddingDimensions(model), timerPromise])
     } else {
       const params: StreamTextParams = {
         system: assistant.prompt,
@@ -546,5 +541,14 @@ export async function checkApi(provider: Provider, model: Model): Promise<void> 
     } else {
       throw error
     }
+    // } finally {
+    //   removeAbortController(taskId, abortFn)
+    // }
   }
+}
+
+export async function checkModel(provider: Provider, model: Model, timeout = 15000): Promise<{ latency: number }> {
+  const startTime = performance.now()
+  await checkApi(provider, model, timeout)
+  return { latency: performance.now() - startTime }
 }

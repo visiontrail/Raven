@@ -1,4 +1,5 @@
 import { RightOutlined } from '@ant-design/icons'
+import { DynamicVirtualList, type DynamicVirtualListRef } from '@renderer/components/VirtualList'
 import { isMac } from '@renderer/config/constant'
 import useUserTheme from '@renderer/hooks/useUserTheme'
 import { classNames } from '@renderer/utils'
@@ -6,7 +7,6 @@ import { Flex } from 'antd'
 import { t } from 'i18next'
 import { Check } from 'lucide-react'
 import React, { use, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { FixedSizeList } from 'react-window'
 import styled from 'styled-components'
 import * as tinyPinyin from 'tiny-pinyin'
 
@@ -55,7 +55,7 @@ export const QuickPanelView: React.FC<Props> = ({ setInputText }) => {
   const [historyPanel, setHistoryPanel] = useState<QuickPanelOpenOptions[]>([])
 
   const bodyRef = useRef<HTMLDivElement>(null)
-  const listRef = useRef<FixedSizeList>(null)
+  const listRef = useRef<DynamicVirtualListRef>(null)
   const footerRef = useRef<HTMLDivElement>(null)
 
   const [_searchText, setSearchText] = useState('')
@@ -65,6 +65,9 @@ export const QuickPanelView: React.FC<Props> = ({ setInputText }) => {
   // 跟踪上一次的搜索文本和符号，用于判断是否需要重置index
   const prevSearchTextRef = useRef('')
   const prevSymbolRef = useRef('')
+
+  // 无匹配项自动关闭的定时器
+  const noMatchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // 处理搜索，过滤列表
   const list = useMemo(() => {
@@ -128,11 +131,43 @@ export const QuickPanelView: React.FC<Props> = ({ setInputText }) => {
     prevSymbolRef.current = ctx.symbol
 
     return newList
-  }, [ctx.isVisible, ctx.list, ctx.symbol, searchText])
+  }, [ctx.isVisible, ctx.symbol, ctx.list, searchText])
 
   const canForwardAndBackward = useMemo(() => {
     return list.some((item) => item.isMenu) || historyPanel.length > 0
   }, [list, historyPanel])
+
+  // 智能关闭逻辑：当有搜索文本但无匹配项时，延迟关闭面板
+  useEffect(() => {
+    const _searchText = searchText.replace(/^[/@]/, '')
+
+    // 清除之前的定时器（无论面板是否可见都要清理）
+    if (noMatchTimeoutRef.current) {
+      clearTimeout(noMatchTimeoutRef.current)
+      noMatchTimeoutRef.current = null
+    }
+
+    // 面板不可见时不设置新定时器
+    if (!ctx.isVisible) {
+      return
+    }
+
+    // 只有在有搜索文本但无匹配项时才设置延迟关闭
+    if (_searchText && _searchText.length > 0 && list.length === 0) {
+      noMatchTimeoutRef.current = setTimeout(() => {
+        ctx.close('no-matches')
+      }, 300)
+    }
+
+    // 清理函数
+    return () => {
+      if (noMatchTimeoutRef.current) {
+        clearTimeout(noMatchTimeoutRef.current)
+        noMatchTimeoutRef.current = null
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ctx对象引用不稳定，使用具体属性避免过度重渲染
+  }, [ctx.isVisible, searchText, list.length, ctx.close])
 
   const clearSearchText = useCallback(
     (includeSymbol = false) => {
@@ -275,7 +310,7 @@ export const QuickPanelView: React.FC<Props> = ({ setInputText }) => {
         const newSearchText = textBeforeCursor.slice(lastSymbolIndex)
         setSearchText(newSearchText)
       } else {
-        handleClose('delete-symbol')
+        ctx.close('delete-symbol')
       }
     }
 
@@ -306,8 +341,8 @@ export const QuickPanelView: React.FC<Props> = ({ setInputText }) => {
   useLayoutEffect(() => {
     if (!listRef.current || index < 0 || scrollTriggerRef.current === 'none') return
 
-    const alignment = scrollTriggerRef.current === 'keyboard' ? 'auto' : 'smart'
-    listRef.current?.scrollToItem(index, alignment)
+    const alignment = scrollTriggerRef.current === 'keyboard' ? 'auto' : 'center'
+    listRef.current?.scrollToIndex(index, { align: alignment })
 
     scrollTriggerRef.current = 'none'
   }, [index])
@@ -470,13 +505,45 @@ export const QuickPanelView: React.FC<Props> = ({ setInputText }) => {
     return Math.min(ctx.pageSize, list.length) * ITEM_HEIGHT
   }, [ctx.pageSize, list.length])
 
-  const RowData = useMemo(
-    (): VirtualizedRowData => ({
-      list,
-      focusedIndex: index,
-      handleItemAction
-    }),
-    [list, index, handleItemAction]
+  const estimateSize = useCallback(() => ITEM_HEIGHT, [])
+
+  const rowRenderer = useCallback(
+    (item: QuickPanelListItem, itemIndex: number) => {
+      if (!item) return null
+
+      return (
+        <QuickPanelItem
+          className={classNames({
+            focused: itemIndex === index,
+            selected: item.isSelected,
+            disabled: item.disabled
+          })}
+          data-id={itemIndex}
+          onClick={(e) => {
+            e.stopPropagation()
+            handleItemAction(item, 'click')
+          }}>
+          <QuickPanelItemLeft>
+            <QuickPanelItemIcon>{item.icon}</QuickPanelItemIcon>
+            <QuickPanelItemLabel>{item.label}</QuickPanelItemLabel>
+          </QuickPanelItemLeft>
+
+          <QuickPanelItemRight>
+            {item.description && <QuickPanelItemDescription>{item.description}</QuickPanelItemDescription>}
+            <QuickPanelItemSuffixIcon>
+              {item.suffix ? (
+                item.suffix
+              ) : item.isSelected ? (
+                <Check />
+              ) : (
+                item.isMenu && !item.disabled && <RightOutlined />
+              )}
+            </QuickPanelItemSuffixIcon>
+          </QuickPanelItemRight>
+        </QuickPanelItem>
+      )
+    },
+    [index, handleItemAction]
   )
 
   return (
@@ -494,19 +561,17 @@ export const QuickPanelView: React.FC<Props> = ({ setInputText }) => {
             return prev ? prev : true
           })
         }>
-        <FixedSizeList
+        <DynamicVirtualList
           ref={listRef}
-          itemCount={list.length}
-          itemSize={ITEM_HEIGHT}
-          itemData={RowData}
-          height={listHeight}
-          width="100%"
-          overscanCount={4}
-          style={{
+          list={list}
+          size={listHeight}
+          estimateSize={estimateSize}
+          overscan={5}
+          scrollerStyle={{
             pointerEvents: isMouseOver ? 'auto' : 'none'
           }}>
-          {VirtualizedRow}
-        </FixedSizeList>
+          {rowRenderer}
+        </DynamicVirtualList>
         <QuickPanelFooter ref={footerRef}>
           <QuickPanelFooterTitle>{ctx.title || ''}</QuickPanelFooterTitle>
           <QuickPanelFooterTips $footerWidth={footerWidth}>
@@ -545,57 +610,6 @@ export const QuickPanelView: React.FC<Props> = ({ setInputText }) => {
     </QuickPanelContainer>
   )
 }
-
-interface VirtualizedRowData {
-  list: QuickPanelListItem[]
-  focusedIndex: number
-  handleItemAction: (item: QuickPanelListItem, action?: QuickPanelCloseAction) => void
-}
-
-/**
- * 虚拟化列表行组件，用于避免重新渲染
- */
-const VirtualizedRow = React.memo(
-  ({ data, index, style }: { data: VirtualizedRowData; index: number; style: React.CSSProperties }) => {
-    const { list, focusedIndex, handleItemAction } = data
-    const item = list[index]
-    if (!item) return null
-
-    return (
-      <div style={style}>
-        <QuickPanelItem
-          className={classNames({
-            focused: index === focusedIndex,
-            selected: item.isSelected,
-            disabled: item.disabled
-          })}
-          data-id={index}
-          onClick={(e) => {
-            e.stopPropagation()
-            handleItemAction(item, 'click')
-          }}>
-          <QuickPanelItemLeft>
-            <QuickPanelItemIcon>{item.icon}</QuickPanelItemIcon>
-            <QuickPanelItemLabel>{item.label}</QuickPanelItemLabel>
-          </QuickPanelItemLeft>
-
-          <QuickPanelItemRight>
-            {item.description && <QuickPanelItemDescription>{item.description}</QuickPanelItemDescription>}
-            <QuickPanelItemSuffixIcon>
-              {item.suffix ? (
-                item.suffix
-              ) : item.isSelected ? (
-                <Check />
-              ) : (
-                item.isMenu && !item.disabled && <RightOutlined />
-              )}
-            </QuickPanelItemSuffixIcon>
-          </QuickPanelItemRight>
-        </QuickPanelItem>
-      </div>
-    )
-  }
-)
 
 const QuickPanelContainer = styled.div<{
   $pageSize: number

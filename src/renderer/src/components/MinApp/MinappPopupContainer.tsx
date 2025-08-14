@@ -125,6 +125,7 @@ const GoogleLoginTip = ({
       type="warning"
       showIcon
       closable
+      banner
       onClose={handleClose}
       action={
         <Button type="primary" size="small" onClick={openGoogleMinApp}>
@@ -498,7 +499,6 @@ const MinappPopupContainer: React.FC = () => {
       placement="bottom"
       onClose={handlePopupMinimize}
       open={isPopupShow}
-      destroyOnClose={false}
       mask={false}
       rootClassName="minapp-drawer"
       maskClassName="minapp-mask"
