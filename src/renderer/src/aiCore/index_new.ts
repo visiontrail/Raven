@@ -30,8 +30,8 @@ export default class ModernAiProvider {
   private config: ReturnType<typeof providerToAiSdkConfig>
   private actualProvider: Provider
 
-  constructor(model: Model) {
-    this.actualProvider = getActualProvider(model)
+  constructor(model: Model, provider?: Provider) {
+    this.actualProvider = provider || getActualProvider(model)
     this.legacyProvider = new LegacyAiProvider(this.actualProvider)
 
     // 只保存配置，不预先创建executor

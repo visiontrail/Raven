@@ -26,18 +26,11 @@ import {
   isVisionModel,
   isWebSearchModel
 } from '@renderer/config/models'
-import {
-  SEARCH_SUMMARY_PROMPT,
-  SEARCH_SUMMARY_PROMPT_KNOWLEDGE_ONLY,
-  SEARCH_SUMMARY_PROMPT_WEB_ONLY
-} from '@renderer/config/prompts'
-import { getAssistantSettings, getDefaultModel, getProviderByModel } from '@renderer/services/AssistantService'
-import { getDefaultAssistant } from '@renderer/services/AssistantService'
+import { getAssistantSettings, getDefaultModel } from '@renderer/services/AssistantService'
 import type { Assistant, MCPTool, Message, Model, Provider } from '@renderer/types'
 import { FileTypes } from '@renderer/types'
 import { FileMessageBlock, ImageMessageBlock, ThinkingMessageBlock } from '@renderer/types/newMessage'
 // import { getWebSearchTools } from './utils/websearch'
-import { extractInfoFromXML, ExtractResults } from '@renderer/utils/extract'
 import {
   findFileBlocks,
   findImageBlocks,
@@ -45,10 +38,7 @@ import {
   getMainTextContent
 } from '@renderer/utils/messageUtils/find'
 import { defaultTimeout } from '@shared/config/constant'
-import { isEmpty } from 'lodash'
 
-import AiProvider from './legacy/index'
-import { CompletionsParams } from './legacy/middleware/schemas'
 // import { webSearchTool } from './tools/WebSearchTool'
 // import { jsonSchemaToZod } from 'json-schema-to-zod'
 import { setupToolsConfig } from './utils/mcp'
@@ -328,99 +318,101 @@ export async function buildGenerateTextParams(
 /**
  * 提取外部工具搜索关键词和问题
  * 从用户消息中提取用于网络搜索和知识库搜索的关键词
+ * @deprecated
  */
-export async function extractSearchKeywords(
-  lastUserMessage: Message,
-  assistant: Assistant,
-  options: {
-    shouldWebSearch?: boolean
-    shouldKnowledgeSearch?: boolean
-    lastAnswer?: Message
-  } = {}
-): Promise<ExtractResults | undefined> {
-  const { shouldWebSearch = false, shouldKnowledgeSearch = false, lastAnswer } = options
+// export async function extractSearchKeywords(
+//   lastUserMessage: Message,
+//   assistant: Assistant,
+//   options: {
+//     shouldWebSearch?: boolean
+//     shouldKnowledgeSearch?: boolean
+//     lastAnswer?: Message
+//   } = {}
+// ): Promise<ExtractResults | undefined> {
+//   const { shouldWebSearch = false, shouldKnowledgeSearch = false, lastAnswer } = options
 
-  if (!lastUserMessage) return undefined
+//   if (!lastUserMessage) return undefined
 
-  // 根据配置决定是否需要提取
-  const needWebExtract = shouldWebSearch
-  const needKnowledgeExtract = shouldKnowledgeSearch
+//   // 根据配置决定是否需要提取
+//   const needWebExtract = shouldWebSearch
+//   const needKnowledgeExtract = shouldKnowledgeSearch
 
-  if (!needWebExtract && !needKnowledgeExtract) return undefined
+//   if (!needWebExtract && !needKnowledgeExtract) return undefined
 
-  // 选择合适的提示词
-  let prompt: string
-  if (needWebExtract && !needKnowledgeExtract) {
-    prompt = SEARCH_SUMMARY_PROMPT_WEB_ONLY
-  } else if (!needWebExtract && needKnowledgeExtract) {
-    prompt = SEARCH_SUMMARY_PROMPT_KNOWLEDGE_ONLY
-  } else {
-    prompt = SEARCH_SUMMARY_PROMPT
-  }
+//   // 选择合适的提示词
+//   let prompt: string
+//   if (needWebExtract && !needKnowledgeExtract) {
+//     prompt = SEARCH_SUMMARY_PROMPT_WEB_ONLY
+//   } else if (!needWebExtract && needKnowledgeExtract) {
+//     prompt = SEARCH_SUMMARY_PROMPT_KNOWLEDGE_ONLY
+//   } else {
+//     prompt = SEARCH_SUMMARY_PROMPT
+//   }
 
-  // 构建用于提取的助手配置
-  const summaryAssistant = getDefaultAssistant()
-  summaryAssistant.model = assistant.model || getDefaultModel()
-  summaryAssistant.prompt = prompt
+//   // 构建用于提取的助手配置
+//   const summaryAssistant = getDefaultAssistant()
+//   summaryAssistant.model = assistant.model || getDefaultModel()
+//   summaryAssistant.prompt = prompt
 
-  try {
-    const result = await fetchSearchSummary({
-      messages: lastAnswer ? [lastAnswer, lastUserMessage] : [lastUserMessage],
-      assistant: summaryAssistant
-    })
+//   try {
+//     const result = await fetchSearchSummary({
+//       messages: lastAnswer ? [lastAnswer, lastUserMessage] : [lastUserMessage],
+//       assistant: summaryAssistant
+//     })
 
-    if (!result) return getFallbackResult()
+//     if (!result) return getFallbackResult()
 
-    const extracted = extractInfoFromXML(result.getText())
-    // 根据需求过滤结果
-    return {
-      websearch: needWebExtract ? extracted?.websearch : undefined,
-      knowledge: needKnowledgeExtract ? extracted?.knowledge : undefined
-    }
-  } catch (e: any) {
-    console.error('extract error', e)
-    return getFallbackResult()
-  }
+//     const extracted = extractInfoFromXML(result.getText())
+//     // 根据需求过滤结果
+//     return {
+//       websearch: needWebExtract ? extracted?.websearch : undefined,
+//       knowledge: needKnowledgeExtract ? extracted?.knowledge : undefined
+//     }
+//   } catch (e: any) {
+//     console.error('extract error', e)
+//     return getFallbackResult()
+//   }
 
-  function getFallbackResult(): ExtractResults {
-    const fallbackContent = getMainTextContent(lastUserMessage)
-    return {
-      websearch: shouldWebSearch ? { question: [fallbackContent || 'search'] } : undefined,
-      knowledge: shouldKnowledgeSearch
-        ? {
-            question: [fallbackContent || 'search'],
-            rewrite: fallbackContent || 'search'
-          }
-        : undefined
-    }
-  }
-}
+//   function getFallbackResult(): ExtractResults {
+//     const fallbackContent = getMainTextContent(lastUserMessage)
+//     return {
+//       websearch: shouldWebSearch ? { question: [fallbackContent || 'search'] } : undefined,
+//       knowledge: shouldKnowledgeSearch
+//         ? {
+//             question: [fallbackContent || 'search'],
+//             rewrite: fallbackContent || 'search'
+//           }
+//         : undefined
+//     }
+//   }
+// }
 
 /**
  * 获取搜索摘要 - 内部辅助函数
+ * @deprecated
  */
-async function fetchSearchSummary({ messages, assistant }: { messages: Message[]; assistant: Assistant }) {
-  const model = assistant.model || getDefaultModel()
-  const provider = getProviderByModel(model)
+// async function fetchSearchSummary({ messages, assistant }: { messages: Message[]; assistant: Assistant }) {
+//   const model = assistant.model || getDefaultModel()
+//   const provider = getProviderByModel(model)
 
-  if (!hasApiKey(provider)) {
-    return null
-  }
+//   if (!hasApiKey(provider)) {
+//     return null
+//   }
 
-  const AI = new AiProvider(provider)
+//   const AI = new AiProvider(provider)
 
-  const params: CompletionsParams = {
-    callType: 'search',
-    messages: messages,
-    assistant,
-    streamOutput: false
-  }
+//   const params: CompletionsParams = {
+//     callType: 'search',
+//     messages: messages,
+//     assistant,
+//     streamOutput: false
+//   }
 
-  return await AI.completions(params)
-}
+//   return await AI.completions(params)
+// }
 
-function hasApiKey(provider: Provider) {
-  if (!provider) return false
-  if (provider.id === 'ollama' || provider.id === 'lmstudio' || provider.type === 'vertexai') return true
-  return !isEmpty(provider.apiKey)
-}
+// function hasApiKey(provider: Provider) {
+//   if (!provider) return false
+//   if (provider.id === 'ollama' || provider.id === 'lmstudio' || provider.type === 'vertexai') return true
+//   return !isEmpty(provider.apiKey)
+// }
