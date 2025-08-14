@@ -154,6 +154,16 @@ export default class AppUpdater {
   }
 
   private async _setFeedUrl() {
+    // 检查是否使用自定义更新服务器
+    const useCustomServer = configManager.getUseCustomUpdateServer()
+    if (useCustomServer) {
+      const customServerUrl = configManager.getCustomUpdateServerUrl()
+      this.autoUpdater.channel = UpgradeChannel.LATEST
+      this.autoUpdater.setFeedURL(customServerUrl)
+      logger.info('使用自定义更新服务器:', customServerUrl)
+      return
+    }
+
     const testPlan = configManager.getTestPlan()
     if (testPlan) {
       const channel = this._getTestChannel()

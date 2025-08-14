@@ -189,6 +189,9 @@ export interface SettingsState {
   localBackupSkipBackupFile: boolean
   defaultPaintingProvider: PaintingProvider
   s3: S3Config
+  // 自定义更新服务器配置
+  useCustomUpdateServer: boolean
+  customUpdateServerUrl: string
 }
 
 export type MultiModelMessageStyle = 'horizontal' | 'vertical' | 'fold' | 'grid'
@@ -354,7 +357,10 @@ export const initialState: SettingsState = {
     syncInterval: 0,
     maxBackups: 0,
     skipBackupFile: false
-  }
+  },
+  // 自定义更新服务器配置
+  useCustomUpdateServer: false,
+  customUpdateServerUrl: 'http://localhost:3000'
 }
 
 const settingsSlice = createSlice({
@@ -747,6 +753,12 @@ const settingsSlice = createSlice({
     },
     setS3Partial: (state, action: PayloadAction<Partial<S3Config>>) => {
       state.s3 = { ...state.s3, ...action.payload }
+    },
+    setUseCustomUpdateServer: (state, action: PayloadAction<boolean>) => {
+      state.useCustomUpdateServer = action.payload
+    },
+    setCustomUpdateServerUrl: (state, action: PayloadAction<string>) => {
+      state.customUpdateServerUrl = action.payload
     }
   }
 })
@@ -865,7 +877,9 @@ export const {
   setLocalBackupSkipBackupFile,
   setDefaultPaintingProvider,
   setS3,
-  setS3Partial
+  setS3Partial,
+  setUseCustomUpdateServer,
+  setCustomUpdateServerUrl
 } = settingsSlice.actions
 
 export default settingsSlice.reducer
