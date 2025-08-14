@@ -243,7 +243,12 @@ export async function buildStreamTextParams(
 ): Promise<{
   params: StreamTextParams
   modelId: string
-  capabilities: { enableReasoning: boolean; enableWebSearch: boolean; enableGenerateImage: boolean }
+  capabilities: {
+    enableReasoning: boolean
+    enableWebSearch: boolean
+    enableGenerateImage: boolean
+    enableUrlContext: boolean
+  }
 }> {
   const { mcpTools } = options
 
@@ -300,7 +305,11 @@ export async function buildStreamTextParams(
     params.system = assistant.prompt
   }
 
-  return { params, modelId: model.id, capabilities: { enableReasoning, enableWebSearch, enableGenerateImage } }
+  return {
+    params,
+    modelId: model.id,
+    capabilities: { enableReasoning, enableWebSearch, enableGenerateImage, enableUrlContext }
+  }
 }
 
 /**
