@@ -1828,7 +1828,7 @@ const migrateConfig = {
       return state
     }
   },
-  '126': (state: RootState) => {
+  '127': (state: RootState) => {
     try {
       // 强制更新阿里云百炼提供商的模型列表为只包含 qwen-plus
       if (state.llm && state.llm.providers) {

@@ -1,7 +1,8 @@
 import '@renderer/databases'
 
 import { initializeDefaultMinApps } from '@renderer/config/minapps'
-import store, { persistor, useAppDispatch } from '@renderer/store'
+import store, { persistor, useAppDispatch, useAppSelector } from '@renderer/store'
+import { initializeMCPServers } from '@renderer/store/mcp'
 import { resetSidebarIcons } from '@renderer/store/settings'
 import React, { useEffect } from 'react'
 import { Provider } from 'react-redux'
@@ -26,12 +27,16 @@ import SettingsPage from './pages/settings/SettingsPage'
 // 初始化组件
 function AppInitializer() {
   const dispatch = useAppDispatch()
+  const mcpServers = useAppSelector((state) => state.mcp.servers)
+  
   useEffect(() => {
     // 在应用启动时初始化自定义小应用
     initializeDefaultMinApps().catch(console.error)
     // 重置侧边栏图标以确保新图标可见
     dispatch(resetSidebarIcons())
-  }, [dispatch])
+    // 初始化内置MCP服务器
+    initializeMCPServers(mcpServers, dispatch)
+  }, [dispatch, mcpServers])
 
   return null
 }
