@@ -10,15 +10,15 @@ REM 配置变量
 set CONTAINER_NAME=raven-update-server
 set IMAGE_NAME=raven-update-server
 set IMAGE_TAG=latest
-set PORT=3000
-set HOST_PORT=3000
+set PORT=8082
+set HOST_PORT=8082
 
 REM 检查是否存在 .env 文件
 if not exist ".env" (
     echo ⚠️  未找到 .env 文件，创建默认配置...
     (
-        echo PORT=3000
-        echo BASE_URL=http://localhost:3000
+        echo PORT=8082
+        echo BASE_URL=http://localhost:8082
         echo ADMIN_API_KEY=your-super-secret-admin-key-%RANDOM%
         echo LOG_LEVEL=info
         echo NODE_ENV=production

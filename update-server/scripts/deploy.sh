@@ -11,15 +11,15 @@ echo "🚀 部署 Raven 更新服务器..."
 CONTAINER_NAME="raven-update-server"
 IMAGE_NAME="raven-update-server"
 IMAGE_TAG="latest"
-PORT="3000"
-HOST_PORT="3000"
+PORT="8082"
+HOST_PORT="8082"
 
 # 检查是否存在 .env 文件
 if [ ! -f ".env" ]; then
     echo "⚠️  未找到 .env 文件，创建默认配置..."
     cat > .env << EOF
-PORT=3000
-BASE_URL=http://localhost:3000
+PORT=8082
+BASE_URL=http://localhost:8082
 ADMIN_API_KEY=your-super-secret-admin-key-$(date +%s)
 LOG_LEVEL=info
 NODE_ENV=production

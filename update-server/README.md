@@ -32,7 +32,7 @@ cp .env.example .env
 编辑 `.env` 文件：
 
 ```env
-PORT=3000
+PORT=8082
 BASE_URL=https://your-update-server.com
 ADMIN_API_KEY=your-super-secret-admin-key
 LOG_LEVEL=info
@@ -142,9 +142,9 @@ module.exports = {
     script: 'src/index.js',
     instances: 'max',
     exec_mode: 'cluster',
-    env: {
+    env:
       NODE_ENV: 'production',
-      PORT: 3000
+      PORT: 8082
     }
   }]
 };
@@ -199,7 +199,7 @@ docker build -t raven-update-server .
 docker run -d \
   --name raven-update-server \
   --restart unless-stopped \
-  -p 3000:3000 \
+  -p 8082:8082 \
   --env-file .env \
   -v "$(pwd)/data:/app/data" \
   -v "$(pwd)/releases:/app/releases" \
@@ -229,7 +229,7 @@ server {
     client_max_body_size 500M;
     
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:8082;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -238,7 +238,7 @@ server {
     
     # 静态文件缓存
     location /releases/ {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:8082;
         proxy_cache_valid 200 1y;
         add_header Cache-Control "public, immutable";
     }

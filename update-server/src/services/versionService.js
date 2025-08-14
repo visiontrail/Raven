@@ -233,7 +233,7 @@ class VersionService {
 
       const file = {
         name: fileInfo.name,
-        url: `${process.env.BASE_URL || 'http://localhost:3000'}/releases/${fileInfo.name}`,
+        url: `${process.env.BASE_URL || 'http://localhost:8082'}/releases/${fileInfo.name}`,
         size: stats.size,
         platform: fileInfo.platform || null,
         arch: fileInfo.arch || null,
