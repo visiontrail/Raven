@@ -158,6 +158,22 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
     }
   })
 
+  ipcMain.handle(IpcChannel.App_SetUseCustomUpdateServer, async (_, useCustomServer: boolean) => {
+    log.info('set use custom update server', useCustomServer)
+    if (useCustomServer !== configManager.getUseCustomUpdateServer()) {
+      appUpdater.cancelDownload()
+      configManager.setUseCustomUpdateServer(useCustomServer)
+    }
+  })
+
+  ipcMain.handle(IpcChannel.App_SetCustomUpdateServerUrl, async (_, serverUrl: string) => {
+    log.info('set custom update server url', serverUrl)
+    if (serverUrl !== configManager.getCustomUpdateServerUrl()) {
+      appUpdater.cancelDownload()
+      configManager.setCustomUpdateServerUrl(serverUrl)
+    }
+  })
+
   //only for mac
   if (isMac) {
     ipcMain.handle(IpcChannel.App_MacIsProcessTrusted, (): boolean => {

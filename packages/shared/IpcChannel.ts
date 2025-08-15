@@ -17,6 +17,8 @@ export enum IpcChannel {
   App_SetAutoUpdate = 'app:set-auto-update',
   App_SetTestPlan = 'app:set-test-plan',
   App_SetTestChannel = 'app:set-test-channel',
+  App_SetUseCustomUpdateServer = 'app:set-use-custom-update-server',
+  App_SetCustomUpdateServerUrl = 'app:set-custom-update-server-url',
   App_HandleZoomFactor = 'app:handle-zoom-factor',
   App_Select = 'app:select',
   App_HasWritePermission = 'app:has-write-permission',

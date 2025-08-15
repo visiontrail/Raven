@@ -19,7 +19,9 @@ import {
   setTopicPosition,
   setTray as _setTray,
   setTrayOnClose,
-  setWindowStyle
+  setWindowStyle,
+  setUseCustomUpdateServer as _setUseCustomUpdateServer,
+  setCustomUpdateServerUrl as _setCustomUpdateServerUrl
 } from '@renderer/store/settings'
 import { SidebarIcon, ThemeMode, TranslateLanguageVarious } from '@renderer/types'
 import { UpgradeChannel } from '@shared/config/constant'
@@ -105,6 +107,16 @@ export function useSettings() {
     setDisableHardwareAcceleration(disableHardwareAcceleration: boolean) {
       dispatch(setDisableHardwareAcceleration(disableHardwareAcceleration))
       window.api.setDisableHardwareAcceleration(disableHardwareAcceleration)
+    },
+
+    setUseCustomUpdateServer(useCustomUpdateServer: boolean) {
+      dispatch(_setUseCustomUpdateServer(useCustomUpdateServer))
+      window.api.setUseCustomUpdateServer(useCustomUpdateServer)
+    },
+
+    setCustomUpdateServerUrl(customUpdateServerUrl: string) {
+      dispatch(_setCustomUpdateServerUrl(customUpdateServerUrl))
+      window.api.setCustomUpdateServerUrl(customUpdateServerUrl)
     }
   }
 }

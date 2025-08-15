@@ -39,6 +39,8 @@ const api = {
   setTrayOnClose: (isActive: boolean) => ipcRenderer.invoke(IpcChannel.App_SetTrayOnClose, isActive),
   setTestPlan: (isActive: boolean) => ipcRenderer.invoke(IpcChannel.App_SetTestPlan, isActive),
   setTestChannel: (channel: UpgradeChannel) => ipcRenderer.invoke(IpcChannel.App_SetTestChannel, channel),
+  setUseCustomUpdateServer: (useCustomServer: boolean) => ipcRenderer.invoke(IpcChannel.App_SetUseCustomUpdateServer, useCustomServer),
+  setCustomUpdateServerUrl: (serverUrl: string) => ipcRenderer.invoke(IpcChannel.App_SetCustomUpdateServerUrl, serverUrl),
   setTheme: (theme: ThemeMode) => ipcRenderer.invoke(IpcChannel.App_SetTheme, theme),
   handleZoomFactor: (delta: number, reset: boolean = false) =>
     ipcRenderer.invoke(IpcChannel.App_HandleZoomFactor, delta, reset),
