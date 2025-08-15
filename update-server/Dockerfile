@@ -11,14 +11,15 @@ RUN apk add --no-cache \
     curl \
     bash
 
-# 复制 package.json 和 package-lock.json（如果存在）
-COPY package*.json ./
+# 复制 package.json
+COPY package.json ./
 
 # 安装 Node.js 依赖
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --omit=dev && npm cache clean --force
 
-# 复制源代码
+# 复制源代码和静态文件
 COPY src/ ./src/
+COPY public/ ./public/
 
 # 创建必要的目录
 RUN mkdir -p /app/data /app/releases /app/logs

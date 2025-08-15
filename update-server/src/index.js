@@ -32,11 +32,17 @@ app.use(express.urlencoded({ extended: true }));
 
 // 静态文件服务
 app.use('/releases', express.static(path.join(__dirname, '../releases')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // 路由
 app.use('/api/version', versionRoutes);
 app.use('/api/download', downloadRoutes);
 app.use('/api/admin', adminRoutes);
+
+// 根路径重定向到上传页面
+app.get('/', (req, res) => {
+  res.redirect('/upload.html');
+});
 
 // 健康检查
 app.get('/health', (req, res) => {
