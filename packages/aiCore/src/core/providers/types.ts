@@ -65,7 +65,7 @@ export class ProviderError extends Error {
 }
 
 // 动态ProviderId类型 - 支持运行时扩展
-export type ProviderId = keyof ExtensibleProviderSettingsMap | string
+export type ProviderId = keyof ExtensibleProviderSettingsMap & string
 
 // Provider类型注册工具
 export interface ProviderTypeRegistrar {

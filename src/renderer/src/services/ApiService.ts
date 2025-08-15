@@ -89,8 +89,6 @@ export async function fetchChatCompletion({
   }
   onChunkReceived: (chunk: Chunk) => void
   topicId?: string // 添加 topicId 参数
-  // TODO
-  // onChunkStatus: (status: 'searching' | 'processing' | 'success' | 'error') => void
 }) {
   logger.info('fetchChatCompletion called with detailed context', {
     messageCount: messages?.length || 0,
@@ -287,7 +285,6 @@ export async function fetchMessagesSummary({ messages, assistant }: { messages: 
 
   // 总结上下文总是取最后5条消息
   const contextMessages = takeRight(messages, 5)
-
   const provider = getProviderByModel(model)
 
   if (!hasApiKey(provider)) {
@@ -296,7 +293,7 @@ export async function fetchMessagesSummary({ messages, assistant }: { messages: 
 
   const AI = new AiProviderNew(model)
 
-  const topicId = messages?.find((message) => message.topicId)?.topicId || undefined
+  const topicId = messages?.find((message) => message.topicId)?.topicId || ''
 
   // LLM对多条消息的总结有问题，用单条结构化的消息表示会话内容会更好
   const structredMessages = contextMessages.map((message) => {
@@ -355,6 +352,15 @@ export async function fetchMessagesSummary({ messages, assistant }: { messages: 
     mcpTools: []
   }
   try {
+    // 从 messages 中找到有 traceId 的助手消息，用于绑定现有 trace
+    const messageWithTrace = messages.find((m) => m.role === 'assistant' && m.traceId)
+
+    if (messageWithTrace && messageWithTrace.traceId) {
+      // 导入并调用 appendTrace 来绑定现有 trace，传入summary使用的模型名
+      const { appendTrace } = await import('@renderer/services/SpanManagerService')
+      await appendTrace({ topicId, traceId: messageWithTrace.traceId, model })
+    }
+
     const { getText } = await AI.completionsForTrace(model.id, llmMessages, {
       ...middlewareConfig,
       assistant: summaryAssistant,
