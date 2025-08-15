@@ -235,22 +235,6 @@ const AboutSettings: FC = () => {
               </SettingRowTitle>
               <Switch value={useCustomUpdateServer} onChange={(v) => setUseCustomUpdateServer(v)} />
             </SettingRow>
-            {useCustomUpdateServer && (
-              <>
-                <SettingDivider />
-                <SettingRow>
-                  <SettingRowTitle>
-                    {t('settings.general.custom_update_server.url', 'Custom Update Server URL')}
-                  </SettingRowTitle>
-                  <Input
-                    value={customUpdateServerUrl}
-                    onChange={(e) => setCustomUpdateServerUrl(e.target.value)}
-                    placeholder="http://localhost:3000"
-                    style={{ width: 300 }}
-                  />
-                </SettingRow>
-              </>
-            )}
             <SettingDivider />
             <SettingRow>
               <SettingRowTitle>{t('settings.general.test_plan.title')}</SettingRowTitle>
