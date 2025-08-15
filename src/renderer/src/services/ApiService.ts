@@ -12,7 +12,7 @@ import { getStoreSetting } from '@renderer/hooks/useSettings'
 import i18n from '@renderer/i18n'
 import store from '@renderer/store'
 import { Assistant, MCPServer, MCPTool, Model, Provider } from '@renderer/types'
-import { type Chunk } from '@renderer/types/chunk'
+import { type Chunk, ChunkType } from '@renderer/types/chunk'
 import { Message } from '@renderer/types/newMessage'
 import { SdkModel } from '@renderer/types/sdk'
 import { removeSpecialCharactersForTopicName } from '@renderer/utils'
@@ -157,6 +157,7 @@ export async function fetchChatCompletion({
   //   onChunkReceived({ type: ChunkType.LLM_WEB_SEARCH_IN_PROGRESS })
   // }
   // --- Call AI Completions ---
+  onChunkReceived({ type: ChunkType.LLM_RESPONSE_CREATED })
 
   // 在 AI SDK 调用时设置正确的 OpenTelemetry 上下文
   if (topicId) {
