@@ -38,7 +38,40 @@ ADMIN_API_KEY=your-super-secret-admin-key
 LOG_LEVEL=info
 ```
 
-### 3. 启动服务器
+### 3. 查看管理员API密钥
+
+服务器运行后，有以下几种方式查看或确认管理员API密钥：
+
+#### 方式一：查看环境变量文件
+```bash
+# 查看 .env 文件中的 ADMIN_API_KEY
+cat .env | grep ADMIN_API_KEY
+```
+
+#### 方式二：通过环境变量查看（Linux/macOS）
+```bash
+# 如果通过环境变量设置
+echo $ADMIN_API_KEY
+```
+
+#### 方式三：通过PowerShell查看（Windows）
+```powershell
+# 如果通过环境变量设置
+$env:ADMIN_API_KEY
+```
+
+#### 方式四：检查服务器配置
+如果忘记了API密钥，可以：
+1. 停止服务器
+2. 编辑 `.env` 文件，设置新的 `ADMIN_API_KEY`
+3. 重新启动服务器
+
+**注意**：
+- API密钥用于访问管理功能，如上传文件、创建版本等
+- 请妥善保管API密钥，不要泄露给未授权人员
+- 建议使用强密码作为API密钥
+
+### 4. 启动服务器
 
 开发模式：
 ```bash
@@ -65,7 +98,7 @@ npm start
   - 📱 响应式设计
 
 **使用步骤**:
-1. 输入管理员API密钥（在`.env`文件中配置的`ADMIN_API_KEY`）
+1. 输入管理员API密钥（参考上面"查看管理员API密钥"部分获取）
 2. 填写版本号（如：1.0.0）
 3. 添加版本更新说明
 4. 选择或拖拽文件到上传区域
