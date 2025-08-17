@@ -1,3 +1,4 @@
+/* eslint-disable @eslint-react/naming-convention/context-name */
 import { ImageModelV2 } from '@ai-sdk/provider'
 import { LanguageModel } from 'ai'
 

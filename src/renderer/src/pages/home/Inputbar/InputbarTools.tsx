@@ -476,6 +476,7 @@ const InputbarTools = ({
     setFiles,
     setText,
     showKnowledgeIcon,
+    showMcpTools,
     showThinkingButton,
     t
   ])
