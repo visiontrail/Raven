@@ -7,7 +7,7 @@ import { TextStreamPart, ToolSet } from '@cherrystudio/ai-core'
 import { BaseTool, WebSearchResults, WebSearchSource } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
 
-import { ToolCallChunkHandler } from './handleTooCallChunk'
+import { ToolCallChunkHandler } from './handleToolCallChunk'
 
 export interface CherryStudioChunk {
   type: 'text-delta' | 'text-complete' | 'tool-call' | 'tool-result' | 'finish' | 'error'
