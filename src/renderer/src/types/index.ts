@@ -56,6 +56,7 @@ export type ReasoningEffortOption = NonNullable<OpenAI.ReasoningEffort> | 'auto'
 export type ThinkingOption = ReasoningEffortOption | 'off'
 export type ThinkingModelType =
   | 'default'
+  | 'o'
   | 'gpt5'
   | 'grok'
   | 'gemini'
@@ -404,6 +405,9 @@ export interface GeneratePainting extends PaintingParams {
   background?: string
   personGeneration?: GenerateImagesConfig['personGeneration']
   numberOfImages?: number
+  safetyTolerance?: number
+  width?: number
+  height?: number
 }
 
 export interface EditPainting extends PaintingParams {

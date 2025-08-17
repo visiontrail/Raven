@@ -28,7 +28,9 @@ import { Pluggable } from 'unified'
 
 import CodeBlock from './CodeBlock'
 import Link from './Link'
+import MarkdownSvgRenderer from './MarkdownSvgRenderer'
 import rehypeHeadingIds from './plugins/rehypeHeadingIds'
+import rehypeScalableSvg from './plugins/rehypeScalableSvg'
 import remarkDisableConstructs from './plugins/remarkDisableConstructs'
 import Table from './Table'
 
@@ -112,7 +114,7 @@ const Markdown: FC<Props> = ({ block, postProcess }) => {
   const rehypePlugins = useMemo(() => {
     const plugins: Pluggable[] = []
     if (ALLOWED_ELEMENTS.test(messageContent)) {
-      plugins.push(rehypeRaw)
+      plugins.push(rehypeRaw, rehypeScalableSvg)
     }
     plugins.push([rehypeHeadingIds, { prefix: `heading-${block.id}` }])
     if (mathEngine === 'KaTeX') {
@@ -147,7 +149,8 @@ const Markdown: FC<Props> = ({ block, postProcess }) => {
         const hasImage = props?.node?.children?.some((child: any) => child.tagName === 'img')
         if (hasImage) return <div {...props} />
         return <p {...props} />
-      }
+      },
+      svg: MarkdownSvgRenderer
     } as Partial<Components>
   }, [onSaveCodeBlock, block.id])
 
