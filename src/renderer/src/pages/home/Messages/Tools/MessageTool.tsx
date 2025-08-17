@@ -58,12 +58,7 @@ const prefix = 'builtin_'
 //   return <MessageWebSearchToolBody toolResponse={toolResponse} />
 // }
 
-const ChooseTool = (
-  toolResponse: MCPToolResponse
-): {
-  label: React.ReactNode
-  body: React.ReactNode
-} => {
+const ChooseTool = (toolResponse: MCPToolResponse): { label: React.ReactNode; body: React.ReactNode } | null => {
   let toolName = toolResponse.tool.name
   if (toolName.startsWith(prefix)) {
     toolName = toolName.slice(prefix.length)
@@ -82,24 +77,26 @@ const ChooseTool = (
         body: <MessageKnowledgeSearchToolBody toolResponse={toolResponse} />
       }
     default:
-      return {
-        label: <MessageWebSearchToolTitle toolResponse={toolResponse} />,
-        body: <MessageWebSearchToolBody toolResponse={toolResponse} />
-      }
+      return null
   }
 }
 
 export default function MessageTool({ block }: Props) {
+  // FIXME: 语义错误，这里已经不是 MCP tool 了
   const toolResponse = block.metadata?.rawMcpToolResponse
   if (!toolResponse) return null
+
+  const toolRenderer = ChooseTool(toolResponse)
+
+  if (!toolRenderer) return null
 
   return (
     <Collapse
       items={[
         {
           key: '1',
-          label: ChooseTool(toolResponse).label,
-          children: ChooseTool(toolResponse).body,
+          label: toolRenderer.label,
+          children: toolRenderer.body,
           showArrow: false,
           styles: {
             header: {
