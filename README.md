@@ -30,261 +30,188 @@
 
 <h1 align="center">
   <a href="https://github.com/CherryHQ/cherry-studio/releases">
-    <img src="https://github.com/CherryHQ/cherry-studio/blob/main/build/icon.png?raw=true" width="150" height="150" alt="banner" /><br>
+    <img src="./build/icon.png" width="120" height="120" alt="Raven Logo" /><br>
   </a>
 </h1>
 
 <p align="center">English | <a href="./docs/README.zh.md">中文</a> | <a href="https://cherry-ai.com">Official Site</a> | <a href="https://docs.cherry-ai.com/cherry-studio-wen-dang/en-us">Documents</a> | <a href="./docs/dev.md">Development</a> | <a href="https://github.com/CherryHQ/cherry-studio/issues">Feedback</a><br></p>
 
-<div align="center">
-  
-[![][deepwiki-shield]][deepwiki-link]
-[![][twitter-shield]][twitter-link]
-[![][discord-shield]][discord-link]
-[![][telegram-shield]][telegram-link]
 
-</div>
-<div align="center">
-  
-[![][github-release-shield]][github-release-link]
-[![][github-nightly-shield]][github-nightly-link]
-[![][github-contributors-shield]][github-contributors-link]
-[![][license-shield]][license-link]
-[![][commercial-shield]][commercial-link]
-[![][sponsor-shield]][sponsor-link]
 
-</div>
+# 🚀 Raven - Satellite Baseband Payload Testing Platform
 
-<div align="center">
- <a href="https://hellogithub.com/repository/1605492e1e2a4df3be07abfa4578dd37" target="_blank" style="text-decoration: none"><img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=1605492e1e2a4df3be07abfa4578dd37" alt="Featured｜HelloGitHub"  width="220" height="55" /></a>
- <a href="https://trendshift.io/repositories/11772" target="_blank" style="text-decoration: none"><img src="https://trendshift.io/api/badge/repositories/11772" alt="kangfenmao%2Fcherry-studio | Trendshift" width="220" height="55" /></a>
- <a href="https://www.producthunt.com/posts/cherry-studio?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-cherry&#0045;studio" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=496640&theme=light" alt="Cherry&#0032;Studio - AI&#0032;Chatbots&#0044;&#0032;AI&#0032;Desktop&#0032;Client | Product Hunt" width="220" height="55" /></a>
-</div>
+Raven is an AI-powered satellite baseband payload testing and development platform, built on top of Cherry Studio. It revolutionizes satellite testing workflows by integrating natural language processing, automated testing, and intelligent payload control systems.
 
-# 🍒 Cherry Studio
 
-Cherry Studio is a desktop client that supports for multiple LLM providers, available on Windows, Mac and Linux.
+# 🎯 Project Objectives
 
-👏 Join [Telegram Group](https://t.me/CherryStudioAI)｜[Discord](https://discord.gg/wez8HtpxqQ) | [QQ Group(575014769)](https://qm.qq.com/q/lo0D4qVZKi)
+## Core Goals
 
-❤️ Like Cherry Studio? Give it a star 🌟 or [Sponsor](docs/sponsor.md) to support the development!
+- **Enhance Testing Efficiency**: Improve satellite baseband payload testing and development workflows, reducing manual Linux system operations and optimizing testing processes.
+- **Reduce Communication Costs**: Minimize communication and operational complexity between development and testing teams, enabling more efficient testing and validation processes.
 
-# 🌠 Screenshot
+## Specific Targets
 
-![](https://github.com/user-attachments/assets/36dddb2c-e0fb-4a5f-9411-91447bab6e18)
-
-![](https://github.com/user-attachments/assets/f549e8a0-2385-40b4-b52b-2039e39f2930)
-
-![](https://github.com/user-attachments/assets/58e0237c-4d36-40de-b428-53051d982026)
+- **Improve Development Efficiency**: Achieve 5%+ efficiency improvement through automation tools and AI assistance, reducing manual intervention.
+- **Reduce Management Costs**: Simplify patch management, task scheduling, and test execution, reducing traditional manual operations and management resource waste by 10%+.
+- **Enhance Collaboration**: Integrate natural language understanding and Python code execution, allowing testers to focus more time on designing and orchestrating test cases while AI executes them through Python scripts, improving test accuracy and reducing execution time.
 
 # 🌟 Key Features
 
-1. **Diverse LLM Provider Support**:
+## 1. **Satellite Payload Management**
 
-- ☁️ Major LLM Cloud Services: OpenAI, Gemini, Anthropic, and more
-- 🔗 AI Web Service Integration: Claude, Peplexity, Poe, and others
-- 💻 Local Model Support with Ollama, LM Studio
+- 🛰️ **Internal Tools**: Python-based secondary encapsulation of common OAM interfaces (e.g., satellite software interfaces) for baseband payloads, supporting operator simulation of network management operations.
+- 📦 **Patch Management System**: Convenient packaging tools for developers to upload patches with automatic server backup, ensuring testers always have access to the latest code versions.
+- 🔄 **Automated Upload**: Streamlined patch upload and version management, improving efficiency by 50%.
 
-2. **AI Assistants & Conversations**:
+## 2. **AI-Powered Natural Language Control**
 
-- 📚 300+ Pre-configured AI Assistants
-- 🤖 Custom Assistant Creation
-- 💬 Multi-model Simultaneous Conversations
+- 🗣️ **Natural Language Operations**: Direct payload status queries and control operations through natural language instructions via MCP Server interfaces.
+- 🤖 **Large Language Model Integration**: Support for major LLMs including Alibaba Qwen, DeepSeek, Gemini, and more.
+- 📚 **RAG Knowledge Base**: Enhanced understanding of satellite baseband payload private domain knowledge, reducing instruction parsing errors and system operation errors.
 
-3. **Document & Data Processing**:
+## 3. **Automated Testing & Code Execution**
 
-- 📄 Support for Text, Images, Office, PDF, and more
-- ☁️ WebDAV File Management and Backup
-- 📊 Mermaid Chart Visualization
-- 💻 Code Syntax Highlighting
+- 🐍 **Python Sandbox Environment**: Secure execution environment for automated test cases with real-time feedback.
+- 🔧 **MCP Server Integration**: Comprehensive integration of payload internal tools and Python code execution sandbox environment.
+- ⚡ **Automated Test Execution**: 60% reduction in manual operation time through automated testing and natural language operations.
 
-4. **Practical Tools Integration**:
+## 4. **Enhanced Client Experience**
 
-- 🔍 Global Search Functionality
-- 📝 Topic Management System
-- 🔤 AI-powered Translation
-- 🎯 Drag-and-drop Sorting
-- 🔌 Mini Program Support
-- ⚙️ MCP(Model Context Protocol) Server
+- 💬 **AI ChatBot Client**: Based on open-source Cherry Studio, featuring simplified operations and MCP Client support for large model operations on base station external tool sets.
+- 📋 **Pre-configured Templates**: Pre-installed "Baseband Payload Testing Assistant" Prompt templates for immediate use.
+- 🎯 **Streamlined Workflow**: Optimized interface for efficient patch management and real-time test content updates.
 
-5. **Enhanced User Experience**:
+## 5. **Cross-Platform Support**
 
-- 🖥️ Cross-platform Support for Windows, Mac, and Linux
-- 📦 Ready to Use, No Environment Setup Required
-- 🎨 Light/Dark Themes and Transparent Window
-- 📝 Complete Markdown Rendering
-- 🤲 Easy Content Sharing
+- 🖥️ **Multi-Platform**: Available on Windows, Mac, and Linux
+- 📦 **Ready to Use**: No environment setup required
+- 🎨 **Modern UI**: Light/Dark themes and transparent windows
+- 🔌 **Plugin System**: Extensible architecture for custom integrations
+
+# 📊 Performance Metrics
+
+## Efficiency Improvements
+
+- **Testing Cycle**: 60% reduction in manual operation time through automated testing and natural language operations
+- **Patch Management**: 50% efficiency improvement in patch upload and version management
+- **Management Costs**: 20% reduction in management and testing-related time costs
+- **Resource Utilization**: Increased test execution capacity within the same timeframe
+
+## Value Proposition
+
+- **Development Efficiency**: 5%+ improvement through automation and AI assistance
+- **Management Cost Reduction**: 10%+ reduction in traditional manual operations
+- **Test Accuracy**: Enhanced through AI-powered execution and RAG knowledge integration
+- **Communication Optimization**: Streamlined workflows between development and testing teams
+
+# 🔧 Technical Architecture
+
+## Core Components
+
+1. **Satellite Baseband Payload Internal Tools**: Python-based interface encapsulation for OAM operations
+2. **Satellite Baseband Payload MCP Server**: Integrated payload tools with Python execution sandbox
+3. **Large Model Client**: Cherry Studio-based AI ChatBot with MCP Client support
+4. **Patch Management System**: Automated patch upload and version control
+5. **RAG Knowledge Base**: Enhanced domain-specific understanding for satellite operations
+
+## Technology Stack
+
+- **Natural Language Processing**: Integration with Qwen, DeepSeek, Gemini, and other major LLMs
+- **Python Sandbox**: Secure execution environment for test automation
+- **MCP Protocol**: Model Context Protocol for seamless AI integration
+- **RAG Technology**: Retrieval-Augmented Generation for enhanced knowledge understanding
+
+# 🚀 Getting Started
+
+## Prerequisites
+
+- Python 3.8+
+- Node.js 16+
+- Git
+
+## Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/visiontrail/Raven.git
+cd Raven
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+## Configuration
+
+1. **Configure MCP Server**: Set up satellite payload MCP server endpoints
+2. **Setup RAG Knowledge Base**: Configure domain-specific knowledge for satellite operations
+3. **Configure LLM Providers**: Add your preferred language model API keys
+4. **Setup Patch Management**: Configure patch upload and storage locations
 
 # 📝 Roadmap
 
-We're actively working on the following features and improvements:
+## Phase 1: Core Infrastructure ✅
+- [x] Satellite payload internal tools development
+- [x] MCP Server integration
+- [x] Basic natural language control
+- [x] Patch management system
 
-1. 🎯 **Core Features**
+## Phase 2: AI Enhancement 🚧
+- [ ] Advanced RAG knowledge base optimization
+- [ ] Multi-model LLM support expansion
+- [ ] Enhanced natural language understanding
+- [ ] Automated test case generation
 
-- Selection Assistant - Smart content selection enhancement
-- Deep Research - Advanced research capabilities
-- Memory System - Global context awareness
-- Document Preprocessing - Improved document handling
-- MCP Marketplace - Model Context Protocol ecosystem
+## Phase 3: Advanced Features 📋
+- [ ] Real-time payload monitoring
+- [ ] Advanced analytics and reporting
+- [ ] Multi-satellite support
+- [ ] Integration with satellite ground stations
 
-2. 🗂 **Knowledge Management**
-
-- Notes and Collections
-- Dynamic Canvas visualization
-- OCR capabilities
-- TTS (Text-to-Speech) support
-
-3. 📱 **Platform Support**
-
-- HarmonyOS Edition (PC)
-- Android App (Phase 1)
-- iOS App (Phase 1)
-- Multi-Window support
-- Window Pinning functionality
-
-4. 🔌 **Advanced Features**
-
-- Plugin System
-- ASR (Automatic Speech Recognition)
-- Assistant and Topic Interaction Refactoring
-
-Track our progress and contribute on our [project board](https://github.com/orgs/CherryHQ/projects/7).
-
-Want to influence our roadmap? Join our [GitHub Discussions](https://github.com/CherryHQ/cherry-studio/discussions) to share your ideas and feedback!
-
-# 🌈 Theme
-
-- Theme Gallery: <https://cherrycss.com>
-- Aero Theme: <https://github.com/hakadao/CherryStudio-Aero>
-- PaperMaterial Theme: <https://github.com/rainoffallingstar/CherryStudio-PaperMaterial>
-- Claude dynamic-style: <https://github.com/bjl101501/CherryStudio-Claudestyle-dynamic>
-- Maple Neon Theme: <https://github.com/BoningtonChen/CherryStudio_themes>
-
-Welcome PR for more themes
+## Phase 4: Enterprise Features 🔮
+- [ ] Team collaboration features
+- [ ] Advanced access control
+- [ ] Enterprise-grade security
+- [ ] Custom deployment options
 
 # 🤝 Contributing
 
-We welcome contributions to Cherry Studio! Here are some ways you can contribute:
+We welcome contributions to Raven! Here are some ways you can contribute:
 
-1. **Contribute Code**: Develop new features or optimize existing code.
-2. **Fix Bugs**: Submit fixes for any bugs you find.
-3. **Maintain Issues**: Help manage GitHub issues.
-4. **Product Design**: Participate in design discussions.
-5. **Write Documentation**: Improve user manuals and guides.
-6. **Community Engagement**: Join discussions and help users.
-7. **Promote Usage**: Spread the word about Cherry Studio.
-
-Refer to the [Branching Strategy](docs/branching-strategy-en.md) for contribution guidelines
+1. **Satellite Domain Expertise**: Share knowledge about satellite operations and testing
+2. **AI/ML Development**: Improve natural language processing and automation
+3. **Testing Framework**: Enhance automated testing capabilities
+4. **Documentation**: Improve user guides and technical documentation
+5. **Bug Reports**: Help identify and fix issues
+6. **Feature Requests**: Suggest new capabilities and improvements
 
 ## Getting Started
 
-1. **Fork the Repository**: Fork and clone it to your local machine.
-2. **Create a Branch**: For your changes.
-3. **Submit Changes**: Commit and push your changes.
-4. **Open a Pull Request**: Describe your changes and reasons.
+1. **Fork the Repository**: Fork and clone it to your local machine
+2. **Create a Branch**: Create a feature branch for your changes
+3. **Submit Changes**: Commit and push your changes
+4. **Open a Pull Request**: Describe your changes and their impact
 
-For more detailed guidelines, please refer to our [Contributing Guide](CONTRIBUTING.md).
-
-Thank you for your support and contributions!
-
-# 🔧 Developer Co-creation Program
-
-We are launching the Cherry Studio Developer Co-creation Program to foster a healthy and positive-feedback loop within the open-source ecosystem. We believe that great software is built collaboratively, and every merged pull request breathes new life into the project.
-
-We sincerely invite you to join our ranks of contributors and shape the future of Cherry Studio with us.
-
-## Contributor Rewards Program
-
-To give back to our core contributors and create a virtuous cycle, we have established the following long-term incentive plan.
-
-**The inaugural tracking period for this program will be Q3 2025 (July, August, September). Rewards for this cycle will be distributed on October 1st.**
-
-Within any tracking period (e.g., July 1st to September 30th for the first cycle), any developer who contributes more than **30 meaningful commits** to any of Cherry Studio's open-source projects on GitHub is eligible for the following benefits:
-
-- **Cursor Subscription Sponsorship**: Receive a **$70 USD** credit or reimbursement for your [Cursor](https://cursor.sh/) subscription, making AI your most efficient coding partner.
-- **Unlimited Model Access**: Get **unlimited** API calls for the **DeepSeek** and **Qwen** models.
-- **Cutting-Edge Tech Access**: Enjoy occasional perks, including API access to models like **Claude**, **Gemini**, and **OpenAI**, keeping you at the forefront of technology.
-
-## Growing Together & Future Plans
-
-A vibrant community is the driving force behind any sustainable open-source project. As Cherry Studio grows, so will our rewards program. We are committed to continuously aligning our benefits with the best-in-class tools and resources in the industry. This ensures our core contributors receive meaningful support, creating a positive cycle where developers, the community, and the project grow together.
-
-**Moving forward, the project will also embrace an increasingly open stance to give back to the entire open-source community.**
-
-## How to Get Started?
-
-We look forward to your first Pull Request!
-
-You can start by exploring our repositories, picking up a `good first issue`, or proposing your own enhancements. Every commit is a testament to the spirit of open source.
-
-Thank you for your interest and contributions.
-
-Let's build together.
-
-# 🏢 Enterprise Edition
-
-Building on the Community Edition, we are proud to introduce **Cherry Studio Enterprise Edition**—a privately deployable AI productivity and management platform designed for modern teams and enterprises.
-
-The Enterprise Edition addresses core challenges in team collaboration by centralizing the management of AI resources, knowledge, and data. It empowers organizations to enhance efficiency, foster innovation, and ensure compliance, all while maintaining 100% control over their data in a secure environment.
-
-## Core Advantages
-
-- **Unified Model Management**: Centrally integrate and manage various cloud-based LLMs (e.g., OpenAI, Anthropic, Google Gemini) and locally deployed private models. Employees can use them out-of-the-box without individual configuration.
-- **Enterprise-Grade Knowledge Base**: Build, manage, and share team-wide knowledge bases. Ensure knowledge is retained and consistent, enabling team members to interact with AI based on unified and accurate information.
-- **Fine-Grained Access Control**: Easily manage employee accounts and assign role-based permissions for different models, knowledge bases, and features through a unified admin backend.
-- **Fully Private Deployment**: Deploy the entire backend service on your on-premises servers or private cloud, ensuring your data remains 100% private and under your control to meet the strictest security and compliance standards.
-- **Reliable Backend Services**: Provides stable API services, enterprise-grade data backup and recovery mechanisms to ensure business continuity.
-
-## ✨ Online Demo
-
-> 🚧 **Public Beta Notice**
->
-> The Enterprise Edition is currently in its early public beta stage, and we are actively iterating and optimizing its features. We are aware that it may not be perfectly stable yet. If you encounter any issues or have valuable suggestions during your trial, we would be very grateful if you could contact us via email to provide feedback.
-
-**🔗 [Cherry Studio Enterprise](https://www.cherry-ai.com/enterprise)**
-
-## Version Comparison
-
-| Feature           | Community Edition                          | Enterprise Edition                                                                                                                      |
-| :---------------- | :----------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
-| **Open Source**   | ✅ Yes                                     | ⭕️ part. released to cust.                                                                                                              |
-| **Cost**          | Free for Personal Use / Commercial License | Buyout / Subscription Fee                                                                                                               |
-| **Admin Backend** | —                                          | ● Centralized **Model** Access<br>● **Employee** Management<br>● Shared **Knowledge Base**<br>● **Access** Control<br>● **Data** Backup |
-| **Server**        | —                                          | ✅ Dedicated Private Deployment                                                                                                         |
-
-## Get the Enterprise Edition
-
-We believe the Enterprise Edition will become your team's AI productivity engine. If you are interested in Cherry Studio Enterprise Edition and would like to learn more, request a quote, or schedule a demo, please contact us.
-
-- **For Business Inquiries & Purchasing**:
-  **📧 [bd@cherry-ai.com](mailto:bd@cherry-ai.com)**
+For detailed guidelines, please refer to our [Contributing Guide](CONTRIBUTING.md).
 
 # 🔗 Related Projects
 
-- [one-api](https://github.com/songquanpeng/one-api):LLM API management and distribution system, supporting mainstream models like OpenAI, Azure, and Anthropic. Features unified API interface, suitable for key management and secondary distribution.
+- [Cherry Studio](https://github.com/CherryHQ/cherry-studio): The base AI desktop client that Raven is built upon
+- [MCP Protocol](https://modelcontextprotocol.io/): Model Context Protocol for AI tool integration
 
-- [ublacklist](https://github.com/iorate/ublacklist):Blocks specific sites from appearing in Google search results
 
-# 🚀 Contributors
+# 📄 License
 
-<a href="https://github.com/CherryHQ/cherry-studio/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=CherryHQ/cherry-studio" />
-</a>
-<br /><br />
+This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE) file for details.
 
-# 📊 GitHub Stats
+For commercial licensing inquiries, please contact: **📧 [license@cherry-ai.com](mailto:license@cherry-ai.com)**
 
-![Stats](https://repobeats.axiom.co/api/embed/a693f2e5f773eed620f70031e974552156c7f397.svg 'Repobeats analytics image')
+---
 
-# ⭐️ Star History
-
-<a href="https://www.star-history.com/#CherryHQ/cherry-studio&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=CherryHQ/cherry-studio&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=CherryHQ/cherry-studio&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=CherryHQ/cherry-studio&type=Date" />
- </picture>
-</a>
+**Raven** - Revolutionizing satellite testing through AI-powered automation and natural language control.
 
 <!-- Links & Images -->
 

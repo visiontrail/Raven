@@ -1,4 +1,4 @@
-appId: com.kangfenmao.Raven
+appId: com.yinhe.Raven
 productName: Raven
 electronLanguages:
   - zh-CN
@@ -108,8 +108,9 @@ linux:
   mimeTypes:
     - x-scheme-handler/raven
 publish:
-  provider: generic
-  url: https://releases.cherry-ai.com
+  provider: github
+  owner: visiontrail
+  repo: Raven
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
 afterPack: scripts/after-pack.js
@@ -117,9 +118,6 @@ afterSign: scripts/notarize.js
 artifactBuildCompleted: scripts/artifact-build-completed.js
 releaseInfo:
   releaseNotes: |
-    服务商：新增 NewAPI 服务商支持
-    绘图：新增 NewAPI 绘图服务商支持
-    备份：支持 s3 兼容存储备份
-    服务商：支持多个密钥管理，支持配置自定义请求头
-    设置：支持禁用硬件加速
-    其他：性能优化和错误改进
+    基于原开源软件，新增和优化以下功能：
+      1. 打包工具和上传管理
+      2. 精简模型和固定API-KEY
