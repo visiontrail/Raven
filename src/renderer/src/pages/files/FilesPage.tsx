@@ -15,7 +15,7 @@ import { formatFileSize } from '@renderer/utils'
 import { Button, Empty, Flex, Popconfirm } from 'antd'
 import dayjs from 'dayjs'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { File as FileIcon, FileImage, FileText, FileType as FileTypeIcon, Package } from 'lucide-react'
+import { File as FileIcon, FileText, FileType as FileTypeIcon, Package } from 'lucide-react'
 import { FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
@@ -71,7 +71,6 @@ const FilesPage: FC = () => {
 
   const menuItems = [
     { key: FileTypes.DOCUMENT, label: t('files.document'), icon: <FileIcon size={16} /> },
-    { key: FileTypes.IMAGE, label: t('files.image'), icon: <FileImage size={16} /> },
     { key: FileTypes.TEXT, label: t('files.text'), icon: <FileTypeIcon size={16} /> },
     { key: FileTypes.PACKAGE, label: t('files.packages'), icon: <Package size={16} /> },
     { key: 'all', label: t('files.all'), icon: <FileText size={16} /> }
