@@ -1,16 +1,12 @@
-import reactBabel from '@vitejs/plugin-react'
 import react from '@vitejs/plugin-react-swc'
-import {CodeInspectorPlugin} from 'code-inspector-plugin'
-import {defineConfig, externalizeDepsPlugin} from 'electron-vite'
-import {resolve} from 'path'
-import {visualizer} from 'rollup-plugin-visualizer'
+import { CodeInspectorPlugin } from 'code-inspector-plugin'
+import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
+import { resolve } from 'path'
+import { visualizer } from 'rollup-plugin-visualizer'
 
-const visualizerPlugin =
-    (type: 'renderer'|'main') => {
-      return process.env[`VISUALIZER_${type.toUpperCase()}`] ?
-          [visualizer({open: true})] :
-          []
-    }
+const visualizerPlugin = (type: 'renderer' | 'main') => {
+  return process.env[`VISUALIZER_${type.toUpperCase()}`] ? [visualizer({ open: true })] : []
+}
 
 export default defineConfig({
   main: {
@@ -24,10 +20,7 @@ export default defineConfig({
     },
     build: {
       rollupOptions: {
-        external: [
-          '@libsql/client', 'bufferutil', 'utf-8-validate',
-          '@cherrystudio/mac-system-ocr'
-        ],
+        external: ['@libsql/client', 'bufferutil', 'utf-8-validate', '@cherrystudio/mac-system-ocr'],
         output: {
           // 彻底禁用代码分割 - 返回 null 强制单文件打包
           manualChunks: undefined,
@@ -37,26 +30,18 @@ export default defineConfig({
       },
       sourcemap: process.env.NODE_ENV === 'development'
     },
-    optimizeDeps: {noDiscovery: process.env.NODE_ENV === 'development'}
+    optimizeDeps: { noDiscovery: process.env.NODE_ENV === 'development' }
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
-    resolve: {alias: {'@shared': resolve('packages/shared')}},
-    build: {sourcemap: process.env.NODE_ENV === 'development'}
+    resolve: { alias: { '@shared': resolve('packages/shared') } },
+    build: { sourcemap: process.env.NODE_ENV === 'development' }
   },
   renderer: {
     plugins: [
-      process.env.NODE_ENV === 'development' ? react({
-        plugins: [[
-          '@swc/plugin-styled-components',
-          {displayName: true, fileName: false, pure: true, ssr: false}
-        ]]
-      }) :
-                                               reactBabel(),
+      react(),
       // 只在开发环境下启用 CodeInspectorPlugin
-      ...(process.env.NODE_ENV === 'development' ?
-              [CodeInspectorPlugin({bundler: 'vite'})] :
-              []),
+      ...(process.env.NODE_ENV === 'development' ? [CodeInspectorPlugin({ bundler: 'vite' })] : []),
       ...visualizerPlugin('renderer')
     ],
     resolve: {
@@ -68,20 +53,18 @@ export default defineConfig({
     optimizeDeps: {
       exclude: ['pyodide'],
       esbuildOptions: {
-        target: 'esnext'  // for dev
+        target: 'esnext' // for dev
       }
     },
-    worker: {format: 'es'},
+    worker: { format: 'es' },
     build: {
-      target: 'esnext',  // for build
+      target: 'esnext', // for build
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/renderer/index.html'),
           miniWindow: resolve(__dirname, 'src/renderer/miniWindow.html'),
-          selectionToolbar:
-              resolve(__dirname, 'src/renderer/selectionToolbar.html'),
-          selectionAction:
-              resolve(__dirname, 'src/renderer/selectionAction.html')
+          selectionToolbar: resolve(__dirname, 'src/renderer/selectionToolbar.html'),
+          selectionAction: resolve(__dirname, 'src/renderer/selectionAction.html')
         },
         output: {
           // 修复 antd createContext 问题 - 暂时禁用 antd 代码分割
@@ -93,11 +76,10 @@ export default defineConfig({
               // if (id.includes('@ant-design')) return 'ant-design'
 
               // 注释掉React分割以避免初始化顺序问题
-              // if (id.includes('react') || id.includes('react-dom')) return
-              // 'react'
+              // if (id.includes('react') || id.includes('react-dom')) return 'react'
               if (id.includes('lodash')) return 'lodash'
-                if (id.includes('monaco-editor')) return 'monaco'
-                return 'vendor'
+              if (id.includes('monaco-editor')) return 'monaco'
+              return 'vendor'
             }
             return undefined
           }

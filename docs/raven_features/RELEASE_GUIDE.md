@@ -171,59 +171,6 @@ yarn electron-builder --publish=onTagOrDraft
 ## 自动更新与配置说明
 请参考 `docs/raven_features/AUTO_UPDATE_MECHANISM.md`，此处不再赘述配置细节。
 
-## CI/CD自动化发布
-
-### GitHub Actions配置
-
-创建 `.github/workflows/release.yml`：
-
-```yaml
-name: Release
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-jobs:
-  release:
-    runs-on: ${{ matrix.os }}
-    
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'yarn'
-          
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-        
-      - name: Build and release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn build --publish=always
-```
-
-### 触发发布
-```bash
-# 创建并推送标签
-git tag v1.0.0
-git push origin v1.0.0
-
-# GitHub Actions会自动构建并发布
-```
-
-## 客户端自动更新配置
-同样参阅 `docs/raven_features/AUTO_UPDATE_MECHANISM.md` 获取最新配置说明。
-
 ## 测试自动更新
 
 ### 1. 本地测试
