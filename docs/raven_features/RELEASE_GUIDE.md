@@ -2,50 +2,26 @@
 
 ## 概述
 
-本指南详细说明如何发布Raven项目版本，包括构建命令、GitHub发布流程以及自动更新配置。
+本指南聚焦“发布操作流程”。所有与配置相关的内容（electron-builder、自动更新、构建插件策略等）已集中在 `docs/raven_features/AUTO_UPDATE_MECHANISM.md`，本指南不再重复配置细节。
 
-## 前置准备
+## 环境准备
 
-### 1. 修改项目配置
+- 凭据：准备 GitHub Token（用于发布 Releases），可放入根目录 `.env`
+- 代码签名（可选）：按需配置 Windows/macOS 的签名与公证凭据
 
-#### 更新 package.json
-```json
-{
-  "name": "your-raven-fork",
-  "productName": "YourRaven",
-  "description": "Your customized Raven application",
-  "author": "Your Name <your.email@example.com>",
-  "homepage": "https://github.com/yourusername/your-raven-fork",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/your-raven-fork.git"
-  }
-}
-```
+在项目根目录创建 `.env`：
+```bash
+# GitHub Token（必需）
+GH_TOKEN=your_github_token
 
-#### 更新 electron-builder.yml
-```yaml
-appId: com.yourcompany.yourraven
-productName: YourRaven
+# Windows/macOS 代码签名（可选）
+CSC_LINK=/absolute/path/to/certificate.p12
+CSC_KEY_PASSWORD=your_password
 
-# 更新发布配置
-publish:
-  provider: github
-  owner: yourusername
-  repo: your-raven-fork
-  # 或者使用自定义服务器
-  # provider: generic
-  # url: https://your-update-server.com
-```
-
-#### 更新常量配置 (src/shared/config/constant.ts)
-```typescript
-export enum FeedUrl {
-  PRODUCTION = 'https://your-update-server.com', // 或 GitHub releases
-  GITHUB_LATEST = 'https://github.com/yourusername/your-raven-fork/releases/latest/download',
-  PRERELEASE_LOWEST = 'https://your-update-server.com/prerelease',
-  CUSTOM_SERVER = 'http://localhost:3000'
-}
+# macOS 公证（可选）
+APPLE_ID=your_apple_id@example.com
+APPLE_ID_PASSWORD=app_specific_password
+APPLE_TEAM_ID=your_team_id
 ```
 
 ### 2. 设置GitHub仓库
@@ -57,6 +33,8 @@ export enum FeedUrl {
    - `write:packages` (发布包)
 
 #### 配置环境变量
+
+（以下任选其一配置 GH_TOKEN）
 
 **方式一：Windows PowerShell 临时设置**
 ```powershell
@@ -150,36 +128,14 @@ yarn install
 yarn dev
 ```
 
-#### 构建所有平台
+#### 本地构建
 ```bash
-# 构建所有平台
-yarn build
-
-# 或分平台构建
-yarn build:win    # Windows
-yarn build:mac    # macOS
-yarn build:linux  # Linux
+yarn build:mac         # 仅构建 macOS 产物
+# 如需 Windows/Linux，请在对应平台执行 yarn build:win / yarn build:linux
 ```
 
-#### 构建输出结果
-构建完成后，在 `dist` 目录下会生成：
-
-**Windows:**
-- `YourRaven-x.x.x-x64-setup.exe` (NSIS安装包)
-- `YourRaven-x.x.x-x64-portable.exe` (便携版)
-- `latest.yml` (更新清单)
-
-**macOS:**
-- `YourRaven-x.x.x-arm64.dmg` (Apple Silicon)
-- `YourRaven-x.x.x-x64.dmg` (Intel)
-- `YourRaven-x.x.x-arm64.zip`
-- `YourRaven-x.x.x-x64.zip`
-- `latest-mac.yml` (更新清单)
-
-**Linux:**
-- `YourRaven-x.x.x-x86_64.AppImage`
-- `yourraven_x.x.x_amd64.deb`
-- `latest-linux.yml` (更新清单)
+#### 构建产物位置
+构建完成后产物在 `dist/` 目录（具体清单由构建系统自动生成）。
 
 ### 2. 版本发布
 
@@ -195,148 +151,25 @@ npm version major   # 主要版本 (1.0.0 -> 2.0.0)
 
 #### 发布到GitHub Releases
 ```bash
-# 构建并自动发布到GitHub
-yarn build --publish=always
+# 构建并自动发布到GitHub（跳过类型检查）
+yarn build:mac:publish:no-check
 
 # 或者分步骤
-yarn build
-yarn electron-builder --publish=always
+yarn build:mac
+yarn electron-builder --mac --arm64 --x64 --publish=always
 ```
 
-#### 发布命令选项
+#### 其它命令
 ```bash
-# 仅构建，不发布
-yarn build --publish=never
+# 构建并发布到 GitHub
+yarn build:mac:publish
 
-# 构建并发布到GitHub
-yarn build --publish=always
-
-# 仅在CI环境发布
-yarn build --publish=onTagOrDraft
+# 仅在 CI 环境发布
+yarn electron-builder --publish=onTagOrDraft
 ```
 
-## GitHub自动更新配置
-
-### 1. GitHub Releases方式
-
-#### 自动发布配置
-当使用 `--publish=always` 时，electron-builder会：
-1. 自动创建GitHub Release
-2. 上传所有构建产物
-3. 生成更新清单文件
-4. 设置release为已发布状态
-
-#### 更新清单文件
-GitHub Releases会自动提供以下文件：
-- `latest.yml` (Windows更新清单)
-- `latest-mac.yml` (macOS更新清单)
-- `latest-linux.yml` (Linux更新清单)
-
-
----
-
-
-### 2. 自定义更新服务器方式
-
-#### 部署更新服务器
-```bash
-# 进入更新服务器目录
-cd update-server
-
-# 安装依赖
-npm install
-
-# 配置环境变量
-cp .env.example .env
-# 编辑 .env 文件设置数据库和管理员密钥
-
-# 启动服务器
-npm start
-```
-
-#### 上传版本到自定义服务器
-```bash
-# 使用管理员API上传新版本
-curl -X POST "https://your-update-server.com/api/version/upload" \
-  -H "Authorization: Bearer YOUR_ADMIN_KEY" \
-  -F "version=1.0.0" \
-  -F "platform=win32" \
-  -F "arch=x64" \
-  -F "file=@dist/YourRaven-1.0.0-x64-setup.exe"
-```
-
-## CI/CD自动化发布
-
-### GitHub Actions配置
-
-创建 `.github/workflows/release.yml`：
-
-```yaml
-name: Release
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-jobs:
-  release:
-    runs-on: ${{ matrix.os }}
-    
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'yarn'
-          
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-        
-      - name: Build and release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn build --publish=always
-```
-
-### 触发发布
-```bash
-# 创建并推送标签
-git tag v1.0.0
-git push origin v1.0.0
-
-# GitHub Actions会自动构建并发布
-```
-
-## 客户端自动更新配置
-
-### 1. 使用GitHub Releases
-
-确保 `src/shared/config/constant.ts` 中的配置正确：
-```typescript
-export enum FeedUrl {
-  PRODUCTION = 'https://github.com/yourusername/your-raven-fork/releases/latest/download',
-  GITHUB_LATEST = 'https://github.com/yourusername/your-raven-fork/releases/latest/download',
-  // ...
-}
-```
-
-### 2. 使用自定义服务器
-
-```typescript
-export enum FeedUrl {
-  PRODUCTION = 'https://your-update-server.com',
-  CUSTOM_SERVER = 'https://your-update-server.com',
-  // ...
-}
-```
+## 自动更新与配置说明
+请参考 `docs/raven_features/AUTO_UPDATE_MECHANISM.md`，此处不再赘述配置细节。
 
 ## 测试自动更新
 

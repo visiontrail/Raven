@@ -39,19 +39,7 @@ export default defineConfig({
   },
   renderer: {
     plugins: [
-      react({
-        plugins: [
-          [
-            '@swc/plugin-styled-components',
-            {
-              displayName: true, // 开发环境下启用组件名称
-              fileName: false, // 不在类名中包含文件名
-              pure: true, // 优化性能
-              ssr: false // 不需要服务端渲染
-            }
-          ]
-        ]
-      }),
+      react(),
       // 只在开发环境下启用 CodeInspectorPlugin
       ...(process.env.NODE_ENV === 'development' ? [CodeInspectorPlugin({ bundler: 'vite' })] : []),
       ...visualizerPlugin('renderer')

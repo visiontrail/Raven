@@ -35,14 +35,14 @@ autoUpdater.autoInstallOnAppQuit = autoInstallOnAppQuit
 
 ### 2. 更新服务器选择逻辑
 
-**配置文件**: `src/shared/config/constant.ts`
+**配置文件**: `packages/shared/config/constant.ts`
 
 **服务器地址枚举**:
 ```typescript
 export enum FeedUrl {
-  PRODUCTION = 'https://releases.cherry-ai.com',
-  GITHUB_LATEST = 'https://github.com/CherryHQ/cherry-studio/releases/latest/download',
-  PRERELEASE_LOWEST = 'https://releases.cherry-ai.com/prerelease',
+  PRODUCTION = 'https://releases.yinhe.ht',
+  GITHUB_LATEST = 'https://github.com/visiontrail/Raven/releases/latest/download',
+  PRERELEASE_LOWEST = 'https://github.com/visiontrail/Raven/releases/download/v0.0.1',
   CUSTOM_SERVER = 'http://localhost:3000'
 }
 ```
@@ -129,8 +129,9 @@ flowchart TD
 **发布配置**:
 ```yaml
 publish:
-  provider: generic
-  url: https://releases.cherry-ai.com
+  provider: github
+  owner: visiontrail
+  repo: Raven
 ```
 
 **构建产物**:
