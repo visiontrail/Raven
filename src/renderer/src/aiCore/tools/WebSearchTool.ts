@@ -1,9 +1,11 @@
+import { aiSdk, InferToolInput, InferToolOutput } from '@cherrystudio/ai-core'
 import { REFERENCE_PROMPT } from '@renderer/config/prompts'
 import WebSearchService from '@renderer/services/WebSearchService'
 import { WebSearchProvider, WebSearchProviderResponse } from '@renderer/types'
 import { ExtractResults } from '@renderer/utils/extract'
-import { InferToolInput, InferToolOutput, tool } from 'ai'
 import { z } from 'zod'
+
+const { tool } = aiSdk
 
 /**
  * 使用预提取关键词的网络搜索工具
@@ -46,16 +48,13 @@ Call this tool to execute the search. You can optionally provide additional cont
 
       if (additionalContext?.trim()) {
         // 如果大模型提供了额外上下文，使用更具体的描述
-        console.log(`🔍 AI enhanced search with: ${additionalContext}`)
         const cleanContext = additionalContext.trim()
         if (cleanContext) {
           finalQueries = [cleanContext]
-          console.log(`➕ Added additional context: ${cleanContext}`)
         }
       }
 
       const searchResults: WebSearchProviderResponse[] = []
-
       // 检查是否需要搜索
       if (finalQueries[0] === 'not_needed') {
         return {
@@ -75,12 +74,9 @@ Call this tool to execute the search. You can optionally provide additional cont
             links: extractedKeywords.links
           }
         }
-        console.log('extractResults', extractResults)
-        console.log('webSearchProvider', webSearchProvider)
         const response = await WebSearchService.processWebsearch(webSearchProvider!, extractResults, requestId)
         searchResults.push(response)
       } catch (error) {
-        console.error(`Web search failed for query "${finalQueries}":`, error)
         return {
           summary: `Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
           searchResults: [],

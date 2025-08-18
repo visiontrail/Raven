@@ -101,7 +101,7 @@ export class AiSdkToChunkAdapter {
       case 'text-end':
         this.onChunk({
           type: ChunkType.TEXT_COMPLETE,
-          text: final.text || ''
+          text: (chunk.providerMetadata?.text?.value as string) || final.text || ''
         })
         final.text = ''
         break

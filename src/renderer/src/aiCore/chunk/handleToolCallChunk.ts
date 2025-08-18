@@ -4,11 +4,10 @@
  * 提供工具调用相关的处理API，每个交互使用一个新的实例
  */
 
-import { ToolSet, TypedToolCall, TypedToolResult } from '@cherrystudio/ai-core'
+import { ProviderMetadata, ToolSet, TypedToolCall, TypedToolResult } from '@cherrystudio/ai-core'
 import { loggerService } from '@logger'
 import { BaseTool, MCPToolResponse, ToolCallResponse } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
-import { type ProviderMetadata } from 'ai'
 // import type {
 //   AnthropicSearchOutput,
 //   WebSearchPluginConfig
@@ -67,7 +66,7 @@ export class ToolCallChunkHandler {
     switch (chunk.type) {
       case 'tool-input-start': {
         // 能拿到说明是mcpTool
-        if (this.activeToolCalls.get(chunk.id)) return
+        // if (this.activeToolCalls.get(chunk.id)) return
 
         const tool: BaseTool = {
           id: chunk.id,
@@ -80,6 +79,17 @@ export class ToolCallChunkHandler {
           toolName: chunk.toolName,
           args: '',
           tool
+        })
+        const toolResponse: ToolCallResponse = {
+          id: chunk.id,
+          tool: tool,
+          arguments: {},
+          status: 'pending',
+          toolCallId: chunk.id
+        }
+        this.onChunk({
+          type: ChunkType.MCP_TOOL_PENDING,
+          responses: [toolResponse]
         })
         break
       }
@@ -99,18 +109,18 @@ export class ToolCallChunkHandler {
           logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
           return
         }
-        const toolResponse: ToolCallResponse = {
-          id: toolCall.toolCallId,
-          tool: toolCall.tool,
-          arguments: toolCall.args,
-          status: 'pending',
-          toolCallId: toolCall.toolCallId
-        }
-        logger.debug('toolResponse', toolResponse)
-        this.onChunk({
-          type: ChunkType.MCP_TOOL_PENDING,
-          responses: [toolResponse]
-        })
+        // const toolResponse: ToolCallResponse = {
+        //   id: toolCall.toolCallId,
+        //   tool: toolCall.tool,
+        //   arguments: toolCall.args,
+        //   status: 'pending',
+        //   toolCallId: toolCall.toolCallId
+        // }
+        // logger.debug('toolResponse', toolResponse)
+        // this.onChunk({
+        //   type: ChunkType.MCP_TOOL_PENDING,
+        //   responses: [toolResponse]
+        // })
         break
       }
     }
@@ -227,7 +237,7 @@ export class ToolCallChunkHandler {
 
     // 创建工具调用结果的 MCPToolResponse 格式
     const toolResponse: MCPToolResponse = {
-      id: toolCallId,
+      id: toolCallInfo.toolCallId,
       tool: toolCallInfo.tool,
       arguments: input,
       status: 'done',

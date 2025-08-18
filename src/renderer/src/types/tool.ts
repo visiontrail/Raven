@@ -44,4 +44,5 @@ export interface MCPTool extends BaseTool {
   inputSchema: MCPToolInputSchema
   outputSchema?: z.infer<typeof MCPToolOutputSchema>
   type: 'mcp'
+  isBuiltIn?: boolean
 }

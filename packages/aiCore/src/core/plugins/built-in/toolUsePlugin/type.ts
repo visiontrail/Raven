@@ -21,7 +21,7 @@ export interface PromptToolUseConfig extends BaseToolUsePluginConfig {
   // 自定义系统提示符构建函数（可选，有默认实现）
   buildSystemPrompt?: (userSystemPrompt: string, tools: ToolSet) => string
   // 自定义工具解析函数（可选，有默认实现）
-  parseToolUse?: (content: string, tools: ToolSet) => ToolUseResult[]
+  parseToolUse?: (content: string, tools: ToolSet) => { results: ToolUseResult[]; content: string }
   createSystemMessage?: (systemPrompt: string, originalParams: any, context: AiRequestContext) => string | null
 }
 

@@ -77,12 +77,15 @@ export type {
   // 生成相关类型
   GenerateTextResult,
   ImagePart,
+  InferToolInput,
+  InferToolOutput,
   InvalidToolInputError,
   LanguageModelUsage, // AI SDK 4.0 中 TokenUsage 改名为 LanguageModelUsage
   // 消息相关类型
   ModelMessage,
   // 错误类型
   NoSuchToolError,
+  ProviderMetadata,
   StreamTextResult,
   SystemModelMessage,
   TextPart,

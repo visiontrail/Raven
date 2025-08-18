@@ -198,9 +198,9 @@ function defaultBuildSystemPrompt(userSystemPrompt: string, tools: ToolSet): str
  * 默认工具解析函数（提取自 Cherry Studio）
  * 解析 XML 格式的工具调用
  */
-function defaultParseToolUse(content: string, tools: ToolSet): ToolUseResult[] {
+function defaultParseToolUse(content: string, tools: ToolSet): { results: ToolUseResult[]; content: string } {
   if (!content || !tools || Object.keys(tools).length === 0) {
-    return []
+    return { results: [], content: content }
   }
 
   // 支持两种格式：
@@ -208,7 +208,6 @@ function defaultParseToolUse(content: string, tools: ToolSet): ToolUseResult[] {
   // 2. 只有内部内容（从 TagExtractor 提取出来的）
 
   let contentToProcess = content
-
   // 如果内容不包含 <tool_use> 标签，说明是从 TagExtractor 提取的内部内容，需要包装
   if (!content.includes('<tool_use>')) {
     contentToProcess = `<tool_use>\n${content}\n</tool_use>`
@@ -222,6 +221,7 @@ function defaultParseToolUse(content: string, tools: ToolSet): ToolUseResult[] {
 
   // Find all tool use blocks
   while ((match = toolUsePattern.exec(contentToProcess)) !== null) {
+    const fullMatch = match[0]
     const toolName = match[2].trim()
     const toolArgs = match[4].trim()
 
@@ -248,8 +248,9 @@ function defaultParseToolUse(content: string, tools: ToolSet): ToolUseResult[] {
       arguments: parsedArgs,
       status: 'pending'
     })
+    contentToProcess = contentToProcess.replace(fullMatch, '')
   }
-  return results
+  return { results, content: contentToProcess }
 }
 
 export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
@@ -262,7 +263,6 @@ export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
         return params
       }
 
-      // 直接存储工具信息到 context 上，利用改进的插件引擎
       context.mcpTools = params.tools
       console.log('tools stored in context', params.tools)
 
@@ -309,7 +309,7 @@ export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
             return
           }
 
-          if (chunk.type === 'finish-step') {
+          if (chunk.type === 'text-end' || chunk.type === 'finish-step') {
             // console.log('[MCP Prompt Stream] Received step-finish, checking for tool use...')
 
             // 从 context 获取工具信息
@@ -322,7 +322,7 @@ export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
             }
 
             // 解析工具调用
-            const parsedTools = parseToolUse(textBuffer, tools)
+            const { results: parsedTools, content: parsedContent } = parseToolUse(textBuffer, tools)
             const validToolUses = parsedTools.filter((t) => t.status === 'pending')
             // console.log('parsedTools', parsedTools)
 
@@ -332,7 +332,23 @@ export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
               controller.enqueue(chunk)
               return
             }
+            if (chunk.type === 'text-end') {
+              controller.enqueue({
+                type: 'text-end',
+                id: stepId,
+                providerMetadata: {
+                  text: {
+                    value: parsedContent
+                  }
+                }
+              })
+              return
+            }
 
+            controller.enqueue({
+              ...chunk,
+              finishReason: 'tool-calls'
+            })
             // console.log('[MCP Prompt Stream] Found valid tool uses:', validToolUses.length)
 
             // 发送 step-start 事件（工具调用步骤开始）
@@ -350,8 +366,15 @@ export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
                 if (!tool || typeof tool.execute !== 'function') {
                   throw new Error(`Tool "${toolUse.toolName}" has no execute method`)
                 }
+                // 发送 tool-input-start 事件
+                controller.enqueue({
+                  type: 'tool-input-start',
+                  id: toolUse.id,
+                  toolName: toolUse.toolName
+                })
 
                 console.log(`[MCP Prompt Stream] Executing tool: ${toolUse.toolName}`, toolUse.arguments)
+                console.log('toolUse,toolUse', toolUse)
                 // 发送 tool-call 事件
                 controller.enqueue({
                   type: 'tool-call',
@@ -423,7 +446,7 @@ export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
             // 发送最终的 step-finish 事件
             controller.enqueue({
               type: 'finish-step',
-              finishReason: 'tool-calls',
+              finishReason: 'stop',
               response: chunk.response,
               usage: chunk.usage,
               providerMetadata: chunk.providerMetadata
