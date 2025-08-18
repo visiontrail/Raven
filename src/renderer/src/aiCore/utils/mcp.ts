@@ -2,8 +2,9 @@ import { aiSdk, Tool } from '@cherrystudio/ai-core'
 // import { AiSdkTool, ToolCallResult } from '@renderer/aiCore/tools/types'
 import { MCPTool, MCPToolResponse } from '@renderer/types'
 import { callMCPTool } from '@renderer/utils/mcp-tools'
-import { tool } from 'ai'
 import { JSONSchema7 } from 'json-schema'
+
+const { tool } = aiSdk
 
 // Setup tools configuration based on provided parameters
 export function setupToolsConfig(mcpTools?: MCPTool[]): Record<string, Tool> | undefined {

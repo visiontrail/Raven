@@ -123,6 +123,7 @@ export {
 export {
   getAllDynamicMappings,
   getAllProviders,
+  getAllValidProviderIds,
   getDynamicProviders,
   getProvider,
   getProviderMapping,
@@ -131,8 +132,20 @@ export {
   // 动态注册功能
   registerDynamicProvider,
   registerMultipleProviders,
-  registerProvider
+  registerProvider,
+  // Zod 验证相关
+  validateProviderIdRegistry
 } from './core/providers/registry'
+
+// ==================== Zod Schema 和验证 ====================
+export {
+  type BaseProviderId,
+  baseProviderIds,
+  type DynamicProviderId,
+  type DynamicProviderRegistration,
+  validateDynamicProviderRegistration,
+  validateProviderId
+} from './core/providers'
 
 // ==================== Provider 配置工厂 ====================
 export {

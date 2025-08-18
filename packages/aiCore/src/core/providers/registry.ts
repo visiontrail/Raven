@@ -1,17 +1,18 @@
 /**
  * AI Provider 注册表
- * 静态类型 + 动态导入模式：所有类型静态导入，所有实现动态导入
+ * - 使用 schemas 提供的验证函数
+ * - 专注于状态管理和业务逻辑
+ * - 数据驱动的 Provider 初始化
  */
 
-import { createAnthropic } from '@ai-sdk/anthropic'
-import { createAzure } from '@ai-sdk/azure'
-import { createDeepSeek } from '@ai-sdk/deepseek'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
-import { createOpenAI, type OpenAIProviderSettings } from '@ai-sdk/openai'
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
-import { createXai } from '@ai-sdk/xai'
-
-import { type ProviderConfig } from './types'
+import {
+  baseProviders,
+  type DynamicProviderRegistration,
+  type ProviderConfig,
+  type ProviderId,
+  validateDynamicProviderRegistration,
+  validateProviderId
+} from './schemas'
 
 export class AiProviderRegistry {
   private static instance: AiProviderRegistry
@@ -33,64 +34,11 @@ export class AiProviderRegistry {
 
   /**
    * 初始化所有支持的 Providers
-   * 基于 AI SDK 官方文档: https://v5.ai-sdk.dev/providers/ai-sdk-providers
+   * 使用 schemas 中的 baseProviders 数据驱动
    */
   private initializeProviders(): void {
-    const providers: ProviderConfig[] = [
-      {
-        id: 'openai',
-        name: 'OpenAI',
-        creator: createOpenAI,
-        supportsImageGeneration: true
-      },
-      {
-        id: 'openai-responses',
-        name: 'OpenAI Responses',
-        creator: (options: OpenAIProviderSettings) => {
-          return createOpenAI(options).responses
-        },
-        supportsImageGeneration: true
-      },
-      {
-        id: 'openai-compatible',
-        name: 'OpenAI Compatible',
-        creator: createOpenAICompatible,
-        supportsImageGeneration: true
-      },
-      {
-        id: 'anthropic',
-        name: 'Anthropic',
-        creator: createAnthropic,
-        supportsImageGeneration: false
-      },
-      {
-        id: 'google',
-        name: 'Google Generative AI',
-        creator: createGoogleGenerativeAI,
-        supportsImageGeneration: true
-      },
-      {
-        id: 'xai',
-        name: 'xAI (Grok)',
-        creator: createXai,
-        supportsImageGeneration: true
-      },
-      {
-        id: 'azure',
-        name: 'Azure OpenAI',
-        creator: createAzure,
-        supportsImageGeneration: true
-      },
-      {
-        id: 'deepseek',
-        name: 'DeepSeek',
-        creator: createDeepSeek,
-        supportsImageGeneration: false
-      }
-    ]
-
-    providers.forEach((config) => {
-      this.registry.set(config.id, config)
+    baseProviders.forEach((config) => {
+      this.registry.set(config.id, config as ProviderConfig)
     })
   }
 
@@ -112,16 +60,22 @@ export class AiProviderRegistry {
    * 检查 Provider 是否支持（是否已注册）
    */
   public isSupported(id: string): boolean {
-    return this.registry.has(id)
+    // 首先检查是否在注册表中
+    if (this.registry.has(id)) {
+      return true
+    }
+
+    // 然后检查是否是有效的 provider ID（可能是新的动态 provider）
+    return validateProviderId(id)
   }
 
   /**
    * 注册新的 Provider（用于扩展）
    */
   public registerProvider(config: ProviderConfig): void {
-    // 验证：必须提供 creator 或 (import + creatorFunctionName)
-    if (!config.creator && !(config.import && config.creatorFunctionName)) {
-      throw new Error('Must provide either creator function or import configuration')
+    // 使用 schemas 的验证函数
+    if (!validateProviderId(config.id)) {
+      throw new Error(`Invalid provider ID: ${config.id}`)
     }
 
     // 验证：不能同时提供两种方式
@@ -135,27 +89,24 @@ export class AiProviderRegistry {
   /**
    * 动态注册Provider并支持映射关系
    */
-  public registerDynamicProvider(
-    config: ProviderConfig & {
-      mappings?: Record<string, string>
-    }
-  ): boolean {
+  public registerDynamicProvider(config: DynamicProviderRegistration): boolean {
     try {
-      // 验证配置
-      if (!config.id || config.id.trim() === '') {
-        console.error('Provider ID cannot be empty')
+      // 使用 schemas 的验证函数
+      const validatedConfig = validateDynamicProviderRegistration(config)
+      if (!validatedConfig) {
+        console.error('Invalid dynamic provider configuration')
         return false
       }
 
       // 注册provider
-      this.registerProvider(config)
+      this.registerProvider(validatedConfig)
 
       // 记录为动态provider
-      this.dynamicProviders.add(config.id)
+      this.dynamicProviders.add(validatedConfig.id)
 
       // 添加映射关系（如果提供）
-      if (config.mappings) {
-        Object.entries(config.mappings).forEach(([key, value]) => {
+      if (validatedConfig.mappings) {
+        Object.entries(validatedConfig.mappings).forEach(([key, value]) => {
           this.dynamicMappings.set(key, value)
         })
       }
@@ -170,11 +121,7 @@ export class AiProviderRegistry {
   /**
    * 批量注册多个动态Providers
    */
-  public registerMultipleProviders(
-    configs: (ProviderConfig & {
-      mappings?: Record<string, string>
-    })[]
-  ): number {
+  public registerMultipleProviders(configs: DynamicProviderRegistration[]): number {
     let successCount = 0
     configs.forEach((config) => {
       if (this.registerDynamicProvider(config)) {
@@ -213,10 +160,28 @@ export class AiProviderRegistry {
   }
 
   /**
-   * 清理资源
+   * 获取所有有效的 Provider IDs（包括基础和动态）
+   */
+  public getAllValidProviderIds(): string[] {
+    return [...Array.from(this.registry.keys()), ...this.dynamicProviders]
+  }
+
+  /**
+   * 验证 Provider ID 是否有效
+   */
+  public validateProviderId(id: string): boolean {
+    return validateProviderId(id)
+  }
+
+  /**
+   * 清理资源 - 接管所有状态管理
    */
   public cleanup(): void {
     this.registry.clear()
+    this.dynamicProviders.clear()
+    this.dynamicMappings.clear()
+    // 重新初始化基础 providers
+    this.initializeProviders()
   }
 }
 
@@ -228,16 +193,19 @@ export const getProvider = (id: string) => aiProviderRegistry.getProvider(id)
 export const getAllProviders = () => aiProviderRegistry.getAllProviders()
 export const isProviderSupported = (id: string) => aiProviderRegistry.isSupported(id)
 export const registerProvider = (config: ProviderConfig) => aiProviderRegistry.registerProvider(config)
+export const validateProviderIdRegistry = (id: string) => aiProviderRegistry.validateProviderId(id)
+export const getAllValidProviderIds = () => aiProviderRegistry.getAllValidProviderIds()
 
 // 动态注册相关便捷函数
-export const registerDynamicProvider = (config: ProviderConfig & { mappings?: Record<string, string> }) =>
+export const registerDynamicProvider = (config: DynamicProviderRegistration) =>
   aiProviderRegistry.registerDynamicProvider(config)
-export const registerMultipleProviders = (configs: (ProviderConfig & { mappings?: Record<string, string> })[]) =>
+export const registerMultipleProviders = (configs: DynamicProviderRegistration[]) =>
   aiProviderRegistry.registerMultipleProviders(configs)
 export const getProviderMapping = (providerId: string) => aiProviderRegistry.getProviderMapping(providerId)
 export const isDynamicProvider = (providerId: string) => aiProviderRegistry.isDynamicProvider(providerId)
 export const getAllDynamicMappings = () => aiProviderRegistry.getAllDynamicMappings()
 export const getDynamicProviders = () => aiProviderRegistry.getDynamicProviders()
+export const cleanup = () => aiProviderRegistry.cleanup()
 
-// 兼容现有实现的导出
-// export const PROVIDER_REGISTRY = aiProviderRegistry.getCompatibleRegistry()
+// 导出类型
+export type { DynamicProviderRegistration, ProviderConfig, ProviderId }

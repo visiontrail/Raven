@@ -6,6 +6,15 @@ import { type OpenAIProviderSettings } from '@ai-sdk/openai'
 import { type OpenAICompatibleProviderSettings } from '@ai-sdk/openai-compatible'
 import { type XaiProviderSettings } from '@ai-sdk/xai'
 
+// 导入基于 Zod 的 ProviderId 类型
+import {
+  type BaseProviderId,
+  type DynamicProviderId,
+  type DynamicProviderRegistration,
+  type ProviderConfig,
+  type ProviderId as ZodProviderId
+} from './schemas'
+
 export interface ExtensibleProviderSettingsMap {
   // 基础的静态providers
   openai: OpenAIProviderSettings
@@ -32,24 +41,24 @@ export type ProviderSettingsMap = ExtensibleProviderSettingsMap & DynamicProvide
  */
 
 // Provider 配置接口 - 支持灵活的创建方式
-export interface ProviderConfig {
-  id: string
-  name: string
+// export interface ProviderConfig {
+//   id: string
+//   name: string
 
-  // 方式一：直接提供 creator 函数（推荐用于自定义）
-  creator?: (options: any) => any
+//   // 方式一：直接提供 creator 函数（推荐用于自定义）
+//   creator?: (options: any) => any
 
-  // 方式二：动态导入 + 函数名（用于包导入）
-  import?: () => Promise<any>
-  creatorFunctionName?: string
+//   // 方式二：动态导入 + 函数名（用于包导入）
+//   import?: () => Promise<any>
+//   creatorFunctionName?: string
 
-  // 图片生成支持
-  supportsImageGeneration?: boolean
-  imageCreator?: (options: any) => any
+//   // 图片生成支持
+//   supportsImageGeneration?: boolean
+//   imageCreator?: (options: any) => any
 
-  // 可选的验证函数
-  validateOptions?: (options: any) => boolean
-}
+//   // 可选的验证函数
+//   validateOptions?: (options: any) => boolean
+// }
 
 // 错误类型
 export class ProviderError extends Error {
@@ -64,8 +73,11 @@ export class ProviderError extends Error {
   }
 }
 
-// 动态ProviderId类型 - 支持运行时扩展
-export type ProviderId = keyof ExtensibleProviderSettingsMap | (string & {})
+// 动态ProviderId类型 - 基于 Zod Schema，支持运行时扩展和验证
+export type ProviderId = ZodProviderId
+
+// 重新导出相关类型
+export type { BaseProviderId, DynamicProviderId, DynamicProviderRegistration, ProviderConfig }
 
 // Provider类型注册工具
 export interface ProviderTypeRegistrar {
