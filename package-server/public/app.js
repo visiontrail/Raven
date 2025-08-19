@@ -477,7 +477,7 @@ async function uploadFiles(files) {
     
     const formData = new FormData();
     validFiles.forEach(file => {
-        formData.append('packages', file);
+        formData.append('file', file);
     });
     
     try {
@@ -537,7 +537,12 @@ async function showPackageDetail(packageId) {
         const response = await fetch(`${PACKAGES_API}/${packageId}`);
         if (!response.ok) throw new Error('获取包详情失败');
         
-        const pkg = await response.json();
+        const result = await response.json();
+        if (!result.success || !result.data) {
+            throw new Error(result.message || '获取包详情失败');
+        }
+        
+        const pkg = result.data;
         selectedPackageId = packageId;
         
         const detailContent = document.getElementById('packageDetailContent');
