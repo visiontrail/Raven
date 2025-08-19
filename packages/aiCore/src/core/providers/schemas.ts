@@ -173,7 +173,6 @@ export function validateProviderConfig(config: unknown): ProviderConfig | null {
   if (result.success) {
     return result.data
   }
-  console.error('Invalid provider config:', result.error.errors)
   return null
 }
 
@@ -185,7 +184,6 @@ export function validateDynamicProviderRegistration(config: unknown): DynamicPro
   if (result.success) {
     return result.data
   }
-  console.error('Invalid dynamic provider registration:', result.error.errors)
   return null
 }
 
