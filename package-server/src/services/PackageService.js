@@ -12,6 +12,7 @@ const PackageType = {
 
 class PackageService {
   constructor() {
+    console.log('创建新的PackageService实例')
     this.packages = new Map()
     this.metadataFilePath = path.join(__dirname, '../../data/package-metadata.json')
     this.loadPackageMetadata()

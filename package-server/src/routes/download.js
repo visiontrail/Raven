@@ -1,128 +1,178 @@
 const express = require('express')
 const fs = require('fs-extra')
 const archiver = require('archiver')
-const PackageService = require('../services/PackageService')
+const PackageServiceSingleton = require('../services/PackageServiceSingleton')
 
 const router = express.Router()
-const packageService = new PackageService()
+const packageService = new PackageServiceSingleton()
 
 // 根据ID下载单个包
 router.get('/:id', async (req, res) => {
   try {
-    const { id } = req.params
-    const packageInfo = await packageService.getPackageById(id)
-    
+    const packageId = req.params.id
+    const packageInfo = await packageService.getPackageById(packageId)
+
     if (!packageInfo) {
-      return res.status(404).json({
-        success: false,
-        message: '包不存在'
-      })
+      return res.status(404).json({ error: 'Package not found' })
     }
-    
+
     const filePath = packageInfo.path
-    
+
     // Check if file exists
     if (!(await fs.pathExists(filePath))) {
-      return res.status(404).json({
-        success: false,
-        message: '文件不存在'
-      })
+      return res.status(404).json({ error: 'Package file not found' })
     }
-    
-    // 设置下载头
-    res.setHeader('Content-Disposition', `attachment; filename="${packageInfo.name}-${packageInfo.version}.tgz"`)
+
+    // Set appropriate headers
+    res.setHeader('Content-Disposition', `attachment; filename="${packageInfo.name}"`)
     res.setHeader('Content-Type', 'application/gzip')
-    res.setHeader('Content-Length', packageInfo.size)
-    
-    // Stream the file to the response
+
+    // Stream the file
     const fileStream = fs.createReadStream(filePath)
     fileStream.pipe(res)
-    
+
     fileStream.on('error', (error) => {
-      console.error('Error streaming file:', error)
+      console.error('File stream error:', error)
       if (!res.headersSent) {
-        res.status(500).json({
-          success: false,
-          message: '下载失败'
-        })
+        res.status(500).json({ error: 'Failed to download package' })
       }
     })
-    
   } catch (error) {
     console.error('Download error:', error)
-    res.status(500).json({
-      success: false,
-      message: '下载失败'
-    })
+    res.status(500).json({ error: 'Failed to download package' })
   }
 })
 
-// 批量下载多个包（打包成ZIP）
+// 批量下载多个包（打包成zip）
 router.post('/batch', async (req, res) => {
   try {
     const { packageIds } = req.body
-    
+
     if (!packageIds || !Array.isArray(packageIds) || packageIds.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: '请提供要下载的包ID列表'
-      })
+      return res.status(400).json({ error: 'Package IDs are required' })
     }
-    
-    // 获取所有包信息
+
+    // Get package information for all requested IDs
     const packages = []
-    const notFound = []
-    
     for (const id of packageIds) {
       const packageInfo = await packageService.getPackageById(id)
       if (packageInfo && (await fs.pathExists(packageInfo.path))) {
         packages.push(packageInfo)
-      } else {
-        notFound.push(id)
       }
     }
-    
+
     if (packages.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: '没有找到有效的包文件'
-      })
+      return res.status(404).json({ error: 'No valid packages found' })
     }
-    
-    // 设置响应头
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-')
+
+    // Set response headers for zip download
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const zipFilename = `packages-${timestamp}.zip`
-    
+
     res.setHeader('Content-Disposition', `attachment; filename="${zipFilename}"`)
     res.setHeader('Content-Type', 'application/zip')
-    
-    // 创建ZIP压缩流
+
+    // Create zip archive
     const archive = archiver('zip', {
-      zlib: { level: 9 } // 最高压缩级别
+      zlib: { level: 9 } // Maximum compression
     })
-    
+
+    // Handle archive errors
+    archive.on('error', (error) => {
+      console.error('Archive error:', error)
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed to create archive' })
+      }
+    })
+
+    // Pipe archive to response
     archive.pipe(res)
-    
-    // 添加文件到压缩包
+
+    // Add files to archive
     for (const pkg of packages) {
-      const filename = `${pkg.name}-${pkg.version}.tgz`
-      archive.file(pkg.path, { name: filename })
+      archive.file(pkg.path, { name: pkg.name })
     }
-    
-    // 完成压缩
+
+    // Finalize the archive
     await archive.finalize()
-    
-    // 如果有未找到的包，在响应头中添加警告
-    if (notFound.length > 0) {
-      res.setHeader('X-Warning', `以下包未找到: ${notFound.join(', ')}`)
-    }
-    
   } catch (error) {
     console.error('Batch download error:', error)
-    res.status(500).json({
-      success: false,
-      message: '批量下载失败'
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to download packages' })
+    }
+  }
+})
+
+// 根据类型批量下载包
+router.get('/type/:packageType', async (req, res) => {
+  try {
+    const { packageType } = req.params
+    const { version } = req.query
+
+    // Get all packages of the specified type
+    const allPackages = await packageService.getAllPackages()
+    let filteredPackages = allPackages.filter((pkg) => pkg.packageType === packageType)
+
+    // Filter by version if specified
+    if (version) {
+      filteredPackages = filteredPackages.filter((pkg) => pkg.version === version)
+    }
+
+    if (filteredPackages.length === 0) {
+      return res.status(404).json({ error: 'No packages found for the specified criteria' })
+    }
+
+    // If only one package, download it directly
+    if (filteredPackages.length === 1) {
+      const packageInfo = filteredPackages[0]
+      const filePath = packageInfo.path
+
+      if (!(await fs.pathExists(filePath))) {
+        return res.status(404).json({ error: 'Package file not found' })
+      }
+
+      res.setHeader('Content-Disposition', `attachment; filename="${packageInfo.name}"`)
+      res.setHeader('Content-Type', 'application/gzip')
+
+      const fileStream = fs.createReadStream(filePath)
+      fileStream.pipe(res)
+
+      return
+    }
+
+    // Multiple packages - create zip archive
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const zipFilename = `${packageType}-packages-${timestamp}.zip`
+
+    res.setHeader('Content-Disposition', `attachment; filename="${zipFilename}"`)
+    res.setHeader('Content-Type', 'application/zip')
+
+    const archive = archiver('zip', {
+      zlib: { level: 9 }
     })
+
+    archive.on('error', (error) => {
+      console.error('Archive error:', error)
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed to create archive' })
+      }
+    })
+
+    archive.pipe(res)
+
+    // Add valid packages to archive
+    for (const pkg of filteredPackages) {
+      if (await fs.pathExists(pkg.path)) {
+        archive.file(pkg.path, { name: pkg.name })
+      }
+    }
+
+    await archive.finalize()
+  } catch (error) {
+    console.error('Type download error:', error)
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to download packages' })
+    }
   }
 })
 
@@ -130,21 +180,21 @@ router.post('/batch', async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
     const packages = await packageService.getPackages()
-    
+
     const stats = {
       totalDownloads: 0, // TODO: 实现下载计数
       popularPackages: packages.slice(0, 5), // 前5个包作为热门包
       downloadsByType: {}
     }
-    
+
     // 按类型统计
-    packages.forEach(pkg => {
+    packages.forEach((pkg) => {
       if (!stats.downloadsByType[pkg.type]) {
         stats.downloadsByType[pkg.type] = 0
       }
       stats.downloadsByType[pkg.type]++
     })
-    
+
     res.json({
       success: true,
       data: stats

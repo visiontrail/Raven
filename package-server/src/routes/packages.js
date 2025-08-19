@@ -1,9 +1,9 @@
 const express = require('express')
-const PackageService = require('../services/PackageService')
+const PackageServiceSingleton = require('../services/PackageServiceSingleton')
 const router = express.Router()
 
-// 创建PackageService实例
-const packageService = new PackageService()
+// 创建PackageService单例实例
+const packageService = new PackageServiceSingleton()
 
 // 获取所有包列表
 router.get('/', async (req, res) => {
