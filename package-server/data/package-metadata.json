@@ -1,18 +1,1 @@
-[
-  {
-    "id": "4f27bd22-2ef3-4a61-88d4-3583f0cc9e63",
-    "name": "GalaxySpace-Lx10-2025Aug19-1551-V1002-Patch.tgz",
-    "path": "/Users/guoliang/Desktop/workspace/code/GalaxySpace/GalaxySpaceAI/Raven/package-server/uploads/GalaxySpace-Lx10-2025Aug19-1551-V1002-Patch.tgz",
-    "size": 372,
-    "createdAt": "2025-08-19T10:33:23.485Z",
-    "packageType": "lingxi-10",
-    "version": "10",
-    "metadata": {
-      "isPatch": true,
-      "components": [],
-      "description": "",
-      "tags": [],
-      "customFields": {}
-    }
-  }
-]
+[]

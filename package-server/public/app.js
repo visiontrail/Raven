@@ -482,6 +482,7 @@ async function showPackageDetail(packageId) {
                     <table class="table table-sm">
                         <tr><td><strong>是否补丁:</strong></td><td>${pkg.metadata?.isPatch ? '是' : '否'}</td></tr>
                         <tr><td><strong>组件数量:</strong></td><td>${pkg.metadata?.components?.length || 0}</td></tr>
+                        <tr><td><strong>描述:</strong></td><td>${pkg.metadata?.description || '无描述'}</td></tr>
                     </table>
                     
                     ${pkg.metadata?.components && pkg.metadata.components.length > 0 ? `
@@ -489,6 +490,15 @@ async function showPackageDetail(packageId) {
                         <div class="d-flex flex-wrap gap-1">
                             ${pkg.metadata.components.map(comp => `
                                 <span class="badge bg-light text-dark">${comp}</span>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    ${pkg.metadata?.tags && pkg.metadata.tags.length > 0 ? `
+                        <h6 class="mt-3">标签</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            ${pkg.metadata.tags.map(tag => `
+                                <span class="badge bg-primary">${tag}</span>
                             `).join('')}
                         </div>
                     ` : ''}
@@ -501,7 +511,7 @@ async function showPackageDetail(packageId) {
         document.getElementById('deletePackageBtn').onclick = () => confirmDeletePackage(packageId, pkg.name);
         
         // 显示模态框
-        const modal = new bootstrap.Modal(document.getElementById('packageDetailModal'));
+        const modal = new window.bootstrap.Modal(document.getElementById('packageDetailModal'));
         modal.show();
         
     } catch (error) {
@@ -520,7 +530,8 @@ async function downloadPackage(packageId) {
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = 'package.tgz';
         if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename="(.+)"/);                if (filenameMatch) {
+            const filenameMatch = contentDisposition.match(/filename="(.+)"/);                
+            if (filenameMatch) {
                 filename = filenameMatch[1];
             }
         }
@@ -563,7 +574,7 @@ async function deletePackage(packageId) {
         showAlert('包删除成功', 'success');
         
         // 关闭模态框
-        const modal = bootstrap.Modal.getInstance(document.getElementById('packageDetailModal'));
+        const modal = window.bootstrap.Modal.getInstance(document.getElementById('packageDetailModal'));
         if (modal) {
             modal.hide();
         }
