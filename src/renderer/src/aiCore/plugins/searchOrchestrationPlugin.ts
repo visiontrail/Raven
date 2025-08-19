@@ -280,7 +280,7 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
         userMessages[context.requestId] = lastUserMessage
 
         // 判断是否需要各种搜索
-        const knowledgeBaseIds = assistant.knowledge_bases.map((base) => base.id)
+        const knowledgeBaseIds = assistant.knowledge_bases?.map((base) => base.id)
         const hasKnowledgeBase = !isEmpty(knowledgeBaseIds)
         const knowledgeRecognition = assistant.knowledgeRecognition || 'on'
         const globalMemoryEnabled = selectGlobalMemoryEnabled(store.getState())
