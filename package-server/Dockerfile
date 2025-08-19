@@ -24,6 +24,17 @@ RUN chown -R node:node /app && \
 # 切换到非 root 用户
 USER node
 
+# 创建启动脚本来处理挂载目录权限
+USER root
+RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
+    echo 'chown -R node:node /app/uploads /app/data' >> /app/entrypoint.sh && \
+    echo 'chmod -R 755 /app/uploads /app/data' >> /app/entrypoint.sh && \
+    echo 'su-exec node npm start' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
+
+# 安装su-exec
+RUN apk add --no-cache su-exec
+
 # 暴露端口
 EXPOSE 8083
 
@@ -32,4 +43,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:8083/health || exit 1
 
 # 启动应用
-CMD ["npm", "start"]
+CMD ["/app/entrypoint.sh"]

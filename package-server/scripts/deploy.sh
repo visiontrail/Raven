@@ -50,6 +50,14 @@ mkdir -p ./uploads
 mkdir -p ./data
 mkdir -p ./logs
 
+# 设置目录权限，确保容器内的node用户可以写入
+echo "🔐 设置目录权限..."
+chmod 755 ./uploads ./data ./logs
+# 如果以root身份运行，设置所有者为当前用户
+if [ "$(id -u)" = "0" ]; then
+    chown -R 1000:1000 ./uploads ./data ./logs
+fi
+
 # 启动容器
 echo "🐳 启动 Docker 容器: $CONTAINER_NAME"
 docker run -d \
