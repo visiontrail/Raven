@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galaxy Space 包管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --dark-color: #1e293b;
+            --light-color: #f8fafc;
+        }
+
+        body {
+            background-color: var(--light-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .btn {
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8, var(--primary-color));
+            transform: translateY(-1px);
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .package-item {
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .package-item:hover {
+            border-left-color: var(--success-color);
+            background-color: #f0f9ff;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .search-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .upload-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary-color);
+            background-color: #f0f9ff;
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--success-color);
+            background-color: #f0fdf4;
+        }
+
+        .loading {
+            display: none;
+        }
+
+        .package-type-badge {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .file-size {
+            color: var(--secondary-color);
+            font-size: 0.875rem;
+        }
+
+        .modal-content {
+            border-radius: 12px;
+            border: none;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid #e2e8f0;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .table {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table thead th {
+            background-color: #f8fafc;
+            border: none;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .pagination {
+            margin-top: 2rem;
+        }
+
+        .page-link {
+            border-radius: 6px;
+            margin: 0 2px;
+            border: none;
+            color: var(--primary-color);
+        }
+
+        .page-link:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .page-item.active .page-link {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .alert {
+            border-radius: 8px;
+            border: none;
+        }
+
+        .progress {
+            height: 8px;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding: 1rem;
+            }
+            
+            .card {
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-box-seam me-2"></i>
+                Galaxy Space 包管理系统
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showPackages()">包列表</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showUpload()">上传包</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showStats()">统计信息</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <!-- Alert Container -->
+        <div id="alertContainer"></div>
+
+        <!-- Statistics Section -->
+        <div id="statsSection" class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-box-seam fs-1 mb-2"></i>
+                        <h3 id="totalPackages" class="mb-1">0</h3>
+                        <p class="mb-0">总包数</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-hdd fs-1 mb-2"></i>
+                        <h3 id="totalSize" class="mb-1">0 MB</h3>
+                        <p class="mb-0">总大小</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-upload fs-1 mb-2"></i>
+                        <h3 id="recentUploads" class="mb-1">0</h3>
+                        <p class="mb-0">最近上传</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-graph-up fs-1 mb-2"></i>
+                        <h3 id="packageTypes" class="mb-1">0</h3>
+                        <p class="mb-0">包类型</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div id="searchSection" class="search-container">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="searchInput" class="form-label">搜索包</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="searchInput" placeholder="输入包名称、描述或标签...">
+                    </div>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="typeFilter" class="form-label">包类型</label>
+                    <select class="form-select" id="typeFilter">
+                        <option value="">所有类型</option>
+                        <option value="lingxi-10">LingXi-10</option>
+                        <option value="lingxi-07a">LingXi-07A</option>
+                        <option value="config">配置包</option>
+                        <option value="lingxi-06-thrid">LingXi-06-TRD</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="versionFilter" class="form-label">版本</label>
+                    <input type="text" class="form-control" id="versionFilter" placeholder="版本号...">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="dateFromFilter" class="form-label">开始日期</label>
+                    <input type="date" class="form-control" id="dateFromFilter">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="dateToFilter" class="form-label">结束日期</label>
+                    <input type="date" class="form-control" id="dateToFilter">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <button class="btn btn-primary me-2" onclick="searchPackages()">
+                        <i class="bi bi-search me-1"></i>搜索
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                        <i class="bi bi-x-circle me-1"></i>清除筛选
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div id="uploadSection" class="card" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-upload me-2"></i>上传包文件</h5>
+            </div>
+            <div class="card-body">
+                <div class="upload-zone" id="uploadZone">
+                    <i class="bi bi-cloud-upload fs-1 text-muted mb-3"></i>
+                    <h5>拖拽文件到此处或点击选择文件</h5>
+                    <p class="text-muted">支持 .tgz 和 .tar.gz 格式，最大 500MB</p>
+                    <input type="file" id="fileInput" multiple accept=".tgz,.tar.gz" style="display: none;">
+                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                        <i class="bi bi-folder2-open me-1"></i>选择文件
+                    </button>
+                </div>
+                <div id="uploadProgress" class="mt-3" style="display: none;">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted mt-1 d-block">上传中...</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Package List Section -->
+        <div id="packageListSection" class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>包列表</h5>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm me-2" onclick="refreshPackages()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>刷新
+                    </button>
+                    <button class="btn btn-success btn-sm" onclick="showUpload()">
+                        <i class="bi bi-plus-circle me-1"></i>上传新包
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="loadingSpinner" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                </div>
+                <div id="packageList"></div>
+                <nav id="pagination" class="d-flex justify-content-center"></nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Package Detail Modal -->
+    <div class="modal fade" id="packageDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">包详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="packageDetailContent">
+                    <!-- Package details will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" id="downloadPackageBtn">
+                        <i class="bi bi-download me-1"></i>下载
+                    </button>
+                    <button type="button" class="btn btn-danger" id="deletePackageBtn">
+                        <i class="bi bi-trash me-1"></i>删除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

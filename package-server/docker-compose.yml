@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  package-server:
+    build: .
+    container_name: galaxy-package-server
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=8083
+      - UPLOAD_DIR=/app/uploads
+      - DATA_DIR=/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - package-network
+
+networks:
+  package-network:
+    driver: bridge
+
+volumes:
+  uploads:
+  data:
