@@ -17,7 +17,9 @@ COPY . .
 RUN mkdir -p uploads data
 
 # 设置目录权限
-RUN chown -R node:node /app
+RUN chown -R node:node /app && \
+    chmod -R 755 /app && \
+    chmod -R 777 /app/uploads
 
 # 切换到非 root 用户
 USER node

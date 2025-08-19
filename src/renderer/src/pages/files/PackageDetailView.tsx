@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import { usePackages } from '../../hooks/usePackages'
-import { Package, PackageMetadata, PackageType } from '../../types/package'
+import { HTTPConfig, Package, PackageMetadata, PackageType } from '../../types/package'
 import { formatFileSize } from '../../utils'
 
 interface PackageDetailViewProps {
@@ -25,7 +25,7 @@ interface PackageDetailViewProps {
 
 const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, onPackageUpdated }) => {
   const { t } = useTranslation()
-  const { updatePackageMetadata, deletePackage, openPackageLocation, uploadToFTP } = usePackages()
+  const { updatePackageMetadata, deletePackage, openPackageLocation, uploadToFTP, uploadToHTTP } = usePackages()
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [form] = Form.useForm()
@@ -140,8 +140,32 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
 
   // Handle upload to server (HTTP)
   const handleUploadToServer = async () => {
-    // TODO: Show HTTP configuration modal
-    message.info(t('files.package.upload_server_todo'))
+    try {
+      setLoading(true)
+
+      // Default HTTP configuration for package-server
+      const defaultHttpConfig: HTTPConfig = {
+        url: 'http://172.16.9.224:8083/api/upload',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+
+      const success = await uploadToHTTP(pkg.id, defaultHttpConfig)
+      if (success) {
+        message.success(t('files.package.upload_success'))
+        console.log('Package uploaded successfully to HTTP server:', pkg.name)
+      } else {
+        message.error(t('files.package.upload_failed'))
+        console.error('Failed to upload package to HTTP server:', pkg.name)
+      }
+    } catch (error) {
+      message.error(t('files.package.upload_failed'))
+      console.error('Error uploading package to HTTP server:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Get package type color for tags
