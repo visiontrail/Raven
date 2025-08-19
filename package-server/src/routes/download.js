@@ -1,5 +1,4 @@
 const express = require('express')
-const path = require('path')
 const fs = require('fs-extra')
 const archiver = require('archiver')
 const PackageService = require('../services/PackageService')
@@ -7,25 +6,31 @@ const PackageService = require('../services/PackageService')
 const router = express.Router()
 const packageService = new PackageService()
 
-// Download single package by ID
+// 根据ID下载单个包
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params
     const packageInfo = await packageService.getPackageById(id)
     
     if (!packageInfo) {
-      return res.status(404).json({ error: 'Package not found' })
+      return res.status(404).json({
+        success: false,
+        message: '包不存在'
+      })
     }
     
     const filePath = packageInfo.path
     
     // Check if file exists
     if (!(await fs.pathExists(filePath))) {
-      return res.status(404).json({ error: 'Package file not found on disk' })
+      return res.status(404).json({
+        success: false,
+        message: '文件不存在'
+      })
     }
     
-    // Set appropriate headers for download
-    res.setHeader('Content-Disposition', `attachment; filename="${packageInfo.name}"`)
+    // 设置下载头
+    res.setHeader('Content-Disposition', `attachment; filename="${packageInfo.name}-${packageInfo.version}.tgz"`)
     res.setHeader('Content-Type', 'application/gzip')
     res.setHeader('Content-Length', packageInfo.size)
     
@@ -36,92 +41,120 @@ router.get('/:id', async (req, res) => {
     fileStream.on('error', (error) => {
       console.error('Error streaming file:', error)
       if (!res.headersSent) {
-        res.status(500).json({ error: 'Error downloading file' })
+        res.status(500).json({
+          success: false,
+          message: '下载失败'
+        })
       }
     })
     
   } catch (error) {
     console.error('Download error:', error)
-    res.status(500).json({ error: 'Failed to download package' })
+    res.status(500).json({
+      success: false,
+      message: '下载失败'
+    })
   }
 })
 
-// Download multiple packages as a ZIP archive
+// 批量下载多个包（打包成ZIP）
 router.post('/batch', async (req, res) => {
   try {
     const { packageIds } = req.body
     
     if (!packageIds || !Array.isArray(packageIds) || packageIds.length === 0) {
-      return res.status(400).json({ error: 'Package IDs array is required' })
+      return res.status(400).json({
+        success: false,
+        message: '请提供要下载的包ID列表'
+      })
     }
     
-    // Validate all packages exist
+    // 获取所有包信息
     const packages = []
+    const notFound = []
+    
     for (const id of packageIds) {
       const packageInfo = await packageService.getPackageById(id)
-      if (!packageInfo) {
-        return res.status(404).json({ error: `Package with ID ${id} not found` })
+      if (packageInfo && (await fs.pathExists(packageInfo.path))) {
+        packages.push(packageInfo)
+      } else {
+        notFound.push(id)
       }
-      
-      if (!(await fs.pathExists(packageInfo.path))) {
-        return res.status(404).json({ 
-          error: `Package file for ${packageInfo.name} not found on disk` 
-        })
-      }
-      
-      packages.push(packageInfo)
     }
     
-    // Set headers for ZIP download
-    const zipFilename = `packages-${Date.now()}.zip`
+    if (packages.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '没有找到有效的包文件'
+      })
+    }
+    
+    // 设置响应头
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-')
+    const zipFilename = `packages-${timestamp}.zip`
+    
     res.setHeader('Content-Disposition', `attachment; filename="${zipFilename}"`)
     res.setHeader('Content-Type', 'application/zip')
     
-    // Create ZIP archive
+    // 创建ZIP压缩流
     const archive = archiver('zip', {
-      zlib: { level: 9 } // Maximum compression
+      zlib: { level: 9 } // 最高压缩级别
     })
     
-    // Pipe archive to response
     archive.pipe(res)
     
-    // Add each package to the archive
-    for (const packageInfo of packages) {
-      archive.file(packageInfo.path, { name: packageInfo.name })
+    // 添加文件到压缩包
+    for (const pkg of packages) {
+      const filename = `${pkg.name}-${pkg.version}.tgz`
+      archive.file(pkg.path, { name: filename })
     }
     
-    // Finalize the archive
+    // 完成压缩
     await archive.finalize()
+    
+    // 如果有未找到的包，在响应头中添加警告
+    if (notFound.length > 0) {
+      res.setHeader('X-Warning', `以下包未找到: ${notFound.join(', ')}`)
+    }
     
   } catch (error) {
     console.error('Batch download error:', error)
-    res.status(500).json({ error: 'Failed to create batch download' })
+    res.status(500).json({
+      success: false,
+      message: '批量下载失败'
+    })
   }
 })
 
-// Get download statistics
-router.get('/stats/:id', async (req, res) => {
+// 获取下载统计
+router.get('/stats', async (req, res) => {
   try {
-    const { id } = req.params
-    const packageInfo = await packageService.getPackageById(id)
+    const packages = await packageService.getPackages()
     
-    if (!packageInfo) {
-      return res.status(404).json({ error: 'Package not found' })
+    const stats = {
+      totalDownloads: 0, // TODO: 实现下载计数
+      popularPackages: packages.slice(0, 5), // 前5个包作为热门包
+      downloadsByType: {}
     }
     
-    // For now, return basic file information
-    // In a real implementation, you might track download counts, etc.
-    res.json({
-      packageId: id,
-      name: packageInfo.name,
-      size: packageInfo.size,
-      downloadUrl: `/api/download/${id}`,
-      lastModified: packageInfo.createdAt
+    // 按类型统计
+    packages.forEach(pkg => {
+      if (!stats.downloadsByType[pkg.type]) {
+        stats.downloadsByType[pkg.type] = 0
+      }
+      stats.downloadsByType[pkg.type]++
     })
     
+    res.json({
+      success: true,
+      data: stats
+    })
   } catch (error) {
-    console.error('Error fetching download stats:', error)
-    res.status(500).json({ error: 'Failed to fetch download statistics' })
+    console.error('Download stats error:', error)
+    res.status(500).json({
+      success: false,
+      message: '获取下载统计失败'
+    })
   }
 })
 

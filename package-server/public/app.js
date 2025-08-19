@@ -510,7 +510,7 @@ async function downloadPackage(packageId) {
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = 'package.tgz';
         if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename="(.+)"/);            if (filenameMatch) {
+            const filenameMatch = contentDisposition.match(/filename="(.+)"/);                if (filenameMatch) {
                 filename = filenameMatch[1];
             }
         }

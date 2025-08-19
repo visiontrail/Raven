@@ -2,7 +2,6 @@ const express = require('express')
 const multer = require('multer')
 const path = require('path')
 const fs = require('fs-extra')
-const { v4: uuidv4 } = require('uuid')
 const PackageService = require('../services/PackageService')
 
 const router = express.Router()
