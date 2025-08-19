@@ -1,107 +1,123 @@
 // API 基础配置
-const API_BASE = '/api';
-const PACKAGES_API = `${API_BASE}/packages`;
-const UPLOAD_API = `${API_BASE}/upload`;
-const DOWNLOAD_API = `${API_BASE}/download`;
+const API_BASE = '/api'
+const PACKAGES_API = `${API_BASE}/packages`
+const UPLOAD_API = `${API_BASE}/upload`
+const DOWNLOAD_API = `${API_BASE}/download`
 
 // 全局状态
-let currentPage = 1;
-let totalPages = 1;
-let currentPackages = [];
-let selectedPackageId = null;
+let currentPage = 1
+let totalPages = 1
+let currentPackages = []
+let selectedPackageId = null
 
 // 页面初始化
 document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
-    setupEventListeners();
-});
+    initializeApp()
+    setupEventListeners()
+})
 
 // 初始化应用
 function initializeApp() {
-    loadStats();
-    loadPackages();
-    showPackages();
+    console.log('🚀 初始化应用开始')
+    
+    // 检查关键DOM元素是否存在
+    const packageListSection = document.getElementById('packageListSection')
+    const packageList = document.getElementById('packageList')
+    const searchSection = document.getElementById('searchSection')
+    const statsSection = document.getElementById('statsSection')
+    
+    console.log('📋 DOM元素检查:')
+    console.log('- packageListSection:', packageListSection ? '存在' : '不存在')
+    console.log('- packageList:', packageList ? '存在' : '不存在')
+    console.log('- searchSection:', searchSection ? '存在' : '不存在')
+    console.log('- statsSection:', statsSection ? '存在' : '不存在')
+    
+    loadStats()
+    loadPackages()
+    showPackages()
+    
+    console.log('✅ 初始化应用完成')
 }
 
 // 设置事件监听器
 function setupEventListeners() {
     // 搜索输入框事件
-    document.getElementById('searchInput').addEventListener('input', debounce(searchPackages, 300));
+    document.getElementById('searchInput').addEventListener('input', debounce(searchPackages, 300))
     
     // 筛选器事件
-    document.getElementById('typeFilter').addEventListener('change', searchPackages);
-    document.getElementById('versionFilter').addEventListener('input', debounce(searchPackages, 300));
-    document.getElementById('dateFromFilter').addEventListener('change', searchPackages);
-    document.getElementById('dateToFilter').addEventListener('change', searchPackages);
+    document.getElementById('typeFilter').addEventListener('change', searchPackages)
+    document.getElementById('versionFilter').addEventListener('input', debounce(searchPackages, 300))
+    document.getElementById('dateFromFilter').addEventListener('change', searchPackages)
+    document.getElementById('dateToFilter').addEventListener('change', searchPackages)
     
     // 文件上传事件
-    const fileInput = document.getElementById('fileInput');
-    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput')
+    const uploadZone = document.getElementById('uploadZone')
     
-    fileInput.addEventListener('change', handleFileSelect);
+    fileInput.addEventListener('change', handleFileSelect)
     
     // 拖拽上传事件
-    uploadZone.addEventListener('dragover', handleDragOver);
-    uploadZone.addEventListener('dragleave', handleDragLeave);
-    uploadZone.addEventListener('drop', handleDrop);
-    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('dragover', handleDragOver)
+    uploadZone.addEventListener('dragleave', handleDragLeave)
+    uploadZone.addEventListener('drop', handleDrop)
+    uploadZone.addEventListener('click', () => fileInput.click())
 }
 
 // 防抖函数
 function debounce(func, wait) {
-    let timeout;
+    let timeout
     return function executedFunction(...args) {
         const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+            clearTimeout(timeout)
+            func(...args)
+        }
+        clearTimeout(timeout)
+        timeout = setTimeout(later, wait)
+    }
 }
 
 // 显示提示信息
 function showAlert(message, type = 'info') {
-    const alertContainer = document.getElementById('alertContainer');
-    const alertId = 'alert-' + Date.now();
+    const alertContainer = document.getElementById('alertContainer')
+    const alertId = 'alert-' + Date.now()
     
     const alertHtml = `
         <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-    `;
+    `
     
-    alertContainer.insertAdjacentHTML('beforeend', alertHtml);
+    alertContainer.insertAdjacentHTML('beforeend', alertHtml)
     
     // 自动移除提示
     setTimeout(() => {
-        const alert = document.getElementById(alertId);
+        const alert = document.getElementById(alertId)
         if (alert) {
-            alert.remove();
+            alert.remove()
         }
-    }, 5000);
+    }, 5000)
 }
 
 // 格式化文件大小
 function formatFileSize(bytes) {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
 // 格式化日期
 function formatDate(dateString) {
-    const date = new Date(dateString);
+    const date = new Date(dateString)
     return date.toLocaleString('zh-CN', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit'
-    });
+    })
 }
 
 // 获取包类型显示名称
@@ -112,8 +128,8 @@ function getPackageTypeDisplay(type) {
         'config': '配置包',
         'lingxi-06-thrid': 'LingXi-06-TRD',
         'unknown': '未知类型'
-    };
-    return typeMap[type] || type;
+    }
+    return typeMap[type] || type
 }
 
 // 获取包类型颜色
@@ -124,8 +140,8 @@ function getPackageTypeColor(type) {
         'config': 'warning',
         'lingxi-06-thrid': 'info',
         'unknown': 'secondary'
-    };
-    return colorMap[type] || 'secondary';
+    }
+    return colorMap[type] || 'secondary'
 }
 
 // 加载统计信息
@@ -154,27 +170,45 @@ async function loadStats() {
 // 加载包列表
 async function loadPackages(page = 1) {
     try {
+        console.log('📦 loadPackages called with page:', page);
         showLoading(true);
+        
+        // 安全获取DOM元素值
+        const searchInput = document.getElementById('searchInput');
+        const typeFilter = document.getElementById('typeFilter');
+        const versionFilter = document.getElementById('versionFilter');
+        const dateFromFilter = document.getElementById('dateFromFilter');
+        const dateToFilter = document.getElementById('dateToFilter');
+        
+        console.log('🔍 表单元素检查:');
+        console.log('- searchInput:', searchInput ? '存在' : '不存在');
+        console.log('- typeFilter:', typeFilter ? '存在' : '不存在');
+        console.log('- versionFilter:', versionFilter ? '存在' : '不存在');
+        console.log('- dateFromFilter:', dateFromFilter ? '存在' : '不存在');
+        console.log('- dateToFilter:', dateToFilter ? '存在' : '不存在');
         
         const params = new URLSearchParams({
             page: page,
             limit: 10,
-            search: document.getElementById('searchInput').value || '',
-            type: document.getElementById('typeFilter').value || '',
-            version: document.getElementById('versionFilter').value || '',
-            dateFrom: document.getElementById('dateFromFilter').value || '',
-            dateTo: document.getElementById('dateToFilter').value || ''
+            search: searchInput ? searchInput.value || '' : '',
+            type: typeFilter ? typeFilter.value || '' : '',
+            version: versionFilter ? versionFilter.value || '' : '',
+            dateFrom: dateFromFilter ? dateFromFilter.value || '' : '',
+            dateTo: dateToFilter ? dateToFilter.value || '' : ''
         });
         
+        console.log('Fetching packages with params:', params.toString());
         const response = await fetch(`${PACKAGES_API}?${params}`);
         if (!response.ok) throw new Error('获取包列表失败');
         
         const result = await response.json();
+        console.log('API response:', result);
         
         if (result.success && result.data) {
             currentPackages = result.data.packages || [];
             currentPage = result.data.pagination?.currentPage || 1;
             totalPages = result.data.pagination?.totalPages || 1;
+            console.log('Set currentPackages to:', currentPackages);
         } else {
             throw new Error(result.message || '获取包列表失败');
         }
@@ -192,9 +226,18 @@ async function loadPackages(page = 1) {
 
 // 渲染包列表
 function renderPackageList() {
+    console.log('🎨 renderPackageList called with currentPackages:', currentPackages);
     const packageList = document.getElementById('packageList');
     
-    if (currentPackages.length === 0) {
+    if (!packageList) {
+        console.error('❌ packageList 元素不存在');
+        return;
+    }
+    
+    console.log('📦 当前包数量:', currentPackages ? currentPackages.length : 0);
+    
+    if (!currentPackages || currentPackages.length === 0) {
+        console.log('📭 显示空状态');
         packageList.innerHTML = `
             <div class="text-center py-5">
                 <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
@@ -205,16 +248,24 @@ function renderPackageList() {
         return;
     }
     
-    const packagesHtml = currentPackages.map(pkg => `
-        <div class="package-item card mb-3" onclick="showPackageDetail('${pkg.id}')" style="cursor: pointer;">
+    console.log('🎯 开始渲染包列表');
+    
+    const packagesHtml = currentPackages.map(pkg => {
+        // 安全地转义字符串以防止HTML注入和JavaScript错误
+        const escapedId = pkg.id.replace(/'/g, "\\'");
+        const escapedName = pkg.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const escapedPath = pkg.path.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        
+        return `
+        <div class="package-item card mb-3" onclick="showPackageDetail('${escapedId}')" style="cursor: pointer;">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-md-6">
                         <h6 class="mb-1">
                             <i class="bi bi-box-seam me-2 text-primary"></i>
-                            ${pkg.name}
+                            ${escapedName}
                         </h6>
-                        <p class="mb-1 text-muted small">${pkg.path}</p>
+                        <p class="mb-1 text-muted small">${escapedPath}</p>
                         <div class="d-flex align-items-center">
                             <span class="badge bg-${getPackageTypeColor(pkg.packageType)} package-type-badge me-2">
                                 ${getPackageTypeDisplay(pkg.packageType)}
@@ -236,13 +287,13 @@ function renderPackageList() {
                     </div>
                     <div class="col-md-3 text-end">
                         <div class="btn-group" role="group">
-                            <button class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation(); downloadPackage('${pkg.id}')">
+                            <button class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation(); downloadPackage('${escapedId}')">
                                 <i class="bi bi-download"></i>
                             </button>
-                            <button class="btn btn-outline-info btn-sm" onclick="event.stopPropagation(); showPackageDetail('${pkg.id}')">
+                            <button class="btn btn-outline-info btn-sm" onclick="event.stopPropagation(); showPackageDetail('${escapedId}')">
                                 <i class="bi bi-eye"></i>
                             </button>
-                            <button class="btn btn-outline-danger btn-sm" onclick="event.stopPropagation(); confirmDeletePackage('${pkg.id}', '${pkg.name}')">
+                            <button class="btn btn-outline-danger btn-sm" onclick="event.stopPropagation(); confirmDeletePackage('${escapedId}', '${escapedName}')">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
@@ -250,7 +301,8 @@ function renderPackageList() {
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
     
     packageList.innerHTML = packagesHtml;
 }
@@ -338,10 +390,35 @@ function refreshPackages() {
 
 // 显示包列表页面
 function showPackages() {
-    document.getElementById('packageListSection').style.display = 'block';
-    document.getElementById('uploadSection').style.display = 'none';
-    document.getElementById('searchSection').style.display = 'block';
-    document.getElementById('statsSection').style.display = 'flex';
+    console.log('📦 显示包列表页面');
+    
+    const packageListSection = document.getElementById('packageListSection');
+    const uploadSection = document.getElementById('uploadSection');
+    const searchSection = document.getElementById('searchSection');
+    const statsSection = document.getElementById('statsSection');
+    
+    if (packageListSection) {
+        packageListSection.style.display = 'block';
+        console.log('✅ packageListSection 设置为显示');
+    } else {
+        console.error('❌ packageListSection 元素不存在');
+    }
+    
+    if (uploadSection) {
+        uploadSection.style.display = 'none';
+    }
+    
+    if (searchSection) {
+        searchSection.style.display = 'block';
+        console.log('✅ searchSection 设置为显示');
+    }
+    
+    if (statsSection) {
+        statsSection.style.display = 'flex';
+        console.log('✅ statsSection 设置为显示');
+    }
+    
+    console.log('📦 包列表页面显示完成');
 }
 
 // 显示上传页面
