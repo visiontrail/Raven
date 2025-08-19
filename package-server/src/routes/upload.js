@@ -49,12 +49,20 @@ router.post('/', upload.single('file'), async (req, res) => {
 
     console.log('上传文件信息:', req.file)
 
+    // 打印原始HTTP请求信息
+    console.log('=== 服务器端接收到的HTTP请求详细信息 ===')
+    console.log('请求方法:', req.method)
+    console.log('请求URL:', req.url)
+    console.log('请求头:', JSON.stringify(req.headers, null, 2))
+    console.log('请求体字段 (req.body):', JSON.stringify(req.body, null, 2))
+    console.log('上传文件信息 (req.file):', JSON.stringify(req.file, null, 2))
+    
     // Check if complete package info was sent from client
     let finalPackageInfo
     if (req.body.packageInfo) {
       console.log('收到客户端发送的完整包信息')
       const clientPackageInfo = JSON.parse(req.body.packageInfo)
-      console.log('客户端包信息:', clientPackageInfo)
+      console.log('解析后的客户端包信息:', JSON.stringify(clientPackageInfo, null, 2))
 
       // Use client package info but update the file path to the uploaded location
       finalPackageInfo = {

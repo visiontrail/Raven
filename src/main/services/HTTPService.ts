@@ -84,18 +84,25 @@ export class HTTPService implements IHTTPService {
 
       formData.append('file', fileStream, fileName)
       // Send complete package information
-      formData.append(
-        'packageInfo',
-        JSON.stringify({
-          id: packageInfo.id,
-          name: packageInfo.name,
-          version: packageInfo.version,
-          packageType: packageInfo.packageType,
-          size: packageInfo.size,
-          createdAt: packageInfo.createdAt,
-          metadata: packageInfo.metadata
-        })
-      )
+      const packageInfoData = {
+        id: packageInfo.id,
+        name: packageInfo.name,
+        version: packageInfo.version,
+        packageType: packageInfo.packageType,
+        size: packageInfo.size,
+        createdAt: packageInfo.createdAt,
+        metadata: packageInfo.metadata
+      }
+      
+      console.log('=== HTTP上传请求详细信息 ===')
+      console.log('目标URL:', httpConfig.url)
+      console.log('请求方法:', httpConfig.method)
+      console.log('文件路径:', filePath)
+      console.log('文件名:', fileName)
+      console.log('文件大小:', totalBytes, 'bytes')
+      console.log('包信息 (packageInfo):', JSON.stringify(packageInfoData, null, 2))
+      
+      formData.append('packageInfo', JSON.stringify(packageInfoData))
 
       // Prepare request configuration
       const requestConfig: AxiosRequestConfig = {
@@ -121,7 +128,7 @@ export class HTTPService implements IHTTPService {
         requestConfig.onUploadProgress = (progressEvent) => {
           const bytesTransferred = progressEvent.loaded || 0
           const percentage = totalBytes > 0 ? Math.round((bytesTransferred / totalBytes) * 100) : 0
-          
+
           onProgress({
             bytesTransferred,
             totalBytes,
@@ -130,8 +137,18 @@ export class HTTPService implements IHTTPService {
         }
       }
 
+      console.log('请求头信息:', JSON.stringify(requestConfig.headers, null, 2))
+      console.log('=== 开始发送HTTP请求 ===')
+      
       // Make the HTTP request
       const response: AxiosResponse = await axios(requestConfig)
+      
+      console.log('=== HTTP响应信息 ===')
+      console.log('响应状态码:', response.status)
+      console.log('响应状态文本:', response.statusText)
+      console.log('响应头:', JSON.stringify(response.headers, null, 2))
+      console.log('响应数据:', JSON.stringify(response.data, null, 2))
+      console.log('=== HTTP上传完成 ===')
 
       // Check if response indicates success
       if (response.status >= 200 && response.status < 300) {
@@ -235,7 +252,7 @@ export class HTTPService implements IHTTPService {
           const credentials = Buffer.from(`${authentication.username}:${authentication.password}`).toString('base64')
           requestConfig.headers = {
             ...requestConfig.headers,
-            'Authorization': `Basic ${credentials}`
+            Authorization: `Basic ${credentials}`
           }
         }
         break
@@ -244,7 +261,7 @@ export class HTTPService implements IHTTPService {
         if (authentication.token) {
           requestConfig.headers = {
             ...requestConfig.headers,
-            'Authorization': `Bearer ${authentication.token}`
+            Authorization: `Bearer ${authentication.token}`
           }
         }
         break
@@ -253,7 +270,7 @@ export class HTTPService implements IHTTPService {
         if (authentication.token) {
           requestConfig.headers = {
             ...requestConfig.headers,
-            'Authorization': `OAuth ${authentication.token}`
+            Authorization: `OAuth ${authentication.token}`
           }
         }
         break
