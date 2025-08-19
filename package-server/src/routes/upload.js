@@ -49,20 +49,37 @@ router.post('/', upload.single('file'), async (req, res) => {
 
     console.log('上传文件信息:', req.file)
 
-    // Extract package metadata
-    console.log('开始提取包元数据...')
-    const packageInfo = await packageService.extractPackageMetadata(req.file.path)
-    console.log('提取的包信息:', packageInfo)
+    // Check if complete package info was sent from client
+    let finalPackageInfo
+    if (req.body.packageInfo) {
+      console.log('收到客户端发送的完整包信息')
+      const clientPackageInfo = JSON.parse(req.body.packageInfo)
+      console.log('客户端包信息:', clientPackageInfo)
 
-    // Merge with any additional metadata from request body
-    const metadata = {
-      ...packageInfo.metadata,
-      ...req.body
-    }
+      // Use client package info but update the file path to the uploaded location
+      finalPackageInfo = {
+        ...clientPackageInfo,
+        path: req.file.path,
+        // Update size with actual uploaded file size
+        size: req.file.size
+      }
+      console.log('使用客户端包信息，更新文件路径:', finalPackageInfo)
+    } else {
+      // Fallback: Extract package metadata from file (legacy behavior)
+      console.log('未收到客户端包信息，开始提取包元数据...')
+      const extractedPackageInfo = await packageService.extractPackageMetadata(req.file.path)
+      console.log('提取的包信息:', extractedPackageInfo)
 
-    const finalPackageInfo = {
-      ...packageInfo,
-      metadata
+      // Merge with any additional metadata from request body
+      const metadata = {
+        ...extractedPackageInfo.metadata,
+        ...req.body
+      }
+
+      finalPackageInfo = {
+        ...extractedPackageInfo,
+        metadata
+      }
     }
 
     // Add package to service

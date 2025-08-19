@@ -5,7 +5,7 @@ import * as path from 'path'
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
 import FormData from 'form-data'
 
-import { HTTPConfig, PackageMetadata } from '../../renderer/src/types/package'
+import { HTTPConfig, Package } from '../../renderer/src/types/package'
 
 /**
  * Interface for HTTP upload progress callback
@@ -15,12 +15,12 @@ export interface HTTPUploadProgress {
    * Number of bytes transferred
    */
   bytesTransferred: number
-  
+
   /**
    * Total number of bytes to transfer
    */
   totalBytes: number
-  
+
   /**
    * Progress percentage (0-100)
    */
@@ -32,16 +32,16 @@ export interface HTTPUploadProgress {
  */
 export interface IHTTPService {
   /**
-   * Upload a file to HTTP server with metadata
+   * Upload a file to HTTP server with complete package information
    * @param filePath Local file path
-   * @param metadata Package metadata
+   * @param packageInfo Complete package information
    * @param httpConfig HTTP configuration
    * @param onProgress Progress callback
    * @returns Promise<boolean> True if successful
    */
   uploadFile(
     filePath: string,
-    metadata: PackageMetadata,
+    packageInfo: Package,
     httpConfig: HTTPConfig,
     onProgress?: (progress: HTTPUploadProgress) => void
   ): Promise<boolean>
@@ -59,11 +59,11 @@ export interface IHTTPService {
  */
 export class HTTPService implements IHTTPService {
   /**
-   * Upload a file to HTTP server with metadata
+   * Upload a file to HTTP server with complete package information
    */
   async uploadFile(
     filePath: string,
-    metadata: PackageMetadata,
+    packageInfo: Package,
     httpConfig: HTTPConfig,
     onProgress?: (progress: HTTPUploadProgress) => void
   ): Promise<boolean> {
@@ -78,12 +78,24 @@ export class HTTPService implements IHTTPService {
       const totalBytes = fileStats.size
       const fileName = path.basename(filePath)
 
-      // Create form data with file and metadata
+      // Create form data with file and complete package information
       const formData = new FormData()
       const fileStream = fs.createReadStream(filePath)
-      
+
       formData.append('file', fileStream, fileName)
-      formData.append('metadata', JSON.stringify(metadata))
+      // Send complete package information
+      formData.append(
+        'packageInfo',
+        JSON.stringify({
+          id: packageInfo.id,
+          name: packageInfo.name,
+          version: packageInfo.version,
+          packageType: packageInfo.packageType,
+          size: packageInfo.size,
+          createdAt: packageInfo.createdAt,
+          metadata: packageInfo.metadata
+        })
+      )
 
       // Prepare request configuration
       const requestConfig: AxiosRequestConfig = {
@@ -96,7 +108,7 @@ export class HTTPService implements IHTTPService {
         },
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
-        timeout: 300000, // 5 minutes timeout
+        timeout: 300000 // 5 minutes timeout
       }
 
       // Add authentication if provided
@@ -159,7 +171,7 @@ export class HTTPService implements IHTTPService {
         method: 'HEAD', // Use HEAD to avoid downloading content
         url: httpConfig.url,
         headers: httpConfig.headers,
-        timeout: 10000, // 10 seconds timeout for connection test
+        timeout: 10000 // 10 seconds timeout for connection test
       }
 
       // Add authentication if provided
@@ -189,7 +201,7 @@ export class HTTPService implements IHTTPService {
             method: 'OPTIONS',
             url: httpConfig.url,
             headers: httpConfig.headers,
-            timeout: 10000,
+            timeout: 10000
           }
 
           if (httpConfig.authentication) {

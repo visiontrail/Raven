@@ -286,8 +286,8 @@ export class PackageService implements IPackageService {
 
       console.log(`Starting HTTP upload for package ${pkg.name} to ${httpConfig.url}`)
 
-      // Use HTTP service to upload the file with metadata
-      const success = await httpService.uploadFile(pkg.path, pkg.metadata, httpConfig, onProgress)
+      // Use HTTP service to upload the file with complete package information
+      const success = await httpService.uploadFile(pkg.path, pkg, httpConfig, onProgress)
 
       if (success) {
         console.log(`Successfully uploaded package ${pkg.name} to HTTP server`)

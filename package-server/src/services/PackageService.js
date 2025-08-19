@@ -27,7 +27,6 @@ class PackageService {
     try {
       // Ensure data directory exists
       await fs.ensureDir(path.dirname(this.metadataFilePath))
-      
       if (await fs.pathExists(this.metadataFilePath)) {
         console.log('📄 找到元数据文件，开始读取...')
         const data = await fs.readJSON(this.metadataFilePath)
@@ -47,7 +46,6 @@ class PackageService {
       } else {
         console.log('📄 元数据文件不存在，将创建新文件')
       }
-      
       console.log(`🎯 总共加载了 ${this.packages.size} 个包到内存中`)
       
       // 自动扫描uploads目录中的文件
