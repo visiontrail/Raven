@@ -4,10 +4,13 @@
  */
 
 import { TextStreamPart, ToolSet } from '@cherrystudio/ai-core'
+import { loggerService } from '@logger'
 import { BaseTool, WebSearchResults, WebSearchSource } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
 
 import { ToolCallChunkHandler } from './handleToolCallChunk'
+
+const logger = loggerService.withContext('AiSdkToChunkAdapter')
 
 export interface CherryStudioChunk {
   type: 'text-delta' | 'text-complete' | 'tool-call' | 'tool-result' | 'finish' | 'error'
@@ -83,6 +86,7 @@ export class AiSdkToChunkAdapter {
     chunk: TextStreamPart<any>,
     final: { text: string; reasoningContent: string; webSearchResults: any[]; reasoningId: string }
   ) {
+    logger.info(`AI SDK chunk type: ${chunk.type}`, chunk)
     switch (chunk.type) {
       // === 文本相关事件 ===
       case 'text-start':
@@ -105,12 +109,12 @@ export class AiSdkToChunkAdapter {
         final.text = ''
         break
       case 'reasoning-start':
-        if (final.reasoningId !== chunk.id) {
-          final.reasoningId = chunk.id
-          this.onChunk({
-            type: ChunkType.THINKING_START
-          })
-        }
+        // if (final.reasoningId !== chunk.id) {
+        final.reasoningId = chunk.id
+        this.onChunk({
+          type: ChunkType.THINKING_START
+        })
+        // }
         break
       case 'reasoning-delta':
         final.reasoningContent += chunk.text || ''
@@ -171,7 +175,7 @@ export class AiSdkToChunkAdapter {
       //   break
 
       case 'finish-step': {
-        const { providerMetadata } = chunk
+        const { providerMetadata, finishReason } = chunk
         // googel web search
         if (providerMetadata?.google?.groundingMetadata) {
           this.onChunk({
@@ -181,6 +185,9 @@ export class AiSdkToChunkAdapter {
               source: WebSearchSource.GEMINI
             }
           })
+        }
+        if (finishReason === 'tool-calls') {
+          this.onChunk({ type: ChunkType.LLM_RESPONSE_CREATED })
         }
         // else {
         //   this.onChunk({

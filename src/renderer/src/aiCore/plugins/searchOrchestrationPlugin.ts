@@ -247,8 +247,6 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
   const userMessages: { [requestId: string]: ModelMessage } = {}
   let currentContext: AiRequestContext | null = null
 
-  console.log('searchOrchestrationPlugin', assistant)
-
   return definePlugin({
     name: 'search-orchestration',
     enforce: 'pre', // 确保在其他插件之前执行
@@ -264,15 +262,14 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
      * 🔍 Step 1: 意图识别阶段
      */
     onRequestStart: async (context: AiRequestContext) => {
-      console.log('onRequestStart', context)
       if (context.isAnalyzing) return
-      // console.log('🧠 [SearchOrchestration] Starting intent analysis...', context.requestId)
+
+      // 没开启任何搜索则不进行意图分析
+      if (!(assistant.webSearchProviderId || assistant.knowledge_bases?.length || assistant.enableMemory)) return
 
       try {
         const messages = context.originalParams.messages
-        // console.log('🧠 [SearchOrchestration]', context.isAnalyzing)
         if (!messages || messages.length === 0) {
-          console.log('🧠 [SearchOrchestration] No messages found, skipping analysis')
           return
         }
 
@@ -283,10 +280,8 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
         userMessages[context.requestId] = lastUserMessage
 
         // 判断是否需要各种搜索
-        const knowledgeBaseIds = assistant.knowledge_bases?.map((base) => base.id)
-        // console.log('knowledgeBaseIds', knowledgeBaseIds)
+        const knowledgeBaseIds = assistant.knowledge_bases.map((base) => base.id)
         const hasKnowledgeBase = !isEmpty(knowledgeBaseIds)
-        // console.log('hasKnowledgeBase', hasKnowledgeBase)
         const knowledgeRecognition = assistant.knowledgeRecognition || 'on'
         const globalMemoryEnabled = selectGlobalMemoryEnabled(store.getState())
 
@@ -294,11 +289,6 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
         const shouldKnowledgeSearch = hasKnowledgeBase && knowledgeRecognition === 'on'
         const shouldMemorySearch = globalMemoryEnabled && assistant.enableMemory
 
-        // console.log('🧠 [SearchOrchestration] Search capabilities:', {
-        //   shouldWebSearch,
-        //   hasKnowledgeBase,
-        //   shouldMemorySearch
-        // })
         // 执行意图分析
         if (shouldWebSearch || hasKnowledgeBase) {
           const analysisResult = await analyzeSearchIntent(lastUserMessage, assistant, {

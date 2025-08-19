@@ -23,6 +23,8 @@ export const createToolCallbacks = (deps: ToolCallbacksDependencies) => {
 
   return {
     onToolCallPending: (toolResponse: MCPToolResponse) => {
+      console.log('onToolCallPending', toolResponse)
+
       if (blockManager.hasInitialPlaceholder) {
         const changes = {
           type: MessageBlockType.TOOL,

@@ -84,6 +84,7 @@ const ChooseTool = (toolResponse: MCPToolResponse): { label: React.ReactNode; bo
 export default function MessageTool({ block }: Props) {
   // FIXME: 语义错误，这里已经不是 MCP tool 了
   const toolResponse = block.metadata?.rawMcpToolResponse
+
   if (!toolResponse) return null
 
   const toolRenderer = ChooseTool(toolResponse)
