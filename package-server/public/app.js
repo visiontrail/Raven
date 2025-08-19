@@ -5,119 +5,118 @@ const UPLOAD_API = `${API_BASE}/upload`
 const DOWNLOAD_API = `${API_BASE}/download`
 
 // 全局状态
-let currentPage = 1
-let totalPages = 1
-let currentPackages = []
-let selectedPackageId = null
+let currentPage = 1;
+let totalPages = 1;
+let currentPackages = [];
 
 // 页面初始化
 document.addEventListener('DOMContentLoaded', function() {
-    initializeApp()
-    setupEventListeners()
-})
+    initializeApp();
+    setupEventListeners();
+});
 
 // 初始化应用
 function initializeApp() {
-    console.log('🚀 初始化应用开始')
+    console.log('🚀 初始化应用开始');
     
     // 检查关键DOM元素是否存在
-    const packageListSection = document.getElementById('packageListSection')
-    const packageList = document.getElementById('packageList')
-    const searchSection = document.getElementById('searchSection')
-    const statsSection = document.getElementById('statsSection')
+    const packageListSection = document.getElementById('packageListSection');
+    const packageList = document.getElementById('packageList');
+    const searchSection = document.getElementById('searchSection');
+    const statsSection = document.getElementById('statsSection');
     
-    console.log('📋 DOM元素检查:')
-    console.log('- packageListSection:', packageListSection ? '存在' : '不存在')
-    console.log('- packageList:', packageList ? '存在' : '不存在')
-    console.log('- searchSection:', searchSection ? '存在' : '不存在')
-    console.log('- statsSection:', statsSection ? '存在' : '不存在')
+    console.log('📋 DOM元素检查:');
+    console.log('- packageListSection:', packageListSection ? '存在' : '不存在');
+    console.log('- packageList:', packageList ? '存在' : '不存在');
+    console.log('- searchSection:', searchSection ? '存在' : '不存在');
+    console.log('- statsSection:', statsSection ? '存在' : '不存在');
     
-    loadStats()
-    loadPackages()
-    showPackages()
+    loadStats();
+    loadPackages();
+    showPackages();
     
-    console.log('✅ 初始化应用完成')
+    console.log('✅ 初始化应用完成');
 }
 
 // 设置事件监听器
 function setupEventListeners() {
     // 搜索输入框事件
-    document.getElementById('searchInput').addEventListener('input', debounce(searchPackages, 300))
+    document.getElementById('searchInput').addEventListener('input', debounce(searchPackages, 300));
     
     // 筛选器事件
-    document.getElementById('typeFilter').addEventListener('change', searchPackages)
-    document.getElementById('versionFilter').addEventListener('input', debounce(searchPackages, 300))
-    document.getElementById('dateFromFilter').addEventListener('change', searchPackages)
-    document.getElementById('dateToFilter').addEventListener('change', searchPackages)
+    document.getElementById('typeFilter').addEventListener('change', searchPackages);
+    document.getElementById('versionFilter').addEventListener('input', debounce(searchPackages, 300));
+    document.getElementById('tagsFilter').addEventListener('input', debounce(searchPackages, 300));
+    document.getElementById('patchFilter').addEventListener('change', searchPackages);
     
     // 文件上传事件
-    const fileInput = document.getElementById('fileInput')
-    const uploadZone = document.getElementById('uploadZone')
+    const fileInput = document.getElementById('fileInput');
+    const uploadZone = document.getElementById('uploadZone');
     
-    fileInput.addEventListener('change', handleFileSelect)
+    fileInput.addEventListener('change', handleFileSelect);
     
     // 拖拽上传事件
-    uploadZone.addEventListener('dragover', handleDragOver)
-    uploadZone.addEventListener('dragleave', handleDragLeave)
-    uploadZone.addEventListener('drop', handleDrop)
-    uploadZone.addEventListener('click', () => fileInput.click())
+    uploadZone.addEventListener('dragover', handleDragOver);
+    uploadZone.addEventListener('dragleave', handleDragLeave);
+    uploadZone.addEventListener('drop', handleDrop);
+    uploadZone.addEventListener('click', () => fileInput.click());
 }
 
 // 防抖函数
 function debounce(func, wait) {
-    let timeout
+    let timeout;
     return function executedFunction(...args) {
         const later = () => {
-            clearTimeout(timeout)
-            func(...args)
-        }
-        clearTimeout(timeout)
-        timeout = setTimeout(later, wait)
-    }
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
 // 显示提示信息
 function showAlert(message, type = 'info') {
-    const alertContainer = document.getElementById('alertContainer')
-    const alertId = 'alert-' + Date.now()
+    const alertContainer = document.getElementById('alertContainer');
+    const alertId = 'alert-' + Date.now();
     
     const alertHtml = `
         <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-    `
+    `;
     
-    alertContainer.insertAdjacentHTML('beforeend', alertHtml)
+    alertContainer.insertAdjacentHTML('beforeend', alertHtml);
     
     // 自动移除提示
     setTimeout(() => {
-        const alert = document.getElementById(alertId)
+        const alert = document.getElementById(alertId);
         if (alert) {
-            alert.remove()
+            alert.remove();
         }
-    }, 5000)
+    }, 5000);
 }
 
 // 格式化文件大小
 function formatFileSize(bytes) {
-    if (bytes === 0) return '0 B'
-    const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 // 格式化日期
 function formatDate(dateString) {
-    const date = new Date(dateString)
+    const date = new Date(dateString);
     return date.toLocaleString('zh-CN', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit'
-    })
+    });
 }
 
 // 获取包类型显示名称
@@ -128,8 +127,8 @@ function getPackageTypeDisplay(type) {
         'config': '配置包',
         'lingxi-06-thrid': 'LingXi-06-TRD',
         'unknown': '未知类型'
-    }
-    return typeMap[type] || type
+    };
+    return typeMap[type] || type;
 }
 
 // 获取包类型颜色
@@ -140,8 +139,8 @@ function getPackageTypeColor(type) {
         'config': 'warning',
         'lingxi-06-thrid': 'info',
         'unknown': 'secondary'
-    }
-    return colorMap[type] || 'secondary'
+    };
+    return colorMap[type] || 'secondary';
 }
 
 // 加载统计信息
@@ -377,8 +376,8 @@ function clearFilters() {
     document.getElementById('searchInput').value = '';
     document.getElementById('typeFilter').value = '';
     document.getElementById('versionFilter').value = '';
-    document.getElementById('dateFromFilter').value = '';
-    document.getElementById('dateToFilter').value = '';
+    document.getElementById('tagsFilter').value = '';
+    document.getElementById('patchFilter').value = '';
     searchPackages();
 }
 
