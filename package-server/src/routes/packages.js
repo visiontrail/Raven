@@ -8,6 +8,8 @@ const packageService = new PackageService()
 // 获取所有包列表
 router.get('/', async (req, res) => {
   try {
+    console.log('GET /api/packages - 请求参数:', req.query)
+    
     const { 
       page = 1, 
       limit = 10, 
@@ -18,6 +20,7 @@ router.get('/', async (req, res) => {
     } = req.query
 
     let packages = await packageService.getAllPackages()
+    console.log('获取到的包数量:', packages.length)
 
     // 搜索过滤
     if (search) {
@@ -131,7 +134,9 @@ router.delete('/:id', async (req, res) => {
 // 获取统计信息
 router.get('/stats/overview', async (req, res) => {
   try {
+    console.log('GET /api/packages/stats/overview - 请求统计信息')
     const packages = await packageService.getAllPackages()
+    console.log('统计信息 - 包数量:', packages.length)
     
     const stats = {
       totalPackages: packages.length,

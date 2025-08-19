@@ -44,7 +44,11 @@ const upload = multer({
 // Upload single package
 router.post('/', upload.single('file'), async (req, res) => {
   try {
+    console.log('POST /api/upload - 收到上传请求')
+    console.log('上传文件信息:', req.file)
+    
     if (!req.file) {
+      console.log('错误: 没有文件上传')
       return res.status(400).json({ error: 'No file uploaded' })
     }
     

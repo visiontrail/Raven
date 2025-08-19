@@ -131,15 +131,20 @@ function getPackageTypeColor(type) {
 // 加载统计信息
 async function loadStats() {
     try {
-        const response = await fetch(`${PACKAGES_API}/stats`);
+        const response = await fetch(`${PACKAGES_API}/stats/overview`);
         if (!response.ok) throw new Error('获取统计信息失败');
         
-        const stats = await response.json();
+        const result = await response.json();
         
-        document.getElementById('totalPackages').textContent = stats.totalPackages || 0;
-        document.getElementById('totalSize').textContent = formatFileSize(stats.totalSize || 0);
-        document.getElementById('recentUploads').textContent = stats.recentUploads || 0;
-        document.getElementById('packageTypes').textContent = stats.packageTypes || 0;
+        if (result.success && result.data) {
+            const stats = result.data;
+            document.getElementById('totalPackages').textContent = stats.totalPackages || 0;
+            document.getElementById('totalSize').textContent = formatFileSize(stats.totalSize || 0);
+            document.getElementById('recentUploads').textContent = stats.recentPackages ? stats.recentPackages.length : 0;
+            document.getElementById('packageTypes').textContent = Object.keys(stats.packagesByType || {}).length;
+        } else {
+            throw new Error(result.message || '获取统计信息失败');
+        }
     } catch (error) {
         console.error('加载统计信息失败:', error);
         showAlert('加载统计信息失败', 'warning');
@@ -164,10 +169,15 @@ async function loadPackages(page = 1) {
         const response = await fetch(`${PACKAGES_API}?${params}`);
         if (!response.ok) throw new Error('获取包列表失败');
         
-        const data = await response.json();
-        currentPackages = data.packages || [];
-        currentPage = data.currentPage || 1;
-        totalPages = data.totalPages || 1;
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            currentPackages = result.data.packages || [];
+            currentPage = result.data.pagination?.currentPage || 1;
+            totalPages = result.data.pagination?.totalPages || 1;
+        } else {
+            throw new Error(result.message || '获取包列表失败');
+        }
         
         renderPackageList();
         renderPagination();

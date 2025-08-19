@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "id": "423eb24b-f5ae-4459-b417-5c6599bcedf7",
+    "name": "test-package.tgz",
+    "path": "/Users/guoliang/Desktop/workspace/code/GalaxySpace/GalaxySpaceAI/Raven/package-server/uploads/test-package.tgz",
+    "size": 13,
+    "createdAt": "2025-08-19T09:03:55.662Z",
+    "packageType": "lingxi-10",
+    "version": "0.0.0",
+    "metadata": {
+      "isPatch": false,
+      "components": [],
+      "description": "",
+      "tags": [],
+      "customFields": {}
+    }
+  }
+]

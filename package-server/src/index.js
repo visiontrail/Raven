@@ -22,6 +22,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 请求日志中间件
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - 收到请求`);
+  next();
+});
+
 // 静态文件服务
 app.use(express.static(path.join(__dirname, '../public')));
 
