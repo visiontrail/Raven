@@ -17,14 +17,14 @@ class PackageService {
     this.metadataFilePath = path.join(__dirname, '../../data/package-metadata.json')
     this.uploadsDir = path.join(__dirname, '../../uploads')
     console.log(`📁 元数据文件路径: ${this.metadataFilePath}`)
-    console.log(`📁 上传目录路径: ${this.uploadsDir}`)
+    console.log('📁 上传目录路径:', this.uploadsDir)
     this.loadPackageMetadata()
   }
 
   // Load package metadata from file
   async loadPackageMetadata() {
+    console.log('📖 开始加载包元数据...')
     try {
-      console.log('📖 开始加载包元数据...')
       // Ensure data directory exists
       await fs.ensureDir(path.dirname(this.metadataFilePath))
       
@@ -179,9 +179,7 @@ class PackageService {
     try {
       console.log(`📦 尝试添加包: ${packageInfo.name}`)
       // Check if package already exists by path
-      const existingPackage = Array.from(this.packages.values()).find(
-        (pkg) => pkg.path === packageInfo.path
-      )
+      const existingPackage = Array.from(this.packages.values()).find((pkg) => pkg.path === packageInfo.path)
 
       if (existingPackage) {
         // Update existing package
@@ -201,7 +199,7 @@ class PackageService {
       console.log(`✅ 成功添加包: ${packageInfo.name}`)
       return true
     } catch (error) {
-      console.error(`❌ 添加包时出错:`, error)
+      console.error('❌ 添加包时出错:', error)
       return false
     }
   }
@@ -306,9 +304,8 @@ class PackageService {
 
   // 扫描uploads目录中的文件
   async scanUploadsDirectory() {
+    console.log('🔍 开始扫描uploads目录...')
     try {
-      console.log('🔍 开始扫描uploads目录...')
-      
       // 确保uploads目录存在
       await fs.ensureDir(this.uploadsDir)
       
@@ -335,9 +332,7 @@ class PackageService {
         }
         
         // 检查是否已经在包管理系统中
-        const existingPackage = Array.from(this.packages.values()).find(
-          (pkg) => pkg.path === filePath
-        )
+        const existingPackage = Array.from(this.packages.values()).find((pkg) => pkg.path === filePath)
         
         if (existingPackage) {
           console.log(`✅ 文件已在系统中: ${fileName}`)
@@ -361,7 +356,6 @@ class PackageService {
       } else {
         console.log('✅ 扫描完成，没有发现新包')
       }
-      
     } catch (error) {
       console.error('❌ 扫描uploads目录时出错:', error)
     }
