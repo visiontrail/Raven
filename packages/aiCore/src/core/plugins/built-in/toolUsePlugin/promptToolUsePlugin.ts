@@ -3,28 +3,13 @@
  * 为不支持原生 Function Call 的模型提供 prompt 方式的工具调用
  * 内置默认逻辑，支持自定义覆盖
  */
-import type { ModelMessage, TextStreamPart, ToolSet, TypedToolError } from 'ai'
+import type { TextStreamPart, ToolSet } from 'ai'
 
 import { definePlugin } from '../../index'
 import type { AiRequestContext } from '../../types'
+import { StreamEventManager } from './StreamEventManager'
+import { ToolExecutor } from './ToolExecutor'
 import { PromptToolUseConfig, ToolUseResult } from './type'
-
-/**
- * 使用 AI SDK 的 Tool 类型，更通用
- */
-// export interface Tool {
-//   type: 'function'
-//   function: {
-//     name: string
-//     description?: string
-//     parameters?: {
-//       type: 'object'
-//       properties: Record<string, any>
-//       required?: string[]
-//       additionalProperties?: boolean
-//     }
-//   }
-// }
 
 /**
  * 默认系统提示符模板（提取自 Cherry Studio）
@@ -289,34 +274,32 @@ export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
     transformStream: (_: any, context: AiRequestContext) => () => {
       let textBuffer = ''
       let stepId = ''
-      let executedResults: { toolCallId: string; toolName: string; result: any; isError?: boolean }[] = []
+
       if (!context.mcpTools) {
         throw new Error('No tools available')
       }
+
+      // 创建工具执行器和流事件管理器
+      const toolExecutor = new ToolExecutor()
+      const streamEventManager = new StreamEventManager()
+
       type TOOLS = NonNullable<typeof context.mcpTools>
       return new TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>({
         async transform(
           chunk: TextStreamPart<TOOLS>,
           controller: TransformStreamDefaultController<TextStreamPart<TOOLS>>
         ) {
-          // console.log('chunk', chunk)
           // 收集文本内容
           if (chunk.type === 'text-delta') {
             textBuffer += chunk.text || ''
             stepId = chunk.id || ''
-            // console.log('textBuffer', textBuffer)
             controller.enqueue(chunk)
             return
           }
 
           if (chunk.type === 'text-end' || chunk.type === 'finish-step') {
-            // console.log('[MCP Prompt Stream] Received step-finish, checking for tool use...')
-
-            // 从 context 获取工具信息
             const tools = context.mcpTools
-            // console.log('tools from context', tools)
             if (!tools || Object.keys(tools).length === 0) {
-              // console.log('[MCP Prompt Stream] No tools available, passing through')
               controller.enqueue(chunk)
               return
             }
@@ -324,14 +307,13 @@ export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
             // 解析工具调用
             const { results: parsedTools, content: parsedContent } = parseToolUse(textBuffer, tools)
             const validToolUses = parsedTools.filter((t) => t.status === 'pending')
-            // console.log('parsedTools', parsedTools)
 
             // 如果没有有效的工具调用，直接传递原始事件
             if (validToolUses.length === 0) {
-              // console.log('[MCP Prompt Stream] No valid tool uses found, passing through')
               controller.enqueue(chunk)
               return
             }
+
             if (chunk.type === 'text-end') {
               controller.enqueue({
                 type: 'text-end',
@@ -349,195 +331,31 @@ export const createPromptToolUsePlugin = (config: PromptToolUseConfig = {}) => {
               ...chunk,
               finishReason: 'tool-calls'
             })
-            // console.log('[MCP Prompt Stream] Found valid tool uses:', validToolUses.length)
 
-            // 发送 step-start 事件（工具调用步骤开始）
-            controller.enqueue({
-              type: 'start-step',
-              request: {},
-              warnings: []
-            })
+            // 发送步骤开始事件
+            streamEventManager.sendStepStartEvent(controller)
 
             // 执行工具调用
-            executedResults = []
-            for (const toolUse of validToolUses) {
-              try {
-                const tool = tools[toolUse.toolName]
-                if (!tool || typeof tool.execute !== 'function') {
-                  throw new Error(`Tool "${toolUse.toolName}" has no execute method`)
-                }
-                // 发送 tool-input-start 事件
-                controller.enqueue({
-                  type: 'tool-input-start',
-                  id: toolUse.id,
-                  toolName: toolUse.toolName
-                })
+            const executedResults = await toolExecutor.executeTools(validToolUses, tools, controller)
 
-                console.log(`[MCP Prompt Stream] Executing tool: ${toolUse.toolName}`, toolUse.arguments)
-                console.log('toolUse,toolUse', toolUse)
-                // 发送 tool-call 事件
-                controller.enqueue({
-                  type: 'tool-call',
-                  toolCallId: toolUse.id,
-                  toolName: toolUse.toolName,
-                  input: tool.inputSchema
-                })
+            // 发送步骤完成事件
+            streamEventManager.sendStepFinishEvent(controller, chunk)
 
-                const result = await tool.execute(toolUse.arguments, {
-                  toolCallId: toolUse.id,
-                  messages: [],
-                  abortSignal: new AbortController().signal
-                })
-
-                // 发送 tool-result 事件
-                controller.enqueue({
-                  type: 'tool-result',
-                  toolCallId: toolUse.id,
-                  toolName: toolUse.toolName,
-                  input: toolUse.arguments,
-                  output: result
-                })
-
-                executedResults.push({
-                  toolCallId: toolUse.id,
-                  toolName: toolUse.toolName,
-                  result,
-                  isError: false
-                })
-              } catch (error) {
-                console.error(`[MCP Prompt Stream] Tool execution failed: ${toolUse.toolName}`, error)
-
-                // 使用 AI SDK 标准错误格式
-                const toolError: TypedToolError<typeof context.mcpTools> = {
-                  type: 'tool-error',
-                  toolCallId: toolUse.id,
-                  toolName: toolUse.toolName,
-                  input: toolUse.arguments,
-                  error: error instanceof Error ? error.message : String(error)
-                }
-
-                controller.enqueue(toolError)
-
-                // 发送标准错误事件
-                controller.enqueue({
-                  type: 'error',
-                  error: toolError.error
-                })
-
-                // // 发送 tool-result 错误事件
-                // controller.enqueue({
-                //   type: 'tool-result',
-                //   toolCallId: toolUse.id,
-                //   toolName: toolUse.toolName,
-                //   args: toolUse.arguments,
-                //   isError: true,
-                //   result: toolError.message
-                // })
-
-                executedResults.push({
-                  toolCallId: toolUse.id,
-                  toolName: toolUse.toolName,
-                  result: toolError.error,
-                  isError: true
-                })
-              }
-            }
-
-            // 发送最终的 step-finish 事件
-            controller.enqueue({
-              type: 'finish-step',
-              finishReason: 'stop',
-              response: chunk.response,
-              usage: chunk.usage,
-              providerMetadata: chunk.providerMetadata
-            })
-
-            // 递归调用逻辑
+            // 处理递归调用
             if (validToolUses.length > 0) {
-              // console.log('[MCP Prompt] Starting recursive call after tool execution...')
+              const toolResultsText = toolExecutor.formatToolResults(executedResults)
+              const recursiveParams = streamEventManager.buildRecursiveParams(
+                context,
+                textBuffer,
+                toolResultsText,
+                tools
+              )
 
-              // 构建工具结果的文本表示，使用Cherry Studio标准格式
-              const toolResultsText = executedResults
-                .map((tr) => {
-                  if (!tr.isError) {
-                    return `<tool_use_result>\n  <name>${tr.toolName}</name>\n  <result>${JSON.stringify(tr.result)}</result>\n</tool_use_result>`
-                  } else {
-                    const error = tr.result || 'Unknown error'
-                    return `<tool_use_result>\n  <name>${tr.toolName}</name>\n  <error>${error}</error>\n</tool_use_result>`
-                  }
-                })
-                .join('\n\n')
-              // console.log('context.originalParams.messages', context.originalParams.messages)
-              // 构建新的对话消息
-              const newMessages: ModelMessage[] = [
-                ...(context.originalParams.messages || []),
-                {
-                  role: 'assistant',
-                  content: textBuffer
-                },
-                {
-                  role: 'user',
-                  content: toolResultsText
-                }
-              ]
-
-              // 递归调用，继续对话，重新传递 tools
-              const recursiveParams = {
-                ...context.originalParams,
-                messages: newMessages,
-                tools: tools
-              }
-              context.originalParams.messages = newMessages
-
-              try {
-                const recursiveResult = await context.recursiveCall(recursiveParams)
-
-                // 将递归调用的结果流接入当前流
-                if (recursiveResult && recursiveResult.fullStream) {
-                  const reader = recursiveResult.fullStream.getReader()
-                  try {
-                    while (true) {
-                      const { done, value } = await reader.read()
-                      if (done) {
-                        break
-                      }
-                      if (value.type === 'finish') {
-                        // 迭代的流不发finish
-                        break
-                      }
-                      // 将递归流的数据传递到当前流
-                      controller.enqueue(value)
-                    }
-                  } finally {
-                    reader.releaseLock()
-                  }
-                } else {
-                  console.warn('[MCP Prompt] No fullstream found in recursive result:', recursiveResult)
-                }
-              } catch (error) {
-                console.error('[MCP Prompt] Recursive call failed:', error)
-
-                // 使用 AI SDK 标准错误格式，但不中断流
-                controller.enqueue({
-                  type: 'error',
-                  error: {
-                    message: error instanceof Error ? error.message : String(error),
-                    name: error instanceof Error ? error.name : 'RecursiveCallError'
-                  }
-                })
-
-                // 继续发送文本增量，保持流的连续性
-                controller.enqueue({
-                  type: 'text-delta',
-                  id: stepId,
-                  text: '\n\n[工具执行后递归调用失败，继续对话...]'
-                })
-              }
+              await streamEventManager.handleRecursiveCall(controller, recursiveParams, context, stepId)
             }
 
             // 清理状态
             textBuffer = ''
-            executedResults = []
             return
           }
 

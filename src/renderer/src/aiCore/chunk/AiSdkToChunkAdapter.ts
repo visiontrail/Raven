@@ -83,7 +83,6 @@ export class AiSdkToChunkAdapter {
     chunk: TextStreamPart<any>,
     final: { text: string; reasoningContent: string; webSearchResults: any[]; reasoningId: string }
   ) {
-    console.log('AI SDK chunk type:', chunk.type, chunk)
     switch (chunk.type) {
       // === 文本相关事件 ===
       case 'text-start':
@@ -101,7 +100,7 @@ export class AiSdkToChunkAdapter {
       case 'text-end':
         this.onChunk({
           type: ChunkType.TEXT_COMPLETE,
-          text: (chunk.providerMetadata?.text?.value as string) || final.text || ''
+          text: (chunk.providerMetadata?.text?.value as string) ?? final.text ?? ''
         })
         final.text = ''
         break

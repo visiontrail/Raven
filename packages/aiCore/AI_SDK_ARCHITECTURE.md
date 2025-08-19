@@ -300,10 +300,7 @@ export interface AiPlugin {
 - 函数式设计，简化使用
 
 ```typescript
-export function wrapModelWithMiddlewares(
-  model: LanguageModel, 
-  middlewares: LanguageModelV1Middleware[]
-): LanguageModel
+export function wrapModelWithMiddlewares(model: LanguageModel, middlewares: LanguageModelV1Middleware[]): LanguageModel
 ```
 
 ### 4.5 Provider System (提供商系统)
@@ -403,7 +400,7 @@ const model = await createModel({
 import { Agent, run } from '@openai/agents'
 
 const agent = new Agent({
-  model,  // ✅ 直接兼容 LanguageModel 接口
+  model, // ✅ 直接兼容 LanguageModel 接口
   name: 'Assistant',
   instructions: '...',
   tools: [tool1, tool2]
