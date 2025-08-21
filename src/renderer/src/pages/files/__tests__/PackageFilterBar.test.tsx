@@ -7,7 +7,7 @@ import PackageFilterBar, { PackageFilters, PackageSorting } from '../PackageFilt
 
 // Mock antd components to avoid complex setup
 vi.mock('antd', () => ({
-  Input: ({ placeholder, value, onChange, prefix, allowClear, ...props }: any) => (
+  Input: ({ placeholder, value, onChange, ...props }: any) => (
     <input
       placeholder={placeholder}
       value={value}
@@ -30,7 +30,12 @@ vi.mock('antd', () => ({
     </select>
   ),
   Button: ({ children, onClick, active, ...props }: any) => (
-    <button onClick={onClick} data-active={active} data-testid={props['data-testid'] || 'button'} {...props}>
+    <button
+      type="button"
+      onClick={onClick}
+      data-active={active}
+      data-testid={props['data-testid'] || 'button'}
+      {...props}>
       {children}
     </button>
   ),

@@ -34,9 +34,9 @@ const AboutSettings: FC = () => {
     testChannel,
     setTestChannel,
     useCustomUpdateServer,
-    setUseCustomUpdateServer,
-    customUpdateServerUrl,
-    setCustomUpdateServerUrl
+    setUseCustomUpdateServer
+    // customUpdateServerUrl,
+    // setCustomUpdateServerUrl
   } = useSettings()
   const { theme } = useTheme()
   const dispatch = useAppDispatch()

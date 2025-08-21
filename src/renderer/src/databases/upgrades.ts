@@ -384,7 +384,7 @@ export async function upgradeToV8(tx: Transaction): Promise<void> {
   }
   Logger.log('DB migration to version 8 finished.')
 }
-export async function upgradeToV9(_tx: Transaction): Promise<void> {
+export async function upgradeToV9(): Promise<void> {
   Logger.log('DB migration to version 9 started: Adding packages table for TGZ Package Management')
 
   // No data migration needed for this version as we're just adding a new table

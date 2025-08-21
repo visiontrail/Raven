@@ -50,7 +50,7 @@ app.get('/health', (req, res) => {
 })
 
 // 错误处理中间件
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
   logger.error('Unhandled error:', err)
   res.status(500).json({ error: 'Internal server error' })
 })

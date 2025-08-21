@@ -54,7 +54,7 @@ app.use('*', (req, res) => {
 })
 
 // 错误处理中间件
-app.use((error, req, res, next) => {
+app.use((error, req, res) => {
   console.error('Server error:', error)
   res.status(500).json({
     success: false,
