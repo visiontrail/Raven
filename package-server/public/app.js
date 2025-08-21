@@ -551,21 +551,20 @@ async function showPackageDetail(packageId) {
         <div class="col-md-6">
           <h6 class="text-muted mb-2">基本信息</h6>
           <table class="table table-sm">
-            <tr><td class="fw-bold">包名称:</td><td>${pkg.name}</td></tr>
-            <tr><td class="fw-bold">版本:</td><td>v${pkg.version}</td></tr>
-            <tr><td class="fw-bold">类型:</td><td><span class="badge bg-${getPackageTypeColor(pkg.packageType)}">${getPackageTypeDisplay(pkg.packageType)}</span></td></tr>
-            <tr><td class="fw-bold">大小:</td><td>${formatFileSize(pkg.size)}</td></tr>
-            <tr><td class="fw-bold">路径:</td><td><code>${pkg.path}</code></td></tr>
-            <tr><td class="fw-bold">创建时间:</td><td>${formatDate(pkg.createdAt)}</td></tr>
+            <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">包名称:</td><td>${pkg.name}</td></tr>
+            <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">版本:</td><td>v${pkg.version}</td></tr>
+            <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">类型:</td><td><span class="badge bg-${getPackageTypeColor(pkg.packageType)}">${getPackageTypeDisplay(pkg.packageType)}</span></td></tr>
+            <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">大小:</td><td>${formatFileSize(pkg.size)}</td></tr>
+            <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">创建时间:</td><td>${formatDate(pkg.createdAt)}</td></tr>
           </table>
         </div>
         <div class="col-md-6">
           <h6 class="text-muted mb-2">元数据</h6>
           <table class="table table-sm">
-            <tr><td class="fw-bold">是否补丁:</td><td>${pkg.metadata?.isPatch ? '是' : '否'}</td></tr>
-            <tr><td class="fw-bold">组件数量:</td><td>${pkg.metadata?.components?.length || 0}</td></tr>
-            <tr><td class="fw-bold">描述:</td><td>${pkg.metadata?.description || '无描述'}</td></tr>
-          </table>
+             <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">是否补丁:</td><td>${pkg.metadata?.isPatch ? '是' : '否'}</td></tr>
+             <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">组件数量:</td><td>${pkg.metadata?.components?.length || 0}</td></tr>
+             <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">描述:</td><td>${pkg.metadata?.description || '无描述'}</td></tr>
+           </table>
           
           ${
             pkg.metadata?.components && pkg.metadata.components.length > 0
