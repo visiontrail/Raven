@@ -480,7 +480,8 @@ function resetMetadataForm() {
   document.getElementById('description').value = ''
   document.getElementById('components').value = ''
   document.getElementById('tags').value = ''
-  document.getElementById('customFields').value = ''
+  document.getElementById('packageType').value = 'lingxi-10'
+  document.getElementById('version').value = ''
   document.getElementById('metadataForm').style.display = 'none'
   document.getElementById('fileInput').value = ''
 }
@@ -491,7 +492,8 @@ function collectMetadata() {
   const description = document.getElementById('description').value.trim()
   const componentsText = document.getElementById('components').value.trim()
   const tagsText = document.getElementById('tags').value.trim()
-  const customFieldsText = document.getElementById('customFields').value.trim()
+  const packageType = document.getElementById('packageType').value
+  const version = document.getElementById('version').value.trim()
 
   // 处理组件列表
   const components = componentsText
@@ -509,22 +511,13 @@ function collectMetadata() {
         .filter((t) => t)
     : []
 
-  // 处理自定义字段
-  let customFields = {}
-  if (customFieldsText) {
-    try {
-      customFields = JSON.parse(customFieldsText)
-    } catch (error) {
-      throw new Error('自定义字段格式错误，请输入有效的JSON格式')
-    }
-  }
-
   return {
     isPatch,
     components,
     description,
     tags,
-    customFields
+    packageType,
+    version
   }
 }
 
@@ -575,7 +568,8 @@ async function uploadFiles(files, metadata = null) {
     formData.append('description', metadata.description)
     formData.append('components', JSON.stringify(metadata.components))
     formData.append('tags', JSON.stringify(metadata.tags))
-    formData.append('customFields', JSON.stringify(metadata.customFields))
+    formData.append('packageType', metadata.packageType)
+    formData.append('version', metadata.version)
   }
 
   try {

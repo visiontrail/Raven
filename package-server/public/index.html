@@ -383,10 +383,24 @@
                 </div>
               </div>
             </div>
-            <div class="mb-3">
-              <label for="customFields" class="form-label">自定义字段 (JSON格式)</label>
-              <textarea class="form-control" id="customFields" rows="3" placeholder='{"author": "张三", "version": "1.0.0"}'></textarea>
-              <small class="text-muted">请输入有效的JSON格式数据</small>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="packageType" class="form-label">包类型</label>
+                  <select class="form-select" id="packageType">
+                    <option value="lingxi-10">LingXi-10</option>
+                    <option value="lingxi-07a">LingXi-07A</option>
+                    <option value="config">配置包</option>
+                    <option value="lingxi-06-thrid">LingXi-06-TRD</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="version" class="form-label">版本</label>
+                  <input type="text" class="form-control" id="version" placeholder="请输入版本号，如：1.0.0" />
+                </div>
+              </div>
             </div>
             <div class="d-flex gap-2">
               <button class="btn btn-success" onclick="uploadWithMetadata()">
