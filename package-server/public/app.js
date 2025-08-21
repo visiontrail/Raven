@@ -63,6 +63,7 @@ function setupEventListeners() {
 
   // 标签输入功能
   setupTagsInput()
+  setupComponentsInput()
 }
 
 // 防抖函数
@@ -481,7 +482,7 @@ function showMetadataForm() {
 function resetMetadataForm() {
   document.getElementById('isPatch').value = 'false'
   document.getElementById('description').value = ''
-  document.getElementById('components').value = ''
+  clearAllComponents()
   document.getElementById('packageType').value = 'lingxi-10'
   document.getElementById('version').value = ''
   document.getElementById('metadataForm').style.display = 'none'
@@ -490,23 +491,19 @@ function resetMetadataForm() {
   // 重置标签输入框
   const tagInput = document.getElementById('tagInput')
   if (tagInput) tagInput.value = ''
+  const componentInput = document.getElementById('componentInput')
+  if (componentInput) componentInput.value = ''
 }
 
 // 收集metadata数据
 function collectMetadata() {
   const isPatch = document.getElementById('isPatch').value === 'true'
   const description = document.getElementById('description').value.trim()
-  const componentsText = document.getElementById('components').value.trim()
   const packageType = document.getElementById('packageType').value
   const version = document.getElementById('version').value.trim()
 
   // 处理组件列表
-  const components = componentsText
-    ? componentsText
-        .split('\n')
-        .map((c) => c.trim())
-        .filter((c) => c)
-    : []
+  const components = getAllComponents()
 
   // 获取标签
   const tags = getAllTags()
@@ -543,6 +540,7 @@ async function uploadWithMetadata() {
 window.uploadWithMetadata = uploadWithMetadata
 window.resetMetadataForm = resetMetadataForm
 window.removeTag = removeTag
+window.removeComponent = removeComponent
 
 // 标签管理功能
 function setupTagsInput() {
@@ -606,6 +604,73 @@ function clearAllTags() {
   const tagsDisplay = document.getElementById('tagsDisplay')
   if (tagsDisplay) {
     tagsDisplay.innerHTML = ''
+  }
+}
+
+// 组件管理功能
+function setupComponentsInput() {
+  const componentInput = document.getElementById('componentInput')
+  const componentsContainer = document.getElementById('componentsContainer')
+
+  if (!componentInput || !componentsContainer) return
+
+  componentInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addComponent(this.value.trim())
+      this.value = ''
+    }
+  })
+
+  componentInput.addEventListener('blur', function () {
+    if (this.value.trim()) {
+      addComponent(this.value.trim())
+      this.value = ''
+    }
+  })
+
+  // 点击容器时聚焦到输入框
+  componentsContainer.addEventListener('click', function () {
+    componentInput.focus()
+  })
+}
+
+function addComponent(componentText) {
+  if (!componentText) return
+
+  const componentsDisplay = document.getElementById('componentsDisplay')
+  if (!componentsDisplay) return
+
+  // 检查是否已存在相同组件
+  const existingComponents = Array.from(componentsDisplay.querySelectorAll('.tag-item')).map((comp) =>
+    comp.textContent.replace('×', '').trim()
+  )
+  if (existingComponents.includes(componentText)) return
+
+  const componentElement = document.createElement('span')
+  componentElement.className = 'tag-item' // Using same style as tags
+  componentElement.innerHTML = `${componentText} <span class="tag-remove" onclick="removeComponent(this)">×</span>`
+
+  componentsDisplay.appendChild(componentElement)
+}
+
+function removeComponent(element) {
+  element.closest('.tag-item').remove()
+}
+
+function getAllComponents() {
+  const componentsDisplay = document.getElementById('componentsDisplay')
+  if (!componentsDisplay) return []
+
+  return Array.from(componentsDisplay.querySelectorAll('.tag-item')).map((comp) =>
+    comp.textContent.replace('×', '').trim()
+  )
+}
+
+function clearAllComponents() {
+  const componentsDisplay = document.getElementById('componentsDisplay')
+  if (componentsDisplay) {
+    componentsDisplay.innerHTML = ''
   }
 }
 

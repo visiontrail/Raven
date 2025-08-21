@@ -420,8 +420,11 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   <label for="components" class="form-label">组件列表</label>
-                  <textarea class="form-control" id="components" rows="2" placeholder="请输入组件名称，每行一个"></textarea>
-                  <small class="text-muted">每行输入一个组件名称</small>
+                  <div class="tags-container border rounded p-2" id="componentsContainer" style="min-height: 38px; cursor: text;">
+                    <div class="tags-display d-flex flex-wrap gap-1 mb-1" id="componentsDisplay"></div>
+                    <input type="text" class="border-0 outline-0" id="componentInput" placeholder="输入组件后按回车键添加" style="outline: none; box-shadow: none; flex: 1; min-width: 150px;" />
+                  </div>
+                  <small class="text-muted">输入组件后按回车键添加，点击组件可删除</small>
                 </div>
                 <div class="mb-3">
                   <label for="tags" class="form-label">标签</label>
