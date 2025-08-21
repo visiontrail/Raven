@@ -793,38 +793,85 @@ async function uploadFiles(files, metadata = null) {
     formData.append('version', metadata.version)
   }
 
-  try {
-    showUploadProgress(true)
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
 
-    const response = await fetch(validFiles.length === 1 ? UPLOAD_API : `${UPLOAD_API}/batch`, {
-      method: 'POST',
-      body: formData
+    // 显示进度条
+    showUploadProgress(true)
+    updateProgressBar(0)
+
+    // 监听上传进度
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = (event.loaded / event.total) * 100
+        updateProgressBar(percentComplete)
+        updateProgressText(`上传中... ${Math.round(percentComplete)}%`)
+      }
     })
 
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || '上传失败')
-    }
+    // 监听上传完成
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const response = JSON.parse(xhr.responseText)
+          updateProgressBar(100)
+          updateProgressText('上传完成')
 
-    await response.json() // 不需要使用返回结果
-    showAlert(`成功上传 ${validFiles.length} 个文件`, 'success')
+          showAlert(`成功上传 ${validFiles.length} 个文件`, 'success')
 
-    // 重置表单
-    resetMetadataForm()
+          // 重置表单
+          resetMetadataForm()
 
-    // 刷新列表
-    refreshPackages()
+          // 刷新列表
+          refreshPackages()
 
-    // 返回包列表页面
-    setTimeout(() => {
-      showPackages()
-    }, 1000)
-  } catch (error) {
+          // 返回包列表页面
+          setTimeout(() => {
+            showPackages()
+            showUploadProgress(false)
+          }, 1000)
+
+          resolve(response)
+        } catch (error) {
+          reject(new Error('响应解析失败'))
+        }
+      } else {
+        try {
+          const error = JSON.parse(xhr.responseText)
+          reject(new Error(error.message || '上传失败'))
+        } catch {
+          reject(new Error(`上传失败: HTTP ${xhr.status}`))
+        }
+      }
+    })
+
+    // 监听上传错误
+    xhr.addEventListener('error', () => {
+      reject(new Error('网络错误，上传失败'))
+    })
+
+    // 监听上传中止
+    xhr.addEventListener('abort', () => {
+      reject(new Error('上传被中止'))
+    })
+
+    // 错误处理
+    xhr.addEventListener('loadend', () => {
+      if (xhr.status < 200 || xhr.status >= 300) {
+        showUploadProgress(false)
+      }
+    })
+
+    // 发送请求
+    const url = validFiles.length === 1 ? UPLOAD_API : `${UPLOAD_API}/batch`
+    xhr.open('POST', url)
+    xhr.send(formData)
+  }).catch((error) => {
     console.error('上传失败:', error)
-    showAlert(`上传失败: ${error.message}`, 'danger')
-  } finally {
+    showAlert(`上传失败: ${error.message}`, 'error')
     showUploadProgress(false)
-  }
+    throw error
+  })
 }
 
 // 显示/隐藏上传进度
@@ -836,10 +883,30 @@ function showUploadProgress(show) {
     uploadProgress.style.display = 'block'
     uploadZone.style.pointerEvents = 'none'
     uploadZone.style.opacity = '0.6'
+    // 重置进度条
+    updateProgressBar(0)
+    updateProgressText('准备上传...')
   } else {
     uploadProgress.style.display = 'none'
     uploadZone.style.pointerEvents = 'auto'
     uploadZone.style.opacity = '1'
+  }
+}
+
+// 更新进度条
+function updateProgressBar(percentage) {
+  const progressBar = document.querySelector('#uploadProgress .progress-bar')
+  if (progressBar) {
+    progressBar.style.width = `${percentage}%`
+    progressBar.setAttribute('aria-valuenow', percentage)
+  }
+}
+
+// 更新进度文本
+function updateProgressText(text) {
+  const progressText = document.querySelector('#uploadProgress small')
+  if (progressText) {
+    progressText.textContent = text
   }
 }
 
