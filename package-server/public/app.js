@@ -81,23 +81,113 @@ function debounce(func, wait) {
 
 // 显示提示信息
 function showAlert(message, type = 'info') {
-  const alertContainer = document.getElementById('alertContainer')
   const alertId = 'alert-' + Date.now()
 
-  const alertHtml = `
-        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `
+  // 定义不同类型的颜色和图标
+  const alertConfig = {
+    success: { color: '#059669', bgColor: '#d1fae5', icon: 'bi-check-circle-fill' },
+    error: { color: '#dc2626', bgColor: '#fee2e2', icon: 'bi-x-circle-fill' },
+    warning: { color: '#d97706', bgColor: '#fef3c7', icon: 'bi-exclamation-triangle-fill' },
+    info: { color: '#2563eb', bgColor: '#dbeafe', icon: 'bi-info-circle-fill' }
+  }
 
-  alertContainer.insertAdjacentHTML('beforeend', alertHtml)
+  const config = alertConfig[type] || alertConfig.info
+
+  const alertHtml = `
+    <div id="${alertId}" class="toast-alert" style="
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      min-width: 300px;
+      max-width: 400px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      border-left: 4px solid ${config.color};
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideInRight 0.3s ease-out;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    ">
+      <div style="
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: ${config.bgColor};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      ">
+        <i class="bi ${config.icon}" style="color: ${config.color}; font-size: 14px;"></i>
+      </div>
+      <div style="flex: 1; color: #374151; font-size: 14px; line-height: 1.4;">
+        ${message}
+      </div>
+      <button onclick="document.getElementById('${alertId}').remove()" style="
+        background: none;
+        border: none;
+        color: #9ca3af;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      " onmouseover="this.style.background='#f3f4f6'; this.style.color='#6b7280'" onmouseout="this.style.background='none'; this.style.color='#9ca3af'">
+        <i class="bi bi-x" style="font-size: 16px;"></i>
+      </button>
+    </div>
+  `
+
+  // 添加CSS动画样式（如果还没有添加）
+  if (!document.getElementById('toast-alert-styles')) {
+    const style = document.createElement('style')
+    style.id = 'toast-alert-styles'
+    style.textContent = `
+      @keyframes slideInRight {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      
+      @keyframes slideOutRight {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+      }
+      
+      .toast-alert.removing {
+        animation: slideOutRight 0.3s ease-in forwards;
+      }
+    `
+    document.head.appendChild(style)
+  }
+
+  document.body.insertAdjacentHTML('beforeend', alertHtml)
 
   // 自动移除提示
   setTimeout(() => {
     const alert = document.getElementById(alertId)
     if (alert) {
-      alert.remove()
+      alert.classList.add('removing')
+      setTimeout(() => {
+        alert.remove()
+      }, 300)
     }
   }, 5000)
 }
