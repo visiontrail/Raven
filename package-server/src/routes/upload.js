@@ -78,15 +78,20 @@ router.post('/', upload.single('file'), async (req, res) => {
       const extractedPackageInfo = await packageService.extractPackageMetadata(req.file.path)
       console.log('提取的包信息:', extractedPackageInfo)
 
+      // Extract version and other base fields from request body
+      const { version, packageType, ...metadataFields } = req.body
       // Merge with any additional metadata from request body
       const metadata = {
         ...extractedPackageInfo.metadata,
-        ...req.body
+        ...metadataFields
       }
 
       finalPackageInfo = {
         ...extractedPackageInfo,
-        metadata
+        metadata,
+        // Override base fields if provided in request
+        ...(version && { version }),
+        ...(packageType && { packageType })
       }
     }
 
