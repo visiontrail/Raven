@@ -439,8 +439,10 @@ function showUpload() {
 
 // 文件选择处理
 function handleFileSelect(event) {
-  const files = Array.from(event.target.files)
-  uploadFiles(files)
+  const files = event.target.files
+  if (files.length > 0) {
+    showMetadataForm()
+  }
 }
 
 // 拖拽处理
@@ -458,16 +460,101 @@ function handleDrop(event) {
   event.preventDefault()
   event.currentTarget.classList.remove('dragover')
 
-  const files = Array.from(event.dataTransfer.files)
-  uploadFiles(files)
+  const files = event.dataTransfer.files
+  if (files.length > 0) {
+    // 设置文件到input中
+    document.getElementById('fileInput').files = files
+    showMetadataForm()
+  }
 }
 
 // 上传文件
-async function uploadFiles(files) {
+// 显示metadata表单
+function showMetadataForm() {
+  document.getElementById('metadataForm').style.display = 'block'
+}
+
+// 重置metadata表单
+function resetMetadataForm() {
+  document.getElementById('isPatch').value = 'false'
+  document.getElementById('description').value = ''
+  document.getElementById('components').value = ''
+  document.getElementById('tags').value = ''
+  document.getElementById('customFields').value = ''
+  document.getElementById('metadataForm').style.display = 'none'
+  document.getElementById('fileInput').value = ''
+}
+
+// 收集metadata数据
+function collectMetadata() {
+  const isPatch = document.getElementById('isPatch').value === 'true'
+  const description = document.getElementById('description').value.trim()
+  const componentsText = document.getElementById('components').value.trim()
+  const tagsText = document.getElementById('tags').value.trim()
+  const customFieldsText = document.getElementById('customFields').value.trim()
+
+  // 处理组件列表
+  const components = componentsText
+    ? componentsText
+        .split('\n')
+        .map((c) => c.trim())
+        .filter((c) => c)
+    : []
+
+  // 处理标签
+  const tags = tagsText
+    ? tagsText
+        .split(',')
+        .map((t) => t.trim())
+        .filter((t) => t)
+    : []
+
+  // 处理自定义字段
+  let customFields = {}
+  if (customFieldsText) {
+    try {
+      customFields = JSON.parse(customFieldsText)
+    } catch (error) {
+      throw new Error('自定义字段格式错误，请输入有效的JSON格式')
+    }
+  }
+
+  return {
+    isPatch,
+    components,
+    description,
+    tags,
+    customFields
+  }
+}
+
+// 带metadata的上传函数 - 在HTML中通过onclick调用
+async function uploadWithMetadata() {
+  const fileInput = document.getElementById('fileInput')
+  const files = fileInput.files
+
+  if (files.length === 0) {
+    showAlert('请先选择要上传的文件', 'warning')
+    return
+  }
+
+  try {
+    const metadata = collectMetadata()
+    await uploadFiles(files, metadata)
+  } catch (error) {
+    showAlert(error.message, 'danger')
+  }
+}
+
+// 将函数添加到全局作用域供HTML调用
+window.uploadWithMetadata = uploadWithMetadata
+window.resetMetadataForm = resetMetadataForm
+
+async function uploadFiles(files, metadata = null) {
   if (files.length === 0) return
 
   // 验证文件类型
-  const validFiles = files.filter((file) => {
+  const validFiles = Array.from(files).filter((file) => {
     const isValid = file.name.endsWith('.tgz') || file.name.endsWith('.tar.gz')
     if (!isValid) {
       showAlert(`文件 ${file.name} 格式不支持，仅支持 .tgz 和 .tar.gz 格式`, 'warning')
@@ -481,6 +568,15 @@ async function uploadFiles(files) {
   validFiles.forEach((file) => {
     formData.append('file', file)
   })
+
+  // 如果有metadata，将各个字段添加到formData中
+  if (metadata) {
+    formData.append('isPatch', metadata.isPatch)
+    formData.append('description', metadata.description)
+    formData.append('components', JSON.stringify(metadata.components))
+    formData.append('tags', JSON.stringify(metadata.tags))
+    formData.append('customFields', JSON.stringify(metadata.customFields))
+  }
 
   try {
     showUploadProgress(true)
@@ -498,8 +594,8 @@ async function uploadFiles(files) {
     await response.json() // 不需要使用返回结果
     showAlert(`成功上传 ${validFiles.length} 个文件`, 'success')
 
-    // 清空文件输入
-    document.getElementById('fileInput').value = ''
+    // 重置表单
+    resetMetadataForm()
 
     // 刷新列表
     refreshPackages()

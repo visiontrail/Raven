@@ -342,6 +342,7 @@
           <h5 class="mb-0"><i class="bi bi-upload me-2"></i>上传包文件</h5>
         </div>
         <div class="card-body">
+          <!-- File Upload Zone -->
           <div class="upload-zone" id="uploadZone">
             <i class="bi bi-cloud-upload fs-1 text-muted mb-3"></i>
             <h5>拖拽文件到此处或点击选择文件</h5>
@@ -351,6 +352,52 @@
               <i class="bi bi-folder2-open me-1"></i>选择文件
             </button>
           </div>
+          
+          <!-- Metadata Form -->
+          <div id="metadataForm" class="mt-4" style="display: none">
+            <h6 class="mb-3"><i class="bi bi-gear me-2"></i>包元数据配置</h6>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="isPatch" class="form-label">包类型</label>
+                  <select class="form-select" id="isPatch">
+                    <option value="false">正式包</option>
+                    <option value="true">补丁包</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="description" class="form-label">描述</label>
+                  <textarea class="form-control" id="description" rows="3" placeholder="请输入包的描述信息"></textarea>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="components" class="form-label">组件列表</label>
+                  <textarea class="form-control" id="components" rows="2" placeholder="请输入组件名称，每行一个"></textarea>
+                  <small class="text-muted">每行输入一个组件名称</small>
+                </div>
+                <div class="mb-3">
+                  <label for="tags" class="form-label">标签</label>
+                  <input type="text" class="form-control" id="tags" placeholder="请输入标签，用逗号分隔" />
+                  <small class="text-muted">多个标签用逗号分隔，如：frontend,ui,component</small>
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="customFields" class="form-label">自定义字段 (JSON格式)</label>
+              <textarea class="form-control" id="customFields" rows="3" placeholder='{"author": "张三", "version": "1.0.0"}'></textarea>
+              <small class="text-muted">请输入有效的JSON格式数据</small>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-success" onclick="uploadWithMetadata()">
+                <i class="bi bi-upload me-1"></i>上传包文件
+              </button>
+              <button class="btn btn-outline-secondary" onclick="resetMetadataForm()">
+                <i class="bi bi-arrow-clockwise me-1"></i>重置表单
+              </button>
+            </div>
+          </div>
+          
           <div id="uploadProgress" class="mt-3" style="display: none">
             <div class="progress">
               <div class="progress-bar" role="progressbar" style="width: 0%"></div>
