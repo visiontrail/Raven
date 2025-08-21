@@ -199,6 +199,53 @@
         border-radius: 4px;
       }
 
+      .tags-container {
+        background-color: white;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+      }
+
+      .tags-container:focus-within {
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+      }
+
+      .tag-item {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .tag-item:hover {
+        background-color: #1d4ed8;
+      }
+
+      .tag-remove {
+        cursor: pointer;
+        font-weight: bold;
+        opacity: 0.8;
+      }
+
+      .tag-remove:hover {
+        opacity: 1;
+      }
+
+      #tagInput {
+        border: none !important;
+        background: transparent;
+      }
+
+      #tagInput:focus {
+        outline: none !important;
+        box-shadow: none !important;
+      }
+
       @media (max-width: 768px) {
         .container-fluid {
           padding: 1rem;
@@ -378,8 +425,11 @@
                 </div>
                 <div class="mb-3">
                   <label for="tags" class="form-label">标签</label>
-                  <input type="text" class="form-control" id="tags" placeholder="请输入标签，用逗号分隔" />
-                  <small class="text-muted">多个标签用逗号分隔，如：frontend,ui,component</small>
+                  <div class="tags-container border rounded p-2" id="tagsContainer" style="min-height: 38px; cursor: text;">
+                    <div class="tags-display d-flex flex-wrap gap-1 mb-1" id="tagsDisplay"></div>
+                    <input type="text" class="border-0 outline-0" id="tagInput" placeholder="输入标签后按回车键添加" style="outline: none; box-shadow: none; flex: 1; min-width: 150px;" />
+                  </div>
+                  <small class="text-muted">输入标签后按回车键添加，点击标签可删除</small>
                 </div>
               </div>
             </div>
@@ -398,7 +448,7 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   <label for="version" class="form-label">版本</label>
-                  <input type="text" class="form-control" id="version" placeholder="请输入版本号，如：1.0.0" />
+                  <input type="text" class="form-control" id="version" placeholder="请输入版本号，如：1.0.0.0" />
                 </div>
               </div>
             </div>

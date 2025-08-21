@@ -60,6 +60,9 @@ function setupEventListeners() {
   uploadZone.addEventListener('dragleave', handleDragLeave)
   uploadZone.addEventListener('drop', handleDrop)
   uploadZone.addEventListener('click', () => fileInput.click())
+
+  // 标签输入功能
+  setupTagsInput()
 }
 
 // 防抖函数
@@ -479,11 +482,14 @@ function resetMetadataForm() {
   document.getElementById('isPatch').value = 'false'
   document.getElementById('description').value = ''
   document.getElementById('components').value = ''
-  document.getElementById('tags').value = ''
   document.getElementById('packageType').value = 'lingxi-10'
   document.getElementById('version').value = ''
   document.getElementById('metadataForm').style.display = 'none'
   document.getElementById('fileInput').value = ''
+  clearAllTags()
+  // 重置标签输入框
+  const tagInput = document.getElementById('tagInput')
+  if (tagInput) tagInput.value = ''
 }
 
 // 收集metadata数据
@@ -491,7 +497,6 @@ function collectMetadata() {
   const isPatch = document.getElementById('isPatch').value === 'true'
   const description = document.getElementById('description').value.trim()
   const componentsText = document.getElementById('components').value.trim()
-  const tagsText = document.getElementById('tags').value.trim()
   const packageType = document.getElementById('packageType').value
   const version = document.getElementById('version').value.trim()
 
@@ -503,13 +508,8 @@ function collectMetadata() {
         .filter((c) => c)
     : []
 
-  // 处理标签
-  const tags = tagsText
-    ? tagsText
-        .split(',')
-        .map((t) => t.trim())
-        .filter((t) => t)
-    : []
+  // 获取标签
+  const tags = getAllTags()
 
   return {
     isPatch,
@@ -542,6 +542,72 @@ async function uploadWithMetadata() {
 // 将函数添加到全局作用域供HTML调用
 window.uploadWithMetadata = uploadWithMetadata
 window.resetMetadataForm = resetMetadataForm
+window.removeTag = removeTag
+
+// 标签管理功能
+function setupTagsInput() {
+  const tagInput = document.getElementById('tagInput')
+  const tagsContainer = document.getElementById('tagsContainer')
+
+  if (!tagInput || !tagsContainer) return
+
+  tagInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addTag(this.value.trim())
+      this.value = ''
+    }
+  })
+
+  tagInput.addEventListener('blur', function () {
+    if (this.value.trim()) {
+      addTag(this.value.trim())
+      this.value = ''
+    }
+  })
+
+  // 点击容器时聚焦到输入框
+  tagsContainer.addEventListener('click', function () {
+    tagInput.focus()
+  })
+}
+
+function addTag(tagText) {
+  if (!tagText) return
+
+  const tagsDisplay = document.getElementById('tagsDisplay')
+  if (!tagsDisplay) return
+
+  // 检查是否已存在相同标签
+  const existingTags = Array.from(tagsDisplay.querySelectorAll('.tag-item')).map((tag) =>
+    tag.textContent.replace('×', '').trim()
+  )
+  if (existingTags.includes(tagText)) return
+
+  const tagElement = document.createElement('span')
+  tagElement.className = 'tag-item'
+  tagElement.innerHTML = `${tagText} <span class="tag-remove" onclick="removeTag(this)">×</span>`
+
+  tagsDisplay.appendChild(tagElement)
+}
+
+function removeTag(element) {
+  element.closest('.tag-item').remove()
+}
+
+function getAllTags() {
+  const tagsDisplay = document.getElementById('tagsDisplay')
+  if (!tagsDisplay) return []
+
+  return Array.from(tagsDisplay.querySelectorAll('.tag-item')).map((tag) => tag.textContent.replace('×', '').trim())
+}
+
+function clearAllTags() {
+  const tagsDisplay = document.getElementById('tagsDisplay')
+  if (tagsDisplay) {
+    tagsDisplay.innerHTML = ''
+  }
+}
 
 async function uploadFiles(files, metadata = null) {
   if (files.length === 0) return
