@@ -141,7 +141,7 @@
       "collapse": "收起",
       "includes_user_questions": "包含用户提问",
       "manage": "管理",
-    "manage_locked": "管理（已锁定）",
+      "manage_locked": "管理（已锁定）",
       "select_model": "选择模型",
       "show.all": "显示全部",
       "update_available": "有可用更新",

@@ -1,14 +1,10 @@
 import DmxapiLogo from '@renderer/assets/images/providers/dmxapi-logo.webp'
 import DmxapiLogoDark from '@renderer/assets/images/providers/dmxapi-logo-dark.webp'
-import { 
-  isLockedModeEnabled, 
-  isFeatureDisabled,
-  LOCKED_SETTINGS
-} from '@renderer/config/locked-settings'
+import { isFeatureDisabled, isLockedModeEnabled, LOCKED_SETTINGS } from '@renderer/config/locked-settings'
 import { useTheme } from '@renderer/context/ThemeProvider'
 import { useProvider } from '@renderer/hooks/useProvider'
 import { Radio, RadioChangeEvent, Space } from 'antd'
-import { FC, useCallback, useState, useEffect } from 'react'
+import { FC, useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
@@ -56,7 +52,7 @@ const DMXAPISettings: FC<DMXAPISettingsProps> = ({ providerId }) => {
     if (isLocked && lockedPlatform) {
       return lockedPlatform as PlatformType
     }
-    
+
     if (!provider.apiHost) return PlatformType.OFFICIAL
 
     if (provider.apiHost.includes('DMXAPI.com')) {

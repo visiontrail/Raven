@@ -20,12 +20,14 @@ Raven 项目采用基于 `electron-updater` 的自动更新机制，支持增量
 **位置**: `src/main/services/AppUpdater.ts`
 
 **主要功能**:
+
 - 初始化 `electron-updater`
 - 管理更新服务器地址选择
 - 处理更新事件监听
 - 控制自动下载和安装行为
 
 **关键配置**:
+
 ```typescript
 // 根据配置设置自动更新行为
 const { autoDownload, autoInstallOnAppQuit } = configManager.getAutoUpdate()
@@ -38,6 +40,7 @@ autoUpdater.autoInstallOnAppQuit = autoInstallOnAppQuit
 **配置文件**: `packages/shared/config/constant.ts`
 
 **服务器地址枚举**:
+
 ```typescript
 export enum FeedUrl {
   PRODUCTION = 'https://releases.yinhe.ht',
@@ -69,6 +72,7 @@ export enum FeedUrl {
 **设置界面**: `src/renderer/src/pages/settings/AboutSettings.tsx`
 
 **可配置选项**:
+
 - ✅ 自动检查更新 (实际控制自动下载)
 - ✅ 自定义服务器升级选项
 - 🔘 手动检查更新按钮
@@ -80,11 +84,13 @@ export enum FeedUrl {
 ### 1. 触发更新检查
 
 **手动触发**:
+
 - 用户点击"检查更新"按钮
 - 调用 `window.api.checkForUpdate()`
 - 通过 IPC 通信触发主进程的 `autoUpdater.checkForUpdates()`
 
 **自动触发**:
+
 - 当前版本不支持应用启动时自动检查
 - 仅在用户手动操作时触发
 
@@ -112,10 +118,12 @@ flowchart TD
 ### 3. 安装与重启
 
 **安装方式**:
+
 - `autoUpdater.quitAndInstall()`: 立即退出并安装
 - `autoInstallOnAppQuit`: 应用正常退出时自动安装
 
 **文件替换**:
+
 - `electron-updater` 自动处理文件替换
 - 无需用户手动操作
 - 保持用户数据和配置不变
@@ -127,6 +135,7 @@ flowchart TD
 **配置文件**: `electron-builder.yml`
 
 **发布配置**:
+
 ```yaml
 publish:
   provider: github
@@ -135,6 +144,7 @@ publish:
 ```
 
 **构建产物**:
+
 - **Windows**: NSIS 安装包 + Portable 版本
 - **macOS**: DMG 镜像 + ZIP 压缩包
 - **Linux**: AppImage + DEB 包
@@ -142,6 +152,7 @@ publish:
 ### 更新文件结构
 
 更新服务器需要提供以下文件:
+
 - `latest.yml` (Windows)
 - `latest-mac.yml` (macOS)
 - `latest-linux.yml` (Linux)
@@ -152,12 +163,14 @@ publish:
 ### 服务器要求
 
 **API 端点**:
+
 - `GET /api/version/latest` - 获取最新版本信息
 - `GET /api/version/check` - 检查更新
 - `POST /api/version/upload` - 上传新版本 (管理员)
 - `GET /download/*` - 下载更新文件
 
 **兼容性**:
+
 - 必须与 `electron-updater` 兼容
 - 支持标准的更新清单格式
 - 提供正确的文件签名验证
@@ -165,6 +178,7 @@ publish:
 ### 部署指南
 
 参考文档:
+
 - `docs/custom-update-server.md` - 详细设计文档
 - `update-server/README.md` - 快速部署指南
 
@@ -173,10 +187,12 @@ publish:
 ### 代码签名验证
 
 **Windows**:
+
 - 使用自定义签名脚本: `scripts/win-sign.js`
 - 配置 `verifyUpdateCodeSignature: false` (开发环境)
 
 **macOS**:
+
 - 支持公证 (notarize)
 - 配置应用权限: `build/entitlements.mac.plist`
 

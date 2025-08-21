@@ -89,7 +89,7 @@ export enum IpcChannel {
   Packager_GetAutoVersion = 'packager:get-auto-version',
   Packager_GetAutoVersionFromFilename = 'packager:get-auto-version-from-filename',
   Packager_SelectFile = 'packager:select-file',
-  
+
   // Package Management
   Package_GetAll = 'package:get-all',
   Package_GetById = 'package:get-by-id',

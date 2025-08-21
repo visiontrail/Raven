@@ -10,6 +10,7 @@
 - 代码签名（可选）：按需配置 Windows/macOS 的签名与公证凭据
 
 在项目根目录创建 `.env`：
+
 ```bash
 # GitHub Token（必需）
 GH_TOKEN=your_github_token
@@ -27,6 +28,7 @@ APPLE_TEAM_ID=your_team_id
 ### 2. 设置GitHub仓库
 
 #### 创建GitHub Token
+
 1. 访问 GitHub Settings > Developer settings > Personal access tokens
 2. 创建新token，权限包括：
    - `repo` (完整仓库访问)
@@ -37,6 +39,7 @@ APPLE_TEAM_ID=your_team_id
 （以下任选其一配置 GH_TOKEN）
 
 **方式一：Windows PowerShell 临时设置**
+
 ```powershell
 # 在 PowerShell 中设置（仅当前会话有效）
 $env:GH_TOKEN="your_github_token"
@@ -48,6 +51,7 @@ echo $env:GH_TOKEN
 ```
 
 **方式二：Windows 系统环境变量（永久设置）**
+
 ```powershell
 # 方法1: 使用 PowerShell 设置用户环境变量
 [Environment]::SetEnvironmentVariable("GH_TOKEN", "your_github_token", "User")
@@ -65,6 +69,7 @@ echo $env:GH_TOKEN
 **方式三：创建 .env 文件（推荐）**
 
 在项目根目录创建 `.env` 文件：
+
 ```bash
 # 在项目根目录 (d:\workspace\Code\GalaxySpaceAI\Raven) 创建 .env 文件
 # Windows/macOS/Linux 通用方式
@@ -83,6 +88,7 @@ APPLE_TEAM_ID=your_team_id
 ```
 
 **Windows 创建 .env 文件的具体步骤：**
+
 ```powershell
 # 方法1: 使用 PowerShell 创建
 cd D:\workspace\Code\GalaxySpaceAI\Raven
@@ -100,6 +106,7 @@ echo CSC_KEY_PASSWORD=certificate_password >> .env
 ```
 
 **macOS/Linux 创建 .env 文件：**
+
 ```bash
 # 在项目根目录
 cd /path/to/your/raven/project
@@ -119,27 +126,32 @@ code .env  # VS Code
 ### 1. 本地构建测试
 
 #### 安装依赖
+
 ```bash
 yarn install
 ```
 
 #### 开发环境测试
+
 ```bash
 yarn dev
 ```
 
 #### 本地构建
+
 ```bash
 yarn build:mac         # 仅构建 macOS 产物
 # 如需 Windows/Linux，请在对应平台执行 yarn build:win / yarn build:linux
 ```
 
 #### 构建产物位置
+
 构建完成后产物在 `dist/` 目录（具体清单由构建系统自动生成）。
 
 ### 2. 版本发布
 
 #### 更新版本号
+
 ```bash
 # 自动更新版本号
 npm version patch   # 补丁版本 (1.0.0 -> 1.0.1)
@@ -150,6 +162,7 @@ npm version major   # 主要版本 (1.0.0 -> 2.0.0)
 ```
 
 #### 发布到GitHub Releases
+
 ```bash
 # 构建并自动发布到GitHub（跳过类型检查）
 yarn build:mac:publish:no-check
@@ -160,6 +173,7 @@ yarn electron-builder --mac --arm64 --x64 --publish=always
 ```
 
 #### 其它命令
+
 ```bash
 # 构建并发布到 GitHub
 yarn build:mac:publish
@@ -169,11 +183,13 @@ yarn electron-builder --publish=onTagOrDraft
 ```
 
 ## 自动更新与配置说明
+
 请参考 `docs/raven_features/AUTO_UPDATE_MECHANISM.md`，此处不再赘述配置细节。
 
 ## 测试自动更新
 
 ### 1. 本地测试
+
 ```bash
 # 启动开发版本
 yarn dev
@@ -184,6 +200,7 @@ window.api.checkForUpdate()
 ```
 
 ### 2. 生产环境测试
+
 1. 安装较旧版本的应用
 2. 发布新版本到GitHub/更新服务器
 3. 在应用中检查更新
@@ -192,6 +209,7 @@ window.api.checkForUpdate()
 ## 常见问题解决
 
 ### 1. 代码签名问题
+
 ```bash
 # Windows: 需要有效的代码签名证书
 # 临时禁用签名验证（仅开发环境）
@@ -199,6 +217,7 @@ set CSC_IDENTITY_AUTO_DISCOVERY=false
 ```
 
 ### 2. 网络问题
+
 ```bash
 # 使用代理
 set HTTPS_PROXY=http://proxy.company.com:8080
@@ -206,6 +225,7 @@ set HTTP_PROXY=http://proxy.company.com:8080
 ```
 
 ### 3. 权限问题
+
 ```bash
 # 确保GitHub Token有足够权限
 # 检查仓库设置中的Actions权限
@@ -214,21 +234,25 @@ set HTTP_PROXY=http://proxy.company.com:8080
 ## 最佳实践
 
 ### 1. 版本管理
+
 - 使用语义化版本号 (Semantic Versioning)
 - 为每个版本创建详细的发布说明
 - 使用Git标签标记发布版本
 
 ### 2. 测试流程
+
 - 在发布前进行充分测试
 - 使用预发布版本进行内部测试
 - 设置自动化测试流程
 
 ### 3. 安全考虑
+
 - 妥善保管代码签名证书
 - 定期轮换GitHub Token
 - 使用HTTPS进行所有更新通信
 
 ### 4. 用户体验
+
 - 提供清晰的更新日志
 - 支持增量更新以减少下载时间
 - 提供回滚机制以防更新失败
@@ -236,6 +260,7 @@ set HTTP_PROXY=http://proxy.company.com:8080
 ## 总结
 
 通过以上流程，您可以：
+
 1. 成功构建和发布您的Raven fork版本
 2. 在GitHub上设置自动更新支持
 3. 为用户提供无缝的更新体验

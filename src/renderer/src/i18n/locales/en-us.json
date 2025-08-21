@@ -141,7 +141,7 @@
       "collapse": "Collapse",
       "includes_user_questions": "Include Your Questions",
       "manage": "Manage",
-    "manage_locked": "Manage (Locked)",
+      "manage_locked": "Manage (Locked)",
       "select_model": "Select Model",
       "show.all": "Show All",
       "update_available": "Update Available",

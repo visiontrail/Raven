@@ -1,10 +1,11 @@
 // src/main/utils/packageUtils.ts
 
-import * as fs from 'fs-extra';
-import * as path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-import { PackageType, Package } from '../../renderer/src/types/package';
-import { VersionParser } from '../services/packaging/VersionParser';
+import * as fs from 'fs-extra'
+import * as path from 'path'
+import { v4 as uuidv4 } from 'uuid'
+
+import { Package, PackageType } from '../../renderer/src/types/package'
+import { VersionParser } from '../services/packaging/VersionParser'
 
 /**
  * Extract metadata from a TGZ package filename and path
@@ -12,21 +13,21 @@ import { VersionParser } from '../services/packaging/VersionParser';
  * @returns Package metadata object
  */
 export async function extractMetadataFromTGZ(filePath: string): Promise<Package> {
-  const stats = await fs.stat(filePath);
-  const fileName = path.basename(filePath);
-  
+  const stats = await fs.stat(filePath)
+  const fileName = path.basename(filePath)
+
   // Extract package type from filename
-  const packageType = determinePackageType(fileName);
-  
+  const packageType = determinePackageType(fileName)
+
   // Extract version from filename
-  const version = VersionParser.parseVersionFromFilename(fileName) || '0.0.0';
-  
+  const version = VersionParser.parseVersionFromFilename(fileName) || '0.0.0'
+
   // Extract components from filename
-  const components = extractComponentsFromFilename(fileName);
-  
+  const components = extractComponentsFromFilename(fileName)
+
   // Determine if it's a patch
-  const isPatch = fileName.toLowerCase().includes('patch');
-  
+  const isPatch = fileName.toLowerCase().includes('patch')
+
   return {
     id: uuidv4(),
     name: fileName,
@@ -42,7 +43,7 @@ export async function extractMetadataFromTGZ(filePath: string): Promise<Package>
       tags: [],
       customFields: {}
     }
-  };
+  }
 }
 
 /**
@@ -51,20 +52,20 @@ export async function extractMetadataFromTGZ(filePath: string): Promise<Package>
  * @returns Package type enum value
  */
 function determinePackageType(fileName: string): PackageType {
-  const lowerFileName = fileName.toLowerCase();
-  
+  const lowerFileName = fileName.toLowerCase()
+
   if (lowerFileName.includes('lingxi-10') || lowerFileName.includes('lx10')) {
-    return PackageType.LINGXI_10;
+    return PackageType.LINGXI_10
   } else if (lowerFileName.includes('lingxi-07a') || lowerFileName.includes('lx07a')) {
-    return PackageType.LINGXI_07A;
+    return PackageType.LINGXI_07A
   } else if (lowerFileName.includes('config')) {
-    return PackageType.CONFIG;
+    return PackageType.CONFIG
   } else if (lowerFileName.includes('lingxi-06-thrid') || lowerFileName.includes('trd')) {
-    return PackageType.LINGXI_06TRD;
+    return PackageType.LINGXI_06TRD
   }
-  
+
   // Default to LINGXI_10 if can't determine
-  return PackageType.LINGXI_10;
+  return PackageType.LINGXI_10
 }
 
 /**
@@ -73,34 +74,34 @@ function determinePackageType(fileName: string): PackageType {
  * @returns Array of component names
  */
 function extractComponentsFromFilename(fileName: string): string[] {
-  const components: string[] = [];
-  
+  const components: string[] = []
+
   // Extract components based on known patterns
   if (fileName.toLowerCase().includes('galaxy_core')) {
-    components.push('galaxy_core_network');
+    components.push('galaxy_core_network')
   }
-  
+
   if (fileName.toLowerCase().includes('satellite')) {
-    components.push('satellite_app_server');
+    components.push('satellite_app_server')
   }
-  
+
   if (fileName.toLowerCase().includes('oam')) {
-    components.push('oam');
+    components.push('oam')
   }
-  
+
   if (fileName.toLowerCase().includes('cucp')) {
-    components.push('cucp');
+    components.push('cucp')
   }
-  
+
   if (fileName.toLowerCase().includes('cuup')) {
-    components.push('cuup');
+    components.push('cuup')
   }
-  
+
   if (fileName.toLowerCase().includes('du')) {
-    components.push('du');
+    components.push('du')
   }
-  
-  return components;
+
+  return components
 }
 
 /**
@@ -108,8 +109,8 @@ function extractComponentsFromFilename(fileName: string): string[] {
  * Note: This would require extracting the TGZ file first, which might be expensive
  * Consider implementing this as an async operation or on-demand
  */
-export async function parseSiIniFromTGZ(_filePath: string): Promise<Record<string, any> | null> {
+export async function parseSiIniFromTGZ(): Promise<Record<string, any> | null> {
   // This would be implemented if we want to extract metadata from the si.ini file
   // For now, return null as this would require extracting the TGZ file
-  return null;
+  return null
 }

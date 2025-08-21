@@ -5,6 +5,7 @@
 ### 方案一：修复 Yarn 安装 (推荐)
 
 **1. 以管理员身份运行 PowerShell**
+
 ```powershell
 # 步骤1：清理现有yarn
 npm uninstall -g yarn
@@ -19,6 +20,7 @@ yarn --version
 ```
 
 **2. 如果仍有权限问题**
+
 ```powershell
 # 设置执行策略
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
@@ -60,6 +62,7 @@ npm run typecheck
 项目已为您准备了两个便捷脚本：
 
 ### 1. 批处理脚本 (`dev-windows.bat`)
+
 **适用于传统 Windows 环境**
 
 ```batch
@@ -68,6 +71,7 @@ dev-windows.bat
 ```
 
 ### 2. PowerShell 脚本 (`dev-windows.ps1`)
+
 **适用于现代 PowerShell 环境**
 
 ```powershell
@@ -82,6 +86,7 @@ dev-windows.bat
 ```
 
 **PowerShell 脚本支持的命令：**
+
 - `install` - 安装依赖
 - `dev` - 开发模式
 - `debug` - 调试模式
@@ -94,54 +99,60 @@ dev-windows.bat
 
 ## 📋 完整命令对照表
 
-| Yarn 命令 | NPM 替代命令 | 说明 |
-|-----------|-------------|------|
-| `yarn install` | `npm install` | 安装依赖 |
-| `yarn dev` | `npm run dev` | 开发模式 |
-| `yarn debug` | `npm run debug` | 调试模式 |
-| `yarn build:win:x64` | `npm run build:win:x64` | 构建Windows x64 |
+| Yarn 命令              | NPM 替代命令              | 说明              |
+| ---------------------- | ------------------------- | ----------------- |
+| `yarn install`         | `npm install`             | 安装依赖          |
+| `yarn dev`             | `npm run dev`             | 开发模式          |
+| `yarn debug`           | `npm run debug`           | 调试模式          |
+| `yarn build:win:x64`   | `npm run build:win:x64`   | 构建Windows x64   |
 | `yarn build:win:arm64` | `npm run build:win:arm64` | 构建Windows ARM64 |
-| `yarn build:unpack` | `npm run build:unpack` | 开发构建 |
-| `yarn test` | `npm run test` | 运行测试 |
-| `yarn lint` | `npm run lint` | 代码检查 |
-| `yarn format` | `npm run format` | 代码格式化 |
-| `yarn typecheck` | `npm run typecheck` | 类型检查 |
+| `yarn build:unpack`    | `npm run build:unpack`    | 开发构建          |
+| `yarn test`            | `npm run test`            | 运行测试          |
+| `yarn lint`            | `npm run lint`            | 代码检查          |
+| `yarn format`          | `npm run format`          | 代码格式化        |
+| `yarn typecheck`       | `npm run typecheck`       | 类型检查          |
 
 ## 🔧 Windows 特定问题解决
 
 ### PowerShell 执行策略问题
+
 ```powershell
 # 如果无法运行PowerShell脚本，执行：
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ### 长路径问题
+
 ```bash
 # Windows可能遇到路径过长问题，启用长路径支持：
 git config --global core.longpaths true
 ```
 
 ### 环境变量设置
+
 确保以下环境变量正确设置：
+
 - `NODE_OPTIONS=--max-old-space-size=8192` (已在脚本中设置)
 - 确保 Node.js 和 npm 在 PATH 中
 
 ## 🚀 快速开始
 
 1. **首次设置**
+
    ```bash
    # 使用npm
    npm install
-   
+
    # 或使用修复后的yarn
    yarn install
    ```
 
 2. **开始开发**
+
    ```bash
    # 使用脚本（推荐）
    .\dev-windows.ps1 dev
-   
+
    # 或直接使用npm
    npm run dev
    ```
@@ -155,6 +166,7 @@ git config --global core.longpaths true
 ## 📞 获取帮助
 
 如果遇到问题：
+
 1. 检查 Node.js 版本 (`node --version`) 是否为 v20.x.x
 2. 清理缓存：`npm cache clean --force`
 3. 删除 node_modules 重新安装：`rm -rf node_modules && npm install`
@@ -162,4 +174,4 @@ git config --global core.longpaths true
 
 ---
 
-**祝您开发愉快！ 🍒** 
+**祝您开发愉快！ 🍒**

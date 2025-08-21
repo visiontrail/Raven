@@ -90,11 +90,9 @@ const PackageFilterBar: FC<PackageFilterBarProps> = ({
             style={{ width: 300 }}
           />
         </SearchContainer>
-        <CountContainer>
-          {t('files.packages_count', { count: totalCount })}
-        </CountContainer>
+        <CountContainer>{t('files.packages_count', { count: totalCount })}</CountContainer>
       </TopRow>
-      
+
       <BottomRow>
         <FiltersContainer>
           <Space>
@@ -114,7 +112,7 @@ const PackageFilterBar: FC<PackageFilterBarProps> = ({
             />
           </Space>
         </FiltersContainer>
-        
+
         <SortContainer>
           <SortLabel>{t('files.sort_by')}:</SortLabel>
           <Space size={4}>
@@ -123,8 +121,7 @@ const PackageFilterBar: FC<PackageFilterBarProps> = ({
                 key={button.key}
                 active={sorting.field === button.key}
                 onClick={() => handleSortFieldChange(button.key)}
-                size="small"
-              >
+                size="small">
                 {button.label}
                 {sorting.field === button.key &&
                   (sorting.order === 'desc' ? <SortDescendingOutlined /> : <SortAscendingOutlined />)}

@@ -1,4 +1,4 @@
-import { createSlice, nanoid, type PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import Logger from '@renderer/config/logger'
 import type { MCPConfig, MCPServer } from '@renderer/types'
 

@@ -32,7 +32,7 @@ const HTTPConfigModal: FC<HTTPConfigModalProps> = ({ visible, onOk, onCancel, lo
   const handleOk = async () => {
     try {
       const values = await form.validateFields()
-      
+
       // Build headers object
       const headers: Record<string, string> = {}
       if (values.customHeaders) {

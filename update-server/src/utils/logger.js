@@ -1,5 +1,5 @@
-const winston = require('winston');
-const path = require('path');
+const winston = require('winston')
+const path = require('path')
 
 // 创建日志格式
 const logFormat = winston.format.combine(
@@ -8,7 +8,7 @@ const logFormat = winston.format.combine(
   }),
   winston.format.errors({ stack: true }),
   winston.format.json()
-);
+)
 
 // 创建控制台格式
 const consoleFormat = winston.format.combine(
@@ -17,13 +17,13 @@ const consoleFormat = winston.format.combine(
     format: 'YYYY-MM-DD HH:mm:ss'
   }),
   winston.format.printf(({ timestamp, level, message, ...meta }) => {
-    let msg = `${timestamp} [${level}]: ${message}`;
+    let msg = `${timestamp} [${level}]: ${message}`
     if (Object.keys(meta).length > 0) {
-      msg += ` ${JSON.stringify(meta)}`;
+      msg += ` ${JSON.stringify(meta)}`
     }
-    return msg;
+    return msg
   })
-);
+)
 
 // 创建logger实例
 const logger = winston.createLogger({
@@ -44,13 +44,15 @@ const logger = winston.createLogger({
       maxFiles: 5
     })
   ]
-});
+})
 
 // 在开发环境下也输出到控制台
 if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: consoleFormat
-  }));
+  logger.add(
+    new winston.transports.Console({
+      format: consoleFormat
+    })
+  )
 }
 
-module.exports = logger;
+module.exports = logger

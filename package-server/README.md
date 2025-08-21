@@ -26,11 +26,13 @@
 ### 使用Docker部署（推荐）
 
 1. **克隆项目**
+
    ```bash
    cd /path/to/package-server
    ```
 
 2. **运行部署脚本**
+
    ```bash
    chmod +x scripts/deploy.sh
    ./scripts/deploy.sh
@@ -55,11 +57,13 @@ docker-compose down
 ### 本地开发
 
 1. **安装依赖**
+
    ```bash
    npm install
    ```
 
 2. **启动开发服务器**
+
    ```bash
    npm run dev
    ```
@@ -132,16 +136,19 @@ package-server/
 ## 管理脚本
 
 ### 部署
+
 ```bash
 ./scripts/deploy.sh
 ```
 
 ### 停止服务
+
 ```bash
 ./scripts/stop.sh
 ```
 
 ### 重启服务
+
 ```bash
 ./scripts/restart.sh
 ```
@@ -149,6 +156,7 @@ package-server/
 ## 故障排除
 
 ### 查看日志
+
 ```bash
 # Docker容器日志
 docker logs galaxy-package-server

@@ -28,7 +28,7 @@ import SettingsPage from './pages/settings/SettingsPage'
 function AppInitializer() {
   const dispatch = useAppDispatch()
   const mcpServers = useAppSelector((state) => state.mcp.servers)
-  
+
   useEffect(() => {
     // 在应用启动时初始化自定义小应用
     initializeDefaultMinApps().catch(console.error)

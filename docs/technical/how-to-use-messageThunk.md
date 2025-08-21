@@ -14,7 +14,6 @@
 以下是一些关键的 Thunk 函数及其用途：
 
 1.  **`sendMessage(userMessage, userMessageBlocks, assistant, topicId)`**
-
     - **用途**: 发送一条新的用户消息。
     - **流程**:
       - 保存用户消息 (`userMessage`) 及其块 (`userMessageBlocks`) 到 Redux 和 DB。
@@ -25,7 +24,6 @@
     - **Block 相关**: 主要处理用户消息的初始 `MessageBlock` 保存。
 
 2.  **`fetchAndProcessAssistantResponseImpl(dispatch, getState, topicId, assistant, assistantMessage)`**
-
     - **用途**: (内部函数) 获取并处理单个助手响应的核心逻辑，被 `sendMessage`, `resend...`, `regenerate...`, `append...` 等调用。
     - **流程**:
       - 设置 Topic 加载状态。
@@ -41,7 +39,6 @@
       - 使用 `handleBlockTransition` 管理非流式块（如 `TOOL`, `CITATION`）的添加和状态更新。
 
 3.  **`loadTopicMessagesThunk(topicId, forceReload)`**
-
     - **用途**: 从数据库加载指定主题的所有消息及其关联的 `MessageBlock`。
     - **流程**:
       - 从 DB 获取 `Topic` 及其 `messages` 列表。
@@ -51,21 +48,18 @@
     - **Block 相关**: 负责将持久化的 `MessageBlock` 加载到 Redux 状态。
 
 4.  **删除 Thunks**
-
     - `deleteSingleMessageThunk(topicId, messageId)`: 删除单个消息及其所有 `MessageBlock`。
     - `deleteMessageGroupThunk(topicId, askId)`: 删除一个用户消息及其所有相关的助手响应消息和它们的所有 `MessageBlock`。
     - `clearTopicMessagesThunk(topicId)`: 清空主题下的所有消息及其所有 `MessageBlock`。
     - **Block 相关**: 从 Redux 和 DB 中移除指定的 `MessageBlock`。
 
 5.  **重发/重新生成 Thunks**
-
     - `resendMessageThunk(topicId, userMessageToResend, assistant)`: 重发用户消息。会重置（清空 Block 并标记为 PENDING）所有与该用户消息关联的助手响应，然后重新请求生成。
     - `resendUserMessageWithEditThunk(topicId, originalMessage, mainTextBlockId, editedContent, assistant)`: 用户编辑消息内容后重发。先更新用户消息的 `MAIN_TEXT` 块内容，然后调用 `resendMessageThunk`。
     - `regenerateAssistantResponseThunk(topicId, assistantMessageToRegenerate, assistant)`: 重新生成单个助手响应。重置该助手消息（清空 Block 并标记为 PENDING），然后重新请求生成。
     - **Block 相关**: 删除旧的 `MessageBlock`，并在重新生成过程中创建新的 `MessageBlock`。
 
 6.  **`appendAssistantResponseThunk(topicId, existingAssistantMessageId, newModel, assistant)`**
-
     - **用途**: 在已有的对话上下文中，针对同一个用户问题，使用新选择的模型追加一个新的助手响应。
     - **流程**:
       - 找到现有助手消息以获取原始 `askId`。
@@ -75,7 +69,6 @@
     - **Block 相关**: 为新的助手响应创建全新的 `MessageBlock`。
 
 7.  **`cloneMessagesToNewTopicThunk(sourceTopicId, branchPointIndex, newTopic)`**
-
     - **用途**: 将源主题的部分消息（及其 Block）克隆到一个**已存在**的新主题中。
     - **流程**:
       - 复制指定索引前的消息。

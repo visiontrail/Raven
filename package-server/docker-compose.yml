@@ -5,7 +5,7 @@ services:
     build: .
     container_name: galaxy-package-server
     ports:
-      - "8083:8083"
+      - '8083:8083'
     volumes:
       - ./uploads:/app/uploads
       - ./data:/app/data
@@ -16,7 +16,7 @@ services:
       - DATA_DIR=/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:8083/health']
       interval: 30s
       timeout: 10s
       retries: 3

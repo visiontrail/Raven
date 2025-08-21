@@ -36,12 +36,9 @@
 
 <p align="center">English | <a href="./docs/README.zh.md">中文</a> | <a href="https://cherry-ai.com">Official Site</a> | <a href="https://docs.cherry-ai.com/cherry-studio-wen-dang/en-us">Documents</a> | <a href="./docs/dev.md">Development</a> | <a href="https://github.com/CherryHQ/cherry-studio/issues">Feedback</a><br></p>
 
-
-
 # 🚀 Raven - Satellite Baseband Payload Testing Platform
 
 Raven is an AI-powered satellite baseband payload testing and development platform, built on top of Cherry Studio. It revolutionizes satellite testing workflows by integrating natural language processing, automated testing, and intelligent payload control systems.
-
 
 # 🎯 Project Objectives
 
@@ -154,24 +151,28 @@ npm run dev
 # 📝 Roadmap
 
 ## Phase 1: Core Infrastructure ✅
+
 - [x] Satellite payload internal tools development
 - [x] MCP Server integration
 - [x] Basic natural language control
 - [x] Patch management system
 
 ## Phase 2: AI Enhancement 🚧
+
 - [ ] Advanced RAG knowledge base optimization
 - [ ] Multi-model LLM support expansion
 - [ ] Enhanced natural language understanding
 - [ ] Automated test case generation
 
 ## Phase 3: Advanced Features 📋
+
 - [ ] Real-time payload monitoring
 - [ ] Advanced analytics and reporting
 - [ ] Multi-satellite support
 - [ ] Integration with satellite ground stations
 
 ## Phase 4: Enterprise Features 🔮
+
 - [ ] Team collaboration features
 - [ ] Advanced access control
 - [ ] Enterprise-grade security
@@ -201,7 +202,6 @@ For detailed guidelines, please refer to our [Contributing Guide](CONTRIBUTING.m
 
 - [Cherry Studio](https://github.com/CherryHQ/cherry-studio): The base AI desktop client that Raven is built upon
 - [MCP Protocol](https://modelcontextprotocol.io/): Model Context Protocol for AI tool integration
-
 
 # 📄 License
 

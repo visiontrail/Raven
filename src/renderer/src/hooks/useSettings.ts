@@ -4,6 +4,7 @@ import {
   SendMessageShortcut,
   setAssistantIconType,
   setAutoCheckUpdate as _setAutoCheckUpdate,
+  setCustomUpdateServerUrl as _setCustomUpdateServerUrl,
   setDisableHardwareAcceleration,
   setLaunchOnBoot,
   setLaunchToTray,
@@ -19,9 +20,8 @@ import {
   setTopicPosition,
   setTray as _setTray,
   setTrayOnClose,
-  setWindowStyle,
   setUseCustomUpdateServer as _setUseCustomUpdateServer,
-  setCustomUpdateServerUrl as _setCustomUpdateServerUrl
+  setWindowStyle
 } from '@renderer/store/settings'
 import { SidebarIcon, ThemeMode, TranslateLanguageVarious } from '@renderer/types'
 import { UpgradeChannel } from '@shared/config/constant'

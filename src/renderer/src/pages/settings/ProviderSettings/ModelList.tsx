@@ -8,10 +8,7 @@ import {
 import CustomCollapse from '@renderer/components/CustomCollapse'
 import { HStack } from '@renderer/components/Layout'
 import ModelIdWithTags from '@renderer/components/ModelIdWithTags'
-import { 
-  isLockedModeEnabled, 
-  isFeatureDisabled 
-} from '@renderer/config/locked-settings'
+import { isFeatureDisabled, isLockedModeEnabled } from '@renderer/config/locked-settings'
 import { getModelLogo } from '@renderer/config/models'
 import { PROVIDER_CONFIG } from '@renderer/config/providers'
 import { useAssistants, useDefaultModel } from '@renderer/hooks/useAssistant'
@@ -182,7 +179,7 @@ const ModelList: React.FC<ModelListProps> = ({ providerId, modelStatuses = [], s
   const modelsWebsite = providerConfig?.websites?.models
 
   const [editingModel, setEditingModel] = useState<Model | null>(null)
-  
+
   const isLocked = isLockedModeEnabled()
 
   const modelGroups = useMemo(() => {
@@ -205,16 +202,19 @@ const ModelList: React.FC<ModelListProps> = ({ providerId, modelStatuses = [], s
     }
   }, [provider, isLocked])
 
-  const onEditModel = useCallback((model: Model) => {
-    if (!isLocked && !isFeatureDisabled('DISABLE_MODEL_DELETION')) {
-      setEditingModel(model)
-    }
-  }, [isLocked])
+  const onEditModel = useCallback(
+    (model: Model) => {
+      if (!isLocked && !isFeatureDisabled('DISABLE_MODEL_DELETION')) {
+        setEditingModel(model)
+      }
+    },
+    [isLocked]
+  )
 
   const onUpdateModel = useCallback(
     (updatedModel: Model) => {
       if (isLocked) return
-      
+
       const updatedModels = models.map((m) => {
         if (m.id === updatedModel.id) {
           return updatedModel
@@ -241,7 +241,17 @@ const ModelList: React.FC<ModelListProps> = ({ providerId, modelStatuses = [], s
         setDefaultModel(updatedModel)
       }
     },
-    [models, updateProvider, provider, assistants, defaultModel?.id, defaultModel?.provider, dispatch, setDefaultModel, isLocked]
+    [
+      models,
+      updateProvider,
+      provider,
+      assistants,
+      defaultModel?.id,
+      defaultModel?.provider,
+      dispatch,
+      setDefaultModel,
+      isLocked
+    ]
   )
 
   return (
@@ -257,7 +267,8 @@ const ModelList: React.FC<ModelListProps> = ({ providerId, modelStatuses = [], s
                 </Flex>
               }
               extra={
-                !isLocked && !isFeatureDisabled('DISABLE_MODEL_DELETION') && (
+                !isLocked &&
+                !isFeatureDisabled('DISABLE_MODEL_DELETION') && (
                   <Tooltip title={t('settings.models.manage.remove_whole_group')} mouseEnterDelay={0.5}>
                     <Button
                       type="text"
@@ -337,25 +348,25 @@ const ModelList: React.FC<ModelListProps> = ({ providerId, modelStatuses = [], s
         )}
       </Flex>
       <Flex gap={10} style={{ marginTop: '10px' }}>
-        <Button 
-          type="primary" 
-          onClick={onManageModel} 
+        <Button
+          type="primary"
+          onClick={onManageModel}
           icon={<ListCheck size={18} />}
-          disabled={isLocked || isFeatureDisabled('DISABLE_MODEL_ADDITION')}
-        >
+          disabled={isLocked || isFeatureDisabled('DISABLE_MODEL_ADDITION')}>
           {isLocked ? t('button.manage_locked') : t('button.manage')}
         </Button>
       </Flex>
-      {!isLocked && models.map((model) => (
-        <ModelEditContent
-          provider={provider}
-          model={model}
-          onUpdateModel={onUpdateModel}
-          open={editingModel?.id === model.id && !isLocked}
-          onClose={() => setEditingModel(null)}
-          key={model.id}
-        />
-      ))}
+      {!isLocked &&
+        models.map((model) => (
+          <ModelEditContent
+            provider={provider}
+            model={model}
+            onUpdateModel={onUpdateModel}
+            open={editingModel?.id === model.id && !isLocked}
+            onClose={() => setEditingModel(null)}
+            key={model.id}
+          />
+        ))}
     </>
   )
 }

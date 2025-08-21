@@ -493,4 +493,4 @@ function updateDefaultMinApps(param) {
   DEFAULT_MIN_APPS = param
 }
 
-export { DEFAULT_MIN_APPS, loadCustomMiniApp, ORIGIN_DEFAULT_MIN_APPS, updateDefaultMinApps, initializeDefaultMinApps }
+export { DEFAULT_MIN_APPS, initializeDefaultMinApps, loadCustomMiniApp, ORIGIN_DEFAULT_MIN_APPS, updateDefaultMinApps }

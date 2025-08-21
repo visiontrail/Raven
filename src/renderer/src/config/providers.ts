@@ -1,5 +1,5 @@
-import DeepSeekProviderLogo from '@renderer/assets/images/providers/deepseek.png'
 import BailianProviderLogo from '@renderer/assets/images/providers/bailian.png'
+import DeepSeekProviderLogo from '@renderer/assets/images/providers/deepseek.png'
 import GoogleProviderLogo from '@renderer/assets/images/providers/google.png'
 
 const PROVIDER_LOGO_MAP = {

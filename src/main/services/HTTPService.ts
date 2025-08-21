@@ -1,9 +1,9 @@
 // src/main/services/HTTPService.ts
 
-import * as fs from 'fs-extra'
-import * as path from 'path'
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
 import FormData from 'form-data'
+import * as fs from 'fs-extra'
+import * as path from 'path'
 
 import { HTTPConfig, Package } from '../../renderer/src/types/package'
 
@@ -93,7 +93,7 @@ export class HTTPService implements IHTTPService {
         createdAt: packageInfo.createdAt,
         metadata: packageInfo.metadata
       }
-      
+
       console.log('=== HTTP上传请求详细信息 ===')
       console.log('目标URL:', httpConfig.url)
       console.log('请求方法:', httpConfig.method)
@@ -101,7 +101,7 @@ export class HTTPService implements IHTTPService {
       console.log('文件名:', fileName)
       console.log('文件大小:', totalBytes, 'bytes')
       console.log('包信息 (packageInfo):', JSON.stringify(packageInfoData, null, 2))
-      
+
       formData.append('packageInfo', JSON.stringify(packageInfoData))
 
       // Prepare request configuration
@@ -139,10 +139,10 @@ export class HTTPService implements IHTTPService {
 
       console.log('请求头信息:', JSON.stringify(requestConfig.headers, null, 2))
       console.log('=== 开始发送HTTP请求 ===')
-      
+
       // Make the HTTP request
       const response: AxiosResponse = await axios(requestConfig)
-      
+
       console.log('=== HTTP响应信息 ===')
       console.log('响应状态码:', response.status)
       console.log('响应状态文本:', response.statusText)
@@ -157,10 +157,9 @@ export class HTTPService implements IHTTPService {
       } else {
         throw new Error(`HTTP upload failed with status ${response.status}: ${response.statusText}`)
       }
-
     } catch (error) {
       console.error('HTTP upload failed:', error)
-      
+
       // Provide more specific error messages
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNREFUSED') {
@@ -173,7 +172,7 @@ export class HTTPService implements IHTTPService {
           throw new Error('No response received from server')
         }
       }
-      
+
       throw error
     }
   }
@@ -207,10 +206,9 @@ export class HTTPService implements IHTTPService {
         console.warn(`HTTP connection test returned status ${response.status} for ${httpConfig.url}`)
         return false
       }
-
     } catch (error) {
       console.error('HTTP connection test failed:', error)
-      
+
       // Some endpoints might not support HEAD, try with OPTIONS
       if (axios.isAxiosError(error) && error.response?.status === 405) {
         try {
@@ -234,7 +232,7 @@ export class HTTPService implements IHTTPService {
           console.error('HTTP connection test with OPTIONS also failed:', optionsError)
         }
       }
-      
+
       return false
     }
   }

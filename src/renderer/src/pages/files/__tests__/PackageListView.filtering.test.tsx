@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
+
 import { Package, PackageType } from '../../../types/package'
 
 // Test the filtering logic that would be used in PackageListView
@@ -54,20 +55,24 @@ describe('Package Filtering Logic', () => {
     }
   ]
 
-  const applyFilters = (packages: Package[], filters: {
-    search: string
-    packageType: PackageType | 'all'
-    isPatch: 'all' | 'patch' | 'full'
-  }) => {
+  const applyFilters = (
+    packages: Package[],
+    filters: {
+      search: string
+      packageType: PackageType | 'all'
+      isPatch: 'all' | 'patch' | 'full'
+    }
+  ) => {
     return packages.filter((pkg) => {
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase()
         const matchesName = pkg.name.toLowerCase().includes(searchLower)
         const matchesDescription = pkg.metadata?.description?.toLowerCase().includes(searchLower) || false
-        const matchesTags = pkg.metadata?.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || false
-        const matchesComponents = pkg.metadata?.components?.some(component => component.toLowerCase().includes(searchLower)) || false
-        
+        const matchesTags = pkg.metadata?.tags?.some((tag) => tag.toLowerCase().includes(searchLower)) || false
+        const matchesComponents =
+          pkg.metadata?.components?.some((component) => component.toLowerCase().includes(searchLower)) || false
+
         if (!matchesName && !matchesDescription && !matchesTags && !matchesComponents) {
           return false
         }
@@ -163,7 +168,7 @@ describe('Package Filtering Logic', () => {
     })
 
     expect(filtered).toHaveLength(2)
-    filtered.forEach(pkg => {
+    filtered.forEach((pkg) => {
       expect(pkg.metadata.isPatch).toBe(false)
     })
   })

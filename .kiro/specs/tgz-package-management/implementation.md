@@ -127,59 +127,62 @@ We'll use the application's existing database system with the following implemen
 
 ```typescript
 // src/main/database/models/package.ts
-import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '../database';
+import { DataTypes, Model } from 'sequelize'
+import { sequelize } from '../database'
 
 class Package extends Model {
-  public id!: string;
-  public name!: string;
-  public path!: string;
-  public size!: number;
-  public createdAt!: Date;
-  public packageType!: string;
-  public version!: string;
-  public metadata!: any;
+  public id!: string
+  public name!: string
+  public path!: string
+  public size!: number
+  public createdAt!: Date
+  public packageType!: string
+  public version!: string
+  public metadata!: any
 }
 
-Package.init({
-  id: {
-    type: DataTypes.STRING,
-    primaryKey: true
+Package.init(
+  {
+    id: {
+      type: DataTypes.STRING,
+      primaryKey: true
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    path: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    size: {
+      type: DataTypes.NUMBER,
+      allowNull: false
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false
+    },
+    packageType: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    version: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    metadata: {
+      type: DataTypes.JSON,
+      allowNull: true
+    }
   },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  path: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  size: {
-    type: DataTypes.NUMBER,
-    allowNull: false
-  },
-  createdAt: {
-    type: DataTypes.DATE,
-    allowNull: false
-  },
-  packageType: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  version: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  metadata: {
-    type: DataTypes.JSON,
-    allowNull: true
+  {
+    sequelize,
+    tableName: 'packages'
   }
-}, {
-  sequelize,
-  tableName: 'packages'
-});
+)
 
-export default Package;
+export default Package
 ```
 
 ### Service Layer Implementation
@@ -188,77 +191,77 @@ export default Package;
 
 ```typescript
 // src/main/services/PackageService.ts
-import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs/promises';
-import path from 'path';
-import Package from '../database/models/package';
-import { extractMetadataFromTGZ } from '../utils/packageUtils';
-import { FileSystemService } from './FileSystemService';
-import { FTPService } from './FTPService';
-import { HTTPService } from './HTTPService';
+import { v4 as uuidv4 } from 'uuid'
+import fs from 'fs/promises'
+import path from 'path'
+import Package from '../database/models/package'
+import { extractMetadataFromTGZ } from '../utils/packageUtils'
+import { FileSystemService } from './FileSystemService'
+import { FTPService } from './FTPService'
+import { HTTPService } from './HTTPService'
 
 export class PackageService {
-  private fileSystemService: FileSystemService;
-  private ftpService: FTPService;
-  private httpService: HTTPService;
+  private fileSystemService: FileSystemService
+  private ftpService: FTPService
+  private httpService: HTTPService
 
   constructor() {
-    this.fileSystemService = new FileSystemService();
-    this.ftpService = new FTPService();
-    this.httpService = new HTTPService();
+    this.fileSystemService = new FileSystemService()
+    this.ftpService = new FTPService()
+    this.httpService = new HTTPService()
   }
 
   async getPackages(filters = {}, sortBy = 'createdAt', sortOrder = 'DESC') {
     return Package.findAll({
       where: filters,
       order: [[sortBy, sortOrder]]
-    });
+    })
   }
 
   async getPackageById(id: string) {
-    return Package.findByPk(id);
+    return Package.findByPk(id)
   }
 
   async updatePackageMetadata(id: string, metadata: any) {
-    const pkg = await Package.findByPk(id);
-    if (!pkg) return false;
-    
-    pkg.metadata = { ...pkg.metadata, ...metadata };
-    await pkg.save();
-    return true;
+    const pkg = await Package.findByPk(id)
+    if (!pkg) return false
+
+    pkg.metadata = { ...pkg.metadata, ...metadata }
+    await pkg.save()
+    return true
   }
 
   async deletePackage(id: string) {
-    const pkg = await Package.findByPk(id);
-    if (!pkg) return false;
-    
+    const pkg = await Package.findByPk(id)
+    if (!pkg) return false
+
     try {
-      await this.fileSystemService.deletePackageFile(pkg.path);
-      await pkg.destroy();
-      return true;
+      await this.fileSystemService.deletePackageFile(pkg.path)
+      await pkg.destroy()
+      return true
     } catch (error) {
-      console.error('Failed to delete package:', error);
-      return false;
+      console.error('Failed to delete package:', error)
+      return false
     }
   }
 
   async scanForPackages(directory: string) {
-    const files = await fs.readdir(directory);
-    const tgzFiles = files.filter(file => file.endsWith('.tgz'));
-    
+    const files = await fs.readdir(directory)
+    const tgzFiles = files.filter((file) => file.endsWith('.tgz'))
+
     for (const file of tgzFiles) {
-      const filePath = path.join(directory, file);
-      const stats = await fs.stat(filePath);
-      
+      const filePath = path.join(directory, file)
+      const stats = await fs.stat(filePath)
+
       // Check if package already exists in database
-      const existingPackage = await Package.findOne({ where: { path: filePath } });
-      if (existingPackage) continue;
-      
+      const existingPackage = await Package.findOne({ where: { path: filePath } })
+      if (existingPackage) continue
+
       // Extract metadata and create new package record
-      const metadata = await extractMetadataFromTGZ(filePath);
-      const packageType = this.determinePackageType(file);
-      const version = this.extractVersion(file);
-      
+      const metadata = await extractMetadataFromTGZ(filePath)
+      const packageType = this.determinePackageType(file)
+      const version = this.extractVersion(file)
+
       await Package.create({
         id: uuidv4(),
         name: file,
@@ -268,35 +271,35 @@ export class PackageService {
         packageType,
         version,
         metadata
-      });
+      })
     }
   }
 
   async uploadPackageToFTP(id: string, ftpConfig: any) {
-    const pkg = await Package.findByPk(id);
-    if (!pkg) return false;
-    
-    return this.ftpService.uploadFile(pkg.path, ftpConfig);
+    const pkg = await Package.findByPk(id)
+    if (!pkg) return false
+
+    return this.ftpService.uploadFile(pkg.path, ftpConfig)
   }
 
   async uploadPackageToHTTP(id: string, httpConfig: any) {
-    const pkg = await Package.findByPk(id);
-    if (!pkg) return false;
-    
-    return this.httpService.uploadFile(pkg.path, pkg.metadata, httpConfig);
+    const pkg = await Package.findByPk(id)
+    if (!pkg) return false
+
+    return this.httpService.uploadFile(pkg.path, pkg.metadata, httpConfig)
   }
 
   private determinePackageType(fileName: string): string {
-    if (fileName.includes('lingxi-10')) return 'lingxi-10';
-    if (fileName.includes('lingxi-07a')) return 'lingxi-07a';
-    if (fileName.includes('config')) return 'config';
-    if (fileName.includes('lingxi-06-thrid')) return 'lingxi-06-thrid';
-    return 'unknown';
+    if (fileName.includes('lingxi-10')) return 'lingxi-10'
+    if (fileName.includes('lingxi-07a')) return 'lingxi-07a'
+    if (fileName.includes('config')) return 'config'
+    if (fileName.includes('lingxi-06-thrid')) return 'lingxi-06-thrid'
+    return 'unknown'
   }
 
   private extractVersion(fileName: string): string {
-    const versionMatch = fileName.match(/v(\d+\.\d+\.\d+)/);
-    return versionMatch ? versionMatch[1] : '';
+    const versionMatch = fileName.match(/v(\d+\.\d+\.\d+)/)
+    return versionMatch ? versionMatch[1] : ''
   }
 }
 ```
@@ -305,47 +308,47 @@ export class PackageService {
 
 ```typescript
 // src/main/services/FileSystemService.ts
-import fs from 'fs/promises';
-import { shell } from 'electron';
-import path from 'path';
+import fs from 'fs/promises'
+import { shell } from 'electron'
+import path from 'path'
 
 export class FileSystemService {
   async openPackageLocation(filePath: string) {
     try {
-      await shell.showItemInFolder(filePath);
-      return true;
+      await shell.showItemInFolder(filePath)
+      return true
     } catch (error) {
-      console.error('Failed to open package location:', error);
-      return false;
+      console.error('Failed to open package location:', error)
+      return false
     }
   }
 
   async deletePackageFile(filePath: string) {
     try {
-      await fs.unlink(filePath);
-      return true;
+      await fs.unlink(filePath)
+      return true
     } catch (error) {
-      console.error('Failed to delete package file:', error);
-      return false;
+      console.error('Failed to delete package file:', error)
+      return false
     }
   }
 
   async getPackageFileInfo(filePath: string) {
     try {
-      const stats = await fs.stat(filePath);
+      const stats = await fs.stat(filePath)
       return {
         exists: true,
         size: stats.size,
         createdAt: stats.birthtime,
         modifiedAt: stats.mtime
-      };
+      }
     } catch (error) {
       return {
         exists: false,
         size: 0,
         createdAt: new Date(),
         modifiedAt: new Date()
-      };
+      }
     }
   }
 }
@@ -357,71 +360,71 @@ export class FileSystemService {
 
 ```tsx
 // src/renderer/src/pages/Files/PackageList.tsx
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
-import { Package, Trash2, FolderOpen, Upload } from 'lucide-react';
-import { formatFileSize, formatDate } from '@renderer/utils/formatters';
+import React, { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import styled from 'styled-components'
+import { Package, Trash2, FolderOpen, Upload } from 'lucide-react'
+import { formatFileSize, formatDate } from '@renderer/utils/formatters'
 
 const PackageList: React.FC = () => {
-  const { t } = useTranslation();
-  const [packages, setPackages] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedPackage, setSelectedPackage] = useState(null);
-  const [sortBy, setSortBy] = useState('createdAt');
-  const [sortOrder, setSortOrder] = useState('DESC');
-  const [filter, setFilter] = useState('all');
+  const { t } = useTranslation()
+  const [packages, setPackages] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedPackage, setSelectedPackage] = useState(null)
+  const [sortBy, setSortBy] = useState('createdAt')
+  const [sortOrder, setSortOrder] = useState('DESC')
+  const [filter, setFilter] = useState('all')
 
   useEffect(() => {
-    loadPackages();
-  }, [sortBy, sortOrder, filter]);
+    loadPackages()
+  }, [sortBy, sortOrder, filter])
 
   const loadPackages = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const filters = filter !== 'all' ? { packageType: filter } : {};
+      const filters = filter !== 'all' ? { packageType: filter } : {}
       const result = await window.electron.ipcRenderer.invoke('package:getAll', {
         filters,
         sortBy,
         sortOrder
-      });
-      setPackages(result);
+      })
+      setPackages(result)
     } catch (error) {
-      console.error('Failed to load packages:', error);
+      console.error('Failed to load packages:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handlePackageClick = (pkg) => {
-    setSelectedPackage(pkg);
-  };
+    setSelectedPackage(pkg)
+  }
 
   const handleOpenLocation = async (pkg) => {
-    await window.electron.ipcRenderer.invoke('package:openLocation', pkg.id);
-  };
+    await window.electron.ipcRenderer.invoke('package:openLocation', pkg.id)
+  }
 
   const handleDeletePackage = async (pkg) => {
     if (confirm(t('packages.confirmDelete'))) {
-      await window.electron.ipcRenderer.invoke('package:delete', pkg.id);
-      loadPackages();
+      await window.electron.ipcRenderer.invoke('package:delete', pkg.id)
+      loadPackages()
       if (selectedPackage?.id === pkg.id) {
-        setSelectedPackage(null);
+        setSelectedPackage(null)
       }
     }
-  };
+  }
 
   const handleSortChange = (event) => {
-    setSortBy(event.target.value);
-  };
+    setSortBy(event.target.value)
+  }
 
   const handleSortOrderChange = () => {
-    setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC');
-  };
+    setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC')
+  }
 
   const handleFilterChange = (event) => {
-    setFilter(event.target.value);
-  };
+    setFilter(event.target.value)
+  }
 
   return (
     <Container>
@@ -431,9 +434,7 @@ const PackageList: React.FC = () => {
           <option value="name">{t('packages.sortByName')}</option>
           <option value="size">{t('packages.sortBySize')}</option>
         </SortSelect>
-        <SortOrderButton onClick={handleSortOrderChange}>
-          {sortOrder === 'ASC' ? '↑' : '↓'}
-        </SortOrderButton>
+        <SortOrderButton onClick={handleSortOrderChange}>{sortOrder === 'ASC' ? '↑' : '↓'}</SortOrderButton>
         <FilterSelect value={filter} onChange={handleFilterChange}>
           <option value="all">{t('packages.filterAll')}</option>
           <option value="lingxi-10">{t('packages.filterLingxi10')}</option>
@@ -454,8 +455,7 @@ const PackageList: React.FC = () => {
               <PackageItem
                 key={pkg.id}
                 onClick={() => handlePackageClick(pkg)}
-                selected={selectedPackage?.id === pkg.id}
-              >
+                selected={selectedPackage?.id === pkg.id}>
                 <PackageIcon>
                   <Package size={18} />
                 </PackageIcon>
@@ -466,10 +466,18 @@ const PackageList: React.FC = () => {
                   </PackageDetails>
                 </PackageInfo>
                 <PackageActions>
-                  <ActionButton onClick={(e) => { e.stopPropagation(); handleOpenLocation(pkg); }}>
+                  <ActionButton
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleOpenLocation(pkg)
+                    }}>
                     <FolderOpen size={16} />
                   </ActionButton>
-                  <ActionButton onClick={(e) => { e.stopPropagation(); handleDeletePackage(pkg); }}>
+                  <ActionButton
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeletePackage(pkg)
+                    }}>
                     <Trash2 size={16} />
                   </ActionButton>
                 </PackageActions>
@@ -512,9 +520,7 @@ const PackageList: React.FC = () => {
               Object.entries(selectedPackage.metadata).map(([key, value]) => (
                 <DetailItem key={key}>
                   <DetailLabel>{key}:</DetailLabel>
-                  <DetailValue>
-                    {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                  </DetailValue>
+                  <DetailValue>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</DetailValue>
                 </DetailItem>
               ))
             ) : (
@@ -539,33 +545,33 @@ const PackageList: React.FC = () => {
         </PackageDetailPanel>
       )}
     </Container>
-  );
-};
+  )
+}
 
 // Styled components would be defined here
 
-export default PackageList;
+export default PackageList
 ```
 
 #### Integration with Files Section
 
 ```tsx
 // src/renderer/src/pages/Files/Files.tsx
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import styled from 'styled-components';
-import { Folder, Package, FileText } from 'lucide-react';
-import { Navbar, NavbarCenter } from '@renderer/components/app/Navbar';
-import FileExplorer from './FileExplorer';
-import PackageList from './PackageList';
-import DocumentList from './DocumentList';
+import React from 'react'
+import { useTranslation } from 'react-i18next'
+import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
+import styled from 'styled-components'
+import { Folder, Package, FileText } from 'lucide-react'
+import { Navbar, NavbarCenter } from '@renderer/components/app/Navbar'
+import FileExplorer from './FileExplorer'
+import PackageList from './PackageList'
+import DocumentList from './DocumentList'
 
 const Files: React.FC = () => {
-  const { pathname } = useLocation();
-  const { t } = useTranslation();
+  const { pathname } = useLocation()
+  const { t } = useTranslation()
 
-  const isRoute = (path: string): string => (pathname.includes(path) ? 'active' : '');
+  const isRoute = (path: string): string => (pathname.includes(path) ? 'active' : '')
 
   return (
     <Container>
@@ -603,63 +609,63 @@ const Files: React.FC = () => {
         </FilesContent>
       </ContentContainer>
     </Container>
-  );
-};
+  )
+}
 
 // Styled components would be defined here
 
-export default Files;
+export default Files
 ```
 
 ### IPC Handlers Implementation
 
 ```typescript
 // src/main/ipc/packageHandlers.ts
-import { ipcMain } from 'electron';
-import { PackageService } from '../services/PackageService';
+import { ipcMain } from 'electron'
+import { PackageService } from '../services/PackageService'
 
-const packageService = new PackageService();
+const packageService = new PackageService()
 
 export function registerPackageHandlers() {
   ipcMain.handle('package:getAll', async (_, args) => {
-    const { filters, sortBy, sortOrder } = args;
-    return packageService.getPackages(filters, sortBy, sortOrder);
-  });
+    const { filters, sortBy, sortOrder } = args
+    return packageService.getPackages(filters, sortBy, sortOrder)
+  })
 
   ipcMain.handle('package:getById', async (_, id) => {
-    return packageService.getPackageById(id);
-  });
+    return packageService.getPackageById(id)
+  })
 
   ipcMain.handle('package:updateMetadata', async (_, args) => {
-    const { id, metadata } = args;
-    return packageService.updatePackageMetadata(id, metadata);
-  });
+    const { id, metadata } = args
+    return packageService.updatePackageMetadata(id, metadata)
+  })
 
   ipcMain.handle('package:delete', async (_, id) => {
-    return packageService.deletePackage(id);
-  });
+    return packageService.deletePackage(id)
+  })
 
   ipcMain.handle('package:openLocation', async (_, id) => {
-    const pkg = await packageService.getPackageById(id);
-    if (!pkg) return false;
-    
-    const fileSystemService = new FileSystemService();
-    return fileSystemService.openPackageLocation(pkg.path);
-  });
+    const pkg = await packageService.getPackageById(id)
+    if (!pkg) return false
+
+    const fileSystemService = new FileSystemService()
+    return fileSystemService.openPackageLocation(pkg.path)
+  })
 
   ipcMain.handle('package:uploadToFTP', async (_, args) => {
-    const { id, ftpConfig } = args;
-    return packageService.uploadPackageToFTP(id, ftpConfig);
-  });
+    const { id, ftpConfig } = args
+    return packageService.uploadPackageToFTP(id, ftpConfig)
+  })
 
   ipcMain.handle('package:uploadToHTTP', async (_, args) => {
-    const { id, httpConfig } = args;
-    return packageService.uploadPackageToHTTP(id, httpConfig);
-  });
+    const { id, httpConfig } = args
+    return packageService.uploadPackageToHTTP(id, httpConfig)
+  })
 
   ipcMain.handle('package:scan', async (_, directory) => {
-    return packageService.scanForPackages(directory);
-  });
+    return packageService.scanForPackages(directory)
+  })
 }
 ```
 
@@ -669,83 +675,83 @@ export function registerPackageHandlers() {
 
 ```typescript
 // tests/unit/services/PackageService.test.ts
-import { PackageService } from '../../../src/main/services/PackageService';
-import Package from '../../../src/main/database/models/package';
-import { FileSystemService } from '../../../src/main/services/FileSystemService';
+import { PackageService } from '../../../src/main/services/PackageService'
+import Package from '../../../src/main/database/models/package'
+import { FileSystemService } from '../../../src/main/services/FileSystemService'
 
 // Mock dependencies
-jest.mock('../../../src/main/database/models/package');
-jest.mock('../../../src/main/services/FileSystemService');
+jest.mock('../../../src/main/database/models/package')
+jest.mock('../../../src/main/services/FileSystemService')
 
 describe('PackageService', () => {
-  let packageService: PackageService;
-  
+  let packageService: PackageService
+
   beforeEach(() => {
-    jest.clearAllMocks();
-    packageService = new PackageService();
-  });
-  
+    jest.clearAllMocks()
+    packageService = new PackageService()
+  })
+
   describe('getPackages', () => {
     it('should return packages with default sorting', async () => {
       // Test implementation
-    });
-    
+    })
+
     it('should apply filters correctly', async () => {
       // Test implementation
-    });
-    
+    })
+
     it('should sort by specified field and order', async () => {
       // Test implementation
-    });
-  });
-  
+    })
+  })
+
   // Additional test cases for other methods
-});
+})
 ```
 
 ### Integration Tests
 
 ```typescript
 // tests/integration/package-management.test.ts
-import { app } from 'electron';
-import path from 'path';
-import fs from 'fs/promises';
-import { PackageService } from '../../src/main/services/PackageService';
-import { setupTestDatabase, cleanupTestDatabase } from '../helpers/database';
+import { app } from 'electron'
+import path from 'path'
+import fs from 'fs/promises'
+import { PackageService } from '../../src/main/services/PackageService'
+import { setupTestDatabase, cleanupTestDatabase } from '../helpers/database'
 
 describe('Package Management Integration', () => {
-  let packageService: PackageService;
-  let testDir: string;
-  
+  let packageService: PackageService
+  let testDir: string
+
   beforeAll(async () => {
-    await setupTestDatabase();
-    testDir = path.join(app.getPath('temp'), 'cherry-studio-test-packages');
-    await fs.mkdir(testDir, { recursive: true });
-  });
-  
+    await setupTestDatabase()
+    testDir = path.join(app.getPath('temp'), 'cherry-studio-test-packages')
+    await fs.mkdir(testDir, { recursive: true })
+  })
+
   afterAll(async () => {
-    await cleanupTestDatabase();
-    await fs.rm(testDir, { recursive: true, force: true });
-  });
-  
+    await cleanupTestDatabase()
+    await fs.rm(testDir, { recursive: true, force: true })
+  })
+
   beforeEach(() => {
-    packageService = new PackageService();
-  });
-  
+    packageService = new PackageService()
+  })
+
   it('should detect and index TGZ packages', async () => {
     // Create test TGZ files
     // Run package scanning
     // Verify database entries
-  });
-  
+  })
+
   it('should delete package from both filesystem and database', async () => {
     // Create test package
     // Delete package
     // Verify file and database entry are removed
-  });
-  
+  })
+
   // Additional integration tests
-});
+})
 ```
 
 ## Deployment and Release Plan

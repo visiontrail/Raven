@@ -47,7 +47,11 @@ export interface IPackageService {
    * @param onProgress Progress callback
    * @returns Promise<boolean> True if successful
    */
-  uploadPackageToFTP(id: string, ftpConfig: FTPConfig, onProgress?: (progress: FTPUploadProgress) => void): Promise<boolean>
+  uploadPackageToFTP(
+    id: string,
+    ftpConfig: FTPConfig,
+    onProgress?: (progress: FTPUploadProgress) => void
+  ): Promise<boolean>
 
   /**
    * Upload package to HTTP server
@@ -56,7 +60,11 @@ export interface IPackageService {
    * @param onProgress Progress callback
    * @returns Promise<boolean> True if successful
    */
-  uploadPackageToHTTP(id: string, httpConfig: HTTPConfig, onProgress?: (progress: HTTPUploadProgress) => void): Promise<boolean>
+  uploadPackageToHTTP(
+    id: string,
+    httpConfig: HTTPConfig,
+    onProgress?: (progress: HTTPUploadProgress) => void
+  ): Promise<boolean>
 
   /**
    * Add a package to the service
@@ -231,7 +239,11 @@ export class PackageService implements IPackageService {
   /**
    * Upload package to FTP server
    */
-  async uploadPackageToFTP(id: string, ftpConfig: FTPConfig, onProgress?: (progress: FTPUploadProgress) => void): Promise<boolean> {
+  async uploadPackageToFTP(
+    id: string,
+    ftpConfig: FTPConfig,
+    onProgress?: (progress: FTPUploadProgress) => void
+  ): Promise<boolean> {
     try {
       const pkg = this.packages.get(id)
       if (!pkg) {
@@ -273,7 +285,11 @@ export class PackageService implements IPackageService {
   /**
    * Upload package to HTTP server
    */
-  async uploadPackageToHTTP(id: string, httpConfig: HTTPConfig, onProgress?: (progress: HTTPUploadProgress) => void): Promise<boolean> {
+  async uploadPackageToHTTP(
+    id: string,
+    httpConfig: HTTPConfig,
+    onProgress?: (progress: HTTPUploadProgress) => void
+  ): Promise<boolean> {
     try {
       const pkg = this.packages.get(id)
       if (!pkg) {

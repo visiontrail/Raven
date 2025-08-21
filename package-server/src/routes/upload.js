@@ -56,7 +56,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     console.log('请求头:', JSON.stringify(req.headers, null, 2))
     console.log('请求体字段 (req.body):', JSON.stringify(req.body, null, 2))
     console.log('上传文件信息 (req.file):', JSON.stringify(req.file, null, 2))
-    
+
     // Check if complete package info was sent from client
     let finalPackageInfo
     if (req.body.packageInfo) {

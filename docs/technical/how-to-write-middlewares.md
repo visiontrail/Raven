@@ -34,7 +34,6 @@ export type CompletionsMiddleware = (
 让我们分解这个三段式结构：
 
 1.  **第一层函数 `(api) => { ... }`**:
-
     - 接收一个 `api` 对象。
     - `api` 对象提供了以下方法：
       - `api.getContext()`: 获取当前调用的上下文对象 (`AiProviderMiddlewareCompletionsContext`)。
@@ -44,7 +43,6 @@ export type CompletionsMiddleware = (
     - 此函数通常用于进行一次性的设置或获取所需的服务/配置。它返回第二层函数。
 
 2.  **第二层函数 `(next) => { ... }`**:
-
     - 接收一个 `next` 函数。
     - `next` 函数代表了中间件链中的下一个环节。调用 `next(context, params)` 会将控制权传递给下一个中间件，或者如果当前中间件是链中的最后一个，则会调用核心的 Provider 方法逻辑 (例如，实际的 SDK 调用)。
     - `next` 函数接收当前的 `context` 和 `params` (这些可能已被上游中间件修改)。

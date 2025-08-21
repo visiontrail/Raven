@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
+
 import { Package, PackageType } from '../../../types/package'
 
 // Test the sorting logic that would be used in PackageListView
@@ -54,7 +55,11 @@ describe('Package Sorting Logic', () => {
     }
   ]
 
-  const applySorting = (packages: Package[], field: 'created_at' | 'size' | 'name' | 'package_type', order: 'asc' | 'desc') => {
+  const applySorting = (
+    packages: Package[],
+    field: 'created_at' | 'size' | 'name' | 'package_type',
+    order: 'asc' | 'desc'
+  ) => {
     return [...packages].sort((a, b) => {
       let aValue: any
       let bValue: any
@@ -88,7 +93,7 @@ describe('Package Sorting Logic', () => {
 
   it('should sort by name ascending', () => {
     const sorted = applySorting(mockPackages, 'name', 'asc')
-    
+
     expect(sorted[0].name).toBe('alpha-package.tgz')
     expect(sorted[1].name).toBe('beta-package.tgz')
     expect(sorted[2].name).toBe('zebra-package.tgz')
@@ -96,7 +101,7 @@ describe('Package Sorting Logic', () => {
 
   it('should sort by name descending', () => {
     const sorted = applySorting(mockPackages, 'name', 'desc')
-    
+
     expect(sorted[0].name).toBe('zebra-package.tgz')
     expect(sorted[1].name).toBe('beta-package.tgz')
     expect(sorted[2].name).toBe('alpha-package.tgz')
@@ -104,23 +109,23 @@ describe('Package Sorting Logic', () => {
 
   it('should sort by size ascending', () => {
     const sorted = applySorting(mockPackages, 'size', 'asc')
-    
-    expect(sorted[0].size).toBe(512000)  // beta-package
+
+    expect(sorted[0].size).toBe(512000) // beta-package
     expect(sorted[1].size).toBe(1024000) // zebra-package
     expect(sorted[2].size).toBe(2048000) // alpha-package
   })
 
   it('should sort by size descending', () => {
     const sorted = applySorting(mockPackages, 'size', 'desc')
-    
+
     expect(sorted[0].size).toBe(2048000) // alpha-package
     expect(sorted[1].size).toBe(1024000) // zebra-package
-    expect(sorted[2].size).toBe(512000)  // beta-package
+    expect(sorted[2].size).toBe(512000) // beta-package
   })
 
   it('should sort by created_at ascending', () => {
     const sorted = applySorting(mockPackages, 'created_at', 'asc')
-    
+
     expect(sorted[0].createdAt).toEqual(new Date('2023-05-10')) // alpha-package
     expect(sorted[1].createdAt).toEqual(new Date('2023-05-15')) // zebra-package
     expect(sorted[2].createdAt).toEqual(new Date('2023-05-20')) // beta-package
@@ -128,7 +133,7 @@ describe('Package Sorting Logic', () => {
 
   it('should sort by created_at descending', () => {
     const sorted = applySorting(mockPackages, 'created_at', 'desc')
-    
+
     expect(sorted[0].createdAt).toEqual(new Date('2023-05-20')) // beta-package
     expect(sorted[1].createdAt).toEqual(new Date('2023-05-15')) // zebra-package
     expect(sorted[2].createdAt).toEqual(new Date('2023-05-10')) // alpha-package
@@ -136,18 +141,18 @@ describe('Package Sorting Logic', () => {
 
   it('should sort by package_type ascending', () => {
     const sorted = applySorting(mockPackages, 'package_type', 'asc')
-    
-    expect(sorted[0].packageType).toBe(PackageType.CONFIG)     // alpha-package
+
+    expect(sorted[0].packageType).toBe(PackageType.CONFIG) // alpha-package
     expect(sorted[1].packageType).toBe(PackageType.LINGXI_07A) // beta-package
-    expect(sorted[2].packageType).toBe(PackageType.LINGXI_10)  // zebra-package
+    expect(sorted[2].packageType).toBe(PackageType.LINGXI_10) // zebra-package
   })
 
   it('should sort by package_type descending', () => {
     const sorted = applySorting(mockPackages, 'package_type', 'desc')
-    
-    expect(sorted[0].packageType).toBe(PackageType.LINGXI_10)  // zebra-package
+
+    expect(sorted[0].packageType).toBe(PackageType.LINGXI_10) // zebra-package
     expect(sorted[1].packageType).toBe(PackageType.LINGXI_07A) // beta-package
-    expect(sorted[2].packageType).toBe(PackageType.CONFIG)     // alpha-package
+    expect(sorted[2].packageType).toBe(PackageType.CONFIG) // alpha-package
   })
 
   it('should maintain original order for equal values', () => {
@@ -159,7 +164,7 @@ describe('Package Sorting Logic', () => {
     ]
 
     const sorted = applySorting(sameNamePackages, 'name', 'asc')
-    
+
     // Should maintain original order when values are equal
     expect(sorted[0].id).toBe('1')
     expect(sorted[1].id).toBe('2')

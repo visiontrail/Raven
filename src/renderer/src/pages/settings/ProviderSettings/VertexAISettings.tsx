@@ -1,13 +1,9 @@
 import { HStack } from '@renderer/components/Layout'
-import { 
-  isLockedModeEnabled, 
-  isFeatureDisabled,
-  LOCKED_SETTINGS
-} from '@renderer/config/locked-settings'
+import { isFeatureDisabled, isLockedModeEnabled, LOCKED_SETTINGS } from '@renderer/config/locked-settings'
 import { PROVIDER_CONFIG } from '@renderer/config/providers'
 import { useVertexAISettings } from '@renderer/hooks/useVertexAI'
 import { Alert, Input } from 'antd'
-import { FC, useState, useEffect } from 'react'
+import { FC, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { SettingHelpLink, SettingHelpText, SettingHelpTextRow, SettingSubtitle } from '..'
@@ -51,7 +47,19 @@ const VertexAISettings: FC = () => {
         setServiceAccountPrivateKey(lockedSettings.privateKey)
       }
     }
-  }, [isLocked, lockedProjectId, lockedLocation, lockedSettings, projectId, location, serviceAccount, setProjectId, setLocation, setServiceAccountClientEmail, setServiceAccountPrivateKey])
+  }, [
+    isLocked,
+    lockedProjectId,
+    lockedLocation,
+    lockedSettings,
+    projectId,
+    location,
+    serviceAccount,
+    setProjectId,
+    setLocation,
+    setServiceAccountClientEmail,
+    setServiceAccountPrivateKey
+  ])
 
   const handleProjectIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isLocked) {
@@ -119,7 +127,11 @@ const VertexAISettings: FC = () => {
       </SettingSubtitle>
       <Input.Password
         value={isLocked ? lockedSettings.clientEmail : serviceAccount.clientEmail}
-        placeholder={isLocked ? t('settings.provider.locked_value') : t('settings.provider.vertex_ai.service_account.client_email_placeholder')}
+        placeholder={
+          isLocked
+            ? t('settings.provider.locked_value')
+            : t('settings.provider.vertex_ai.service_account.client_email_placeholder')
+        }
         onChange={handleServiceAccountClientEmailChange}
         onBlur={handleServiceAccountClientEmailBlur}
         style={{ marginTop: 5 }}
@@ -134,7 +146,11 @@ const VertexAISettings: FC = () => {
       </SettingSubtitle>
       <Input.TextArea
         value={isLocked ? lockedSettings.privateKey : serviceAccount.privateKey}
-        placeholder={isLocked ? t('settings.provider.locked_value') : t('settings.provider.vertex_ai.service_account.private_key_placeholder')}
+        placeholder={
+          isLocked
+            ? t('settings.provider.locked_value')
+            : t('settings.provider.vertex_ai.service_account.private_key_placeholder')
+        }
         onChange={handleServiceAccountPrivateKeyChange}
         onBlur={handleServiceAccountPrivateKeyBlur}
         style={{ marginTop: 5 }}
@@ -156,7 +172,9 @@ const VertexAISettings: FC = () => {
         <SettingSubtitle style={{ marginTop: 5 }}>{t('settings.provider.vertex_ai.project_id')}</SettingSubtitle>
         <Input.Password
           value={isLocked ? lockedProjectId : localProjectId}
-          placeholder={isLocked ? t('settings.provider.locked_value') : t('settings.provider.vertex_ai.project_id_placeholder')}
+          placeholder={
+            isLocked ? t('settings.provider.locked_value') : t('settings.provider.vertex_ai.project_id_placeholder')
+          }
           onChange={handleProjectIdChange}
           onBlur={handleProjectIdBlur}
           style={{ marginTop: 5 }}
@@ -169,7 +187,7 @@ const VertexAISettings: FC = () => {
         <SettingSubtitle style={{ marginTop: 5 }}>{t('settings.provider.vertex_ai.location')}</SettingSubtitle>
         <Input
           value={isLocked ? lockedLocation : localLocation}
-          placeholder={isLocked ? t('settings.provider.locked_value') : "us-central1"}
+          placeholder={isLocked ? t('settings.provider.locked_value') : 'us-central1'}
           onChange={handleLocationChange}
           onBlur={handleLocationBlur}
           style={{ marginTop: 5 }}

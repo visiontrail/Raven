@@ -58,12 +58,12 @@ graph TD
 
    ```typescript
    interface PackageService {
-     getPackages(): Promise<Package[]>;
-     getPackageById(id: string): Promise<Package | null>;
-     updatePackageMetadata(id: string, metadata: PackageMetadata): Promise<boolean>;
-     deletePackage(id: string): Promise<boolean>;
-     uploadPackageToFTP(id: string, ftpConfig: FTPConfig): Promise<boolean>;
-     uploadPackageToHTTP(id: string, httpConfig: HTTPConfig): Promise<boolean>;
+     getPackages(): Promise<Package[]>
+     getPackageById(id: string): Promise<Package | null>
+     updatePackageMetadata(id: string, metadata: PackageMetadata): Promise<boolean>
+     deletePackage(id: string): Promise<boolean>
+     uploadPackageToFTP(id: string, ftpConfig: FTPConfig): Promise<boolean>
+     uploadPackageToHTTP(id: string, httpConfig: HTTPConfig): Promise<boolean>
    }
    ```
 
@@ -73,9 +73,9 @@ graph TD
 
    ```typescript
    interface FileSystemService {
-     openPackageLocation(path: string): Promise<boolean>;
-     deletePackageFile(path: string): Promise<boolean>;
-     getPackageFileInfo(path: string): Promise<FileInfo>;
+     openPackageLocation(path: string): Promise<boolean>
+     deletePackageFile(path: string): Promise<boolean>
+     getPackageFileInfo(path: string): Promise<FileInfo>
    }
    ```
 
@@ -85,7 +85,7 @@ graph TD
 
    ```typescript
    interface FTPService {
-     uploadFile(filePath: string, ftpConfig: FTPConfig): Promise<boolean>;
+     uploadFile(filePath: string, ftpConfig: FTPConfig): Promise<boolean>
    }
    ```
 
@@ -95,7 +95,7 @@ graph TD
 
    ```typescript
    interface HTTPService {
-     uploadFile(filePath: string, metadata: PackageMetadata, httpConfig: HTTPConfig): Promise<boolean>;
+     uploadFile(filePath: string, metadata: PackageMetadata, httpConfig: HTTPConfig): Promise<boolean>
    }
    ```
 
@@ -119,14 +119,14 @@ The core data model representing a TGZ package:
 
 ```typescript
 interface Package {
-  id: string;           // Unique identifier
-  name: string;         // Package name
-  path: string;         // File system path
-  size: number;         // File size in bytes
-  createdAt: Date;      // Creation date
-  packageType: PackageType; // Type of package (lingxi-10, lingxi-07a, config, lingxi-06-thrid)
-  version: string;      // Package version
-  metadata: PackageMetadata; // Additional metadata
+  id: string // Unique identifier
+  name: string // Package name
+  path: string // File system path
+  size: number // File size in bytes
+  createdAt: Date // Creation date
+  packageType: PackageType // Type of package (lingxi-10, lingxi-07a, config, lingxi-06-thrid)
+  version: string // Package version
+  metadata: PackageMetadata // Additional metadata
 }
 
 enum PackageType {
@@ -137,11 +137,11 @@ enum PackageType {
 }
 
 interface PackageMetadata {
-  isPatch: boolean;     // Whether it's a patch package
-  components: string[]; // Included components
-  description: string;  // User-provided description
-  tags: string[];       // User-defined tags
-  customFields: Record<string, any>; // Additional custom fields
+  isPatch: boolean // Whether it's a patch package
+  components: string[] // Included components
+  description: string // User-provided description
+  tags: string[] // User-defined tags
+  customFields: Record<string, any> // Additional custom fields
 }
 ```
 
@@ -149,11 +149,11 @@ interface PackageMetadata {
 
 ```typescript
 interface FTPConfig {
-  host: string;
-  port: number;
-  username: string;
-  password: string;
-  remotePath: string;
+  host: string
+  port: number
+  username: string
+  password: string
+  remotePath: string
 }
 ```
 
@@ -161,15 +161,15 @@ interface FTPConfig {
 
 ```typescript
 interface HTTPConfig {
-  url: string;
-  method: 'POST' | 'PUT';
-  headers: Record<string, string>;
+  url: string
+  method: 'POST' | 'PUT'
+  headers: Record<string, string>
   authentication?: {
-    type: 'Basic' | 'Bearer' | 'OAuth';
-    token?: string;
-    username?: string;
-    password?: string;
-  };
+    type: 'Basic' | 'Bearer' | 'OAuth'
+    token?: string
+    username?: string
+    password?: string
+  }
 }
 ```
 
@@ -321,4 +321,4 @@ The implementation will be divided into the following phases:
 
 ## Conclusion
 
-This design document outlines a comprehensive approach to implementing the TGZ Package Management feature in Cherry Studio. The proposed architecture leverages existing components while adding new functionality to enhance the user experience for managing packaged files. The implementation will follow a phased approach, starting with core functionality and progressively adding more advanced features. 
+This design document outlines a comprehensive approach to implementing the TGZ Package Management feature in Cherry Studio. The proposed architecture leverages existing components while adding new functionality to enhance the user experience for managing packaged files. The implementation will follow a phased approach, starting with core functionality and progressively adding more advanced features.

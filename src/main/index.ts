@@ -128,13 +128,13 @@ if (!app.requestSingleInstanceLock()) {
 
     //start selection assistant service
     initSelectionService()
-    
+
     // Initialize packaging service
     try {
-      await packagingService.initialize();
-      console.log('Packaging service initialized successfully');
+      await packagingService.initialize()
+      console.log('Packaging service initialized successfully')
     } catch (error) {
-      console.error('Failed to initialize packaging service:', error);
+      console.error('Failed to initialize packaging service:', error)
     }
   })
 

@@ -1,484 +1,496 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Raven 更新服务器 - 版本上传</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
 
-        .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            max-width: 600px;
-            width: 100%;
-        }
+      .container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        max-width: 600px;
+        width: 100%;
+      }
 
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
+      .header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
 
-        .header h1 {
-            color: #333;
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
+      .header h1 {
+        color: #333;
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
 
-        .header p {
-            color: #666;
-            font-size: 16px;
-        }
+      .header p {
+        color: #666;
+        font-size: 16px;
+      }
 
-        .form-group {
-            margin-bottom: 25px;
-        }
+      .form-group {
+        margin-bottom: 25px;
+      }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-        }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 500;
+      }
 
-        input[type="text"], input[type="password"], textarea {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-        }
+      input[type='text'],
+      input[type='password'],
+      textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s ease;
+      }
 
-        input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
+      input[type='text']:focus,
+      input[type='password']:focus,
+      textarea:focus {
+        outline: none;
+        border-color: #667eea;
+      }
 
-        .file-upload {
-            position: relative;
-            display: inline-block;
-            width: 100%;
-        }
+      .file-upload {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+      }
 
-        .file-input {
-            position: absolute;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
+      .file-input {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+      }
 
-        .file-label {
-            display: block;
-            padding: 20px;
-            border: 2px dashed #ccc;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
+      .file-label {
+        display: block;
+        padding: 20px;
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+      }
 
-        .file-label:hover {
-            border-color: #667eea;
-            background: #f0f2ff;
-        }
+      .file-label:hover {
+        border-color: #667eea;
+        background: #f0f2ff;
+      }
 
-        .file-label.dragover {
-            border-color: #667eea;
-            background: #e8ebff;
-        }
+      .file-label.dragover {
+        border-color: #667eea;
+        background: #e8ebff;
+      }
 
-        .file-info {
-            margin-top: 10px;
-            padding: 10px;
-            background: #e8f5e8;
-            border-radius: 6px;
-            font-size: 14px;
-            color: #2d5a2d;
-        }
+      .file-info {
+        margin-top: 10px;
+        padding: 10px;
+        background: #e8f5e8;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #2d5a2d;
+      }
 
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 14px 30px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-            width: 100%;
-        }
+      .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 14px 30px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+        width: 100%;
+      }
 
-        .btn:hover {
-            transform: translateY(-2px);
-        }
+      .btn:hover {
+        transform: translateY(-2px);
+      }
 
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
 
-        .progress {
-            width: 100%;
-            height: 6px;
-            background: #e1e5e9;
-            border-radius: 3px;
-            margin: 20px 0;
-            overflow: hidden;
-            display: none;
-        }
+      .progress {
+        width: 100%;
+        height: 6px;
+        background: #e1e5e9;
+        border-radius: 3px;
+        margin: 20px 0;
+        overflow: hidden;
+        display: none;
+      }
 
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
+      .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        width: 0%;
+        transition: width 0.3s ease;
+      }
 
-        .message {
-            padding: 12px 16px;
-            border-radius: 6px;
-            margin: 20px 0;
-            display: none;
-        }
+      .message {
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin: 20px 0;
+        display: none;
+      }
 
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
+      .message.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
 
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
+      .message.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
 
-        .version-list {
-            margin-top: 30px;
-            padding-top: 30px;
-            border-top: 1px solid #e1e5e9;
-        }
+      .version-list {
+        margin-top: 30px;
+        padding-top: 30px;
+        border-top: 1px solid #e1e5e9;
+      }
 
-        .version-item {
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+      .version-item {
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
 
-        .version-info {
-            flex: 1;
-        }
+      .version-info {
+        flex: 1;
+      }
 
-        .version-name {
-            font-weight: 500;
-            color: #333;
-        }
+      .version-name {
+        font-weight: 500;
+        color: #333;
+      }
 
-        .version-date {
-            font-size: 14px;
-            color: #666;
-            margin-top: 4px;
-        }
+      .version-date {
+        font-size: 14px;
+        color: #666;
+        margin-top: 4px;
+      }
 
-        .delete-btn {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-        }
+      .delete-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+      }
 
-        .delete-btn:hover {
-            background: #c82333;
-        }
+      .delete-btn:hover {
+        background: #c82333;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <h1>🚀 Raven 更新服务器</h1>
-            <p>版本文件上传管理</p>
+      <div class="header">
+        <h1>🚀 Raven 更新服务器</h1>
+        <p>版本文件上传管理</p>
+      </div>
+
+      <form id="uploadForm">
+        <div class="form-group">
+          <label for="apiKey">API 密钥:</label>
+          <input type="password" id="apiKey" name="apiKey" required placeholder="请输入管理员API密钥" />
         </div>
 
-        <form id="uploadForm">
-            <div class="form-group">
-                <label for="apiKey">API 密钥:</label>
-                <input type="password" id="apiKey" name="apiKey" required placeholder="请输入管理员API密钥">
-            </div>
-
-            <div class="form-group">
-                <label for="version">版本号:</label>
-                <input type="text" id="version" name="version" required placeholder="例如: 1.0.0">
-            </div>
-
-            <div class="form-group">
-                <label for="releaseNotes">更新说明:</label>
-                <textarea id="releaseNotes" name="releaseNotes" rows="4" placeholder="请输入版本更新说明..."></textarea>
-            </div>
-
-            <div class="form-group">
-                <label>上传文件:</label>
-                <div class="file-upload">
-                    <input type="file" id="fileInput" class="file-input" multiple accept=".exe,.dmg,.deb,.rpm,.AppImage,.zip,.tar.gz">
-                    <label for="fileInput" class="file-label" id="fileLabel">
-                        <div>📁 点击选择文件或拖拽文件到此处</div>
-                        <div style="font-size: 14px; color: #666; margin-top: 8px;">支持: .exe, .dmg, .deb, .rpm, .AppImage, .zip, .tar.gz</div>
-                    </label>
-                </div>
-                <div id="fileInfo" class="file-info" style="display: none;"></div>
-            </div>
-
-            <div class="progress" id="progress">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-
-            <button type="submit" class="btn" id="submitBtn">上传版本</button>
-        </form>
-
-        <div id="message" class="message"></div>
-
-        <div class="version-list">
-            <h3>已发布版本</h3>
-            <div id="versionList"></div>
+        <div class="form-group">
+          <label for="version">版本号:</label>
+          <input type="text" id="version" name="version" required placeholder="例如: 1.0.0" />
         </div>
+
+        <div class="form-group">
+          <label for="releaseNotes">更新说明:</label>
+          <textarea id="releaseNotes" name="releaseNotes" rows="4" placeholder="请输入版本更新说明..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>上传文件:</label>
+          <div class="file-upload">
+            <input
+              type="file"
+              id="fileInput"
+              class="file-input"
+              multiple
+              accept=".exe,.dmg,.deb,.rpm,.AppImage,.zip,.tar.gz" />
+            <label for="fileInput" class="file-label" id="fileLabel">
+              <div>📁 点击选择文件或拖拽文件到此处</div>
+              <div style="font-size: 14px; color: #666; margin-top: 8px">
+                支持: .exe, .dmg, .deb, .rpm, .AppImage, .zip, .tar.gz
+              </div>
+            </label>
+          </div>
+          <div id="fileInfo" class="file-info" style="display: none"></div>
+        </div>
+
+        <div class="progress" id="progress">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <button type="submit" class="btn" id="submitBtn">上传版本</button>
+      </form>
+
+      <div id="message" class="message"></div>
+
+      <div class="version-list">
+        <h3>已发布版本</h3>
+        <div id="versionList"></div>
+      </div>
     </div>
 
     <script>
-        const form = document.getElementById('uploadForm');
-        const fileInput = document.getElementById('fileInput');
-        const fileLabel = document.getElementById('fileLabel');
-        const fileInfo = document.getElementById('fileInfo');
-        const progress = document.getElementById('progress');
-        const progressBar = document.getElementById('progressBar');
-        const message = document.getElementById('message');
-        const submitBtn = document.getElementById('submitBtn');
-        const versionList = document.getElementById('versionList');
+      const form = document.getElementById('uploadForm')
+      const fileInput = document.getElementById('fileInput')
+      const fileLabel = document.getElementById('fileLabel')
+      const fileInfo = document.getElementById('fileInfo')
+      const progress = document.getElementById('progress')
+      const progressBar = document.getElementById('progressBar')
+      const message = document.getElementById('message')
+      const submitBtn = document.getElementById('submitBtn')
+      const versionList = document.getElementById('versionList')
 
-        let selectedFiles = [];
+      let selectedFiles = []
 
-        // 文件拖拽处理
-        fileLabel.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            fileLabel.classList.add('dragover');
-        });
+      // 文件拖拽处理
+      fileLabel.addEventListener('dragover', (e) => {
+        e.preventDefault()
+        fileLabel.classList.add('dragover')
+      })
 
-        fileLabel.addEventListener('dragleave', () => {
-            fileLabel.classList.remove('dragover');
-        });
+      fileLabel.addEventListener('dragleave', () => {
+        fileLabel.classList.remove('dragover')
+      })
 
-        fileLabel.addEventListener('drop', (e) => {
-            e.preventDefault();
-            fileLabel.classList.remove('dragover');
-            const files = Array.from(e.dataTransfer.files);
-            handleFiles(files);
-        });
+      fileLabel.addEventListener('drop', (e) => {
+        e.preventDefault()
+        fileLabel.classList.remove('dragover')
+        const files = Array.from(e.dataTransfer.files)
+        handleFiles(files)
+      })
 
-        fileInput.addEventListener('change', (e) => {
-            const files = Array.from(e.target.files);
-            handleFiles(files);
-        });
+      fileInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files)
+        handleFiles(files)
+      })
 
-        function handleFiles(files) {
-            selectedFiles = files;
-            if (files.length > 0) {
-                const fileNames = files.map(f => f.name).join(', ');
-                const totalSize = files.reduce((sum, f) => sum + f.size, 0);
-                fileInfo.innerHTML = `
+      function handleFiles(files) {
+        selectedFiles = files
+        if (files.length > 0) {
+          const fileNames = files.map((f) => f.name).join(', ')
+          const totalSize = files.reduce((sum, f) => sum + f.size, 0)
+          fileInfo.innerHTML = `
                     <strong>已选择 ${files.length} 个文件:</strong><br>
                     ${fileNames}<br>
                     <strong>总大小:</strong> ${formatBytes(totalSize)}
-                `;
-                fileInfo.style.display = 'block';
+                `
+          fileInfo.style.display = 'block'
+        } else {
+          fileInfo.style.display = 'none'
+        }
+      }
+
+      function formatBytes(bytes, decimals = 2) {
+        if (bytes === 0) return '0 Bytes'
+        const k = 1024
+        const dm = decimals < 0 ? 0 : decimals
+        const sizes = ['Bytes', 'KB', 'MB', 'GB']
+        const i = Math.floor(Math.log(bytes) / Math.log(k))
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
+      }
+
+      function showMessage(text, type) {
+        message.textContent = text
+        message.className = `message ${type}`
+        message.style.display = 'block'
+        setTimeout(() => {
+          message.style.display = 'none'
+        }, 5000)
+      }
+
+      function updateProgress(percent) {
+        progressBar.style.width = percent + '%'
+        if (percent > 0) {
+          progress.style.display = 'block'
+        } else {
+          progress.style.display = 'none'
+        }
+      }
+
+      // 创建版本
+      async function createVersion(apiKey, version, releaseNotes) {
+        const response = await fetch('/api/admin/version', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': apiKey
+          },
+          body: JSON.stringify({
+            version,
+            releaseNotes,
+            published: false
+          })
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || '创建版本失败')
+        }
+
+        return response.json()
+      }
+
+      // 上传文件
+      async function uploadFiles(apiKey, version, files) {
+        const formData = new FormData()
+        files.forEach((file) => {
+          formData.append('files', file)
+        })
+
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest()
+
+          xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+              const percent = (e.loaded / e.total) * 100
+              updateProgress(percent)
+            }
+          })
+
+          xhr.addEventListener('load', () => {
+            if (xhr.status === 200) {
+              resolve(JSON.parse(xhr.responseText))
             } else {
-                fileInfo.style.display = 'none';
+              reject(new Error(JSON.parse(xhr.responseText).error || '上传失败'))
             }
+          })
+
+          xhr.addEventListener('error', () => {
+            reject(new Error('网络错误'))
+          })
+
+          xhr.open('POST', `/api/admin/version/${version}/upload-batch`)
+          xhr.setRequestHeader('X-API-Key', apiKey)
+          xhr.send(formData)
+        })
+      }
+
+      // 发布版本
+      async function publishVersion(apiKey, version) {
+        const response = await fetch(`/api/admin/version/${version}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': apiKey
+          },
+          body: JSON.stringify({ published: true })
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || '发布版本失败')
         }
 
-        function formatBytes(bytes, decimals = 2) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        return response.json()
+      }
+
+      // 表单提交
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault()
+
+        const apiKey = document.getElementById('apiKey').value
+        const version = document.getElementById('version').value
+        const releaseNotes = document.getElementById('releaseNotes').value
+
+        if (selectedFiles.length === 0) {
+          showMessage('请选择要上传的文件', 'error')
+          return
         }
 
-        function showMessage(text, type) {
-            message.textContent = text;
-            message.className = `message ${type}`;
-            message.style.display = 'block';
-            setTimeout(() => {
-                message.style.display = 'none';
-            }, 5000);
+        submitBtn.disabled = true
+        submitBtn.textContent = '上传中...'
+
+        try {
+          // 1. 创建版本
+          await createVersion(apiKey, version, releaseNotes)
+          showMessage('版本创建成功', 'success')
+
+          // 2. 上传文件
+          await uploadFiles(apiKey, version, selectedFiles)
+          showMessage('文件上传成功', 'success')
+
+          // 3. 发布版本
+          await publishVersion(apiKey, version)
+          showMessage('版本发布成功！', 'success')
+
+          // 重置表单
+          form.reset()
+          selectedFiles = []
+          fileInfo.style.display = 'none'
+          updateProgress(0)
+
+          // 刷新版本列表
+          loadVersions()
+        } catch (error) {
+          showMessage(error.message, 'error')
+        } finally {
+          submitBtn.disabled = false
+          submitBtn.textContent = '上传版本'
         }
+      })
 
-        function updateProgress(percent) {
-            progressBar.style.width = percent + '%';
-            if (percent > 0) {
-                progress.style.display = 'block';
-            } else {
-                progress.style.display = 'none';
-            }
-        }
+      // 加载版本列表
+      async function loadVersions() {
+        try {
+          const response = await fetch('/api/version')
+          const data = await response.json()
 
-        // 创建版本
-        async function createVersion(apiKey, version, releaseNotes) {
-            const response = await fetch('/api/admin/version', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': apiKey
-                },
-                body: JSON.stringify({
-                    version,
-                    releaseNotes,
-                    published: false
-                })
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || '创建版本失败');
-            }
-
-            return response.json();
-        }
-
-        // 上传文件
-        async function uploadFiles(apiKey, version, files) {
-            const formData = new FormData();
-            files.forEach(file => {
-                formData.append('files', file);
-            });
-
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-
-                xhr.upload.addEventListener('progress', (e) => {
-                    if (e.lengthComputable) {
-                        const percent = (e.loaded / e.total) * 100;
-                        updateProgress(percent);
-                    }
-                });
-
-                xhr.addEventListener('load', () => {
-                    if (xhr.status === 200) {
-                        resolve(JSON.parse(xhr.responseText));
-                    } else {
-                        reject(new Error(JSON.parse(xhr.responseText).error || '上传失败'));
-                    }
-                });
-
-                xhr.addEventListener('error', () => {
-                    reject(new Error('网络错误'));
-                });
-
-                xhr.open('POST', `/api/admin/version/${version}/upload-batch`);
-                xhr.setRequestHeader('X-API-Key', apiKey);
-                xhr.send(formData);
-            });
-        }
-
-        // 发布版本
-        async function publishVersion(apiKey, version) {
-            const response = await fetch(`/api/admin/version/${version}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': apiKey
-                },
-                body: JSON.stringify({ published: true })
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || '发布版本失败');
-            }
-
-            return response.json();
-        }
-
-        // 表单提交
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const apiKey = document.getElementById('apiKey').value;
-            const version = document.getElementById('version').value;
-            const releaseNotes = document.getElementById('releaseNotes').value;
-
-            if (selectedFiles.length === 0) {
-                showMessage('请选择要上传的文件', 'error');
-                return;
-            }
-
-            submitBtn.disabled = true;
-            submitBtn.textContent = '上传中...';
-
-            try {
-                // 1. 创建版本
-                await createVersion(apiKey, version, releaseNotes);
-                showMessage('版本创建成功', 'success');
-
-                // 2. 上传文件
-                await uploadFiles(apiKey, version, selectedFiles);
-                showMessage('文件上传成功', 'success');
-
-                // 3. 发布版本
-                await publishVersion(apiKey, version);
-                showMessage('版本发布成功！', 'success');
-
-                // 重置表单
-                form.reset();
-                selectedFiles = [];
-                fileInfo.style.display = 'none';
-                updateProgress(0);
-
-                // 刷新版本列表
-                loadVersions();
-
-            } catch (error) {
-                showMessage(error.message, 'error');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '上传版本';
-            }
-        });
-
-        // 加载版本列表
-        async function loadVersions() {
-            try {
-                const response = await fetch('/api/version');
-                const data = await response.json();
-                
-                if (data.versions && data.versions.length > 0) {
-                    versionList.innerHTML = data.versions.map(v => `
+          if (data.versions && data.versions.length > 0) {
+            versionList.innerHTML = data.versions
+              .map(
+                (v) => `
                         <div class="version-item">
                             <div class="version-info">
                                 <div class="version-name">v${v.version}</div>
@@ -488,49 +500,51 @@
                                 删除
                             </button>
                         </div>
-                    `).join('');
-                } else {
-                    versionList.innerHTML = '<p style="color: #666; text-align: center;">暂无已发布版本</p>';
-                }
-            } catch (error) {
-                console.error('加载版本列表失败:', error);
-            }
+                    `
+              )
+              .join('')
+          } else {
+            versionList.innerHTML = '<p style="color: #666; text-align: center;">暂无已发布版本</p>'
+          }
+        } catch (error) {
+          console.error('加载版本列表失败:', error)
+        }
+      }
+
+      // 删除版本
+      async function deleteVersion(version) {
+        const apiKey = document.getElementById('apiKey').value
+        if (!apiKey) {
+          showMessage('请先输入API密钥', 'error')
+          return
         }
 
-        // 删除版本
-        async function deleteVersion(version) {
-            const apiKey = document.getElementById('apiKey').value;
-            if (!apiKey) {
-                showMessage('请先输入API密钥', 'error');
-                return;
-            }
-
-            if (!confirm(`确定要删除版本 ${version} 吗？`)) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/admin/version/${version}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-API-Key': apiKey
-                    }
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || '删除失败');
-                }
-
-                showMessage('版本删除成功', 'success');
-                loadVersions();
-            } catch (error) {
-                showMessage(error.message, 'error');
-            }
+        if (!confirm(`确定要删除版本 ${version} 吗？`)) {
+          return
         }
 
-        // 页面加载时获取版本列表
-        loadVersions();
+        try {
+          const response = await fetch(`/api/admin/version/${version}`, {
+            method: 'DELETE',
+            headers: {
+              'X-API-Key': apiKey
+            }
+          })
+
+          if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || '删除失败')
+          }
+
+          showMessage('版本删除成功', 'success')
+          loadVersions()
+        } catch (error) {
+          showMessage(error.message, 'error')
+        }
+      }
+
+      // 页面加载时获取版本列表
+      loadVersions()
     </script>
-</body>
+  </body>
 </html>

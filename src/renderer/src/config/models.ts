@@ -417,31 +417,31 @@ export const SYSTEM_MODELS: Record<string, Model[]> = {
   defaultModel: [
     {
       // 默认助手模型
-      id: 'qwen-plus-2025-07-14', 
-      name: 'qwen-plus-2025-07-14', 
-      provider: 'dashscope', 
-      group: 'qwen-plus-2025-07-14', 
+      id: 'qwen-plus-2025-07-14',
+      name: 'qwen-plus-2025-07-14',
+      provider: 'dashscope',
+      group: 'qwen-plus-2025-07-14'
     },
     {
       // 默认话题命名模型
-      id: 'qwen-plus-2025-07-14', 
-      name: 'qwen-plus-2025-07-14', 
-      provider: 'dashscope', 
-      group: 'qwen-plus-2025-07-14', 
+      id: 'qwen-plus-2025-07-14',
+      name: 'qwen-plus-2025-07-14',
+      provider: 'dashscope',
+      group: 'qwen-plus-2025-07-14'
     },
     {
       // 默认翻译模型
-      id: 'qwen-plus-2025-07-14', 
-      name: 'qwen-plus-2025-07-14', 
-      provider: 'dashscope', 
-      group: 'qwen-plus-2025-07-14', 
+      id: 'qwen-plus-2025-07-14',
+      name: 'qwen-plus-2025-07-14',
+      provider: 'dashscope',
+      group: 'qwen-plus-2025-07-14'
     },
     {
       // 默认快捷助手模型
-      id: 'qwen-plus-2025-07-14', 
-      name: 'qwen-plus-2025-07-14', 
-      provider: 'dashscope', 
-      group: 'qwen-plus-2025-07-14', 
+      id: 'qwen-plus-2025-07-14',
+      name: 'qwen-plus-2025-07-14',
+      provider: 'dashscope',
+      group: 'qwen-plus-2025-07-14'
     }
   ],
   deepseek: [
@@ -459,12 +459,12 @@ export const SYSTEM_MODELS: Record<string, Model[]> = {
     }
   ],
   bailian: [
-    { 
-      id: 'qwen-plus-2025-07-14', 
-      name: 'qwen-plus-2025-07-14', 
-      provider: 'dashscope', 
-      group: 'qwen-plus-2025-07-14', 
-      owned_by: 'system' 
+    {
+      id: 'qwen-plus-2025-07-14',
+      name: 'qwen-plus-2025-07-14',
+      provider: 'dashscope',
+      group: 'qwen-plus-2025-07-14',
+      owned_by: 'system'
     }
   ],
   gemini: [

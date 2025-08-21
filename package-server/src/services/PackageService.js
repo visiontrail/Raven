@@ -47,7 +47,7 @@ class PackageService {
         console.log('📄 元数据文件不存在，将创建新文件')
       }
       console.log(`🎯 总共加载了 ${this.packages.size} 个包到内存中`)
-      
+
       // 自动扫描uploads目录中的文件
       await this.scanUploadsDirectory()
     } catch (error) {
@@ -207,19 +207,19 @@ class PackageService {
     console.log(`🔍 开始提取包元数据: ${filePath}`)
     const stats = await fs.stat(filePath)
     const fileName = path.basename(filePath)
-    
+
     // Extract package type from filename
     const packageType = this.determinePackageType(fileName)
-    
+
     // Extract version from filename
     const version = this.parseVersionFromFilename(fileName) || '0.0.0'
-    
+
     // Extract components from filename
     const components = this.extractComponentsFromFilename(fileName)
-    
+
     // Determine if it's a patch
     const isPatch = fileName.toLowerCase().includes('patch')
-    
+
     const packageInfo = {
       id: uuidv4(),
       name: fileName,
@@ -236,7 +236,7 @@ class PackageService {
         customFields: {}
       }
     }
-    
+
     console.log(`✅ 成功提取包元数据: ${fileName}, 类型: ${packageType}, 版本: ${version}`)
     return packageInfo
   }
@@ -244,7 +244,7 @@ class PackageService {
   // Determine the package type based on the filename
   determinePackageType(fileName) {
     const lowerFileName = fileName.toLowerCase()
-    
+
     if (lowerFileName.includes('lingxi-10') || lowerFileName.includes('lx10')) {
       return PackageType.LINGXI_10
     } else if (lowerFileName.includes('lingxi-07a') || lowerFileName.includes('lx07a')) {
@@ -254,7 +254,7 @@ class PackageService {
     } else if (lowerFileName.includes('lingxi-06-thrid') || lowerFileName.includes('trd')) {
       return PackageType.LINGXI_06TRD
     }
-    
+
     // Default to LINGXI_10 if can't determine
     return PackageType.LINGXI_10
   }
@@ -271,32 +271,32 @@ class PackageService {
   extractComponentsFromFilename(fileName) {
     const components = []
     const lowerFileName = fileName.toLowerCase()
-    
+
     // Extract components based on known patterns
     if (lowerFileName.includes('galaxy_core')) {
       components.push('galaxy_core_network')
     }
-    
+
     if (lowerFileName.includes('satellite')) {
       components.push('satellite_app_server')
     }
-    
+
     if (lowerFileName.includes('oam')) {
       components.push('oam')
     }
-    
+
     if (lowerFileName.includes('cucp')) {
       components.push('cucp')
     }
-    
+
     if (lowerFileName.includes('cuup')) {
       components.push('cuup')
     }
-    
+
     if (lowerFileName.includes('du')) {
       components.push('du')
     }
-    
+
     return components
   }
 
@@ -306,37 +306,37 @@ class PackageService {
     try {
       // 确保uploads目录存在
       await fs.ensureDir(this.uploadsDir)
-      
+
       // 读取uploads目录中的所有文件
       const files = await fs.readdir(this.uploadsDir)
       console.log(`📁 uploads目录中找到 ${files.length} 个文件`)
-      
+
       let newPackagesCount = 0
-      
+
       for (const fileName of files) {
         const filePath = path.join(this.uploadsDir, fileName)
         const stats = await fs.stat(filePath)
-        
+
         // 只处理文件，跳过目录
         if (!stats.isFile()) {
           console.log(`⏭️ 跳过目录: ${fileName}`)
           continue
         }
-        
+
         // 只处理.tgz和.tar.gz文件
         if (!fileName.toLowerCase().endsWith('.tgz') && !fileName.toLowerCase().endsWith('.tar.gz')) {
           console.log(`⏭️ 跳过非包文件: ${fileName}`)
           continue
         }
-        
+
         // 检查是否已经在包管理系统中
         const existingPackage = Array.from(this.packages.values()).find((pkg) => pkg.path === filePath)
-        
+
         if (existingPackage) {
           console.log(`✅ 文件已在系统中: ${fileName}`)
           continue
         }
-        
+
         // 提取包元数据并添加到系统中
         console.log(`🆕 发现新包文件: ${fileName}`)
         try {
@@ -348,7 +348,7 @@ class PackageService {
           console.error(`❌ 处理文件 ${fileName} 时出错:`, error)
         }
       }
-      
+
       if (newPackagesCount > 0) {
         console.log(`🎉 扫描完成，新添加了 ${newPackagesCount} 个包`)
       } else {

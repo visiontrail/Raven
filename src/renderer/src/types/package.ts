@@ -19,27 +19,27 @@ export interface PackageMetadata {
   /**
    * Whether it's a patch package
    */
-  isPatch: boolean;
-  
+  isPatch: boolean
+
   /**
    * Included components
    */
-  components: string[];
-  
+  components: string[]
+
   /**
    * User-provided description
    */
-  description: string;
-  
+  description: string
+
   /**
    * User-defined tags
    */
-  tags: string[];
-  
+  tags: string[]
+
   /**
    * Additional custom fields
    */
-  customFields: Record<string, any>;
+  customFields: Record<string, any>
 }
 
 /**
@@ -49,42 +49,42 @@ export interface Package {
   /**
    * Unique identifier
    */
-  id: string;
-  
+  id: string
+
   /**
    * Package name
    */
-  name: string;
-  
+  name: string
+
   /**
    * File system path
    */
-  path: string;
-  
+  path: string
+
   /**
    * File size in bytes
    */
-  size: number;
-  
+  size: number
+
   /**
    * Creation date
    */
-  createdAt: Date;
-  
+  createdAt: Date
+
   /**
    * Type of package
    */
-  packageType: PackageType;
-  
+  packageType: PackageType
+
   /**
    * Package version
    */
-  version: string;
-  
+  version: string
+
   /**
    * Additional metadata
    */
-  metadata: PackageMetadata;
+  metadata: PackageMetadata
 }
 
 /**
@@ -94,27 +94,27 @@ export interface FTPConfig {
   /**
    * FTP server host
    */
-  host: string;
-  
+  host: string
+
   /**
    * FTP server port
    */
-  port: number;
-  
+  port: number
+
   /**
    * FTP username
    */
-  username: string;
-  
+  username: string
+
   /**
    * FTP password
    */
-  password: string;
-  
+  password: string
+
   /**
    * Remote path on FTP server
    */
-  remotePath: string;
+  remotePath: string
 }
 
 /**
@@ -124,18 +124,18 @@ export interface HTTPConfig {
   /**
    * HTTP endpoint URL
    */
-  url: string;
-  
+  url: string
+
   /**
    * HTTP method
    */
-  method: 'POST' | 'PUT';
-  
+  method: 'POST' | 'PUT'
+
   /**
    * HTTP headers
    */
-  headers: Record<string, string>;
-  
+  headers: Record<string, string>
+
   /**
    * Authentication configuration
    */
@@ -143,21 +143,21 @@ export interface HTTPConfig {
     /**
      * Authentication type
      */
-    type: 'Basic' | 'Bearer' | 'OAuth';
-    
+    type: 'Basic' | 'Bearer' | 'OAuth'
+
     /**
      * Authentication token
      */
-    token?: string;
-    
+    token?: string
+
     /**
      * Username for Basic authentication
      */
-    username?: string;
-    
+    username?: string
+
     /**
      * Password for Basic authentication
      */
-    password?: string;
-  };
+    password?: string
+  }
 }

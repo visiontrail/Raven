@@ -43,30 +43,36 @@ LOG_LEVEL=info
 服务器运行后，有以下几种方式查看或确认管理员API密钥：
 
 #### 方式一：查看环境变量文件
+
 ```bash
 # 查看 .env 文件中的 ADMIN_API_KEY
 cat .env | grep ADMIN_API_KEY
 ```
 
 #### 方式二：通过环境变量查看（Linux/macOS）
+
 ```bash
 # 如果通过环境变量设置
 echo $ADMIN_API_KEY
 ```
 
 #### 方式三：通过PowerShell查看（Windows）
+
 ```powershell
 # 如果通过环境变量设置
 $env:ADMIN_API_KEY
 ```
 
 #### 方式四：检查服务器配置
+
 如果忘记了API密钥，可以：
+
 1. 停止服务器
 2. 编辑 `.env` 文件，设置新的 `ADMIN_API_KEY`
 3. 重新启动服务器
 
 **注意**：
+
 - API密钥用于访问管理功能，如上传文件、创建版本等
 - 请妥善保管API密钥，不要泄露给未授权人员
 - 建议使用强密码作为API密钥
@@ -74,11 +80,13 @@ $env:ADMIN_API_KEY
 ### 4. 启动服务器
 
 开发模式：
+
 ```bash
 npm run dev
 ```
 
 生产模式：
+
 ```bash
 npm start
 ```
@@ -98,6 +106,7 @@ npm start
   - 📱 响应式设计
 
 **使用步骤**:
+
 1. 输入管理员API密钥（参考上面"查看管理员API密钥"部分获取）
 2. 填写版本号（如：1.0.0）
 3. 添加版本更新说明
@@ -109,21 +118,25 @@ npm start
 ### 公开 API
 
 #### 获取最新版本
+
 ```http
 GET /api/version/latest
 ```
 
 #### 检查更新
+
 ```http
 GET /api/version/check?current=1.0.0&platform=win32&arch=x64
 ```
 
 #### 获取版本列表
+
 ```http
 GET /api/version/list
 ```
 
 #### 下载文件
+
 ```http
 GET /api/download/:version/:filename
 ```
@@ -131,6 +144,7 @@ GET /api/download/:version/:filename
 ### 管理 API（需要 API 密钥）
 
 #### 创建版本
+
 ```http
 POST /api/admin/version
 Headers: X-API-Key: your-api-key
@@ -145,6 +159,7 @@ Content-Type: application/json
 ```
 
 #### 上传文件
+
 ```http
 POST /api/admin/version/:version/upload
 Headers: X-API-Key: your-api-key
@@ -156,6 +171,7 @@ arch: x64
 ```
 
 #### 更新版本信息
+
 ```http
 PUT /api/admin/version/:version
 Headers: X-API-Key: your-api-key
@@ -168,12 +184,14 @@ Content-Type: application/json
 ```
 
 #### 删除版本
+
 ```http
 DELETE /api/admin/version/:version
 Headers: X-API-Key: your-api-key
 ```
 
 #### 获取服务器状态
+
 ```http
 GET /api/admin/status
 Headers: X-API-Key: your-api-key
@@ -184,11 +202,13 @@ Headers: X-API-Key: your-api-key
 ### 使用 PM2 部署
 
 1. 安装 PM2：
+
 ```bash
 npm install -g pm2
 ```
 
 2. 创建 PM2 配置文件 `ecosystem.config.js`：
+
 ```javascript
 module.exports = {
   apps: [{
@@ -205,6 +225,7 @@ module.exports = {
 ```
 
 3. 启动应用：
+
 ```bash
 pm2 start ecosystem.config.js
 ```
@@ -216,6 +237,7 @@ pm2 start ecosystem.config.js
 我们提供了便捷的脚本来管理 Docker 容器：
 
 **Linux/macOS:**
+
 ```bash
 # 部署服务
 ./scripts/deploy.sh
@@ -228,6 +250,7 @@ pm2 start ecosystem.config.js
 ```
 
 **Windows:**
+
 ```cmd
 REM 部署服务
 scripts\deploy.bat
@@ -242,12 +265,14 @@ scripts\restart.bat
 #### 方式二：手动部署
 
 1. 创建环境配置：
+
 ```bash
 cp .env.example .env
 # 编辑 .env 文件配置
 ```
 
 2. 构建和运行：
+
 ```bash
 docker build -t raven-update-server .
 docker run -d \
@@ -267,7 +292,7 @@ docker run -d \
 server {
     listen 80;
     server_name your-update-server.com;
-    
+
     # 重定向到 HTTPS
     return 301 https://$server_name$request_uri;
 }
@@ -275,13 +300,13 @@ server {
 server {
     listen 443 ssl http2;
     server_name your-update-server.com;
-    
+
     ssl_certificate /path/to/cert.pem;
     ssl_certificate_key /path/to/key.pem;
-    
+
     # 增加上传文件大小限制
     client_max_body_size 500M;
-    
+
     location / {
         proxy_pass http://localhost:8082;
         proxy_set_header Host $host;
@@ -289,7 +314,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-    
+
     # 静态文件缓存
     location /releases/ {
         proxy_pass http://localhost:8082;
@@ -304,6 +329,7 @@ server {
 ### 发布新版本
 
 1. 创建版本：
+
 ```bash
 curl -X POST https://your-server.com/api/admin/version \
   -H "X-API-Key: your-api-key" \
@@ -316,6 +342,7 @@ curl -X POST https://your-server.com/api/admin/version \
 ```
 
 2. 上传文件：
+
 ```bash
 # Windows 版本
 curl -X POST https://your-server.com/api/admin/version/1.1.0/upload \
@@ -354,6 +381,7 @@ curl https://your-server.com/health
 ### 备份
 
 定期备份以下内容：
+
 - 版本数据：`data/versions.json`
 - 发布文件：`releases/` 目录
 - 配置文件：`.env`

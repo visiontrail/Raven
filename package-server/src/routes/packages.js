@@ -9,15 +9,8 @@ const packageService = new PackageServiceSingleton()
 router.get('/', async (req, res) => {
   try {
     console.log('GET /api/packages - 请求参数:', req.query)
-    
-    const { 
-      page = 1, 
-      limit = 10, 
-      search = '', 
-      type = '', 
-      sortBy = 'createdAt', 
-      sortOrder = 'desc' 
-    } = req.query
+
+    const { page = 1, limit = 10, search = '', type = '', sortBy = 'createdAt', sortOrder = 'desc' } = req.query
 
     let packages = await packageService.getAllPackages()
     console.log('获取到的包数量:', packages.length)
@@ -25,9 +18,8 @@ router.get('/', async (req, res) => {
     // 搜索过滤
     if (search) {
       const searchLower = search.toLowerCase()
-      packages = packages.filter((pkg) => 
-        pkg.name.toLowerCase().includes(searchLower) ||
-        pkg.version.toLowerCase().includes(searchLower)
+      packages = packages.filter(
+        (pkg) => pkg.name.toLowerCase().includes(searchLower) || pkg.version.toLowerCase().includes(searchLower)
       )
     }
 
@@ -40,12 +32,12 @@ router.get('/', async (req, res) => {
     packages.sort((a, b) => {
       let aVal = a[sortBy]
       let bVal = b[sortBy]
-      
+
       if (sortBy === 'createdAt') {
         aVal = new Date(aVal)
         bVal = new Date(bVal)
       }
-      
+
       if (sortOrder === 'desc') {
         return bVal > aVal ? 1 : -1
       } else {
@@ -84,14 +76,14 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params
     const packageInfo = await packageService.getPackageById(id)
-    
+
     if (!packageInfo) {
       return res.status(404).json({
         success: false,
         message: '包不存在'
       })
     }
-    
+
     res.json({
       success: true,
       data: packageInfo
@@ -110,7 +102,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params
     const success = await packageService.deletePackage(id)
-    
+
     if (success) {
       res.json({
         success: true,
@@ -137,7 +129,7 @@ router.get('/stats/overview', async (req, res) => {
     console.log('GET /api/packages/stats/overview - 请求统计信息')
     const packages = await packageService.getAllPackages()
     console.log('统计信息 - 包数量:', packages.length)
-    
+
     const stats = {
       totalPackages: packages.length,
       packagesByType: {},
@@ -151,13 +143,13 @@ router.get('/stats/overview', async (req, res) => {
           createdAt: pkg.createdAt
         }))
     }
-    
+
     // 按类型统计
     packages.forEach((pkg) => {
       const type = pkg.packageType || 'unknown'
       stats.packagesByType[type] = (stats.packagesByType[type] || 0) + 1
     })
-    
+
     res.json({
       success: true,
       data: stats
