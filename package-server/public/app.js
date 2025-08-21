@@ -753,6 +753,36 @@ function showUploadProgress(show) {
   }
 }
 
+// 辅助函数：将字符串或数组转换为数组
+function getComponentsArray(components) {
+  if (!components) return []
+  if (Array.isArray(components)) return components
+  if (typeof components === 'string') {
+    try {
+      const parsed = JSON.parse(components)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
+// 辅助函数：将字符串或数组转换为数组
+function getTagsArray(tags) {
+  if (!tags) return []
+  if (Array.isArray(tags)) return tags
+  if (typeof tags === 'string') {
+    try {
+      const parsed = JSON.parse(tags)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
 // 显示包详情
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function showPackageDetail(packageId) {
@@ -782,44 +812,30 @@ async function showPackageDetail(packageId) {
         <div class="col-md-6">
           <h6 class="text-muted mb-2">元数据</h6>
           <table class="table table-sm">
-             <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">是否补丁:</td><td>${pkg.metadata?.isPatch ? '是' : '否'}</td></tr>
-             <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">组件数量:</td><td>${pkg.metadata?.components?.length || 0}</td></tr>
+             <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">是否补丁:</td><td>${pkg.metadata?.isPatch === 'true' || pkg.metadata?.isPatch === true ? '是' : '否'}</td></tr>
+             <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">组件数量:</td><td>${getComponentsArray(pkg.metadata?.components)?.length || 0}</td></tr>
              <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">描述:</td><td>${pkg.metadata?.description || '无描述'}</td></tr>
            </table>
           
-          ${
-            pkg.metadata?.components && pkg.metadata.components.length > 0
-              ? `
-              <h6 class="mt-3">包含组件</h6>
+          ${(() => {
+            const components = getComponentsArray(pkg.metadata?.components)
+            return components && components.length > 0
+              ? `<h6 class="mt-3">包含组件</h6>
               <div class="d-flex flex-wrap gap-1">
-                  ${pkg.metadata.components
-                    .map(
-                      (comp) => `
-                      <span class="badge bg-light text-dark">${comp}</span>
-                  `
-                    )
-                    .join('')}
-              </div>
-          `
+                  ${components.map((comp) => `<span class="badge bg-light text-dark">${comp}</span>`).join('')}
+              </div>`
               : ''
-          }
+          })()}
           
-          ${
-            pkg.metadata?.tags && pkg.metadata.tags.length > 0
-              ? `
-              <h6 class="mt-3">标签</h6>
+          ${(() => {
+            const tags = getTagsArray(pkg.metadata?.tags)
+            return tags && tags.length > 0
+              ? `<h6 class="mt-3">标签</h6>
               <div class="d-flex flex-wrap gap-1">
-                  ${pkg.metadata.tags
-                    .map(
-                      (tag) => `
-                      <span class="badge bg-primary">${tag}</span>
-                  `
-                    )
-                    .join('')}
-              </div>
-          `
+                  ${tags.map((tag) => `<span class="badge bg-primary">${tag}</span>`).join('')}
+              </div>`
               : ''
-          }
+          })()}
         </div>
       </div>
     `
