@@ -551,19 +551,55 @@ async function showPackageDetail(packageId) {
         <div class="col-md-6">
           <h6 class="text-muted mb-2">基本信息</h6>
           <table class="table table-sm">
-            <tr><td class="fw-bold">包名:</td><td>${pkg.name}</td></tr>
-            <tr><td class="fw-bold">版本:</td><td>${pkg.version}</td></tr>
-            <tr><td class="fw-bold">类型:</td><td><span class="badge bg-${getPackageTypeColor(pkg.type)}">${getPackageTypeDisplay(pkg.type)}</span></td></tr>
+            <tr><td class="fw-bold">包名称:</td><td>${pkg.name}</td></tr>
+            <tr><td class="fw-bold">版本:</td><td>v${pkg.version}</td></tr>
+            <tr><td class="fw-bold">类型:</td><td><span class="badge bg-${getPackageTypeColor(pkg.packageType)}">${getPackageTypeDisplay(pkg.packageType)}</span></td></tr>
             <tr><td class="fw-bold">大小:</td><td>${formatFileSize(pkg.size)}</td></tr>
-            <tr><td class="fw-bold">上传时间:</td><td>${formatDate(pkg.uploadTime)}</td></tr>
+            <tr><td class="fw-bold">路径:</td><td><code>${pkg.path}</code></td></tr>
+            <tr><td class="fw-bold">创建时间:</td><td>${formatDate(pkg.createdAt)}</td></tr>
           </table>
         </div>
         <div class="col-md-6">
-          <h6 class="text-muted mb-2">文件信息</h6>
+          <h6 class="text-muted mb-2">元数据</h6>
           <table class="table table-sm">
-            <tr><td class="fw-bold">文件路径:</td><td class="text-break">${pkg.path}</td></tr>
-            <tr><td class="fw-bold">MD5:</td><td class="font-monospace small">${pkg.md5 || '未计算'}</td></tr>
+            <tr><td class="fw-bold">是否补丁:</td><td>${pkg.metadata?.isPatch ? '是' : '否'}</td></tr>
+            <tr><td class="fw-bold">组件数量:</td><td>${pkg.metadata?.components?.length || 0}</td></tr>
+            <tr><td class="fw-bold">描述:</td><td>${pkg.metadata?.description || '无描述'}</td></tr>
           </table>
+          
+          ${
+            pkg.metadata?.components && pkg.metadata.components.length > 0
+              ? `
+              <h6 class="mt-3">包含组件</h6>
+              <div class="d-flex flex-wrap gap-1">
+                  ${pkg.metadata.components
+                    .map(
+                      (comp) => `
+                      <span class="badge bg-light text-dark">${comp}</span>
+                  `
+                    )
+                    .join('')}
+              </div>
+          `
+              : ''
+          }
+          
+          ${
+            pkg.metadata?.tags && pkg.metadata.tags.length > 0
+              ? `
+              <h6 class="mt-3">标签</h6>
+              <div class="d-flex flex-wrap gap-1">
+                  ${pkg.metadata.tags
+                    .map(
+                      (tag) => `
+                      <span class="badge bg-primary">${tag}</span>
+                  `
+                    )
+                    .join('')}
+              </div>
+          `
+              : ''
+          }
         </div>
       </div>
     `
