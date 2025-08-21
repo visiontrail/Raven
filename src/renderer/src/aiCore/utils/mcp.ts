@@ -1,10 +1,12 @@
 import { aiSdk, Tool } from '@cherrystudio/ai-core'
+import { loggerService } from '@logger'
 // import { AiSdkTool, ToolCallResult } from '@renderer/aiCore/tools/types'
 import { MCPTool, MCPToolResponse } from '@renderer/types'
 import { callMCPTool } from '@renderer/utils/mcp-tools'
 import { JSONSchema7 } from 'json-schema'
 
 const { tool } = aiSdk
+const logger = loggerService.withContext('MCP-utils')
 
 // Setup tools configuration based on provided parameters
 export function setupToolsConfig(mcpTools?: MCPTool[]): Record<string, Tool> | undefined {
@@ -26,12 +28,10 @@ export function convertMcpToolsToAiSdkTools(mcpTools: MCPTool[]): Record<string,
   const tools: Record<string, Tool> = {}
 
   for (const mcpTool of mcpTools) {
-    console.log('mcpTool', mcpTool.inputSchema)
     tools[mcpTool.name] = tool({
       description: mcpTool.description || `Tool from ${mcpTool.serverName}`,
       inputSchema: aiSdk.jsonSchema(mcpTool.inputSchema as JSONSchema7),
       execute: async (params) => {
-        console.log('execute_params', params)
         // 创建适配的 MCPToolResponse 对象
         const toolResponse: MCPToolResponse = {
           id: `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -49,11 +49,10 @@ export function convertMcpToolsToAiSdkTools(mcpTools: MCPTool[]): Record<string,
           if (result.isError) {
             throw new Error(result.content?.[0]?.text || 'Tool execution failed')
           }
-          console.log('result', result)
           // 返回工具执行结果
           return result
         } catch (error) {
-          console.error(`MCP Tool execution failed: ${mcpTool.name}`, error)
+          logger.error(`MCP Tool execution failed: ${mcpTool.name}`, { error })
           throw error
         }
       }

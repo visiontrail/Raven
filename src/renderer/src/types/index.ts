@@ -874,7 +874,16 @@ export interface ToolCallResponse extends BaseToolResponse {
   toolCallId?: string
 }
 
-export type MCPToolResponse = ToolUseResponse | ToolCallResponse
+// export type MCPToolResponse = ToolUseResponse | ToolCallResponse
+export interface MCPToolResponse extends Omit<ToolUseResponse | ToolCallResponse, 'tool'> {
+  tool: MCPTool
+  toolCallId?: string
+  toolUseId?: string
+}
+
+export interface NormalToolResponse extends Omit<ToolCallResponse, 'tool'> {
+  tool: BaseTool
+}
 
 export interface MCPToolResultContent {
   type: 'text' | 'image' | 'audio' | 'resource'

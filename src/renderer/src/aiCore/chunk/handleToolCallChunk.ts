@@ -6,7 +6,7 @@
 
 import { ProviderMetadata, ToolSet, TypedToolCall, TypedToolResult } from '@cherrystudio/ai-core'
 import { loggerService } from '@logger'
-import { BaseTool, MCPToolResponse, ToolCallResponse } from '@renderer/types'
+import { BaseTool, MCPTool, MCPToolResponse, NormalToolResponse } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
 // import type {
 //   AnthropicSearchOutput,
@@ -68,7 +68,7 @@ export class ToolCallChunkHandler {
         // 能拿到说明是mcpTool
         // if (this.activeToolCalls.get(chunk.id)) return
 
-        const tool: BaseTool = {
+        const tool: BaseTool | MCPTool = {
           id: chunk.id,
           name: chunk.toolName,
           description: chunk.toolName,
@@ -80,7 +80,7 @@ export class ToolCallChunkHandler {
           args: '',
           tool
         })
-        const toolResponse: ToolCallResponse = {
+        const toolResponse: MCPToolResponse | NormalToolResponse = {
           id: chunk.id,
           tool: tool,
           arguments: {},
@@ -155,7 +155,7 @@ export class ToolCallChunkHandler {
       return
     }
 
-    let tool: BaseTool
+    let tool: BaseTool | MCPTool
 
     // 根据 providerExecuted 标志区分处理逻辑
     if (providerExecuted) {
@@ -166,7 +166,7 @@ export class ToolCallChunkHandler {
         name: toolName,
         description: toolName,
         type: 'provider'
-      }
+      } as BaseTool
     } else if (toolName.startsWith('builtin_')) {
       // 如果是内置工具，沿用现有逻辑
       logger.info(`[ToolCallChunkHandler] Handling builtin tool: ${toolName}`)
@@ -175,7 +175,7 @@ export class ToolCallChunkHandler {
         name: toolName,
         description: toolName,
         type: 'builtin'
-      }
+      } as BaseTool
     } else {
       // 如果是客户端执行的 MCP 工具，沿用现有逻辑
       logger.info(`[ToolCallChunkHandler] Handling client-side MCP tool: ${toolName}`)
@@ -184,7 +184,7 @@ export class ToolCallChunkHandler {
         logger.warn(`[ToolCallChunkHandler] MCP tool not found: ${toolName}`)
         return
       }
-      tool = mcpTool
+      tool = mcpTool as MCPTool
     }
 
     // 记录活跃的工具调用
@@ -196,7 +196,7 @@ export class ToolCallChunkHandler {
     })
 
     // 创建 MCPToolResponse 格式
-    const toolResponse: MCPToolResponse = {
+    const toolResponse: MCPToolResponse | NormalToolResponse = {
       id: toolCallId,
       tool: tool,
       arguments: args,
@@ -236,7 +236,7 @@ export class ToolCallChunkHandler {
     }
 
     // 创建工具调用结果的 MCPToolResponse 格式
-    const toolResponse: MCPToolResponse = {
+    const toolResponse: MCPToolResponse | NormalToolResponse = {
       id: toolCallInfo.toolCallId,
       tool: toolCallInfo.tool,
       arguments: input,
