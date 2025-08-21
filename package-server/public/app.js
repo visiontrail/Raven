@@ -2,7 +2,7 @@
 const API_BASE = '/api'
 const PACKAGES_API = `${API_BASE}/packages`
 const UPLOAD_API = `${API_BASE}/upload`
-// const DOWNLOAD_API = `${API_BASE}/download` // 暂时注释掉未使用的常量
+const DOWNLOAD_API = `${API_BASE}/download`
 
 // 全局状态
 let currentPage = 1
@@ -372,15 +372,16 @@ function searchPackages() {
   loadPackages(1)
 }
 
-// 清除筛选条件 - 暂时注释掉未使用的函数
-// function clearFilters() {
-//   document.getElementById('searchInput').value = ''
-//   document.getElementById('typeFilter').value = ''
-//   document.getElementById('versionFilter').value = ''
-//   document.getElementById('tagsFilter').value = ''
-//   document.getElementById('patchFilter').value = ''
-//   searchPackages()
-// }
+// 清除筛选条件
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function clearFilters() {
+  document.getElementById('searchInput').value = ''
+  document.getElementById('typeFilter').value = ''
+  document.getElementById('versionFilter').value = ''
+  document.getElementById('tagsFilter').value = ''
+  document.getElementById('patchFilter').value = ''
+  searchPackages()
+}
 
 // 刷新包列表
 function refreshPackages() {
@@ -421,13 +422,14 @@ function showPackages() {
   console.log('📦 包列表页面显示完成')
 }
 
-// 显示上传页面 - 暂时注释掉未使用的函数
-// function showUpload() {
-//   document.getElementById('packageListSection').style.display = 'none'
-//   document.getElementById('uploadSection').style.display = 'block'
-//   document.getElementById('searchSection').style.display = 'none'
-//   document.getElementById('statsSection').style.display = 'none'
-// }
+// 显示上传页面
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function showUpload() {
+  document.getElementById('packageListSection').style.display = 'none'
+  document.getElementById('uploadSection').style.display = 'block'
+  document.getElementById('searchSection').style.display = 'none'
+  document.getElementById('statsSection').style.display = 'none'
+}
 
 // 显示统计页面 - 暂时注释掉未使用的函数
 // function showStats() {
@@ -530,99 +532,120 @@ function showUploadProgress(show) {
   }
 }
 
-// 显示包详情 - 暂时注释掉未使用的函数
-// async function showPackageDetail(packageId) {
-//   try {
-//     const response = await fetch(`${PACKAGES_API}/${packageId}`)
-//     if (!response.ok) throw new Error('获取包详情失败')
-//
-//     const result = await response.json()
-//     if (!result.success || !result.data) {
-//       throw new Error(result.message || '获取包详情失败')
-//     }
-//
-//     const pkg = result.data
-//     const detailContent = document.getElementById('packageDetailContent')
-//     detailContent.innerHTML = `...` // 省略HTML内容
-//
-//     // 设置下载和删除按钮事件
-//     document.getElementById('downloadPackageBtn').onclick = () => downloadPackage(packageId)
-//     document.getElementById('deletePackageBtn').onclick = () => confirmDeletePackage(packageId, pkg.name)
-//
-//     // 显示模态框
-//     const modal = new window.bootstrap.Modal(document.getElementById('packageDetailModal'))
-//     modal.show()
-//   } catch (error) {
-//     console.error('获取包详情失败:', error)
-//     showAlert('获取包详情失败', 'danger')
-//   }
-// }
+// 显示包详情
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function showPackageDetail(packageId) {
+  try {
+    const response = await fetch(`${PACKAGES_API}/${packageId}`)
+    if (!response.ok) throw new Error('获取包详情失败')
 
-// 下载包 - 暂时注释掉未使用的函数
-// async function downloadPackage(packageId) {
-//   try {
-//     const response = await fetch(`${DOWNLOAD_API}/${packageId}`)
-//     if (!response.ok) throw new Error('下载失败')
-//
-//     // 获取文件名
-//     const contentDisposition = response.headers.get('Content-Disposition')
-//     let filename = 'package.tgz'
-//     if (contentDisposition) {
-//       const filenameMatch = contentDisposition.match(/filename="(.+)"/)
-//       if (filenameMatch) {
-//         filename = filenameMatch[1]
-//       }
-//     }
-//
-//     // 创建下载链接
-//     const blob = await response.blob()
-//     const url = window.URL.createObjectURL(blob)
-//     const a = document.createElement('a')
-//     a.href = url
-//     a.download = filename
-//     document.body.appendChild(a)
-//     a.click()
-//     document.body.removeChild(a)
-//     window.URL.revokeObjectURL(url)
-//
-//     showAlert('下载开始', 'success')
-//   } catch (error) {
-//     console.error('下载失败:', error)
-//     showAlert('下载失败', 'danger')
-//   }
-// }
+    const result = await response.json()
+    if (!result.success || !result.data) {
+      throw new Error(result.message || '获取包详情失败')
+    }
 
-// 确认删除包 - 暂时注释掉未使用的函数
-// function confirmDeletePackage(packageId, packageName) {
-//   if (confirm(`确定要删除包 "${packageName}" 吗？此操作不可撤销。`)) {
-//     deletePackage(packageId)
-//   }
-// }
+    const pkg = result.data
+    const detailContent = document.getElementById('packageDetailContent')
+    detailContent.innerHTML = `
+      <div class="row">
+        <div class="col-md-6">
+          <h6 class="text-muted mb-2">基本信息</h6>
+          <table class="table table-sm">
+            <tr><td class="fw-bold">包名:</td><td>${pkg.name}</td></tr>
+            <tr><td class="fw-bold">版本:</td><td>${pkg.version}</td></tr>
+            <tr><td class="fw-bold">类型:</td><td><span class="badge bg-${getPackageTypeColor(pkg.type)}">${getPackageTypeDisplay(pkg.type)}</span></td></tr>
+            <tr><td class="fw-bold">大小:</td><td>${formatFileSize(pkg.size)}</td></tr>
+            <tr><td class="fw-bold">上传时间:</td><td>${formatDate(pkg.uploadTime)}</td></tr>
+          </table>
+        </div>
+        <div class="col-md-6">
+          <h6 class="text-muted mb-2">文件信息</h6>
+          <table class="table table-sm">
+            <tr><td class="fw-bold">文件路径:</td><td class="text-break">${pkg.path}</td></tr>
+            <tr><td class="fw-bold">MD5:</td><td class="font-monospace small">${pkg.md5 || '未计算'}</td></tr>
+          </table>
+        </div>
+      </div>
+    `
 
-// 删除包 - 暂时注释掉未使用的函数
-// async function deletePackage(packageId) {
-//   try {
-//     const response = await fetch(`${PACKAGES_API}/${packageId}`, {
-//       method: 'DELETE'
-//     })
-//
-//     if (!response.ok) throw new Error('删除失败')
-//
-//     showAlert('包删除成功', 'success')
-//
-//     // 关闭模态框
-//     const modal = window.bootstrap.Modal.getInstance(document.getElementById('packageDetailModal'))
-//     if (modal) {
-//       modal.hide()
-//     }
-//
-//     // 刷新列表
-//     refreshPackages()
-//   } catch (error) {
-//     console.error('删除失败:', error)
-//     showAlert('删除失败', 'danger')
-//   }
-// }
+    // 设置下载和删除按钮事件
+    document.getElementById('downloadPackageBtn').onclick = () => downloadPackage(packageId)
+    document.getElementById('deletePackageBtn').onclick = () => confirmDeletePackage(packageId, pkg.name)
+
+    // 显示模态框
+    const modal = new window.bootstrap.Modal(document.getElementById('packageDetailModal'))
+    modal.show()
+  } catch (error) {
+    console.error('获取包详情失败:', error)
+    showAlert('获取包详情失败', 'danger')
+  }
+}
+
+// 下载包
+async function downloadPackage(packageId) {
+  try {
+    const response = await fetch(`${DOWNLOAD_API}/${packageId}`)
+    if (!response.ok) throw new Error('下载失败')
+
+    // 获取文件名
+    const contentDisposition = response.headers.get('Content-Disposition')
+    let filename = 'package.tgz'
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="(.+)"/)
+      if (filenameMatch) {
+        filename = filenameMatch[1]
+      }
+    }
+
+    // 创建下载链接
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+
+    showAlert('下载开始', 'success')
+  } catch (error) {
+    console.error('下载失败:', error)
+    showAlert('下载失败', 'danger')
+  }
+}
+
+// 确认删除包
+function confirmDeletePackage(packageId, packageName) {
+  if (confirm(`确定要删除包 "${packageName}" 吗？此操作不可撤销。`)) {
+    deletePackage(packageId)
+  }
+}
+
+// 删除包
+async function deletePackage(packageId) {
+  try {
+    const response = await fetch(`${PACKAGES_API}/${packageId}`, {
+      method: 'DELETE'
+    })
+
+    if (!response.ok) throw new Error('删除失败')
+
+    showAlert('包删除成功', 'success')
+
+    // 关闭模态框
+    const modal = window.bootstrap.Modal.getInstance(document.getElementById('packageDetailModal'))
+    if (modal) {
+      modal.hide()
+    }
+
+    // 刷新列表
+    refreshPackages()
+  } catch (error) {
+    console.error('删除失败:', error)
+    showAlert('删除失败', 'danger')
+  }
+}
 
 // 阻止默认的拖拽行为
 document.addEventListener('dragover', function (e) {
