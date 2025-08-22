@@ -380,7 +380,7 @@ export async function fetchGenerate({
   // }
 
   const middlewareConfig: AiSdkMiddlewareConfig = {
-    streamOutput: assistant.settings?.streamOutput ?? true,
+    streamOutput: assistant.settings?.streamOutput ?? false,
     enableReasoning: false,
     isPromptToolUse: false,
     isSupportedToolUse: false,
@@ -393,6 +393,7 @@ export async function fetchGenerate({
     const result = await AI.completions(
       model.id,
       {
+        system: prompt,
         prompt: content
       },
       {

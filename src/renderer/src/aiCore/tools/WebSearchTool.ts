@@ -54,15 +54,17 @@ Call this tool to execute the search. You can optionally provide additional cont
         }
       }
 
-      const searchResults: WebSearchProviderResponse[] = []
+      let searchResults: WebSearchProviderResponse = {
+        query: '',
+        results: []
+      }
       // 检查是否需要搜索
       if (finalQueries[0] === 'not_needed') {
         return {
           summary: 'No search needed based on the query analysis.',
-          searchResults: [],
+          searchResults,
           sources: '',
-          instructions: '',
-          rawResults: []
+          instructions: ''
         }
       }
 
@@ -74,29 +76,24 @@ Call this tool to execute the search. You can optionally provide additional cont
             links: extractedKeywords.links
           }
         }
-        const response = await WebSearchService.processWebsearch(webSearchProvider!, extractResults, requestId)
-        searchResults.push(response)
+        searchResults = await WebSearchService.processWebsearch(webSearchProvider!, extractResults, requestId)
       } catch (error) {
         return {
           summary: `Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          searchResults: [],
-          sources: '',
-          instructions: '',
-          rawResults: []
+          sources: [],
+          instructions: ''
         }
       }
-
-      if (searchResults.length === 0 || !searchResults[0].results) {
+      console.log('searchResults', searchResults)
+      if (searchResults.results.length === 0) {
         return {
           summary: 'No search results found for the given query.',
-          searchResults: [],
-          sources: '',
-          instructions: '',
-          rawResults: []
+          sources: [],
+          instructions: ''
         }
       }
 
-      const results = searchResults[0].results
+      const results = searchResults.results
       const citationData = results.map((result, index) => ({
         number: index + 1,
         title: result.title,
@@ -105,25 +102,18 @@ Call this tool to execute the search. You can optionally provide additional cont
       }))
 
       // 🔑 返回引用友好的格式，复用 REFERENCE_PROMPT 逻辑
-      const referenceContent = `\`\`\`json\n${JSON.stringify(citationData, null, 2)}\n\`\`\``
+      // const referenceContent = `\`\`\`json\n${JSON.stringify(citationData, null, 2)}\n\`\`\``
 
       // 构建完整的引用指导文本
       const fullInstructions = REFERENCE_PROMPT.replace(
         '{question}',
         "Based on the search results, please answer the user's question with proper citations."
-      ).replace('{references}', referenceContent)
+      ).replace('{references}', 'searchResults:')
 
       return {
         summary: `Found ${citationData.length} relevant sources. Use [number] format to cite specific information.`,
         searchResults,
-        sources: citationData
-          .map((source) => `[${source.number}] ${source.title}\n${source.content}\nURL: ${source.url}`)
-          .join('\n\n'),
-
-        instructions: fullInstructions,
-
-        // 原始数据，便于后续处理
-        rawResults: citationData
+        instructions: fullInstructions
       }
     }
   })

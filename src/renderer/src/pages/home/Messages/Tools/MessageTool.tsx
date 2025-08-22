@@ -2,8 +2,8 @@ import { MCPToolResponse } from '@renderer/types'
 import type { ToolMessageBlock } from '@renderer/types/newMessage'
 import { Collapse } from 'antd'
 
-import { MessageKnowledgeSearchToolBody, MessageKnowledgeSearchToolTitle } from './MessageKnowledgeSearch'
-import { MessageWebSearchToolBody, MessageWebSearchToolTitle } from './MessageWebSearchTool'
+import { MessageKnowledgeSearchToolTitle } from './MessageKnowledgeSearch'
+import { MessageWebSearchToolTitle } from './MessageWebSearchTool'
 
 interface Props {
   block: ToolMessageBlock
@@ -69,12 +69,12 @@ const ChooseTool = (toolResponse: MCPToolResponse): { label: React.ReactNode; bo
     case 'web_search_preview':
       return {
         label: <MessageWebSearchToolTitle toolResponse={toolResponse} />,
-        body: <MessageWebSearchToolBody toolResponse={toolResponse} />
+        body: null
       }
     case 'knowledge_search':
       return {
         label: <MessageKnowledgeSearchToolTitle toolResponse={toolResponse} />,
-        body: <MessageKnowledgeSearchToolBody toolResponse={toolResponse} />
+        body: null
       }
     default:
       return null
@@ -82,7 +82,7 @@ const ChooseTool = (toolResponse: MCPToolResponse): { label: React.ReactNode; bo
 }
 
 export default function MessageTool({ block }: Props) {
-  // FIXME: 语义错误，这里已经不是 MCP tool 了
+  // FIXME: 语义错误，这里已经不是 MCP tool 了,更改rawMcpToolResponse需要改用户数据, 所以暂时保留
   const toolResponse = block.metadata?.rawMcpToolResponse
 
   if (!toolResponse) return null
@@ -91,7 +91,7 @@ export default function MessageTool({ block }: Props) {
 
   if (!toolRenderer) return null
 
-  return (
+  return toolRenderer.body ? (
     <Collapse
       items={[
         {
@@ -109,6 +109,8 @@ export default function MessageTool({ block }: Props) {
       size="small"
       ghost
     />
+  ) : (
+    toolRenderer.label
   )
 }
 // const PrepareToolWrapper = styled.span`

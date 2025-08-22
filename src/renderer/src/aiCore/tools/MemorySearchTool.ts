@@ -1,11 +1,13 @@
+import { aiSdk, type InferToolOutput } from '@cherrystudio/ai-core'
 import store from '@renderer/store'
 import { selectCurrentUserId, selectGlobalMemoryEnabled, selectMemoryConfig } from '@renderer/store/memory'
 import type { Assistant } from '@renderer/types'
-import { type InferToolOutput, tool } from 'ai'
+// import { type InferToolOutput, tool } from 'ai'
 import { z } from 'zod'
 
 import { MemoryProcessor } from '../../services/MemoryProcessor'
 
+const { tool } = aiSdk
 /**
  * 🧠 基础记忆搜索工具
  * AI 可以主动调用的简单记忆搜索

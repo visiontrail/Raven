@@ -25,7 +25,7 @@ export const MessageWebSearchToolTitle = ({ toolResponse }: { toolResponse: MCPT
     <MessageWebSearchToolTitleTextWrapper type="secondary">
       <Search size={16} style={{ color: 'unset' }} />
       {i18n.t('message.websearch.fetch_complete', {
-        count: toolOutput?.searchResults?.reduce((acc, result) => acc + result.results.length, 0) ?? 0
+        count: toolOutput?.searchResults?.results?.length ?? 0
       })}
     </MessageWebSearchToolTitleTextWrapper>
   )
