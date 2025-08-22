@@ -277,9 +277,6 @@
             <li class="nav-item">
               <a class="nav-link" href="#" onclick="showUpload()">上传包</a>
             </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#" onclick="showStats()">统计信息</a>
-            </li>
           </ul>
         </div>
       </div>
@@ -337,7 +334,7 @@
       <!-- Search and Filter Section -->
       <div id="searchSection" class="search-container">
         <div class="row">
-          <div class="col-md-4 mb-3">
+          <div class="col-md-3 mb-3">
             <label for="searchInput" class="form-label">搜索包</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -370,14 +367,23 @@
               <option value="false">正式包</option>
             </select>
           </div>
+          <div class="col-md-1 mb-3 d-flex align-items-end">
+            <button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+              <i class="bi bi-x-circle me-1"></i>清除
+            </button>
+          </div>
         </div>
         <div class="row">
-          <div class="col-12">
+          <div class="col-md-8 mb-3">
+            <label for="naturalSearchInput" class="form-label">自然语言搜索</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-chat-dots"></i></span>
+              <input type="text" class="form-control" id="naturalSearchInput" placeholder="支持自然语言搜索" style="color: #6c757d;" />
+            </div>
+          </div>
+          <div class="col-md-4 mb-3 d-flex align-items-end">
             <button class="btn btn-primary me-2" onclick="searchPackages()">
-              <i class="bi bi-search me-1"></i>搜索
-            </button>
-            <button class="btn btn-outline-secondary" onclick="clearFilters()">
-              <i class="bi bi-x-circle me-1"></i>清除筛选
+              <i class="bi bi-search me-1"></i>AI搜索(TODO)
             </button>
           </div>
         </div>
