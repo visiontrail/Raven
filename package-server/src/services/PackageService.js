@@ -1,5 +1,6 @@
 const fs = require('fs-extra')
 const path = require('path')
+const crypto = require('crypto')
 const { v4: uuidv4 } = require('uuid')
 
 // Package types enum
@@ -220,6 +221,9 @@ class PackageService {
     // Determine if it's a patch
     const isPatch = fileName.toLowerCase().includes('patch')
 
+    // Calculate SHA-256 hash of the file
+    const sha256 = await this.calculateFileHash(filePath)
+
     const packageInfo = {
       id: uuidv4(),
       name: fileName,
@@ -233,12 +237,37 @@ class PackageService {
         components,
         description: '',
         tags: [],
+        sha256,
         customFields: {}
       }
     }
 
-    console.log(`✅ 成功提取包元数据: ${fileName}, 类型: ${packageType}, 版本: ${version}`)
+    console.log(`✅ 成功提取包元数据: ${fileName}, 类型: ${packageType}, 版本: ${version}, SHA-256: ${sha256}`)
     return packageInfo
+  }
+
+  // Calculate SHA-256 hash of a file
+  async calculateFileHash(filePath) {
+    console.log(`🔐 开始计算文件SHA-256哈希值: ${filePath}`)
+    return new Promise((resolve, reject) => {
+      const hash = crypto.createHash('sha256')
+      const stream = fs.createReadStream(filePath)
+
+      stream.on('error', (error) => {
+        console.error(`❌ 读取文件时出错: ${error.message}`)
+        reject(error)
+      })
+
+      stream.on('data', (data) => {
+        hash.update(data)
+      })
+
+      stream.on('end', () => {
+        const hashValue = hash.digest('hex')
+        console.log(`✅ 文件SHA-256哈希值计算完成: ${hashValue}`)
+        resolve(hashValue)
+      })
+    })
   }
 
   // Determine the package type based on the filename

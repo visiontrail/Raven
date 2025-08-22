@@ -348,9 +348,11 @@ function renderPackageList() {
   const packagesHtml = currentPackages
     .map((pkg) => {
       // 安全地转义字符串以防止HTML注入和JavaScript错误
-      const escapedId = pkg.id.replace(/'/g, "\\'")
+      const escapedId = pkg.id.replace(/'/g, "\\'").replace(/"/g, '&quot;')
       const escapedName = pkg.name.replace(/'/g, "\\'").replace(/"/g, '&quot;')
-      const escapedPath = pkg.path.replace(/'/g, "\\'").replace(/"/g, '&quot;')
+      // 使用SHA-256哈希值替代文件路径显示，如果没有则显示文件路径
+      const displayValue = pkg.metadata && pkg.metadata.sha256 ? pkg.metadata.sha256 : pkg.path
+      const escapedDisplayValue = displayValue.replace(/'/g, "\\'").replace(/"/g, '&quot;')
 
       return `
         <div class="package-item card mb-3" onclick="showPackageDetail('${escapedId}')" style="cursor: pointer;">
@@ -361,7 +363,7 @@ function renderPackageList() {
                             <i class="bi bi-box-seam me-2 text-primary"></i>
                             ${escapedName}
                         </h6>
-                        <p class="mb-1 text-muted small">${escapedPath}</p>
+                        <p class="mb-1 text-muted small">${escapedDisplayValue}</p>
                         <div class="d-flex align-items-center">
                             <span class="badge bg-${getPackageTypeColor(pkg.packageType)} package-type-badge me-2">
                                 ${getPackageTypeDisplay(pkg.packageType)}
