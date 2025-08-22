@@ -808,7 +808,7 @@ async function uploadFiles(files, metadata = null) {
 
     // 显示进度模态窗口
     showUploadProgressModal(true, validFiles)
-    updateUploadModalProgress(0)
+    updateUploadModalProgress(0, '', 0)
 
     // 监听上传进度
     xhr.upload.addEventListener('progress', (event) => {
@@ -833,8 +833,8 @@ async function uploadFiles(files, metadata = null) {
           lastTime = currentTime
           lastLoaded = event.loaded
         } else {
-          // 仍然更新进度条，但不重新计算速度
-          updateUploadModalProgress(percentComplete)
+          // 仍然更新进度条，但不重新计算速度，保持之前的速度和ETA显示
+          updateUploadModalProgress(percentComplete, null, null)
         }
       }
     })
@@ -845,7 +845,7 @@ async function uploadFiles(files, metadata = null) {
         try {
           const response = JSON.parse(xhr.responseText)
           const totalTime = (Date.now() - startTime) / 1000
-          updateUploadModalProgress(100)
+          updateUploadModalProgress(100, '', 0)
           updateUploadModalStatus(`上传完成 (耗时: ${totalTime.toFixed(1)}秒)`)
 
           showAlert(`成功上传 ${validFiles.length} 个文件`, 'success')
@@ -937,7 +937,7 @@ function showUploadProgressModal(show, files = []) {
     }
 
     // 重置进度
-    updateUploadModalProgress(0)
+    updateUploadModalProgress(0, '', 0)
     updateUploadModalStatus('正在初始化上传...')
   } else {
     // 隐藏模态窗口
@@ -974,16 +974,20 @@ function updateUploadModalProgress(percentage, speedText = '', eta = 0) {
     progressPercent.textContent = `${Math.round(percentage)}%`
   }
 
-  if (speedElement && speedText) {
-    speedElement.textContent = `速度: ${speedText}`
-  } else if (speedElement && !speedText) {
-    speedElement.textContent = ''
+  if (speedElement && speedText !== null) {
+    if (speedText) {
+      speedElement.textContent = `速度: ${speedText}`
+    } else {
+      speedElement.textContent = ''
+    }
   }
 
-  if (etaElement && eta > 0 && percentage < 100) {
-    etaElement.textContent = `预计剩余: ${formatTime(eta)}`
-  } else if (etaElement) {
-    etaElement.textContent = ''
+  if (etaElement && eta !== null) {
+    if (eta > 0 && percentage < 100) {
+      etaElement.textContent = `预计剩余: ${formatTime(eta)}`
+    } else {
+      etaElement.textContent = ''
+    }
   }
 }
 
