@@ -10,7 +10,16 @@ router.get('/', async (req, res) => {
   try {
     console.log('GET /api/packages - 请求参数:', req.query)
 
-    const { page = 1, limit = 10, search = '', type = '', sortBy = 'createdAt', sortOrder = 'desc' } = req.query
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      type = '',
+      tags = '',
+      isPatch = '',
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query
 
     let packages = await packageService.getAllPackages()
     console.log('获取到的包数量:', packages.length)
@@ -23,9 +32,27 @@ router.get('/', async (req, res) => {
       )
     }
 
-    // 类型过滤
+    // 包类型过滤 (使用packageType字段)
     if (type) {
-      packages = packages.filter((pkg) => pkg.type === type)
+      packages = packages.filter((pkg) => pkg.packageType === type)
+    }
+
+    // 标签过滤
+    if (tags) {
+      const tagsLower = tags.toLowerCase()
+      packages = packages.filter((pkg) => {
+        if (!pkg.metadata || !pkg.metadata.tags) return false
+        return pkg.metadata.tags.some((tag) => tag.toLowerCase().includes(tagsLower))
+      })
+    }
+
+    // 补丁类型过滤
+    if (isPatch !== '') {
+      const isPatchBool = isPatch === 'true'
+      packages = packages.filter((pkg) => {
+        if (!pkg.metadata) return false
+        return pkg.metadata.isPatch === isPatchBool
+      })
     }
 
     // 排序
@@ -119,6 +146,25 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: '删除包失败'
+    })
+  }
+})
+
+// 手动扫描uploads目录
+router.post('/scan', async (req, res) => {
+  try {
+    console.log('POST /api/packages/scan - 手动扫描uploads目录')
+    await packageService.scanUploadsDirectory()
+
+    res.json({
+      success: true,
+      message: '扫描完成'
+    })
+  } catch (error) {
+    console.error('Error scanning uploads directory:', error)
+    res.status(500).json({
+      success: false,
+      message: '扫描失败'
     })
   }
 })

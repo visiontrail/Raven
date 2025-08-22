@@ -36,6 +36,10 @@ class PackageServiceSingleton {
   async extractPackageMetadata(filePath) {
     return this.service.extractPackageMetadata(filePath)
   }
+
+  async scanUploadsDirectory() {
+    return this.service.scanUploadsDirectory()
+  }
 }
 
 // 重置单例实例（用于测试）

@@ -273,6 +273,8 @@ async function loadPackages(page = 1) {
     const searchInput = document.getElementById('searchInput')
     const typeFilter = document.getElementById('typeFilter')
     const versionFilter = document.getElementById('versionFilter')
+    const tagsFilter = document.getElementById('tagsFilter')
+    const patchFilter = document.getElementById('patchFilter')
     const dateFromFilter = document.getElementById('dateFromFilter')
     const dateToFilter = document.getElementById('dateToFilter')
 
@@ -280,6 +282,8 @@ async function loadPackages(page = 1) {
     console.log('- searchInput:', searchInput ? '存在' : '不存在')
     console.log('- typeFilter:', typeFilter ? '存在' : '不存在')
     console.log('- versionFilter:', versionFilter ? '存在' : '不存在')
+    console.log('- tagsFilter:', tagsFilter ? '存在' : '不存在')
+    console.log('- patchFilter:', patchFilter ? '存在' : '不存在')
     console.log('- dateFromFilter:', dateFromFilter ? '存在' : '不存在')
     console.log('- dateToFilter:', dateToFilter ? '存在' : '不存在')
 
@@ -289,6 +293,8 @@ async function loadPackages(page = 1) {
       search: searchInput ? searchInput.value || '' : '',
       type: typeFilter ? typeFilter.value || '' : '',
       version: versionFilter ? versionFilter.value || '' : '',
+      tags: tagsFilter ? tagsFilter.value || '' : '',
+      isPatch: patchFilter ? patchFilter.value || '' : '',
       dateFrom: dateFromFilter ? dateFromFilter.value || '' : '',
       dateTo: dateToFilter ? dateToFilter.value || '' : ''
     })
