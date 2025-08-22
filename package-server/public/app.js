@@ -370,13 +370,35 @@ function renderPackageList() {
                             ${escapedName}
                         </h6>
                         <p class="mb-1 text-muted small">sha256: ${escapedDisplayValue}</p>
-                        <div class="d-flex align-items-center">
+                        <div class="d-flex align-items-center flex-wrap gap-1">
                             <span class="badge bg-${getPackageTypeColor(pkg.packageType)} package-type-badge me-2">
                                 ${getPackageTypeDisplay(pkg.packageType)}
                             </span>
-                            <span class="badge bg-light text-dark package-type-badge">
+                            <span class="badge bg-light text-dark package-type-badge me-2">
                                 v${pkg.version}
                             </span>
+                            ${(() => {
+                              const components = getComponentsArray(pkg.metadata?.components)
+                              return components && components.length > 0
+                                ? components
+                                    .map(
+                                      (comp) =>
+                                        `<span class="badge bg-success text-white package-type-badge">${comp}</span>`
+                                    )
+                                    .join(' ')
+                                : ''
+                            })()}
+                            ${(() => {
+                              const tags = getTagsArray(pkg.metadata?.tags)
+                              return tags && tags.length > 0
+                                ? tags
+                                    .map(
+                                      (tag) =>
+                                        `<span class="badge package-type-badge" style="background-color: #b794f6; color: white;">${tag}</span>`
+                                    )
+                                    .join(' ')
+                                : ''
+                            })()}
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -1175,7 +1197,7 @@ async function showPackageDetail(packageId) {
             return components && components.length > 0
               ? `<h6 class="mt-3">包含组件</h6>
               <div class="d-flex flex-wrap gap-1">
-                  ${components.map((comp) => `<span class="badge bg-light text-dark">${comp}</span>`).join('')}
+                  ${components.map((comp) => `<span class="badge bg-success text-white">${comp}</span>`).join('')}
               </div>`
               : ''
           })()}
@@ -1185,7 +1207,7 @@ async function showPackageDetail(packageId) {
             return tags && tags.length > 0
               ? `<h6 class="mt-3">标签</h6>
               <div class="d-flex flex-wrap gap-1">
-                  ${tags.map((tag) => `<span class="badge bg-primary">${tag}</span>`).join('')}
+                  ${tags.map((tag) => `<span class="badge" style="background-color: #b794f6; color: white;">${tag}</span>`).join('')}
               </div>`
               : ''
           })()}
