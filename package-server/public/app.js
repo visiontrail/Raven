@@ -64,6 +64,9 @@ function setupEventListeners() {
   // 标签输入功能
   setupTagsInput()
   setupComponentsInput()
+
+  // 取消上传按钮事件
+  document.getElementById('cancelUploadBtn').addEventListener('click', cancelUpload)
 }
 
 // 防抖函数
@@ -764,6 +767,9 @@ function clearAllComponents() {
   }
 }
 
+// 全局变量用于存储当前上传的XMLHttpRequest对象
+let currentUploadXHR = null
+
 async function uploadFiles(files, metadata = null) {
   if (files.length === 0) return
 
@@ -795,13 +801,14 @@ async function uploadFiles(files, metadata = null) {
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
+    currentUploadXHR = xhr // 保存当前上传的xhr对象
     let startTime = Date.now()
     let lastLoaded = 0
     let lastTime = startTime
 
-    // 显示进度条
-    showUploadProgress(true)
-    updateProgressBar(0, 0)
+    // 显示进度模态窗口
+    showUploadProgressModal(true, validFiles)
+    updateUploadModalProgress(0)
 
     // 监听上传进度
     xhr.upload.addEventListener('progress', (event) => {
@@ -820,14 +827,14 @@ async function uploadFiles(files, metadata = null) {
           const remainingBytes = event.total - event.loaded
           const eta = speed > 0 ? Math.round(remainingBytes / speed) : 0
 
-          updateProgressBar(percentComplete)
-          updateProgressText('上传中...', percentComplete, speedText, eta)
+          updateUploadModalProgress(percentComplete, speedText, eta)
+          updateUploadModalStatus('上传中...')
 
           lastTime = currentTime
           lastLoaded = event.loaded
         } else {
           // 仍然更新进度条，但不重新计算速度
-          updateProgressBar(percentComplete)
+          updateUploadModalProgress(percentComplete)
         }
       }
     })
@@ -838,8 +845,8 @@ async function uploadFiles(files, metadata = null) {
         try {
           const response = JSON.parse(xhr.responseText)
           const totalTime = (Date.now() - startTime) / 1000
-          updateProgressBar(100)
-          updateProgressText('上传完成', 100, '', 0, totalTime)
+          updateUploadModalProgress(100)
+          updateUploadModalStatus(`上传完成 (耗时: ${totalTime.toFixed(1)}秒)`)
 
           showAlert(`成功上传 ${validFiles.length} 个文件`, 'success')
 
@@ -852,7 +859,7 @@ async function uploadFiles(files, metadata = null) {
           // 返回包列表页面
           setTimeout(() => {
             showPackages()
-            showUploadProgress(false)
+            showUploadProgressModal(false)
           }, 2000)
 
           resolve(response)
@@ -876,13 +883,14 @@ async function uploadFiles(files, metadata = null) {
 
     // 监听上传中止
     xhr.addEventListener('abort', () => {
-      reject(new Error('上传被中止'))
+      reject(new Error('上传被用户取消'))
     })
 
     // 错误处理
     xhr.addEventListener('loadend', () => {
+      currentUploadXHR = null // 清除当前上传的xhr对象
       if (xhr.status < 200 || xhr.status >= 300) {
-        showUploadProgress(false)
+        showUploadProgressModal(false)
       }
     })
 
@@ -893,37 +901,71 @@ async function uploadFiles(files, metadata = null) {
   }).catch((error) => {
     console.error('上传失败:', error)
     showAlert(`上传失败: ${error.message}`, 'error')
-    showUploadProgress(false)
+    showUploadProgressModal(false)
+    currentUploadXHR = null
     throw error
   })
 }
 
-// 显示/隐藏上传进度
-function showUploadProgress(show) {
-  const uploadProgress = document.getElementById('uploadProgress')
+// 显示/隐藏上传进度模态窗口
+function showUploadProgressModal(show, files = []) {
+  const modal = document.getElementById('uploadProgressModal')
   const uploadZone = document.getElementById('uploadZone')
 
   if (show) {
-    uploadProgress.style.display = 'block'
+    // 显示模态窗口
+    if (window.bootstrap) {
+      const bootstrapModal = new window.bootstrap.Modal(modal)
+      bootstrapModal.show()
+    } else {
+      modal.style.display = 'block'
+      modal.classList.add('show')
+    }
+
+    // 禁用上传区域
     uploadZone.style.pointerEvents = 'none'
     uploadZone.style.opacity = '0.6'
-    // 重置进度条
-    updateProgressBar(0)
-    updateProgressText('准备上传...', 0)
+
+    // 设置文件名
+    const fileNameElement = document.getElementById('uploadModalFileName')
+    if (files.length > 0) {
+      if (files.length === 1) {
+        fileNameElement.textContent = files[0].name
+      } else {
+        fileNameElement.textContent = `${files.length} 个文件`
+      }
+    }
+
+    // 重置进度
+    updateUploadModalProgress(0)
+    updateUploadModalStatus('正在初始化上传...')
   } else {
-    uploadProgress.style.display = 'none'
+    // 隐藏模态窗口
+    if (window.bootstrap) {
+      const bootstrapModal = window.bootstrap.Modal.getInstance(modal)
+      if (bootstrapModal) {
+        bootstrapModal.hide()
+      }
+    } else {
+      modal.style.display = 'none'
+      modal.classList.remove('show')
+    }
+
+    // 恢复上传区域
     uploadZone.style.pointerEvents = 'auto'
     uploadZone.style.opacity = '1'
   }
 }
 
-// 更新进度条
-function updateProgressBar(percentage) {
-  const progressBar = document.querySelector('#uploadProgress .progress-bar')
-  const progressPercent = document.getElementById('uploadProgressPercent')
+// 更新模态窗口进度条
+function updateUploadModalProgress(percentage, speedText = '', eta = 0) {
+  const progressBar = document.getElementById('uploadModalProgressBar')
+  const progressPercent = document.getElementById('uploadModalProgressPercent')
+  const speedElement = document.getElementById('uploadModalSpeedText')
+  const etaElement = document.getElementById('uploadModalEtaText')
 
   if (progressBar) {
-    const roundedPercentage = Math.round(percentage * 100) / 100 // 保留两位小数
+    const roundedPercentage = Math.round(percentage * 100) / 100
     progressBar.style.width = `${roundedPercentage}%`
     progressBar.setAttribute('aria-valuenow', roundedPercentage)
   }
@@ -931,29 +973,35 @@ function updateProgressBar(percentage) {
   if (progressPercent) {
     progressPercent.textContent = `${Math.round(percentage)}%`
   }
-}
-
-// 更新进度文本
-function updateProgressText(text, percentage = 0, speedText = '', eta = 0, totalTime = null) {
-  const progressText = document.getElementById('uploadProgressText')
-  const speedElement = document.getElementById('uploadSpeedText')
-
-  if (progressText) {
-    if (totalTime !== null) {
-      progressText.textContent = `上传完成 (耗时: ${totalTime.toFixed(1)}秒)`
-    } else {
-      progressText.textContent = text
-    }
-  }
 
   if (speedElement && speedText) {
-    let speedDisplay = `速度: ${speedText}`
-    if (eta > 0 && percentage < 100) {
-      speedDisplay += ` | 预计剩余: ${formatTime(eta)}`
-    }
-    speedElement.textContent = speedDisplay
-  } else if (speedElement && percentage === 100) {
+    speedElement.textContent = `速度: ${speedText}`
+  } else if (speedElement && !speedText) {
     speedElement.textContent = ''
+  }
+
+  if (etaElement && eta > 0 && percentage < 100) {
+    etaElement.textContent = `预计剩余: ${formatTime(eta)}`
+  } else if (etaElement) {
+    etaElement.textContent = ''
+  }
+}
+
+// 更新模态窗口状态文本
+function updateUploadModalStatus(text) {
+  const statusElement = document.getElementById('uploadModalStatus')
+  if (statusElement) {
+    statusElement.textContent = text
+  }
+}
+
+// 取消上传
+function cancelUpload() {
+  if (currentUploadXHR) {
+    currentUploadXHR.abort()
+    currentUploadXHR = null
+    showUploadProgressModal(false)
+    showAlert('上传已取消', 'warning')
   }
 }
 
