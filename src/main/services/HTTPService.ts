@@ -1,6 +1,7 @@
 // src/main/services/HTTPService.ts
 
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
+import * as crypto from 'crypto'
 import FormData from 'form-data'
 import * as fs from 'fs-extra'
 import * as path from 'path'
@@ -59,6 +60,29 @@ export interface IHTTPService {
  */
 export class HTTPService implements IHTTPService {
   /**
+   * Calculate SHA-256 hash of a file
+   * @param filePath Path to the file
+   * @returns Promise<string> SHA-256 hash in hexadecimal format
+   */
+  private async calculateFileHash(filePath: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const hash = crypto.createHash('sha256')
+      const stream = fs.createReadStream(filePath)
+
+      stream.on('data', (data) => {
+        hash.update(data)
+      })
+
+      stream.on('end', () => {
+        resolve(hash.digest('hex'))
+      })
+
+      stream.on('error', (error) => {
+        reject(error)
+      })
+    })
+  }
+  /**
    * Upload a file to HTTP server with complete package information
    */
   async uploadFile(
@@ -78,12 +102,17 @@ export class HTTPService implements IHTTPService {
       const totalBytes = fileStats.size
       const fileName = path.basename(filePath)
 
+      // Calculate SHA-256 hash of the file
+      console.log('正在计算文件SHA-256哈希值...')
+      const fileHash = await this.calculateFileHash(filePath)
+      console.log('文件SHA-256哈希值:', fileHash)
+
       // Create form data with file and complete package information
       const formData = new FormData()
       const fileStream = fs.createReadStream(filePath)
 
       formData.append('file', fileStream, fileName)
-      // Send complete package information
+      // Send complete package information with SHA-256 hash in metadata
       const packageInfoData = {
         id: packageInfo.id,
         name: packageInfo.name,
@@ -91,7 +120,10 @@ export class HTTPService implements IHTTPService {
         packageType: packageInfo.packageType,
         size: packageInfo.size,
         createdAt: packageInfo.createdAt,
-        metadata: packageInfo.metadata
+        metadata: {
+          ...packageInfo.metadata,
+          sha256: fileHash
+        }
       }
 
       console.log('=== HTTP上传请求详细信息 ===')
