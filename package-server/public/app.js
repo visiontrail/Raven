@@ -546,6 +546,7 @@ function showUpload() {
 function handleFileSelect(event) {
   const files = event.target.files
   if (files.length > 0) {
+    displaySelectedFiles(files)
     showMetadataForm()
   }
 }
@@ -569,7 +570,66 @@ function handleDrop(event) {
   if (files.length > 0) {
     // 设置文件到input中
     document.getElementById('fileInput').files = files
+    displaySelectedFiles(files)
     showMetadataForm()
+  }
+}
+
+// 显示选中的文件
+function displaySelectedFiles(files) {
+  const selectedFilesDisplay = document.getElementById('selectedFilesDisplay')
+  const selectedFilesList = document.getElementById('selectedFilesList')
+
+  if (files.length === 0) {
+    selectedFilesDisplay.style.display = 'none'
+    return
+  }
+
+  let filesHtml = ''
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
+    const fileSize = formatFileSize(file.size)
+    const fileIcon =
+      file.name.endsWith('.tgz') || file.name.endsWith('.tar.gz') ? 'bi-file-earmark-zip' : 'bi-file-earmark'
+
+    filesHtml += `
+      <div class="d-flex align-items-center justify-content-between mb-2 p-2 border rounded bg-white">
+        <div class="d-flex align-items-center">
+          <i class="bi ${fileIcon} text-primary me-2"></i>
+          <div>
+            <div class="fw-medium">${file.name}</div>
+            <small class="text-muted">${fileSize}</small>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-outline-danger" onclick="removeSelectedFile(${i})">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+    `
+  }
+
+  selectedFilesList.innerHTML = filesHtml
+  selectedFilesDisplay.style.display = 'block'
+}
+
+// 移除选中的文件
+function removeSelectedFile(index) {
+  const fileInput = document.getElementById('fileInput')
+  const dt = new DataTransfer()
+
+  for (let i = 0; i < fileInput.files.length; i++) {
+    if (i !== index) {
+      dt.items.add(fileInput.files[i])
+    }
+  }
+
+  fileInput.files = dt.files
+
+  if (fileInput.files.length === 0) {
+    document.getElementById('selectedFilesDisplay').style.display = 'none'
+    document.getElementById('metadataForm').style.display = 'none'
+  } else {
+    displaySelectedFiles(fileInput.files)
   }
 }
 
@@ -588,6 +648,7 @@ function resetMetadataForm() {
   document.getElementById('version').value = ''
   document.getElementById('metadataForm').style.display = 'none'
   document.getElementById('fileInput').value = ''
+  document.getElementById('selectedFilesDisplay').style.display = 'none'
   clearAllTags()
   // 重置标签输入框
   const tagInput = document.getElementById('tagInput')
@@ -642,6 +703,7 @@ window.uploadWithMetadata = uploadWithMetadata
 window.resetMetadataForm = resetMetadataForm
 window.removeTag = removeTag
 window.removeComponent = removeComponent
+window.removeSelectedFile = removeSelectedFile
 
 // 标签管理功能
 function setupTagsInput() {
