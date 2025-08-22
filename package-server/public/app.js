@@ -1181,7 +1181,7 @@ async function showPackageDetail(packageId) {
             <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">类型:</td><td><span class="badge bg-${getPackageTypeColor(pkg.packageType)}">${getPackageTypeDisplay(pkg.packageType)}</span></td></tr>
             <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">大小:</td><td>${formatFileSize(pkg.size)}</td></tr>
             <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">创建时间:</td><td>${formatDate(pkg.createdAt)}</td></tr>
-            <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">SHA-256:</td><td><code style="font-size: 0.8em; word-break: break-all;">${pkg.sha256 || '未知'}</code></td></tr>
+            <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">SHA-256:</td><td><code style="font-size: 0.8em; word-break: break-all;">${pkg.metadata?.sha256 || pkg.sha256 || '未知'}</code></td></tr>
           </table>
         </div>
         <div class="col-md-6">
