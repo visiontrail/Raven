@@ -795,17 +795,40 @@ async function uploadFiles(files, metadata = null) {
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
+    let startTime = Date.now()
+    let lastLoaded = 0
+    let lastTime = startTime
 
     // 显示进度条
     showUploadProgress(true)
-    updateProgressBar(0)
+    updateProgressBar(0, 0)
 
     // 监听上传进度
     xhr.upload.addEventListener('progress', (event) => {
       if (event.lengthComputable) {
+        const currentTime = Date.now()
         const percentComplete = (event.loaded / event.total) * 100
-        updateProgressBar(percentComplete)
-        updateProgressText(`上传中... ${Math.round(percentComplete)}%`)
+
+        // 计算上传速度
+        const timeDiff = currentTime - lastTime
+        const loadedDiff = event.loaded - lastLoaded
+
+        if (timeDiff > 500) {
+          // 每500ms更新一次速度
+          const speed = loadedDiff / (timeDiff / 1000) // bytes per second
+          const speedText = formatUploadSpeed(speed)
+          const remainingBytes = event.total - event.loaded
+          const eta = speed > 0 ? Math.round(remainingBytes / speed) : 0
+
+          updateProgressBar(percentComplete)
+          updateProgressText('上传中...', percentComplete, speedText, eta)
+
+          lastTime = currentTime
+          lastLoaded = event.loaded
+        } else {
+          // 仍然更新进度条，但不重新计算速度
+          updateProgressBar(percentComplete)
+        }
       }
     })
 
@@ -814,8 +837,9 @@ async function uploadFiles(files, metadata = null) {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const response = JSON.parse(xhr.responseText)
+          const totalTime = (Date.now() - startTime) / 1000
           updateProgressBar(100)
-          updateProgressText('上传完成')
+          updateProgressText('上传完成', 100, '', 0, totalTime)
 
           showAlert(`成功上传 ${validFiles.length} 个文件`, 'success')
 
@@ -829,7 +853,7 @@ async function uploadFiles(files, metadata = null) {
           setTimeout(() => {
             showPackages()
             showUploadProgress(false)
-          }, 1000)
+          }, 2000)
 
           resolve(response)
         } catch (error) {
@@ -885,7 +909,7 @@ function showUploadProgress(show) {
     uploadZone.style.opacity = '0.6'
     // 重置进度条
     updateProgressBar(0)
-    updateProgressText('准备上传...')
+    updateProgressText('准备上传...', 0)
   } else {
     uploadProgress.style.display = 'none'
     uploadZone.style.pointerEvents = 'auto'
@@ -896,17 +920,66 @@ function showUploadProgress(show) {
 // 更新进度条
 function updateProgressBar(percentage) {
   const progressBar = document.querySelector('#uploadProgress .progress-bar')
+  const progressPercent = document.getElementById('uploadProgressPercent')
+
   if (progressBar) {
-    progressBar.style.width = `${percentage}%`
-    progressBar.setAttribute('aria-valuenow', percentage)
+    const roundedPercentage = Math.round(percentage * 100) / 100 // 保留两位小数
+    progressBar.style.width = `${roundedPercentage}%`
+    progressBar.setAttribute('aria-valuenow', roundedPercentage)
+  }
+
+  if (progressPercent) {
+    progressPercent.textContent = `${Math.round(percentage)}%`
   }
 }
 
 // 更新进度文本
-function updateProgressText(text) {
-  const progressText = document.querySelector('#uploadProgress small')
+function updateProgressText(text, percentage = 0, speedText = '', eta = 0, totalTime = null) {
+  const progressText = document.getElementById('uploadProgressText')
+  const speedElement = document.getElementById('uploadSpeedText')
+
   if (progressText) {
-    progressText.textContent = text
+    if (totalTime !== null) {
+      progressText.textContent = `上传完成 (耗时: ${totalTime.toFixed(1)}秒)`
+    } else {
+      progressText.textContent = text
+    }
+  }
+
+  if (speedElement && speedText) {
+    let speedDisplay = `速度: ${speedText}`
+    if (eta > 0 && percentage < 100) {
+      speedDisplay += ` | 预计剩余: ${formatTime(eta)}`
+    }
+    speedElement.textContent = speedDisplay
+  } else if (speedElement && percentage === 100) {
+    speedElement.textContent = ''
+  }
+}
+
+// 格式化上传速度
+function formatUploadSpeed(bytesPerSecond) {
+  if (bytesPerSecond < 1024) {
+    return `${bytesPerSecond.toFixed(0)} B/s`
+  } else if (bytesPerSecond < 1024 * 1024) {
+    return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`
+  } else {
+    return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`
+  }
+}
+
+// 格式化时间
+function formatTime(seconds) {
+  if (seconds < 60) {
+    return `${seconds}秒`
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}分${remainingSeconds}秒`
+  } else {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    return `${hours}小时${minutes}分钟`
   }
 }
 
