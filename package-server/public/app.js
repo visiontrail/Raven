@@ -363,7 +363,7 @@ function renderPackageList() {
                             <i class="bi bi-box-seam me-2 text-primary"></i>
                             ${escapedName}
                         </h6>
-                        <p class="mb-1 text-muted small">${escapedDisplayValue}</p>
+                        <p class="mb-1 text-muted small">sha256: ${escapedDisplayValue}</p>
                         <div class="d-flex align-items-center">
                             <span class="badge bg-${getPackageTypeColor(pkg.packageType)} package-type-badge me-2">
                                 ${getPackageTypeDisplay(pkg.packageType)}
