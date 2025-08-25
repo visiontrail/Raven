@@ -13,6 +13,7 @@ import {
   TextPart,
   UserModelMessage
 } from '@cherrystudio/ai-core'
+import { loggerService } from '@logger'
 import { DEFAULT_MAX_TOKENS } from '@renderer/config/constant'
 import {
   isGenerateImageModel,
@@ -26,7 +27,7 @@ import {
   isVisionModel,
   isWebSearchModel
 } from '@renderer/config/models'
-import { getAssistantSettings, getDefaultModel } from '@renderer/services/AssistantService'
+import { getAssistantSettings, getDefaultModel, getProviderByModel } from '@renderer/services/AssistantService'
 import type { Assistant, MCPTool, Message, Model, Provider } from '@renderer/types'
 import { FileTypes } from '@renderer/types'
 import { FileMessageBlock, ImageMessageBlock, ThinkingMessageBlock } from '@renderer/types/newMessage'
@@ -39,10 +40,13 @@ import {
 } from '@renderer/utils/messageUtils/find'
 import { defaultTimeout } from '@shared/config/constant'
 
+import { getAiSdkProviderId } from './provider/factory'
 // import { webSearchTool } from './tools/WebSearchTool'
 // import { jsonSchemaToZod } from 'json-schema-to-zod'
 import { setupToolsConfig } from './utils/mcp'
 import { buildProviderOptions } from './utils/options'
+
+const logger = loggerService.withContext('transformParameters')
 
 /**
  * 获取温度参数
@@ -100,15 +104,19 @@ export async function extractFileContent(message: Message): Promise<string> {
  * 转换消息为 AI SDK 参数格式
  * 基于 OpenAI 格式的通用转换，支持文本、图片和文件
  */
-export async function convertMessageToSdkParam(message: Message, isVisionModel = false): Promise<ModelMessage> {
+export async function convertMessageToSdkParam(
+  message: Message,
+  isVisionModel = false,
+  model?: Model
+): Promise<ModelMessage> {
   const content = getMainTextContent(message)
   const fileBlocks = findFileBlocks(message)
   const imageBlocks = findImageBlocks(message)
   const reasoningBlocks = findThinkingBlocks(message)
   if (message.role === 'user' || message.role === 'system') {
-    return convertMessageToUserModelMessage(content, fileBlocks, imageBlocks, isVisionModel)
+    return convertMessageToUserModelMessage(content, fileBlocks, imageBlocks, isVisionModel, model)
   } else {
-    return convertMessageToAssistantModelMessage(content, fileBlocks, reasoningBlocks)
+    return convertMessageToAssistantModelMessage(content, fileBlocks, reasoningBlocks, model)
   }
 }
 
@@ -116,7 +124,8 @@ async function convertMessageToUserModelMessage(
   content: string,
   fileBlocks: FileMessageBlock[],
   imageBlocks: ImageMessageBlock[],
-  isVisionModel = false
+  isVisionModel = false,
+  model?: Model
 ): Promise<UserModelMessage> {
   const parts: Array<TextPart | FilePart | ImagePart> = []
   if (content) {
@@ -135,7 +144,7 @@ async function convertMessageToUserModelMessage(
             mediaType: image.mime
           })
         } catch (error) {
-          console.warn('Failed to load image:', error)
+          logger.warn('Failed to load image:', error as Error)
         }
       } else if (imageBlock.url) {
         parts.push({
@@ -148,6 +157,16 @@ async function convertMessageToUserModelMessage(
 
   // 处理文件
   for (const fileBlock of fileBlocks) {
+    // 优先尝试原生文件支持（PDF等）
+    if (model) {
+      const filePart = await convertFileBlockToFilePart(fileBlock, model)
+      if (filePart) {
+        parts.push(filePart)
+        continue
+      }
+    }
+
+    // 回退到文本处理
     const textPart = await convertFileBlockToTextPart(fileBlock)
     if (textPart) {
       parts.push(textPart)
@@ -163,7 +182,8 @@ async function convertMessageToUserModelMessage(
 async function convertMessageToAssistantModelMessage(
   content: string,
   fileBlocks: FileMessageBlock[],
-  thinkingBlocks: ThinkingMessageBlock[]
+  thinkingBlocks: ThinkingMessageBlock[],
+  model?: Model
 ): Promise<AssistantModelMessage> {
   const parts: Array<TextPart | FilePart> = []
   if (content) {
@@ -175,6 +195,16 @@ async function convertMessageToAssistantModelMessage(
   }
 
   for (const fileBlock of fileBlocks) {
+    // 优先尝试原生文件支持（PDF等）
+    if (model) {
+      const filePart = await convertFileBlockToFilePart(fileBlock, model)
+      if (filePart) {
+        parts.push(filePart)
+        continue
+      }
+    }
+
+    // 回退到文本处理
     const textPart = await convertFileBlockToTextPart(fileBlock)
     if (textPart) {
       parts.push(textPart)
@@ -190,7 +220,7 @@ async function convertMessageToAssistantModelMessage(
 async function convertFileBlockToTextPart(fileBlock: FileMessageBlock): Promise<TextPart | null> {
   const file = fileBlock.file
 
-  if ([FileTypes.TEXT, FileTypes.DOCUMENT].includes(file.type)) {
+  if (file.type === FileTypes.TEXT) {
     try {
       const fileContent = await window.api.file.read(file.id + file.ext)
       return {
@@ -198,7 +228,52 @@ async function convertFileBlockToTextPart(fileBlock: FileMessageBlock): Promise<
         text: `${file.origin_name}\n${fileContent.trim()}`
       }
     } catch (error) {
-      console.warn('Failed to read file:', error)
+      logger.warn('Failed to read file:', error as Error)
+    }
+  }
+
+  return null
+}
+
+/**
+ * 检查模型是否支持原生PDF输入
+ */
+function supportsPdfInput(model: Model): boolean {
+  // 基于AI SDK文档，这些提供商支持PDF输入
+  const supportedProviders = [
+    'openai',
+    'azure-openai',
+    'anthropic',
+    'google',
+    'google-generative-ai',
+    'google-vertex',
+    'bedrock',
+    'amazon-bedrock'
+  ]
+
+  const provider = getProviderByModel(model)
+  const aiSdkId = getAiSdkProviderId(provider)
+
+  return supportedProviders.some((provider) => aiSdkId === provider)
+}
+
+/**
+ * 将文件块转换为FilePart（用于原生文件支持）
+ */
+async function convertFileBlockToFilePart(fileBlock: FileMessageBlock, model: Model): Promise<FilePart | null> {
+  const file = fileBlock.file
+
+  if (file.type === FileTypes.DOCUMENT && file.ext === '.pdf' && supportsPdfInput(model)) {
+    try {
+      const base64Data = await window.api.file.base64File(file.id + file.ext)
+      return {
+        type: 'file',
+        data: base64Data,
+        mediaType: 'application/pdf',
+        filename: file.origin_name
+      }
+    } catch (error) {
+      logger.warn('Failed to read PDF file:', error as Error)
     }
   }
 
@@ -216,7 +291,7 @@ export async function convertMessagesToSdkMessages(
   const isVision = isVisionModel(model)
 
   for (const message of messages) {
-    const sdkMessage = await convertMessageToSdkParam(message, isVision)
+    const sdkMessage = await convertMessageToSdkParam(message, isVision, model)
     sdkMessages.push(sdkMessage)
   }
 

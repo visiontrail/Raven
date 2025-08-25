@@ -1,4 +1,4 @@
-import type { ProviderConfig } from '@cherrystudio/ai-core'
+import { type ProviderConfig, registerMultipleProviders } from '@cherrystudio/ai-core'
 import { loggerService } from '@logger'
 
 const logger = loggerService.withContext('ProviderConfigs')
@@ -49,9 +49,6 @@ export const NEW_PROVIDER_CONFIGS: (ProviderConfig & {
  */
 export async function initializeNewProviders(): Promise<void> {
   try {
-    // 动态导入以避免循环依赖
-    const { registerMultipleProviders } = await import('@cherrystudio/ai-core')
-
     const successCount = registerMultipleProviders(NEW_PROVIDER_CONFIGS)
 
     if (successCount < NEW_PROVIDER_CONFIGS.length) {
