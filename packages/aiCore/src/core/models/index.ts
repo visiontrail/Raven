@@ -1,18 +1,9 @@
 /**
- * Models 模块统一导出
+ * Models 模块统一导出 - 简化版
  */
 
-// Model 创建相关
-export {
-  createBaseModel,
-  createImageModel,
-  getProviderInfo,
-  getSupportedProviders,
-  ModelCreationError
-} from './ModelCreator'
+// 核心模型解析器
+export { globalModelResolver, ModelResolver } from './ModelResolver'
 
-// Model 配置和工厂
-export { createModel } from './factory'
-
-// 类型定义
+// 保留的类型定义（可能被其他地方使用）
 export type { ModelConfig as ModelConfigType } from './types'

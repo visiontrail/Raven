@@ -13,7 +13,8 @@ import {
 } from 'ai'
 
 import { type ProviderId } from '../../types'
-import { createImageModel, createModel, getProviderInfo } from '../models'
+import { globalModelResolver } from '../models'
+import { getProviderInfo } from '../models/ModelCreator'
 import { type ModelConfig } from '../models/types'
 import { type AiPlugin, type AiRequestContext, definePlugin } from '../plugins'
 import { ImageGenerationError, ImageModelResolutionError } from './errors'
@@ -275,14 +276,12 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     extraModelConfig?: Record<string, any>
   ): Promise<LanguageModelV2> {
     if (typeof modelOrId === 'string') {
-      // 字符串modelId，需要创建模型
-      return await createModel({
-        providerId: this.config.providerId,
-        modelId: modelOrId,
-        providerSettings: this.config.providerSettings,
-        middlewares,
-        extraModelConfig
-      })
+      // 字符串modelId，使用新的ModelResolver解析
+      return await globalModelResolver.resolveLanguageModel(
+        modelOrId, // 支持 'gpt-4' 和 'aihubmix>anthropic>claude-3'
+        this.config.providerId, // fallback provider
+        this.config.providerSettings // provider options
+      )
     } else {
       // 已经是模型，直接返回
       return modelOrId
@@ -295,8 +294,12 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
   private async resolveImageModel(modelOrId: ImageModelV2 | string): Promise<ImageModelV2> {
     try {
       if (typeof modelOrId === 'string') {
-        // 字符串modelId，需要创建图像模型
-        return await createImageModel(this.config.providerId, modelOrId, this.config.providerSettings)
+        // 字符串modelId，使用新的ModelResolver解析
+        return await globalModelResolver.resolveImageModel(
+          modelOrId, // 支持 'dall-e-3' 和 'aihubmix>openai>dall-e-3'
+          this.config.providerId, // fallback provider
+          this.config.providerSettings // provider options
+        )
       } else {
         // 已经是模型，直接返回
         return modelOrId
