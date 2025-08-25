@@ -8,15 +8,8 @@ export type { NamedMiddleware } from './middleware'
 export { createMiddlewares, wrapModelWithMiddlewares } from './middleware'
 
 // 创建管理
-export {
-  createBaseModel,
-  createImageModel,
-  createModel,
-  getProviderInfo,
-  getSupportedProviders,
-  ModelCreationError
-} from './models'
-export type { ModelConfig } from './models/types'
+export { globalModelResolver, ModelResolver } from './models'
+export type { ModelConfig as ModelConfigType } from './models/types'
 
 // 执行管理
 export type { ToolUseRequestContext } from './plugins/built-in/toolUsePlugin/type'

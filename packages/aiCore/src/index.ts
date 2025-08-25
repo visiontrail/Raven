@@ -4,11 +4,7 @@
  */
 
 // 导入内部使用的类和函数
-import {
-  getProviderInfo as factoryGetProviderInfo,
-  getSupportedProviders as factoryGetSupportedProviders
-} from './core/models'
-import { aiProviderRegistry, isProviderSupported } from './core/providers/registry'
+import { getSupportedProviders, isProviderSupported } from './core/providers/registry'
 import type { ProviderId } from './core/providers/types'
 import type { ProviderSettingsMap } from './core/providers/types'
 import { createExecutor } from './core/runtime'
@@ -24,7 +20,7 @@ export {
 } from './core/runtime'
 
 // ==================== 高级API ====================
-export { createModel } from './core/models'
+export { globalModelResolver as modelResolver } from './core/models'
 
 // ==================== 插件系统 ====================
 export type { AiPlugin, AiRequestContext, HookResult, PluginManagerConfig } from './core/plugins'
@@ -33,14 +29,7 @@ export { createContext, definePlugin, PluginManager } from './core/plugins'
 export { PluginEngine } from './core/runtime/pluginEngine'
 
 // ==================== 低级 API ====================
-export {
-  createBaseModel as createApiClient,
-  createImageModel,
-  getProviderInfo as getClientInfo,
-  getSupportedProviders,
-  ModelCreationError
-} from './core/models'
-export { aiProviderRegistry } from './core/providers/registry'
+export { providerRegistry } from './core/providers/registry'
 
 // ==================== 类型定义 ====================
 export type { ProviderConfig } from './core/providers/types'
@@ -123,33 +112,32 @@ export {
   type TypedProviderOptions
 } from './core/options'
 
-// ==================== 工具函数 ====================
+// ==================== Provider 初始化和管理 ====================
 export {
-  getAllDynamicMappings,
-  getAllProviders,
-  getAllValidProviderIds,
-  getDynamicProviders,
-  getProvider,
-  getProviderMapping,
-  isDynamicProvider,
+  clearAllProviders,
+  getImageModel,
+  getInitializedProviders,
+  // 访问功能
+  getLanguageModel,
+  getProviderInfo,
+  getTextEmbeddingModel,
+  hasInitializedProviders,
+  // initializeImageProvider, // deprecated: 使用 initializeProvider 即可
+  // 初始化功能
+  initializeProvider,
+  initializeProviders,
+  isProviderInitialized,
   isProviderSupported,
-  // 动态注册功能
-  registerDynamicProvider,
-  registerMultipleProviders,
-  registerProvider,
-  // Zod 验证相关
-  validateProviderIdRegistry
+  // 错误类型
+  ProviderInitializationError,
+  reinitializeProvider
 } from './core/providers/registry'
 
 // ==================== Zod Schema 和验证 ====================
-export {
-  type BaseProviderId,
-  baseProviderIds,
-  type DynamicProviderId,
-  type DynamicProviderRegistration,
-  validateDynamicProviderRegistration,
-  validateProviderId
-} from './core/providers'
+export { baseProviderIds, validateProviderId } from './core/providers'
+
+// ==================== Hub Provider ====================
+export { createHubProvider, type HubProviderConfig, HubProviderError } from './core/providers/HubProvider'
 
 // ==================== Provider 配置工厂 ====================
 export {
@@ -177,17 +165,11 @@ export const AiCore = {
 
   // 获取支持的providers
   getSupportedProviders() {
-    return factoryGetSupportedProviders()
+    return getSupportedProviders()
   },
 
-  // 检查provider支持
-  isSupported(providerId: string) {
+  isSupported(providerId: ProviderId) {
     return isProviderSupported(providerId)
-  },
-
-  // 获取客户端信息
-  getClientInfo(providerId: string) {
-    return factoryGetProviderInfo(providerId)
   }
 }
 
@@ -210,42 +192,18 @@ export const createXAIExecutor = (options: ProviderSettingsMap['xai'], plugins?:
 
 // ==================== 调试和开发工具 ====================
 export const DevTools = {
-  // 列出所有注册的providers
+  // 列出所有支持的providers
   listProviders() {
-    return aiProviderRegistry.getAllProviders().map((p) => ({
-      id: p.id,
-      name: p.name
-    }))
-  },
-
-  // 测试provider连接
-  async testProvider(providerId: ProviderId, options: ProviderSettingsMap[ProviderId]) {
-    try {
-      const executor = createExecutor(providerId, options)
-      const info = executor.getClientInfo()
-      return {
-        success: true,
-        providerId: info.id,
-        name: info.name,
-        isSupported: info.isSupported
-      }
-    } catch (error) {
-      return {
-        success: false,
-        providerId,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
-    }
+    return getSupportedProviders()
   },
 
   // 获取provider详细信息
   getProviderDetails() {
-    const providers = aiProviderRegistry.getAllProviders()
+    const supportedProviders = getSupportedProviders()
 
     return {
-      supportedProviders: providers.length,
-      registeredProviders: providers.length,
-      providers: providers.map((p) => ({
+      supportedProviders: supportedProviders.length,
+      providers: supportedProviders.map((p) => ({
         id: p.id,
         name: p.name
       }))

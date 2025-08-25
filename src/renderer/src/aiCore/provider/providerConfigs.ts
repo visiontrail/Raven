@@ -1,4 +1,4 @@
-import { type ProviderConfig, registerMultipleProviders } from '@cherrystudio/ai-core'
+import { type ProviderConfig } from '@cherrystudio/ai-core'
 import { loggerService } from '@logger'
 
 const logger = loggerService.withContext('ProviderConfigs')
@@ -43,18 +43,19 @@ export const NEW_PROVIDER_CONFIGS: (ProviderConfig & {
   }
 ] as const
 
-/**
- * 初始化新的Providers
- * 使用aiCore的动态注册功能
- */
-export async function initializeNewProviders(): Promise<void> {
-  try {
-    const successCount = registerMultipleProviders(NEW_PROVIDER_CONFIGS)
+// TODO
+// /**
+//  * 初始化新的Providers
+//  * 使用aiCore的动态注册功能
+//  */
+// export async function initializeNewProviders(): Promise<void> {
+//   try {
+//     const successCount = registerMultipleProviders(NEW_PROVIDER_CONFIGS)
 
-    if (successCount < NEW_PROVIDER_CONFIGS.length) {
-      logger.warn('Some providers failed to register. Check previous error logs.')
-    }
-  } catch (error) {
-    logger.error('Failed to initialize new providers:', error as Error)
-  }
-}
+//     if (successCount < NEW_PROVIDER_CONFIGS.length) {
+//       logger.warn('Some providers failed to register. Check previous error logs.')
+//     }
+//   } catch (error) {
+//     logger.error('Failed to initialize new providers:', error as Error)
+//   }
+// }

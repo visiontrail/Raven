@@ -14,9 +14,9 @@ import {
 
 import { type ProviderId } from '../../types'
 import { globalModelResolver } from '../models'
-import { getProviderInfo } from '../models/ModelCreator'
 import { type ModelConfig } from '../models/types'
 import { type AiPlugin, type AiRequestContext, definePlugin } from '../plugins'
+import { getProviderInfo } from '../providers/registry'
 import { ImageGenerationError, ImageModelResolutionError } from './errors'
 import { PluginEngine } from './pluginEngine'
 import { type RuntimeConfig } from './types'
@@ -43,10 +43,9 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       name: '_internal_resolveModel',
       enforce: 'post',
 
-      resolveModel: async (modelId: string, context: AiRequestContext) => {
-        // 从 context 中读取由用户插件注入的 extraModelConfig
-        const extraModelConfig = context.extraModelConfig || {}
-        return await this.resolveModel(modelId, middlewares, extraModelConfig)
+      resolveModel: async (modelId: string) => {
+        // 注意：extraModelConfig 暂时不支持，已在新架构中移除
+        return await this.resolveModel(modelId, middlewares)
       }
     })
   }
@@ -272,15 +271,15 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
    */
   private async resolveModel(
     modelOrId: LanguageModel,
-    middlewares?: LanguageModelV2Middleware[],
-    extraModelConfig?: Record<string, any>
+    middlewares?: LanguageModelV2Middleware[]
   ): Promise<LanguageModelV2> {
     if (typeof modelOrId === 'string') {
-      // 字符串modelId，使用新的ModelResolver解析
+      // 🎯 字符串modelId，使用新的ModelResolver解析，传递完整参数
       return await globalModelResolver.resolveLanguageModel(
-        modelOrId, // 支持 'gpt-4' 和 'aihubmix>anthropic>claude-3'
+        modelOrId, // 支持 'gpt-4' 和 'aihubmix:anthropic:claude-3.5-sonnet'
         this.config.providerId, // fallback provider
-        this.config.providerSettings // provider options
+        this.config.providerSettings, // provider options
+        middlewares // 中间件数组
       )
     } else {
       // 已经是模型，直接返回
@@ -296,9 +295,8 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       if (typeof modelOrId === 'string') {
         // 字符串modelId，使用新的ModelResolver解析
         return await globalModelResolver.resolveImageModel(
-          modelOrId, // 支持 'dall-e-3' 和 'aihubmix>openai>dall-e-3'
-          this.config.providerId, // fallback provider
-          this.config.providerSettings // provider options
+          modelOrId, // 支持 'dall-e-3' 和 'aihubmix:openai:dall-e-3'
+          this.config.providerId // fallback provider
         )
       } else {
         // 已经是模型，直接返回
