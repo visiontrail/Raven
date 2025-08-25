@@ -155,7 +155,8 @@ export class ToolCallChunkHandler {
       return
     }
 
-    let tool: BaseTool | MCPTool
+    let tool: BaseTool
+    let mcpTool: MCPTool | undefined
 
     // 根据 providerExecuted 标志区分处理逻辑
     if (providerExecuted) {
@@ -176,15 +177,22 @@ export class ToolCallChunkHandler {
         description: toolName,
         type: 'builtin'
       } as BaseTool
-    } else {
+    } else if ((mcpTool = this.mcpTools.find((t) => t.name === toolName) as MCPTool)) {
       // 如果是客户端执行的 MCP 工具，沿用现有逻辑
       logger.info(`[ToolCallChunkHandler] Handling client-side MCP tool: ${toolName}`)
-      const mcpTool = this.mcpTools.find((t) => t.name === toolName)
-      if (!mcpTool) {
-        logger.warn(`[ToolCallChunkHandler] MCP tool not found: ${toolName}`)
-        return
+      // mcpTool = this.mcpTools.find((t) => t.name === toolName) as MCPTool
+      // if (!mcpTool) {
+      //   logger.warn(`[ToolCallChunkHandler] MCP tool not found: ${toolName}`)
+      //   return
+      // }
+      tool = mcpTool
+    } else {
+      tool = {
+        id: toolCallId,
+        name: toolName,
+        description: toolName,
+        type: 'provider'
       }
-      tool = mcpTool as MCPTool
     }
 
     // 记录活跃的工具调用

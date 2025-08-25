@@ -98,6 +98,7 @@ export type {
   ToolResultPart,
   ToolSet,
   TypedToolCall,
+  TypedToolError,
   TypedToolResult,
   UserModelMessage
 } from 'ai'

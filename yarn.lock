@@ -215,7 +215,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/openai@npm:2.0.16, @ai-sdk/openai@npm:^2.0.16":
+"@ai-sdk/openai@npm:2.0.16":
   version: 2.0.16
   resolution: "@ai-sdk/openai@npm:2.0.16"
   dependencies:
@@ -224,6 +224,18 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4
   checksum: 10c0/1ea694bd096175a67a383e73fd1f4434eeaa7ddc6c378e44f295333d9a7b4153251d405dac2d8da330f95e4d5ef58641cc8533a3e63ff4d250b3cbc66f9abfea
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/openai@npm:^2.0.19":
+  version: 2.0.19
+  resolution: "@ai-sdk/openai@npm:2.0.19"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@ai-sdk/provider-utils": "npm:3.0.5"
+  peerDependencies:
+    zod: ^3.25.76 || ^4
+  checksum: 10c0/04db695669d783a810b80283e0cd48f6e7654667fd76ca2d35c7cffae6fdd68fb0473118e4e097ef1352f4432dd7c15c07f873d712b940c72495e5839b0ede98
   languageName: node
   linkType: hard
 
@@ -252,6 +264,20 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4
   checksum: 10c0/6732b99310561d72262cdeef40cc58190afa55248dca0eb3a378ef87fede12086e534c68687e0fe5ef5b092da41f3e745857ce3f9b248a272a78c0dc268dffd4
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/provider-utils@npm:3.0.5":
+  version: 3.0.5
+  resolution: "@ai-sdk/provider-utils@npm:3.0.5"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@standard-schema/spec": "npm:^1.0.0"
+    eventsource-parser: "npm:^3.0.3"
+    zod-to-json-schema: "npm:^3.24.1"
+  peerDependencies:
+    zod: ^3.25.76 || ^4
+  checksum: 10c0/4057810b320bda149a178dc1bfc9cdd592ca88b736c3c22bd0c1f8111c75ef69beec4a523f363e5d0d120348b876942fd66c0bb4965864da4c12c5cfddee15a3
   languageName: node
   linkType: hard
 
@@ -2197,7 +2223,7 @@ __metadata:
     "@ai-sdk/azure": "npm:^2.0.16"
     "@ai-sdk/deepseek": "npm:^1.0.9"
     "@ai-sdk/google": "npm:^2.0.7"
-    "@ai-sdk/openai": "npm:^2.0.16"
+    "@ai-sdk/openai": "npm:^2.0.19"
     "@ai-sdk/openai-compatible": "npm:^1.0.9"
     "@ai-sdk/provider": "npm:^2.0.0"
     "@ai-sdk/provider-utils": "npm:^3.0.4"

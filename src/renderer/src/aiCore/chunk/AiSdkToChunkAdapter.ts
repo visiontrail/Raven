@@ -185,19 +185,34 @@ export class AiSdkToChunkAdapter {
               source: WebSearchSource.GEMINI
             }
           })
+        } else {
+          const providerName = Object.keys(providerMetadata || {})[0]
+          // console.log('providerName', providerName)
+          switch (providerName) {
+            case WebSearchSource.OPENAI:
+              this.onChunk({
+                type: ChunkType.LLM_WEB_SEARCH_COMPLETE,
+                llm_web_search: {
+                  results: final.webSearchResults,
+                  source: WebSearchSource.OPENAI_RESPONSE
+                }
+              })
+              break
+            default:
+              this.onChunk({
+                type: ChunkType.LLM_WEB_SEARCH_COMPLETE,
+                llm_web_search: {
+                  results: final.webSearchResults,
+                  source: WebSearchSource.AISDK
+                }
+              })
+              break
+          }
         }
         if (finishReason === 'tool-calls') {
           this.onChunk({ type: ChunkType.LLM_RESPONSE_CREATED })
         }
-        // else {
-        //   this.onChunk({
-        //     type: ChunkType.LLM_WEB_SEARCH_COMPLETE,
-        //     llm_web_search: {
-        //       results: final.webSearchResults,
-        //       source: WebSearchSource.AISDK
-        //     }
-        //   })
-        // }
+
         final.webSearchResults = []
         // final.reasoningId = ''
         break

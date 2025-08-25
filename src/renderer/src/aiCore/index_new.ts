@@ -69,15 +69,10 @@ export default class ModernAiProvider {
     config: AiSdkMiddlewareConfig & {
       assistant: Assistant
       // topicId for tracing
-      topicId?: string
+      topicId: string
       callType: string
     }
   ): Promise<CompletionsResult> {
-    if (!config.topicId) {
-      logger.warn('No topicId provided, falling back to regular completions')
-      return await this.completions(modelId, params, config)
-    }
-
     const traceName = `${this.actualProvider.name}.${modelId}.${config.callType}`
     const traceParams: StartSpanParams = {
       name: traceName,

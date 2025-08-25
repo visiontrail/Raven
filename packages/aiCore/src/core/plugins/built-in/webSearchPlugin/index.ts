@@ -23,7 +23,6 @@ export const webSearchPlugin = (config: WebSearchPluginConfig = DEFAULT_WEB_SEAR
 
     transformParams: async (params: any, context: AiRequestContext) => {
       const { providerId } = context
-      console.log('providerId', providerId)
       switch (providerId) {
         case 'openai': {
           if (config.openai) {

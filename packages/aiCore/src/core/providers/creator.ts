@@ -40,7 +40,7 @@ export async function createProvider(config: ProviderConfig, options: any): Prom
 
     // 方式二：动态导入 + 函数名
     if (config.import && config.creatorFunctionName) {
-      const module = await config.import()
+      const module = (await config.import()) as Record<string, unknown>
       const creatorFunction = module[config.creatorFunctionName]
 
       if (typeof creatorFunction !== 'function') {

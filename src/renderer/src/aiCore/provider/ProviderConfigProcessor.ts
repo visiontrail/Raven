@@ -38,13 +38,9 @@ export function providerToAiSdkConfig(actualProvider: Provider): {
   providerId: ProviderId | 'openai-compatible'
   options: ProviderSettingsMap[keyof ProviderSettingsMap]
 } {
-  // console.log('actualProvider', actualProvider)
   const aiSdkProviderId = getAiSdkProviderId(actualProvider)
-  // console.log('aiSdkProviderId', aiSdkProviderId)
-  // 如果provider是openai，则使用strict模式并且默认responses api
   const actualProviderType = actualProvider.type
   const openaiResponseOptions =
-    // 对于实际是openai的需要走responses,aiCore内部会判断model是否可用responses
     actualProviderType === 'openai-response'
       ? {
           mode: 'responses'
