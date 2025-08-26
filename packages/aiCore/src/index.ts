@@ -133,6 +133,20 @@ export {
   reinitializeProvider
 } from './core/providers/registry'
 
+// ==================== 动态Provider注册和别名映射 ====================
+export {
+  cleanup,
+  getAllAliases,
+  getAllDynamicMappings,
+  getDynamicProviders,
+  getProviderMapping,
+  isAlias,
+  isDynamicProvider,
+  registerDynamicProvider,
+  registerMultipleProviders,
+  resolveProviderId
+} from './core/providers/registry'
+
 // ==================== Zod Schema 和验证 ====================
 export { baseProviderIds, validateProviderId } from './core/providers'
 

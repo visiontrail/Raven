@@ -28,7 +28,6 @@ export function buildProviderOptions(
   }
 ): Record<string, any> {
   const providerId = getAiSdkProviderId(actualProvider)
-
   // 构建 provider 特定的选项
   let providerSpecificOptions: Record<string, any> = {}
 
@@ -37,11 +36,8 @@ export function buildProviderOptions(
     case 'openai':
     case 'azure':
       providerSpecificOptions = {
-        ...buildOpenAIProviderOptions(assistant, model, capabilities),
-        // 函数内有对于真实provider.id的判断,应该不会影响原生provider
-        ...buildGenericProviderOptions(assistant, model, capabilities)
+        ...buildOpenAIProviderOptions(assistant, model, capabilities)
       }
-
       break
 
     case 'anthropic':

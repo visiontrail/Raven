@@ -6,7 +6,7 @@ import {
   InvokeModelWithResponseStreamCommand
 } from '@aws-sdk/client-bedrock-runtime'
 import { loggerService } from '@logger'
-import { GenericChunk } from '@renderer/aiCore/middleware/schemas'
+import { GenericChunk } from '@renderer/aiCore/legacy/middleware/schemas'
 import { DEFAULT_MAX_TOKENS } from '@renderer/config/constant'
 import { findTokenLimit, isReasoningModel } from '@renderer/config/models'
 import {

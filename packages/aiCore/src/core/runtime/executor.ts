@@ -38,7 +38,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     this.pluginEngine = new PluginEngine(config.providerId, config.plugins || [])
   }
 
-  createResolveModelPlugin(middlewares?: LanguageModelV2Middleware[]) {
+  private createResolveModelPlugin(middlewares?: LanguageModelV2Middleware[]) {
     return definePlugin({
       name: '_internal_resolveModel',
       enforce: 'post',
@@ -50,7 +50,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     })
   }
 
-  createResolveImageModelPlugin() {
+  private createResolveImageModelPlugin() {
     return definePlugin({
       name: '_internal_resolveImageModel',
       enforce: 'post',
@@ -61,7 +61,7 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
     })
   }
 
-  createConfigureContextPlugin() {
+  private createConfigureContextPlugin() {
     return definePlugin({
       name: '_internal_configureContext',
       configureContext: async (context: AiRequestContext) => {

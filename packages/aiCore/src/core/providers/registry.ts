@@ -8,7 +8,7 @@ import { customProvider } from 'ai'
 
 import { isOpenAIChatCompletionOnlyModel } from '../../utils/model'
 import { globalRegistryManagement } from './RegistryManagement'
-import { baseProviders } from './schemas'
+import { baseProviders, type DynamicProviderRegistration } from './schemas'
 
 /**
  * Provider 初始化错误类型
@@ -226,6 +226,104 @@ export function getInitializedProviders(): string[] {
 export function hasInitializedProviders(): boolean {
   return globalRegistryManagement.hasProviders()
 }
+
+// ==================== 动态Provider注册功能 ====================
+
+// 全局动态provider存储
+const dynamicProviders = new Map<string, DynamicProviderRegistration>()
+
+/**
+ * 注册动态provider
+ */
+export function registerDynamicProvider(config: DynamicProviderRegistration): boolean {
+  try {
+    // 验证配置
+    if (!config.id || !config.name) {
+      return false
+    }
+
+    // 检查是否与基础provider冲突
+    if (baseProviders.find((p) => p.id === config.id)) {
+      console.warn(`Dynamic provider "${config.id}" conflicts with base provider`)
+      return false
+    }
+
+    // 存储动态provider配置
+    dynamicProviders.set(config.id, config)
+
+    // 如果有creator函数，立即初始化
+    if (config.creator) {
+      try {
+        const provider = config.creator({}) as any // 使用空配置初始化，类型断言为any
+        const aliases = config.mappings ? Object.keys(config.mappings) : undefined
+        globalRegistryManagement.registerProvider(config.id, provider, aliases)
+      } catch (error) {
+        console.error(`Failed to initialize dynamic provider "${config.id}":`, error)
+        return false
+      }
+    }
+
+    return true
+  } catch (error) {
+    console.error(`Failed to register dynamic provider:`, error)
+    return false
+  }
+}
+
+/**
+ * 批量注册动态providers
+ */
+export function registerMultipleProviders(configs: DynamicProviderRegistration[]): number {
+  let successCount = 0
+  configs.forEach((config) => {
+    if (registerDynamicProvider(config)) {
+      successCount++
+    }
+  })
+  return successCount
+}
+
+/**
+ * 获取provider映射（解析别名）
+ */
+export function getProviderMapping(providerId: string): string {
+  return globalRegistryManagement.resolveProviderId(providerId)
+}
+
+/**
+ * 检查是否为动态provider
+ */
+export function isDynamicProvider(providerId: string): boolean {
+  return dynamicProviders.has(providerId)
+}
+
+/**
+ * 获取所有动态providers
+ */
+export function getDynamicProviders(): DynamicProviderRegistration[] {
+  return Array.from(dynamicProviders.values())
+}
+
+/**
+ * 获取所有别名映射关系
+ */
+export function getAllDynamicMappings(): Record<string, string> {
+  return globalRegistryManagement.getAllAliases()
+}
+
+/**
+ * 清理所有动态providers
+ */
+export function cleanup(): void {
+  dynamicProviders.clear()
+  globalRegistryManagement.clear()
+}
+
+// ==================== 导出别名相关API ====================
+
+export const resolveProviderId = (id: string) => globalRegistryManagement.resolveProviderId(id)
+export const isAlias = (id: string) => globalRegistryManagement.isAlias(id)
+export const getAllAliases = () => globalRegistryManagement.getAllAliases()
 
 // ==================== 导出错误类型和工具函数 ====================
 

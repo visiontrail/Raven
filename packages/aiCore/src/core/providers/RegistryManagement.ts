@@ -15,6 +15,7 @@ export const DEFAULT_SEPARATOR = ':'
 
 export class RegistryManagement<SEPARATOR extends string = typeof DEFAULT_SEPARATOR> {
   private providers: PROVIDERS = {}
+  private aliases: Set<string> = new Set() // 记录哪些key是别名
   private separator: SEPARATOR
   private registry: ProviderRegistryProvider<PROVIDERS, SEPARATOR> | null = null
 
@@ -25,8 +26,18 @@ export class RegistryManagement<SEPARATOR extends string = typeof DEFAULT_SEPARA
   /**
    * 注册已配置好的 provider 实例
    */
-  registerProvider(id: string, provider: ProviderV2): this {
+  registerProvider(id: string, provider: ProviderV2, aliases?: string[]): this {
+    // 注册主provider
     this.providers[id] = provider
+
+    // 注册别名（都指向同一个provider实例）
+    if (aliases) {
+      aliases.forEach((alias) => {
+        this.providers[alias] = provider // 直接存储引用
+        this.aliases.add(alias) // 标记为别名
+      })
+    }
+
     this.rebuildRegistry()
     return this
   }
@@ -48,9 +59,31 @@ export class RegistryManagement<SEPARATOR extends string = typeof DEFAULT_SEPARA
   }
 
   /**
-   * 移除 provider
+   * 移除 provider（同时清理相关别名）
    */
   unregisterProvider(id: string): this {
+    const provider = this.providers[id]
+    if (!provider) return this
+
+    // 如果移除的是真实ID，需要清理所有指向它的别名
+    if (!this.aliases.has(id)) {
+      // 找到所有指向此provider的别名并删除
+      const aliasesToRemove: string[] = []
+      this.aliases.forEach((alias) => {
+        if (this.providers[alias] === provider) {
+          aliasesToRemove.push(alias)
+        }
+      })
+
+      aliasesToRemove.forEach((alias) => {
+        delete this.providers[alias]
+        this.aliases.delete(alias)
+      })
+    } else {
+      // 如果移除的是别名，只删除别名记录
+      this.aliases.delete(id)
+    }
+
     delete this.providers[id]
     this.rebuildRegistry()
     return this
@@ -121,10 +154,10 @@ export class RegistryManagement<SEPARATOR extends string = typeof DEFAULT_SEPARA
   }
 
   /**
-   * 获取已注册的 provider 列表
+   * 获取已注册的 provider 列表（排除别名）
    */
   getRegisteredProviders(): string[] {
-    return Object.keys(this.providers)
+    return Object.keys(this.providers).filter((id) => !this.aliases.has(id))
   }
 
   /**
@@ -139,8 +172,45 @@ export class RegistryManagement<SEPARATOR extends string = typeof DEFAULT_SEPARA
    */
   clear(): this {
     this.providers = {}
+    this.aliases.clear()
     this.registry = null
     return this
+  }
+
+  /**
+   * 解析真实的Provider ID（供getAiSdkProviderId使用）
+   * 如果传入的是别名，返回真实的Provider ID
+   * 如果传入的是真实ID，直接返回
+   */
+  resolveProviderId(id: string): string {
+    if (!this.aliases.has(id)) return id // 不是别名，直接返回
+
+    // 是别名，找到真实ID
+    const targetProvider = this.providers[id]
+    for (const [realId, provider] of Object.entries(this.providers)) {
+      if (provider === targetProvider && !this.aliases.has(realId)) {
+        return realId
+      }
+    }
+    return id
+  }
+
+  /**
+   * 检查是否为别名
+   */
+  isAlias(id: string): boolean {
+    return this.aliases.has(id)
+  }
+
+  /**
+   * 获取所有别名映射关系
+   */
+  getAllAliases(): Record<string, string> {
+    const result: Record<string, string> = {}
+    this.aliases.forEach((alias) => {
+      result[alias] = this.resolveProviderId(alias)
+    })
+    return result
   }
 }
 

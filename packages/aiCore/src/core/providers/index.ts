@@ -28,6 +28,20 @@ export {
   reinitializeProvider
 } from './registry'
 
+// 动态Provider注册功能
+export {
+  cleanup,
+  getAllAliases,
+  getAllDynamicMappings,
+  getDynamicProviders,
+  getProviderMapping,
+  isAlias,
+  isDynamicProvider,
+  registerDynamicProvider,
+  registerMultipleProviders,
+  resolveProviderId
+} from './registry'
+
 // ==================== 保留的导出（兼容性）====================
 
 // 基础Provider数据源

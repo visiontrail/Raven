@@ -284,6 +284,12 @@ export class AiSdkToChunkAdapter {
           }
         })
         break
+      case 'abort':
+        this.onChunk({
+          type: ChunkType.ERROR,
+          error: new DOMException('Request was aborted', 'AbortError')
+        })
+        break
       case 'error':
         this.onChunk({
           type: ChunkType.ERROR,

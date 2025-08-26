@@ -1,49 +1,75 @@
-import { AiCore, type ProviderId } from '@cherrystudio/ai-core'
+import { AiCore, getProviderMapping, type ProviderId } from '@cherrystudio/ai-core'
+import { loggerService } from '@logger'
 import { Provider } from '@renderer/types'
 
-// TODO
-// 初始化新的Provider注册系统
-// initializeNewProviders()
+import { initializeNewProviders } from './providerConfigs'
 
-// 静态Provider映射 - 核心providers
+const logger = loggerService.withContext('ProviderFactory')
+
+/**
+ * 初始化动态Provider系统
+ * 在模块加载时自动注册新的providers
+ */
+;(async () => {
+  try {
+    await initializeNewProviders()
+  } catch (error) {
+    logger.warn('Failed to initialize new providers:', error as Error)
+  }
+})()
+
+/**
+ * 静态Provider映射表
+ * 处理Cherry Studio特有的provider ID到AI SDK标准ID的映射
+ */
 const STATIC_PROVIDER_MAPPING: Record<string, ProviderId> = {
-  // anthropic: 'anthropic',
-  gemini: 'google',
-  'azure-openai': 'azure',
-  'openai-response': 'openai',
-  grok: 'xai'
+  gemini: 'google', // Google Gemini -> google
+  'azure-openai': 'azure', // Azure OpenAI -> azure
+  'openai-response': 'openai', // OpenAI Responses -> openai
+  grok: 'xai' // Grok -> xai
 }
 
+/**
+ * 尝试解析provider标识符（支持静态映射和动态映射）
+ */
+function tryResolveProviderId(identifier: string): ProviderId | null {
+  // 1. 检查静态映射
+  const staticMapping = STATIC_PROVIDER_MAPPING[identifier]
+  if (staticMapping) {
+    return staticMapping
+  }
+
+  // 2. 检查动态映射
+  const dynamicMapping = getProviderMapping(identifier)
+  if (dynamicMapping && dynamicMapping !== identifier) {
+    return dynamicMapping as ProviderId
+  }
+
+  // 3. 检查AiCore是否直接支持
+  if (AiCore.isSupported(identifier)) {
+    return identifier as ProviderId
+  }
+
+  return null
+}
+
+/**
+ * 获取AI SDK Provider ID
+ * 简化版：减少重复逻辑，利用通用解析函数
+ */
 export function getAiSdkProviderId(provider: Provider): ProviderId | 'openai-compatible' {
-  // 1. 首先检查静态映射
-  const staticProviderId = STATIC_PROVIDER_MAPPING[provider.id]
-  if (staticProviderId) {
-    return staticProviderId
-  }
-  // TODO
-  // 2. 检查动态注册的provider映射（使用aiCore的函数）
-  // const dynamicProviderId = getProviderMapping(provider.id)
-  // if (dynamicProviderId) {
-  //   return dynamicProviderId as ProviderId
-  // }
-
-  // 3. 检查provider.type的静态映射
-  const staticProviderType = STATIC_PROVIDER_MAPPING[provider.type]
-  if (staticProviderType) {
-    return staticProviderType
-  }
-  // TODO
-  // 4. 检查provider.type的动态映射
-  // const dynamicProviderType = getProviderMapping(provider.type)
-  // if (dynamicProviderType) {
-  //   return dynamicProviderType as ProviderId
-  // }
-
-  // 5. 检查AiCore是否直接支持
-  if (AiCore.isSupported(provider.id)) {
-    return provider.id as ProviderId
+  // 1. 尝试解析provider.id
+  const resolvedFromId = tryResolveProviderId(provider.id)
+  if (resolvedFromId) {
+    return resolvedFromId
   }
 
-  // 6. 最后的fallback
+  // 2. 尝试解析provider.type
+  const resolvedFromType = tryResolveProviderId(provider.type)
+  if (resolvedFromType) {
+    return resolvedFromType
+  }
+
+  // 3. 最后的fallback（通常会成为openai-compatible）
   return provider.id as ProviderId
 }

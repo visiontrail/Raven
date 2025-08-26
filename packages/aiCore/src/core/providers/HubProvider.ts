@@ -5,7 +5,7 @@
  * 例如: aihubmix:anthropic:claude-3.5-sonnet
  */
 
-import { ProviderV2 } from '@ai-sdk/provider'
+import { EmbeddingModelV2, ImageModelV2, ProviderV2, SpeechModelV2, TranscriptionModelV2 } from '@ai-sdk/provider'
 import { customProvider } from 'ai'
 
 import { globalRegistryManagement } from './RegistryManagement'
@@ -47,13 +47,7 @@ function parseHubModelId(modelId: string): { provider: string; actualModelId: st
  * 创建Hub Provider
  */
 export function createHubProvider(config: HubProviderConfig): ProviderV2 {
-  const { hubId, debug = false } = config
-
-  function logDebug(message: string, ...args: any[]) {
-    if (debug) {
-      console.log(`[HubProvider:${hubId}] ${message}`, ...args)
-    }
-  }
+  const { hubId } = config
 
   function getTargetProvider(providerId: string): ProviderV2 {
     // 从全局注册表获取provider实例
@@ -77,72 +71,26 @@ export function createHubProvider(config: HubProviderConfig): ProviderV2 {
     }
   }
 
+  function resolveModel<T>(modelId: string, modelType: string, methodName: keyof ProviderV2): T {
+    const { provider, actualModelId } = parseHubModelId(modelId)
+    const targetProvider = getTargetProvider(provider)
+
+    if (!targetProvider[methodName]) {
+      throw new HubProviderError(`Provider "${provider}" does not support ${modelType}`, hubId, provider)
+    }
+
+    return (targetProvider[methodName] as any)(actualModelId)
+  }
+
   return customProvider({
     fallbackProvider: {
-      languageModel: (modelId: string) => {
-        logDebug('Resolving language model:', modelId)
-
-        const { provider, actualModelId } = parseHubModelId(modelId)
-        const targetProvider = getTargetProvider(provider)
-
-        if (!targetProvider.languageModel) {
-          throw new HubProviderError(`Provider "${provider}" does not support language models`, hubId, provider)
-        }
-
-        return targetProvider.languageModel(actualModelId)
-      },
-
-      textEmbeddingModel: (modelId: string) => {
-        logDebug('Resolving text embedding model:', modelId)
-
-        const { provider, actualModelId } = parseHubModelId(modelId)
-        const targetProvider = getTargetProvider(provider)
-
-        if (!targetProvider.textEmbeddingModel) {
-          throw new HubProviderError(`Provider "${provider}" does not support text embedding models`, hubId, provider)
-        }
-
-        return targetProvider.textEmbeddingModel(actualModelId)
-      },
-
-      imageModel: (modelId: string) => {
-        logDebug('Resolving image model:', modelId)
-
-        const { provider, actualModelId } = parseHubModelId(modelId)
-        const targetProvider = getTargetProvider(provider)
-
-        if (!targetProvider.imageModel) {
-          throw new HubProviderError(`Provider "${provider}" does not support image models`, hubId, provider)
-        }
-
-        return targetProvider.imageModel(actualModelId)
-      },
-
-      transcriptionModel: (modelId: string) => {
-        logDebug('Resolving transcription model:', modelId)
-
-        const { provider, actualModelId } = parseHubModelId(modelId)
-        const targetProvider = getTargetProvider(provider)
-
-        if (!targetProvider.transcriptionModel) {
-          throw new HubProviderError(`Provider "${provider}" does not support transcription models`, hubId, provider)
-        }
-
-        return targetProvider.transcriptionModel(actualModelId)
-      },
-
-      speechModel: (modelId: string) => {
-        logDebug('Resolving speech model:', modelId)
-
-        const { provider, actualModelId } = parseHubModelId(modelId)
-        const targetProvider = getTargetProvider(provider)
-
-        if (!targetProvider.speechModel) {
-          throw new HubProviderError(`Provider "${provider}" does not support speech models`, hubId, provider)
-        }
-
-        return targetProvider.speechModel(actualModelId)
-      }
+      languageModel: (modelId: string) => resolveModel(modelId, 'language models', 'languageModel'),
+      textEmbeddingModel: (modelId: string) =>
+        resolveModel<EmbeddingModelV2<string>>(modelId, 'text embedding models', 'textEmbeddingModel'),
+      imageModel: (modelId: string) => resolveModel<ImageModelV2>(modelId, 'image models', 'imageModel'),
+      transcriptionModel: (modelId: string) =>
+        resolveModel<TranscriptionModelV2>(modelId, 'transcription models', 'transcriptionModel'),
+      speechModel: (modelId: string) => resolveModel<SpeechModelV2>(modelId, 'speech models', 'speechModel')
     }
   })
 }
