@@ -7,7 +7,7 @@ import { useAssistantsTabSortType } from '@renderer/hooks/useStore'
 import { useTags } from '@renderer/hooks/useTags'
 import { Assistant, AssistantsSortType } from '@renderer/types'
 import { Divider, Tooltip } from 'antd'
-import { FC, useCallback, useRef, useState } from 'react'
+import { FC, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
@@ -32,6 +32,17 @@ const Assistants: FC<AssistantsTabProps> = ({
   const { getGroupedAssistants, collapsedTags, toggleTagCollapse } = useTags()
   const { assistantsTabSortType = 'list', setAssistantsTabSortType } = useAssistantsTabSortType()
   const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.debug('[AssistantsTab] render', {
+        assistantsCount: assistants?.length,
+        assistants,
+        activeAssistantId: activeAssistant?.id,
+        assistantsTabSortType
+      })
+    }
+  }, [assistants, activeAssistant?.id, assistantsTabSortType])
 
   const onDelete = useCallback(
     (assistant: Assistant) => {
@@ -68,6 +79,25 @@ const Assistants: FC<AssistantsTabProps> = ({
     },
     [assistants, t, updateAssistants]
   )
+
+  if (assistants?.length === 0) {
+    if (import.meta.env.DEV) {
+      console.debug('[AssistantsTab] assistants is empty, showing empty state')
+    }
+    return (
+      <Container className="assistants-tab" ref={containerRef}>
+        <div style={{ padding: 12, color: 'var(--color-text-2)', fontSize: 12 }}>
+          {t('assistants.title')} is empty.
+        </div>
+        <AssistantAddItem onClick={onCreateDefaultAssistant}>
+          <AssistantName>
+            <PlusOutlined style={{ color: 'var(--color-text-2)', marginRight: 4 }} />
+            {t('chat.add.assistant.title')}
+          </AssistantName>
+        </AssistantAddItem>
+      </Container>
+    )
+  }
 
   if (assistantsTabSortType === 'tags') {
     return (
