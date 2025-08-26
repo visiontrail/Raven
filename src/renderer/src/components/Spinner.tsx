@@ -37,8 +37,8 @@ const SearchWrapper = styled.div`
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 14px;
-  padding: 10px;
-  padding-left: 0;
+  /* font-size: 14px; */
+  padding: 0px;
+  /* padding-left: 0; */
 `
 const Searching = motion.create(SearchWrapper)

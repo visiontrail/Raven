@@ -1,14 +1,15 @@
 import { WebSearchToolInput, WebSearchToolOutput } from '@renderer/aiCore/tools/WebSearchTool'
 import Spinner from '@renderer/components/Spinner'
-import i18n from '@renderer/i18n'
 import { MCPToolResponse } from '@renderer/types'
 import { Typography } from 'antd'
 import { Search } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
-const { Text, Link } = Typography
+const { Text } = Typography
 
 export const MessageWebSearchToolTitle = ({ toolResponse }: { toolResponse: MCPToolResponse }) => {
+  const { t } = useTranslation()
   const toolInput = toolResponse.arguments as WebSearchToolInput
   const toolOutput = toolResponse.response as WebSearchToolOutput
 
@@ -16,7 +17,7 @@ export const MessageWebSearchToolTitle = ({ toolResponse }: { toolResponse: MCPT
     <Spinner
       text={
         <PrepareToolWrapper>
-          {i18n.t('message.searching')}
+          {t('message.searching')}
           <span>{toolInput?.additionalContext ?? ''}</span>
         </PrepareToolWrapper>
       }
@@ -24,28 +25,28 @@ export const MessageWebSearchToolTitle = ({ toolResponse }: { toolResponse: MCPT
   ) : (
     <MessageWebSearchToolTitleTextWrapper type="secondary">
       <Search size={16} style={{ color: 'unset' }} />
-      {i18n.t('message.websearch.fetch_complete', {
+      {t('message.websearch.fetch_complete', {
         count: toolOutput?.searchResults?.results?.length ?? 0
       })}
     </MessageWebSearchToolTitleTextWrapper>
   )
 }
 
-export const MessageWebSearchToolBody = ({ toolResponse }: { toolResponse: MCPToolResponse }) => {
-  const toolOutput = toolResponse.response as WebSearchToolOutput
+// export const MessageWebSearchToolBody = ({ toolResponse }: { toolResponse: MCPToolResponse }) => {
+//   const toolOutput = toolResponse.response as WebSearchToolOutput
 
-  return toolResponse.status === 'done'
-    ? toolOutput?.searchResults?.map((result, index) => (
-        <MessageWebSearchToolBodyUlWrapper key={result?.query ?? '' + index}>
-          {result.results.map((item, index) => (
-            <li key={item.url + index}>
-              <Link href={item.url}>{item.title}</Link>
-            </li>
-          ))}
-        </MessageWebSearchToolBodyUlWrapper>
-      ))
-    : null
-}
+//   return toolResponse.status === 'done'
+//     ? toolOutput?.searchResults?.map((result, index) => (
+//         <MessageWebSearchToolBodyUlWrapper key={result?.query ?? '' + index}>
+//           {result.results.map((item, index) => (
+//             <li key={item.url + index}>
+//               <Link href={item.url}>{item.title}</Link>
+//             </li>
+//           ))}
+//         </MessageWebSearchToolBodyUlWrapper>
+//       ))
+//     : null
+// }
 
 const PrepareToolWrapper = styled.span`
   display: flex;
@@ -61,9 +62,9 @@ const MessageWebSearchToolTitleTextWrapper = styled(Text)`
   gap: 4px;
 `
 
-const MessageWebSearchToolBodyUlWrapper = styled.ul`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0;
-`
+// const MessageWebSearchToolBodyUlWrapper = styled.ul`
+//   display: flex;
+//   flex-direction: column;
+//   gap: 4px;
+//   padding: 0;
+// `

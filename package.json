@@ -169,6 +169,7 @@
     "@viz-js/lang-dot": "^1.0.5",
     "@viz-js/viz": "^3.14.0",
     "@xyflow/react": "^12.4.4",
+    "ai": "^5.0.24",
     "antd": "patch:antd@npm%3A5.26.7#~/.yarn/patches/antd-npm-5.26.7-029c5c381a.patch",
     "archiver": "^7.0.1",
     "async-mutex": "^0.5.0",

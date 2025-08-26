@@ -1,11 +1,9 @@
-import { aiSdk, InferToolInput, InferToolOutput } from '@cherrystudio/ai-core'
 import { REFERENCE_PROMPT } from '@renderer/config/prompts'
 import WebSearchService from '@renderer/services/WebSearchService'
 import { WebSearchProvider, WebSearchProviderResponse } from '@renderer/types'
 import { ExtractResults } from '@renderer/utils/extract'
+import { type InferToolInput, type InferToolOutput, tool } from 'ai'
 import { z } from 'zod'
-
-const { tool } = aiSdk
 
 /**
  * 使用预提取关键词的网络搜索工具
@@ -84,7 +82,6 @@ Call this tool to execute the search. You can optionally provide additional cont
           instructions: ''
         }
       }
-      console.log('searchResults', searchResults)
       if (searchResults.results.length === 0) {
         return {
           summary: 'No search results found for the given query.',

@@ -1,13 +1,11 @@
-import { aiSdk, type InferToolOutput } from '@cherrystudio/ai-core'
 import store from '@renderer/store'
 import { selectCurrentUserId, selectGlobalMemoryEnabled, selectMemoryConfig } from '@renderer/store/memory'
 import type { Assistant } from '@renderer/types'
-// import { type InferToolOutput, tool } from 'ai'
+import { type InferToolInput, type InferToolOutput, tool } from 'ai'
 import { z } from 'zod'
 
 import { MemoryProcessor } from '../../services/MemoryProcessor'
 
-const { tool } = aiSdk
 /**
  * 🧠 基础记忆搜索工具
  * AI 可以主动调用的简单记忆搜索
@@ -21,7 +19,7 @@ export const memorySearchTool = () => {
       limit: z.number().min(1).max(20).default(5).describe('Maximum number of memories to return')
     }),
     execute: async ({ query, limit = 5 }) => {
-      console.log('🧠 [memorySearchTool] Searching memories:', { query, limit })
+      // console.log('🧠 [memorySearchTool] Searching memories:', { query, limit })
 
       try {
         const globalMemoryEnabled = selectGlobalMemoryEnabled(store.getState())
@@ -31,7 +29,7 @@ export const memorySearchTool = () => {
 
         const memoryConfig = selectMemoryConfig(store.getState())
         if (!memoryConfig.llmApiClient || !memoryConfig.embedderApiClient) {
-          console.warn('Memory search skipped: embedding or LLM model not configured')
+          // console.warn('Memory search skipped: embedding or LLM model not configured')
           return []
         }
 
@@ -42,16 +40,27 @@ export const memorySearchTool = () => {
         const relevantMemories = await memoryProcessor.searchRelevantMemories(query, processorConfig, limit)
 
         if (relevantMemories?.length > 0) {
-          console.log('🧠 [memorySearchTool] Found memories:', relevantMemories.length)
+          // console.log('🧠 [memorySearchTool] Found memories:', relevantMemories.length)
           return relevantMemories
         }
         return []
       } catch (error) {
-        console.error('🧠 [memorySearchTool] Error:', error)
+        // console.error('🧠 [memorySearchTool] Error:', error)
         return []
       }
     }
   })
+}
+
+// 方案4: 为第二个工具也使用类型断言
+type MessageRole = 'user' | 'assistant' | 'system'
+type MessageType = {
+  content: string
+  role: MessageRole
+}
+type MemorySearchWithExtractionInput = {
+  userMessage: MessageType
+  lastAnswer?: MessageType
 }
 
 /**
@@ -73,9 +82,9 @@ export const memorySearchToolWithExtraction = (assistant: Assistant) => {
           role: z.enum(['user', 'assistant', 'system']).describe('Message role')
         })
         .optional()
-    }),
-    execute: async ({ userMessage, lastAnswer }) => {
-      console.log('🧠 [memorySearchToolWithExtraction] Processing:', { userMessage, lastAnswer })
+    }) as z.ZodSchema<MemorySearchWithExtractionInput>,
+    execute: async ({ userMessage }) => {
+      // console.log('🧠 [memorySearchToolWithExtraction] Processing:', { userMessage, lastAnswer })
 
       try {
         const globalMemoryEnabled = selectGlobalMemoryEnabled(store.getState())
@@ -88,7 +97,7 @@ export const memorySearchToolWithExtraction = (assistant: Assistant) => {
 
         const memoryConfig = selectMemoryConfig(store.getState())
         if (!memoryConfig.llmApiClient || !memoryConfig.embedderApiClient) {
-          console.warn('Memory search skipped: embedding or LLM model not configured')
+          // console.warn('Memory search skipped: embedding or LLM model not configured')
           return {
             extractedKeywords: 'Memory models not configured',
             searchResults: []
@@ -116,7 +125,7 @@ export const memorySearchToolWithExtraction = (assistant: Assistant) => {
         )
 
         if (relevantMemories?.length > 0) {
-          console.log('🧠 [memorySearchToolWithExtraction] Found memories:', relevantMemories.length)
+          // console.log('🧠 [memorySearchToolWithExtraction] Found memories:', relevantMemories.length)
           return {
             extractedKeywords: content,
             searchResults: relevantMemories
@@ -128,7 +137,7 @@ export const memorySearchToolWithExtraction = (assistant: Assistant) => {
           searchResults: []
         }
       } catch (error) {
-        console.error('🧠 [memorySearchToolWithExtraction] Error:', error)
+        // console.error('🧠 [memorySearchToolWithExtraction] Error:', error)
         return {
           extractedKeywords: 'Search failed',
           searchResults: []
@@ -137,6 +146,6 @@ export const memorySearchToolWithExtraction = (assistant: Assistant) => {
     }
   })
 }
-
+export type MemorySearchToolInput = InferToolInput<ReturnType<typeof memorySearchTool>>
 export type MemorySearchToolOutput = InferToolOutput<ReturnType<typeof memorySearchTool>>
 export type MemorySearchToolWithExtractionOutput = InferToolOutput<ReturnType<typeof memorySearchToolWithExtraction>>

@@ -57,12 +57,10 @@ Call this tool to execute the search. You can optionally provide additional cont
 
         if (additionalContext?.trim()) {
           // 如果大模型提供了额外上下文，使用更具体的描述
-          console.log(`🔍 AI enhanced knowledge search with: ${additionalContext}`)
           const cleanContext = additionalContext.trim()
           if (cleanContext) {
             finalQueries = [cleanContext]
             finalRewrite = cleanContext
-            console.log(`➕ Added additional context: ${cleanContext}`)
           }
         }
 
@@ -101,8 +99,6 @@ Call this tool to execute the search. You can optionally provide additional cont
           knowledge: searchCriteria
         }
 
-        console.log('Knowledge search extractResults:', extractResults)
-
         // 执行知识库搜索
         const knowledgeReferences = await processKnowledgeSearch(extractResults, knowledgeBaseIds, topicId)
         const knowledgeReferencesData = knowledgeReferences.map((ref: KnowledgeReference) => ({
@@ -131,8 +127,6 @@ Call this tool to execute the search. You can optionally provide additional cont
           // rawResults: citationData
         }
       } catch (error) {
-        console.error('🔍 [KnowledgeSearchTool] Search failed:', error)
-
         // 返回空对象而不是抛出错误，避免中断对话流程
         return {
           summary: `Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`,

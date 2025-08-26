@@ -3,60 +3,13 @@ import type { ToolMessageBlock } from '@renderer/types/newMessage'
 import { Collapse } from 'antd'
 
 import { MessageKnowledgeSearchToolTitle } from './MessageKnowledgeSearch'
-import { MessageWebSearchToolTitle } from './MessageWebSearchTool'
+import { MessageMemorySearchToolTitle } from './MessageMemorySearch'
+import { MessageWebSearchToolTitle } from './MessageWebSearch'
 
 interface Props {
   block: ToolMessageBlock
 }
 const prefix = 'builtin_'
-
-// const toolNameMapText = {
-//   web_search: i18n.t('message.searching')
-// }
-// const toolDoneNameMapText = (args: Record<string, any>) => {
-//   const count = args.count ?? 0
-//   return i18n.t('message.websearch.fetch_complete', { count })
-// }
-
-// const PrepareTool = ({ toolResponse }: { toolResponse: MCPToolResponse }) => {
-//   const toolNameText = useMemo(
-//     () => toolNameMapText[toolResponse.tool.name] || toolResponse.tool.name,
-//     [toolResponse.tool]
-//   )
-
-//   return (
-//     <Spinner
-//       text={
-//         <PrepareToolWrapper>
-//           {toolNameText}
-//           <span>{JSON.stringify(toolResponse.arguments)}</span>
-//         </PrepareToolWrapper>
-//       }
-//     />
-//   )
-// }
-
-// const DoneTool = ({ toolResponse }: { toolResponse: MCPToolResponse }) => {
-//   const toolDoneNameText = useMemo(
-//     () => toolDoneNameMapText({ count: toolResponse.response?.data?.length ?? 0 }),
-//     [toolResponse.response]
-//   )
-//   return <p>{toolDoneNameText}</p>
-// }
-
-// const ToolLabelComponents = ({ toolResponse }: { toolResponse: MCPToolResponse }) => {
-//   if (webSearchToolNames.includes(toolResponse.tool.name)) {
-//     return <MessageWebSearchToolTitle toolResponse={toolResponse} />
-//   }
-//   return <MessageWebSearchToolTitle toolResponse={toolResponse} />
-// }
-
-// const ToolBodyComponents = ({ toolResponse }: { toolResponse: MCPToolResponse }) => {
-//   if (webSearchToolNames.includes(toolResponse.tool.name)) {
-//     return <MessageWebSearchToolBody toolResponse={toolResponse} />
-//   }
-//   return <MessageWebSearchToolBody toolResponse={toolResponse} />
-// }
 
 const ChooseTool = (toolResponse: MCPToolResponse): { label: React.ReactNode; body: React.ReactNode } | null => {
   let toolName = toolResponse.tool.name
@@ -74,6 +27,11 @@ const ChooseTool = (toolResponse: MCPToolResponse): { label: React.ReactNode; bo
     case 'knowledge_search':
       return {
         label: <MessageKnowledgeSearchToolTitle toolResponse={toolResponse} />,
+        body: null
+      }
+    case 'memory_search':
+      return {
+        label: <MessageMemorySearchToolTitle toolResponse={toolResponse} />,
         body: null
       }
     default:
