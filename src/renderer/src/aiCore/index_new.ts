@@ -236,7 +236,7 @@ export default class ModernAiProvider {
 
       const streamResult = await executor.streamText(
         modelId,
-        params,
+        { ...params, experimental_context: { onChunk: config.onChunk } },
         middlewares.length > 0 ? { middlewares } : undefined
       )
 

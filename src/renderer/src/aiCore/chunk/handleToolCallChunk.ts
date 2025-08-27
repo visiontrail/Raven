@@ -208,14 +208,14 @@ export class ToolCallChunkHandler {
       id: toolCallId,
       tool: tool,
       arguments: args,
-      status: 'invoking',
+      status: 'pending',
       toolCallId: toolCallId
     }
 
     // 调用 onChunk
     if (this.onChunk) {
       this.onChunk({
-        type: ChunkType.MCP_TOOL_IN_PROGRESS,
+        type: ChunkType.MCP_TOOL_PENDING,
         responses: [toolResponse]
       })
     }
