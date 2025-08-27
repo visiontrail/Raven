@@ -1,11 +1,11 @@
-import { aiSdk, Tool } from '@cherrystudio/ai-core'
+import { Tool } from '@cherrystudio/ai-core'
 import { loggerService } from '@logger'
 // import { AiSdkTool, ToolCallResult } from '@renderer/aiCore/tools/types'
 import { MCPTool, MCPToolResponse } from '@renderer/types'
 import { callMCPTool } from '@renderer/utils/mcp-tools'
+import { jsonSchema, tool } from 'ai'
 import { JSONSchema7 } from 'json-schema'
 
-const { tool } = aiSdk
 const logger = loggerService.withContext('MCP-utils')
 
 // Setup tools configuration based on provided parameters
@@ -30,7 +30,7 @@ export function convertMcpToolsToAiSdkTools(mcpTools: MCPTool[]): Record<string,
   for (const mcpTool of mcpTools) {
     tools[mcpTool.name] = tool({
       description: mcpTool.description || `Tool from ${mcpTool.serverName}`,
-      inputSchema: aiSdk.jsonSchema(mcpTool.inputSchema as JSONSchema7),
+      inputSchema: jsonSchema(mcpTool.inputSchema as JSONSchema7),
       execute: async (params) => {
         // 创建适配的 MCPToolResponse 对象
         const toolResponse: MCPToolResponse = {

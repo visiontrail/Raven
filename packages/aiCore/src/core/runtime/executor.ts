@@ -12,11 +12,10 @@ import {
   streamText
 } from 'ai'
 
-import { type ProviderId } from '../../types'
 import { globalModelResolver } from '../models'
 import { type ModelConfig } from '../models/types'
 import { type AiPlugin, type AiRequestContext, definePlugin } from '../plugins'
-import { getProviderInfo } from '../providers/registry'
+import { type ProviderId } from '../providers'
 import { ImageGenerationError, ImageModelResolutionError } from './errors'
 import { PluginEngine } from './pluginEngine'
 import { type RuntimeConfig } from './types'
@@ -309,13 +308,6 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
         error instanceof Error ? error : undefined
       )
     }
-  }
-
-  /**
-   * 获取客户端信息
-   */
-  getClientInfo() {
-    return getProviderInfo(this.config.providerId)
   }
 
   // === 静态工厂方法 ===

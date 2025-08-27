@@ -8,7 +8,8 @@
  * 3. 暂时保持接口兼容性
  */
 
-import { createExecutor, generateImage, initializeProvider, StreamTextParams } from '@cherrystudio/ai-core'
+import { createExecutor, generateImage, StreamTextParams } from '@cherrystudio/ai-core'
+import { createAndRegisterProvider } from '@cherrystudio/ai-core/provider'
 import { loggerService } from '@logger'
 import { isNotSupportedImageSizeModel } from '@renderer/config/models'
 import { addSpan, endSpan } from '@renderer/services/SpanManagerService'
@@ -36,21 +37,6 @@ export default class ModernAiProvider {
 
     // 只保存配置，不预先创建executor
     this.config = providerToAiSdkConfig(this.actualProvider)
-
-    // 初始化 provider 到全局管理器
-    try {
-      initializeProvider(this.config.providerId, this.config.options)
-      logger.debug('Provider initialized successfully', {
-        providerId: this.config.providerId,
-        hasOptions: !!this.config.options
-      })
-    } catch (error) {
-      // 如果 provider 已经初始化过，可能会抛出错误，这里可以忽略
-      logger.debug('Provider initialization skipped (may already be initialized)', {
-        providerId: this.config.providerId,
-        error: error instanceof Error ? error.message : String(error)
-      })
-    }
   }
 
   public getActualProvider() {
@@ -67,6 +53,21 @@ export default class ModernAiProvider {
       callType: string
     }
   ): Promise<CompletionsResult> {
+    // 初始化 provider 到全局管理器
+    try {
+      await createAndRegisterProvider(this.config.providerId, this.config.options)
+      logger.debug('Provider initialized successfully', {
+        providerId: this.config.providerId,
+        hasOptions: !!this.config.options
+      })
+    } catch (error) {
+      // 如果 provider 已经初始化过，可能会抛出错误，这里可以忽略
+      logger.debug('Provider initialization skipped (may already be initialized)', {
+        providerId: this.config.providerId,
+        error: error instanceof Error ? error.message : String(error)
+      })
+    }
+
     if (config.isImageGenerationEndpoint) {
       return await this.modernImageGeneration(modelId, params, config)
     }

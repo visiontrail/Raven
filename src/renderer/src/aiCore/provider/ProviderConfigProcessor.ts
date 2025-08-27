@@ -1,4 +1,9 @@
-import { AiCore, ProviderConfigFactory, type ProviderId, type ProviderSettingsMap } from '@cherrystudio/ai-core'
+import {
+  hasProviderConfig,
+  ProviderConfigFactory,
+  type ProviderId,
+  type ProviderSettingsMap
+} from '@cherrystudio/ai-core/provider'
 import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
 import { getProviderByModel } from '@renderer/services/AssistantService'
 import type { Model, Provider } from '@renderer/types'
@@ -86,7 +91,7 @@ export function providerToAiSdkConfig(actualProvider: Provider): {
   }
 
   // 如果AI SDK支持该provider，使用原生配置
-  if (AiCore.isSupported(aiSdkProviderId) && aiSdkProviderId !== 'openai-compatible') {
+  if (hasProviderConfig(aiSdkProviderId) && aiSdkProviderId !== 'openai-compatible') {
     const options = ProviderConfigFactory.fromProvider(aiSdkProviderId, baseConfig, extraOptions)
     return {
       providerId: aiSdkProviderId as ProviderId,
@@ -120,5 +125,5 @@ export function isModernSdkSupported(provider: Provider): boolean {
   const aiSdkProviderId = getAiSdkProviderId(provider)
 
   // 如果映射到了支持的provider，则支持现代SDK
-  return AiCore.isSupported(aiSdkProviderId)
+  return hasProviderConfig(aiSdkProviderId)
 }

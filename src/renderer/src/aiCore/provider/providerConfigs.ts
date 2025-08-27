@@ -1,4 +1,4 @@
-import { type ProviderConfig, registerMultipleProviders } from '@cherrystudio/ai-core'
+import { type ProviderConfig, registerMultipleProviderConfigs } from '@cherrystudio/ai-core/provider'
 import { loggerService } from '@logger'
 
 const logger = loggerService.withContext('ProviderConfigs')
@@ -16,9 +16,7 @@ export const NEW_PROVIDER_CONFIGS: (ProviderConfig & {
     import: () => import('@openrouter/ai-sdk-provider'),
     creatorFunctionName: 'createOpenRouter',
     supportsImageGeneration: true,
-    mappings: {
-      openrouter: 'openrouter'
-    }
+    aliases: ['openrouter']
   },
   {
     id: 'google-vertex',
@@ -26,10 +24,7 @@ export const NEW_PROVIDER_CONFIGS: (ProviderConfig & {
     import: () => import('@ai-sdk/google-vertex'),
     creatorFunctionName: 'createGoogleVertex',
     supportsImageGeneration: true,
-    mappings: {
-      'google-vertex': 'google-vertex',
-      vertexai: 'google-vertex'
-    }
+    aliases: ['google-vertex', 'vertexai']
   },
   {
     id: 'bedrock',
@@ -37,9 +32,7 @@ export const NEW_PROVIDER_CONFIGS: (ProviderConfig & {
     import: () => import('@ai-sdk/amazon-bedrock'),
     creatorFunctionName: 'createAmazonBedrock',
     supportsImageGeneration: true,
-    mappings: {
-      'aws-bedrock': 'bedrock'
-    }
+    aliases: ['aws-bedrock']
   }
 ] as const
 
@@ -49,19 +42,7 @@ export const NEW_PROVIDER_CONFIGS: (ProviderConfig & {
  */
 export async function initializeNewProviders(): Promise<void> {
   try {
-    logger.info('Starting to register new providers', {
-      providerCount: NEW_PROVIDER_CONFIGS.length,
-      providerIds: NEW_PROVIDER_CONFIGS.map((p) => p.id)
-    })
-
-    const successCount = registerMultipleProviders(NEW_PROVIDER_CONFIGS)
-
-    logger.info('Provider registration completed', {
-      successCount,
-      totalCount: NEW_PROVIDER_CONFIGS.length,
-      failedCount: NEW_PROVIDER_CONFIGS.length - successCount
-    })
-
+    const successCount = registerMultipleProviderConfigs(NEW_PROVIDER_CONFIGS)
     if (successCount < NEW_PROVIDER_CONFIGS.length) {
       logger.warn('Some providers failed to register. Check previous error logs.')
     }

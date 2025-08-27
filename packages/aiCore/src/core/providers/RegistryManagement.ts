@@ -154,10 +154,10 @@ export class RegistryManagement<SEPARATOR extends string = typeof DEFAULT_SEPARA
   }
 
   /**
-   * 获取已注册的 provider 列表（排除别名）
+   * 获取已注册的 provider 列表
    */
   getRegisteredProviders(): string[] {
-    return Object.keys(this.providers).filter((id) => !this.aliases.has(id))
+    return Object.keys(this.providers)
   }
 
   /**

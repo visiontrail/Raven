@@ -1,6 +1,6 @@
 // 核心类型和接口
 export type { AiPlugin, AiRequestContext, HookResult, PluginManagerConfig } from './types'
-import type { ProviderId } from '../../types'
+import type { ProviderId } from '../providers'
 import type { AiPlugin, AiRequestContext } from './types'
 
 // 插件管理器

@@ -1,8 +1,5 @@
 /**
- * 基于 Zod 的 Provider 验证系统
- * - 纯验证层，无状态管理
- * - 数据驱动的 Provider 定义
- * - 完整的类型安全
+ * Provider Config 定义
  */
 
 import { createAnthropic } from '@ai-sdk/anthropic'
@@ -71,7 +68,7 @@ export const baseProviders = [
 
 /**
  * 基础 Provider IDs
- * 从 baseProviders 自动提取，避免重复维护
+ * 从 baseProviders 动态生成
  */
 export const baseProviderIds = baseProviders.map((p) => p.id) as unknown as readonly [string, ...string[]]
 
@@ -81,46 +78,28 @@ export const baseProviderIds = baseProviders.map((p) => p.id) as unknown as read
 export const baseProviderIdSchema = z.enum(baseProviderIds)
 
 /**
- * 动态 Provider ID Schema
+ * 用户自定义 Provider ID Schema
  * 允许任意字符串，但排除基础 provider IDs 以避免冲突
  */
-export const dynamicProviderIdSchema = z
+export const customProviderIdSchema = z
   .string()
   .min(1)
   .refine((id) => !baseProviderIds.includes(id as any), {
-    message: 'Dynamic provider ID cannot conflict with base provider IDs'
+    message: 'Custom provider ID cannot conflict with base provider IDs'
   })
 
 /**
- * 组合的 Provider ID Schema
- * 支持基础 providers + 动态扩展
+ * Provider ID Schema - 支持基础和自定义
  */
-export const providerIdSchema = z.union([baseProviderIdSchema, dynamicProviderIdSchema])
+export const providerIdSchema = z.union([baseProviderIdSchema, customProviderIdSchema])
 
 /**
  * Provider 配置 Schema
+ * 用于Provider的配置验证
  */
 export const providerConfigSchema = z
   .object({
-    id: providerIdSchema,
-    name: z.string().min(1),
-    creator: z.function().optional(),
-    import: z.function().optional(),
-    creatorFunctionName: z.string().optional(),
-    supportsImageGeneration: z.boolean().default(false),
-    imageCreator: z.function().optional(),
-    validateOptions: z.function().optional()
-  })
-  .refine((data) => data.creator || (data.import && data.creatorFunctionName), {
-    message: 'Must provide either creator function or import configuration'
-  })
-
-/**
- * 动态 Provider 注册配置 Schema
- */
-export const dynamicProviderRegistrationSchema = z
-  .object({
-    id: dynamicProviderIdSchema,
+    id: customProviderIdSchema, // 只允许自定义ID
     name: z.string().min(1),
     creator: z.function().optional(),
     import: z.function().optional(),
@@ -128,68 +107,26 @@ export const dynamicProviderRegistrationSchema = z
     supportsImageGeneration: z.boolean().default(false),
     imageCreator: z.function().optional(),
     validateOptions: z.function().optional(),
-    mappings: z.record(z.string()).optional()
+    aliases: z.array(z.string()).optional()
   })
   .refine((data) => data.creator || (data.import && data.creatorFunctionName), {
     message: 'Must provide either creator function or import configuration'
   })
 
-// ===== 类型推导 =====
-
-export type BaseProviderId = z.infer<typeof baseProviderIdSchema>
-export type DynamicProviderId = z.infer<typeof dynamicProviderIdSchema>
+/**
+ * Provider ID 类型 - 基于 zod schema 推导
+ */
 export type ProviderId = z.infer<typeof providerIdSchema>
+export type BaseProviderId = z.infer<typeof baseProviderIdSchema>
+export type CustomProviderId = z.infer<typeof customProviderIdSchema>
+
+/**
+ * Provider 配置类型
+ */
 export type ProviderConfig = z.infer<typeof providerConfigSchema>
-export type DynamicProviderRegistration = z.infer<typeof dynamicProviderRegistrationSchema>
-
-// ===== 纯验证函数 =====
 
 /**
- * 验证 Provider ID 是否有效（包括基础和动态格式）
+ * 兼容性类型别名
+ * @deprecated 使用 ProviderConfig 替代
  */
-export function validateProviderId(id: string): boolean {
-  return providerIdSchema.safeParse(id).success
-}
-
-/**
- * 验证是否为基础 Provider ID
- */
-export function isBaseProviderId(id: string): id is BaseProviderId {
-  return baseProviderIdSchema.safeParse(id).success
-}
-
-/**
- * 验证是否为有效的动态 Provider ID 格式
- */
-export function isValidDynamicProviderId(id: string): boolean {
-  return dynamicProviderIdSchema.safeParse(id).success
-}
-
-/**
- * 验证 Provider 配置
- */
-export function validateProviderConfig(config: unknown): ProviderConfig | null {
-  const result = providerConfigSchema.safeParse(config)
-  if (result.success) {
-    return result.data
-  }
-  return null
-}
-
-/**
- * 验证动态 Provider 注册配置
- */
-export function validateDynamicProviderRegistration(config: unknown): DynamicProviderRegistration | null {
-  const result = dynamicProviderRegistrationSchema.safeParse(config)
-  if (result.success) {
-    return result.data
-  }
-  return null
-}
-
-/**
- * 获取基础 Provider 配置
- */
-export function getBaseProviderConfig(id: BaseProviderId): (typeof baseProviders)[number] | undefined {
-  return baseProviders.find((p) => p.id === id)
-}
+export type DynamicProviderRegistration = ProviderConfig

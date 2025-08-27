@@ -6,9 +6,8 @@
 
 import { customProvider } from 'ai'
 
-import { isOpenAIChatCompletionOnlyModel } from '../../utils/model'
 import { globalRegistryManagement } from './RegistryManagement'
-import { baseProviders, type DynamicProviderRegistration } from './schemas'
+import { baseProviders, type ProviderConfig } from './schemas'
 
 /**
  * Provider 初始化错误类型
@@ -24,141 +23,6 @@ class ProviderInitializationError extends Error {
   }
 }
 
-/**
- * Provider 初始化器类
- */
-export class ProviderInitializer {
-  /**
-   * 初始化单个 provider 并注册
-   */
-  static initializeProvider(providerId: string, options: any): void {
-    try {
-      // 1. 从 schemas 获取 provider 配置
-      const providerConfig = baseProviders.find((p) => p.id === providerId)
-      if (!providerConfig) {
-        throw new ProviderInitializationError(`Provider configuration for '${providerId}' not found`, providerId)
-      }
-
-      // 2. 使用 creator 函数创建已配置的 provider
-      const configuredProvider = providerConfig.creator(options)
-
-      // 3. 处理特殊逻辑并注册到全局管理器
-      this.handleProviderSpecificLogic(configuredProvider, providerId)
-    } catch (error) {
-      if (error instanceof ProviderInitializationError) {
-        throw error
-      }
-      throw new ProviderInitializationError(
-        `Failed to initialize provider ${providerId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        providerId,
-        error instanceof Error ? error : undefined
-      )
-    }
-  }
-
-  /**
-   * 批量初始化 providers
-   */
-  static initializeProviders(providers: Record<string, any>): void {
-    Object.entries(providers).forEach(([providerId, options]) => {
-      try {
-        this.initializeProvider(providerId, options)
-      } catch (error) {
-        console.error(`Failed to initialize provider ${providerId}:`, error)
-      }
-    })
-  }
-
-  /**
-   * 处理特定 provider 的特殊逻辑 (从 ModelCreator 迁移并改进)
-   */
-  private static handleProviderSpecificLogic(provider: any, providerId: string): void {
-    if (providerId === 'openai') {
-      // 🎯 OpenAI 默认注册 (responses 模式)
-      globalRegistryManagement.registerProvider('openai', provider)
-
-      // 🎯 使用 AI SDK 官方的 customProvider 创建 chat 模式变体
-      const openaiChatProvider = customProvider({
-        fallbackProvider: {
-          ...provider,
-          // 覆盖 languageModel 方法指向 chat
-          languageModel: (modelId: string) => provider.chat(modelId)
-        }
-      })
-
-      globalRegistryManagement.registerProvider('openai-chat', openaiChatProvider)
-    } else {
-      // 其他 provider 直接注册
-      globalRegistryManagement.registerProvider(providerId, provider)
-    }
-  }
-
-  /**
-   * 初始化图像生成 provider (从 ModelCreator 迁移)
-   *
-   * @deprecated 不再需要单独的图像provider初始化，使用 initializeProvider() 即可
-   * 一个provider实例可以同时支持文本和图像功能，无需分别初始化
-   *
-   * TODO: 考虑在下个版本中删除此方法
-   */
-  // static initializeImageProvider(providerId: string, options: any): void {
-  //   try {
-  //     const providerConfig = baseProviders.find((p) => p.id === providerId)
-  //     if (!providerConfig) {
-  //       throw new ProviderInitializationError(`Provider configuration for '${providerId}' not found`, providerId)
-  //     }
-
-  //     if (!providerConfig.supportsImageGeneration) {
-  //       throw new ProviderInitializationError(`Provider "${providerId}" does not support image generation`, providerId)
-  //     }
-
-  //     const provider = providerConfig.creator(options)
-
-  //     // 注册图像 provider (使用特殊前缀区分)
-  //     globalRegistryManagement.registerProvider(`${providerId}-image`, provider as any)
-  //   } catch (error) {
-  //     if (error instanceof ProviderInitializationError) {
-  //       throw error
-  //     }
-  //     throw new ProviderInitializationError(
-  //       `Failed to initialize image provider ${providerId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-  //       providerId,
-  //       error instanceof Error ? error : undefined
-  //     )
-  //   }
-  // }
-
-  /**
-   * 检查 provider 是否已初始化
-   */
-  static isProviderInitialized(providerId: string): boolean {
-    return globalRegistryManagement.getRegisteredProviders().includes(providerId)
-  }
-
-  /**
-   * 重新初始化 provider（更新配置）
-   */
-  static reinitializeProvider(providerId: string, options: any): void {
-    this.initializeProvider(providerId, options) // 会覆盖已有的
-  }
-
-  /**
-   * 清除所有已初始化的 providers
-   */
-  static clearAllProviders(): void {
-    globalRegistryManagement.clear()
-  }
-}
-
-// ==================== 便捷函数导出 ====================
-
-export const initializeProvider = ProviderInitializer.initializeProvider.bind(ProviderInitializer)
-export const initializeProviders = ProviderInitializer.initializeProviders.bind(ProviderInitializer)
-// export const initializeImageProvider = ProviderInitializer.initializeImageProvider.bind(ProviderInitializer) // deprecated: 使用 initializeProvider 即可
-export const isProviderInitialized = ProviderInitializer.isProviderInitialized.bind(ProviderInitializer)
-export const reinitializeProvider = ProviderInitializer.reinitializeProvider.bind(ProviderInitializer)
-export const clearAllProviders = ProviderInitializer.clearAllProviders.bind(ProviderInitializer)
-
 // ==================== 全局管理器导出 ====================
 
 export { globalRegistryManagement as providerRegistry }
@@ -169,10 +33,10 @@ export const getLanguageModel = (id: string) => globalRegistryManagement.languag
 export const getTextEmbeddingModel = (id: string) => globalRegistryManagement.textEmbeddingModel(id as any)
 export const getImageModel = (id: string) => globalRegistryManagement.imageModel(id as any)
 
-// ==================== 工具函数 (从 ModelCreator 迁移) ====================
+// ==================== 工具函数 ====================
 
 /**
- * 获取支持的 Providers 列表 (从 ModelCreator 迁移)
+ * 获取支持的 Providers 列表
  */
 export function getSupportedProviders(): Array<{
   id: string
@@ -182,35 +46,6 @@ export function getSupportedProviders(): Array<{
     id: provider.id,
     name: provider.name
   }))
-}
-
-/**
- * 检查 Provider 是否被支持
- */
-export function isProviderSupported(providerId: string): boolean {
-  return getProviderInfo(providerId).isSupported
-}
-
-/**
- * 获取 Provider 信息 (从 ModelCreator 迁移并改进)
- */
-export function getProviderInfo(providerId: string): {
-  id: string
-  name: string
-  isSupported: boolean
-  isInitialized: boolean
-  effectiveProvider: string
-} {
-  const provider = baseProviders.find((p) => p.id === providerId)
-  const isInitialized = globalRegistryManagement.getRegisteredProviders().includes(providerId)
-
-  return {
-    id: providerId,
-    name: provider?.name || providerId,
-    isSupported: !!provider,
-    isInitialized,
-    effectiveProvider: isInitialized ? providerId : 'openai-compatible'
-  }
 }
 
 /**
@@ -227,56 +62,165 @@ export function hasInitializedProviders(): boolean {
   return globalRegistryManagement.hasProviders()
 }
 
-// ==================== 动态Provider注册功能 ====================
+// ==================== 统一Provider配置系统 ====================
 
-// 全局动态provider存储
-const dynamicProviders = new Map<string, DynamicProviderRegistration>()
+// 全局Provider配置存储
+const providerConfigs = new Map<string, ProviderConfig>()
+// 全局ProviderConfig别名映射 - 借鉴RegistryManagement模式
+const providerConfigAliases = new Map<string, string>() // alias -> realId
 
 /**
- * 注册动态provider
+ * 初始化内置配置 - 将baseProviders转换为统一格式
  */
-export function registerDynamicProvider(config: DynamicProviderRegistration): boolean {
+function initializeBuiltInConfigs(): void {
+  baseProviders.forEach((provider) => {
+    const config: ProviderConfig = {
+      id: provider.id,
+      name: provider.name,
+      creator: provider.creator as any, // 类型转换以兼容多种creator签名
+      supportsImageGeneration: provider.supportsImageGeneration || false
+    }
+    providerConfigs.set(provider.id, config)
+  })
+}
+
+// 启动时自动注册内置配置
+initializeBuiltInConfigs()
+
+/**
+ * 步骤1: 注册Provider配置 - 仅存储配置，不执行创建
+ */
+export function registerProviderConfig(config: ProviderConfig): boolean {
   try {
     // 验证配置
     if (!config.id || !config.name) {
       return false
     }
 
-    // 检查是否与基础provider冲突
-    if (baseProviders.find((p) => p.id === config.id)) {
-      console.warn(`Dynamic provider "${config.id}" conflicts with base provider`)
-      return false
+    // 检查是否与已有配置冲突（包括内置配置）
+    if (providerConfigs.has(config.id)) {
+      console.warn(`ProviderConfig "${config.id}" already exists, will override`)
     }
 
-    // 存储动态provider配置
-    dynamicProviders.set(config.id, config)
+    // 存储配置（内置和用户配置统一处理）
+    providerConfigs.set(config.id, config)
 
-    // 如果有creator函数，立即初始化
-    if (config.creator) {
-      try {
-        const provider = config.creator({}) as any // 使用空配置初始化，类型断言为any
-        const aliases = config.mappings ? Object.keys(config.mappings) : undefined
-        globalRegistryManagement.registerProvider(config.id, provider, aliases)
-      } catch (error) {
-        console.error(`Failed to initialize dynamic provider "${config.id}":`, error)
-        return false
-      }
+    //  处理别名
+    if (config.aliases && config.aliases.length > 0) {
+      config.aliases.forEach((alias) => {
+        if (providerConfigAliases.has(alias)) {
+          console.warn(`ProviderConfig alias "${alias}" already exists, will override`)
+        }
+        providerConfigAliases.set(alias, config.id)
+      })
     }
 
     return true
   } catch (error) {
-    console.error(`Failed to register dynamic provider:`, error)
+    console.error(`Failed to register ProviderConfig:`, error)
     return false
   }
 }
 
 /**
- * 批量注册动态providers
+ * 步骤2: 创建Provider - 根据配置执行实际创建
  */
-export function registerMultipleProviders(configs: DynamicProviderRegistration[]): number {
+export async function createProvider(providerId: string, options: any): Promise<any> {
+  //  支持通过别名查找配置
+  const config = getProviderConfigByAlias(providerId)
+
+  if (!config) {
+    throw new Error(`ProviderConfig not found for id: ${providerId}`)
+  }
+
+  try {
+    let creator: (options: any) => any
+
+    if (config.creator) {
+      // 方式1: 直接执行 creator
+      creator = config.creator
+    } else if (config.import && config.creatorFunctionName) {
+      // 方式2: 动态导入并执行
+      const module = await config.import()
+      creator = (module as any)[config.creatorFunctionName]
+
+      if (!creator || typeof creator !== 'function') {
+        throw new Error(`Creator function "${config.creatorFunctionName}" not found in imported module`)
+      }
+    } else {
+      throw new Error('No valid creator method provided in ProviderConfig')
+    }
+
+    // 使用真实配置创建provider实例
+    return creator(options)
+  } catch (error) {
+    console.error(`Failed to create provider "${providerId}":`, error)
+    throw error
+  }
+}
+
+/**
+ * 步骤3: 注册Provider到全局管理器
+ */
+export function registerProvider(providerId: string, provider: any): boolean {
+  try {
+    const config = providerConfigs.get(providerId)
+    if (!config) {
+      console.error(`ProviderConfig not found for id: ${providerId}`)
+      return false
+    }
+
+    // 获取aliases配置
+    const aliases = config.aliases
+
+    // 处理特殊provider逻辑
+    if (providerId === 'openai') {
+      // 注册默认 openai
+      globalRegistryManagement.registerProvider('openai', provider, aliases)
+
+      // 创建并注册 openai-chat 变体
+      const openaiChatProvider = customProvider({
+        fallbackProvider: {
+          ...provider,
+          languageModel: (modelId: string) => provider.chat(modelId)
+        }
+      })
+      globalRegistryManagement.registerProvider('openai-chat', openaiChatProvider)
+    } else {
+      // 其他provider直接注册
+      globalRegistryManagement.registerProvider(providerId, provider, aliases)
+    }
+
+    return true
+  } catch (error) {
+    console.error(`Failed to register provider "${providerId}" to global registry:`, error)
+    return false
+  }
+}
+
+/**
+ * 便捷函数: 一次性完成创建+注册
+ */
+export async function createAndRegisterProvider(providerId: string, options: any): Promise<boolean> {
+  try {
+    // 步骤2: 创建provider
+    const provider = await createProvider(providerId, options)
+
+    // 步骤3: 注册到全局管理器
+    return registerProvider(providerId, provider)
+  } catch (error) {
+    console.error(`Failed to create and register provider "${providerId}":`, error)
+    return false
+  }
+}
+
+/**
+ * 批量注册Provider配置
+ */
+export function registerMultipleProviderConfigs(configs: ProviderConfig[]): number {
   let successCount = 0
   configs.forEach((config) => {
-    if (registerDynamicProvider(config)) {
+    if (registerProviderConfig(config)) {
       successCount++
     }
   })
@@ -284,47 +228,83 @@ export function registerMultipleProviders(configs: DynamicProviderRegistration[]
 }
 
 /**
- * 获取provider映射（解析别名）
+ * 检查是否有对应的Provider配置
  */
-export function getProviderMapping(providerId: string): string {
-  return globalRegistryManagement.resolveProviderId(providerId)
+export function hasProviderConfig(providerId: string): boolean {
+  return providerConfigs.has(providerId)
 }
 
 /**
- * 检查是否为动态provider
+ * 通过别名或ID检查是否有对应的Provider配置
  */
-export function isDynamicProvider(providerId: string): boolean {
-  return dynamicProviders.has(providerId)
+export function hasProviderConfigByAlias(aliasOrId: string): boolean {
+  const realId = resolveProviderConfigId(aliasOrId)
+  return providerConfigs.has(realId)
 }
 
 /**
- * 获取所有动态providers
+ * 获取所有Provider配置
  */
-export function getDynamicProviders(): DynamicProviderRegistration[] {
-  return Array.from(dynamicProviders.values())
+export function getAllProviderConfigs(): ProviderConfig[] {
+  return Array.from(providerConfigs.values())
 }
 
 /**
- * 获取所有别名映射关系
+ * 根据ID获取Provider配置
  */
-export function getAllDynamicMappings(): Record<string, string> {
-  return globalRegistryManagement.getAllAliases()
+export function getProviderConfig(providerId: string): ProviderConfig | undefined {
+  return providerConfigs.get(providerId)
 }
 
 /**
- * 清理所有动态providers
+ * 通过别名或ID获取Provider配置
+ */
+export function getProviderConfigByAlias(aliasOrId: string): ProviderConfig | undefined {
+  // 先检查是否为别名，如果是则解析为真实ID
+  const realId = providerConfigAliases.get(aliasOrId) || aliasOrId
+  return providerConfigs.get(realId)
+}
+
+/**
+ * 解析真实的ProviderConfig ID（去别名化）
+ */
+export function resolveProviderConfigId(aliasOrId: string): string {
+  return providerConfigAliases.get(aliasOrId) || aliasOrId
+}
+
+/**
+ * 检查是否为ProviderConfig别名
+ */
+export function isProviderConfigAlias(id: string): boolean {
+  return providerConfigAliases.has(id)
+}
+
+/**
+ * 获取所有ProviderConfig别名映射关系
+ */
+export function getAllProviderConfigAliases(): Record<string, string> {
+  const result: Record<string, string> = {}
+  providerConfigAliases.forEach((realId, alias) => {
+    result[alias] = realId
+  })
+  return result
+}
+
+/**
+ * 清理所有Provider配置和已注册的providers
  */
 export function cleanup(): void {
-  dynamicProviders.clear()
+  providerConfigs.clear()
+  providerConfigAliases.clear() //  清理别名映射
+  globalRegistryManagement.clear()
+  // 重新初始化内置配置
+  initializeBuiltInConfigs()
+}
+
+export function clearAllProviders(): void {
   globalRegistryManagement.clear()
 }
 
-// ==================== 导出别名相关API ====================
+// ==================== 导出错误类型 ====================
 
-export const resolveProviderId = (id: string) => globalRegistryManagement.resolveProviderId(id)
-export const isAlias = (id: string) => globalRegistryManagement.isAlias(id)
-export const getAllAliases = () => globalRegistryManagement.getAllAliases()
-
-// ==================== 导出错误类型和工具函数 ====================
-
-export { isOpenAIChatCompletionOnlyModel, ProviderInitializationError }
+export { ProviderInitializationError }

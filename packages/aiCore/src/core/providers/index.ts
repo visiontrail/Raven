@@ -1,60 +1,83 @@
 /**
- * Providers 模块统一导出 - 现代化架构
+ * Providers 模块统一导出 - 独立Provider包
  */
 
-// ==================== 新版架构（推荐使用）====================
+// ==================== 核心管理器 ====================
 
 // Provider 注册表管理器
 export { globalRegistryManagement, RegistryManagement } from './RegistryManagement'
 
-// Provider 初始化器（核心功能）
+// Provider 核心功能
 export {
+  // 状态管理
+  cleanup,
   clearAllProviders,
+  createAndRegisterProvider,
+  createProvider,
+  getAllProviderConfigAliases,
+  getAllProviderConfigs,
   getImageModel,
+  // 工具函数
   getInitializedProviders,
   getLanguageModel,
-  getProviderInfo,
+  getProviderConfig,
+  getProviderConfigByAlias,
   getSupportedProviders,
   getTextEmbeddingModel,
   hasInitializedProviders,
-  // initializeImageProvider, // deprecated: 使用 initializeProvider 即可
-  initializeProvider,
-  initializeProviders,
-  isProviderInitialized,
-  isProviderSupported,
+  // 工具函数
+  hasProviderConfig,
+  // 别名支持
+  hasProviderConfigByAlias,
+  isProviderConfigAlias,
+  // 错误类型
   ProviderInitializationError,
-  ProviderInitializer,
+  // 全局访问
   providerRegistry,
-  reinitializeProvider
+  registerMultipleProviderConfigs,
+  registerProvider,
+  // 统一Provider系统
+  registerProviderConfig,
+  resolveProviderConfigId
 } from './registry'
 
-// 动态Provider注册功能
-export {
-  cleanup,
-  getAllAliases,
-  getAllDynamicMappings,
-  getDynamicProviders,
-  getProviderMapping,
-  isAlias,
-  isDynamicProvider,
-  registerDynamicProvider,
-  registerMultipleProviders,
-  resolveProviderId
-} from './registry'
-
-// ==================== 保留的导出（兼容性）====================
+// ==================== 基础数据和类型 ====================
 
 // 基础Provider数据源
 export { baseProviderIds, baseProviders } from './schemas'
 
+// 类型定义和Schema
+export type {
+  BaseProviderId,
+  CustomProviderId,
+  DynamicProviderRegistration,
+  ProviderConfig,
+  ProviderId
+} from './schemas' // 从 schemas 导出的类型
+export { baseProviderIdSchema, customProviderIdSchema, providerConfigSchema, providerIdSchema } from './schemas' // Schema 导出
+export type {
+  DynamicProviderRegistry,
+  ExtensibleProviderSettingsMap,
+  ProviderError,
+  ProviderSettingsMap,
+  ProviderTypeRegistrar
+} from './types'
+
+// ==================== 工具函数 ====================
+
+// Provider配置工厂
+export {
+  type BaseProviderConfig,
+  createProviderConfig,
+  ProviderConfigBuilder,
+  providerConfigBuilder,
+  ProviderConfigFactory
+} from './factory'
+
+// 工具函数
+export { formatPrivateKey } from './utils'
+
+// ==================== 扩展功能 ====================
+
 // Hub Provider 功能
 export { createHubProvider, type HubProviderConfig, HubProviderError } from './HubProvider'
-
-// 类型定义（可能被其他模块使用）
-export type { ProviderConfig, ProviderId, ProviderSettingsMap } from './types'
-
-// Provider验证功能（使用更好的Zod版本）
-export { validateProviderConfig } from './schemas'
-
-// 验证功能（可能被其他地方使用）
-export { validateProviderId } from './schemas'

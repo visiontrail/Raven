@@ -1,4 +1,4 @@
-import { AiCore, getProviderMapping, type ProviderId } from '@cherrystudio/ai-core'
+import { hasProviderConfigByAlias, type ProviderId, resolveProviderConfigId } from '@cherrystudio/ai-core/provider'
 import { loggerService } from '@logger'
 import { Provider } from '@renderer/types'
 
@@ -30,7 +30,7 @@ const STATIC_PROVIDER_MAPPING: Record<string, ProviderId> = {
 }
 
 /**
- * 尝试解析provider标识符（支持静态映射和动态映射）
+ * 尝试解析provider标识符（支持静态映射和别名）
  */
 function tryResolveProviderId(identifier: string): ProviderId | null {
   // 1. 检查静态映射
@@ -39,15 +39,10 @@ function tryResolveProviderId(identifier: string): ProviderId | null {
     return staticMapping
   }
 
-  // 2. 检查动态映射
-  const dynamicMapping = getProviderMapping(identifier)
-  if (dynamicMapping && dynamicMapping !== identifier) {
-    return dynamicMapping as ProviderId
-  }
-
-  // 3. 检查AiCore是否直接支持
-  if (AiCore.isSupported(identifier)) {
-    return identifier as ProviderId
+  // 2. 检查AiCore是否支持（包括别名支持）
+  if (hasProviderConfigByAlias(identifier)) {
+    // 解析为真实的Provider ID
+    return resolveProviderConfigId(identifier) as ProviderId
   }
 
   return null

@@ -3,7 +3,6 @@ import { ImageModelV2 } from '@ai-sdk/provider'
 import { LanguageModel } from 'ai'
 
 import { type AiPlugin, createContext, PluginManager } from '../plugins'
-import { isProviderSupported } from '../providers/registry'
 import { type ProviderId, type ProviderSettingsMap } from '../providers/types'
 
 /**
@@ -239,21 +238,5 @@ export class PluginEngine<T extends ProviderId = ProviderId> {
     plugins: AiPlugin[] = []
   ): PluginEngine<'openai-compatible'> {
     return new PluginEngine('openai-compatible', plugins)
-  }
-
-  /**
-   * 创建标准提供商客户端
-   */
-  static create<T extends ProviderId>(providerId: T, plugins?: AiPlugin[]): PluginEngine<T>
-
-  static create(providerId: string, plugins?: AiPlugin[]): PluginEngine<'openai-compatible'>
-
-  static create(providerId: string, plugins: AiPlugin[] = []): PluginEngine {
-    if (isProviderSupported(providerId)) {
-      return new PluginEngine(providerId as ProviderId, plugins)
-    } else {
-      // 对于未知 provider，使用 openai-compatible
-      return new PluginEngine('openai-compatible', plugins)
-    }
   }
 }

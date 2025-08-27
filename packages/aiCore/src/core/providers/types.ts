@@ -7,13 +7,7 @@ import { type OpenAICompatibleProviderSettings } from '@ai-sdk/openai-compatible
 import { type XaiProviderSettings } from '@ai-sdk/xai'
 
 // 导入基于 Zod 的 ProviderId 类型
-import {
-  type BaseProviderId,
-  type DynamicProviderId,
-  type DynamicProviderRegistration,
-  type ProviderConfig,
-  type ProviderId as ZodProviderId
-} from './schemas'
+import { type ProviderId as ZodProviderId } from './schemas'
 
 export interface ExtensibleProviderSettingsMap {
   // 基础的静态providers
@@ -76,10 +70,6 @@ export class ProviderError extends Error {
 // 动态ProviderId类型 - 基于 Zod Schema，支持运行时扩展和验证
 export type ProviderId = ZodProviderId
 
-// 重新导出相关类型
-export type { BaseProviderId, DynamicProviderId, DynamicProviderRegistration, ProviderConfig }
-
-// Provider类型注册工具
 export interface ProviderTypeRegistrar {
   registerProviderType<T extends string, S>(providerId: T, settingsType: S): void
   getProviderSettings<T extends string>(providerId: T): any
