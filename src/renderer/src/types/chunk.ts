@@ -1,6 +1,7 @@
 import {
   ExternalToolResult,
   KnowledgeReference,
+  MCPTool,
   MCPToolResponse,
   NormalToolResponse,
   ToolUseResponse,
@@ -294,7 +295,7 @@ export interface ExternalToolCompleteChunk {
 export interface MCPToolCreatedChunk {
   type: ChunkType.MCP_TOOL_CREATED
   tool_calls?: SdkToolCall[] // 工具调用
-  tool_use_responses?: ToolUseResponse[] // 工具使用响应
+  tool_use_responses?: (Omit<ToolUseResponse, 'tool'> & { tool: MCPTool })[] // 工具使用响应
 }
 
 export interface MCPToolPendingChunk {

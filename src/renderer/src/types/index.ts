@@ -883,6 +883,7 @@ export interface MCPToolResponse extends Omit<ToolUseResponse | ToolCallResponse
 
 export interface NormalToolResponse extends Omit<ToolCallResponse, 'tool'> {
   tool: BaseTool
+  toolCallId: string
 }
 
 export interface MCPToolResultContent {

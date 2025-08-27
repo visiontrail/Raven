@@ -1,5 +1,5 @@
 import { loggerService } from '@logger'
-import { MCPCallToolResponse, MCPTool, MCPToolResponse, Model, ToolCallResponse } from '@renderer/types'
+import { MCPCallToolResponse, MCPTool, MCPToolResponse, Model } from '@renderer/types'
 import { ChunkType, MCPToolCreatedChunk } from '@renderer/types/chunk'
 import { SdkMessageParam, SdkRawOutput, SdkToolCall } from '@renderer/types/sdk'
 import {
@@ -230,7 +230,7 @@ async function executeToolCalls(
   model: Model,
   topicId?: string
 ): Promise<{ toolResults: SdkMessageParam[]; confirmedToolCalls: SdkToolCall[] }> {
-  const mcpToolResponses: ToolCallResponse[] = toolCalls
+  const mcpToolResponses: MCPToolResponse[] = toolCalls
     .map((toolCall) => {
       const mcpTool = ctx.apiClientInstance.convertSdkToolCallToMcp(toolCall, mcpTools)
       if (!mcpTool) {
@@ -238,7 +238,7 @@ async function executeToolCalls(
       }
       return ctx.apiClientInstance.convertSdkToolCallToMcpToolResponse(toolCall, mcpTool)
     })
-    .filter((t): t is ToolCallResponse => typeof t !== 'undefined')
+    .filter((t): t is MCPToolResponse => typeof t !== 'undefined')
 
   if (mcpToolResponses.length === 0) {
     logger.warn(`No valid MCP tool responses to execute`)

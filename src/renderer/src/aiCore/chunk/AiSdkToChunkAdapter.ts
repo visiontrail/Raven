@@ -185,9 +185,8 @@ export class AiSdkToChunkAdapter {
               source: WebSearchSource.GEMINI
             }
           })
-        } else {
+        } else if (final.webSearchResults.length) {
           const providerName = Object.keys(providerMetadata || {})[0]
-          // console.log('providerName', providerName)
           switch (providerName) {
             case WebSearchSource.OPENAI:
               this.onChunk({

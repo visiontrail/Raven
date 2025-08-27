@@ -328,7 +328,11 @@ export function isToolAutoApproved(tool: BaseTool, server?: MCPServer): boolean 
   return effectiveServer ? !effectiveServer.disabledAutoApproveTools?.includes(mcpTool.name) : false
 }
 
-export function parseToolUse(content: string, mcpTools: MCPTool[], startIdx: number = 0): ToolUseResponse[] {
+export function parseToolUse(
+  content: string,
+  mcpTools: MCPTool[],
+  startIdx: number = 0
+): (Omit<ToolUseResponse, 'tool'> & { tool: MCPTool })[] {
   if (!content || !mcpTools || mcpTools.length === 0) {
     return []
   }
@@ -346,7 +350,7 @@ export function parseToolUse(content: string, mcpTools: MCPTool[], startIdx: num
 
   const toolUsePattern =
     /<tool_use>([\s\S]*?)<name>([\s\S]*?)<\/name>([\s\S]*?)<arguments>([\s\S]*?)<\/arguments>([\s\S]*?)<\/tool_use>/g
-  const tools: ToolUseResponse[] = []
+  const tools: (Omit<ToolUseResponse, 'tool'> & { tool: MCPTool })[] = []
   let match
   let idx = startIdx
   // Find all tool use blocks
