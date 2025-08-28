@@ -62,6 +62,8 @@ class PackageService {
       const packagesArray = Array.from(this.packages.values())
       await fs.writeJSON(this.metadataFilePath, packagesArray, { spaces: 2 })
       console.log(`💾 已保存 ${packagesArray.length} 个包的元数据到文件`)
+      // Trigger AI vector index sync
+      await this.triggerVectorSync()
     } catch (error) {
       console.error('❌ 保存包元数据时出错:', error)
     }
@@ -94,6 +96,29 @@ class PackageService {
 
     console.log(`📊 返回 ${existingPackages.length} 个有效包`)
     return existingPackages
+  }
+
+  // Notify AI service to rebuild/update vector index
+  async triggerVectorSync(force = false) {
+    try {
+      const aiUrl = process.env.AI_SERVICE_URL || 'http://localhost:9090'
+      const resp = await fetch(`${aiUrl}/rag/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force_rebuild: !!force })
+      })
+      if (!resp.ok) {
+        const text = await resp.text()
+        console.warn('⚠️ 触发向量索引同步失败:', text)
+        return false
+      }
+      const json = await resp.json()
+      console.log(`🔄 已触发向量索引同步: upserted=${json.upserted}`)
+      return true
+    } catch (e) {
+      console.warn('⚠️ 调用AI服务同步失败，可能AI服务未就绪，稍后可重试:', e.message)
+      return false
+    }
   }
 
   // Get a package by ID

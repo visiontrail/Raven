@@ -7,6 +7,7 @@ const fs = require('fs')
 const packagesRouter = require('./routes/packages')
 const uploadRouter = require('./routes/upload')
 const downloadRouter = require('./routes/download')
+const aiRouter = require('./routes/ai')
 
 const app = express()
 const PORT = process.env.PORT || 8083
@@ -35,6 +36,7 @@ app.use(express.static(path.join(__dirname, '../public')))
 app.use('/api/packages', packagesRouter)
 app.use('/api/upload', uploadRouter)
 app.use('/api/download', downloadRouter)
+app.use('/api/ai', aiRouter)
 
 // 健康检查
 app.get('/health', (req, res) => {

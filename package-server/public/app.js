@@ -13,6 +13,9 @@ let currentPackages = []
 document.addEventListener('DOMContentLoaded', function () {
   initializeApp()
   setupEventListeners()
+  // 将AI演示相关函数挂到全局
+  window.openAIDemo = openAIRag
+  window.sendFollowup = sendFollowup
 })
 
 // 初始化应用
@@ -67,6 +70,12 @@ function setupEventListeners() {
 
   // 取消上传按钮事件
   document.getElementById('cancelUploadBtn').addEventListener('click', cancelUpload)
+
+  // 预置自然语言搜索问题
+  const naturalInput = document.getElementById('naturalSearchInput')
+  if (naturalInput && !naturalInput.value) {
+    naturalInput.value = '查找包含组件 oam 且为补丁包的最新版本'
+  }
 }
 
 // 防抖函数
@@ -203,6 +212,290 @@ function formatFileSize(bytes) {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
+
+// ================= AI 搜索演示（RAG 模拟） 开始 =================
+const PRESET_DEMO = {
+  question: '查找包含组件 oam 且为补丁包的最新版本',
+  retrieved: [
+    {
+      id: '3a9ef06d-52f9-4c1f-83bd-e4c916417412',
+      name: 'GalaxySpace-Lx10-2025Aug21-1224-V1006-Patch.tgz',
+      version: '1.0.0.6',
+      packageType: 'lingxi-10',
+      size: 2311733,
+      createdAt: '2025-08-21T04:24:20.713Z',
+      metadata: { isPatch: true, components: ['oam', 'cucp', 'cuup', 'du'], tags: ['Tags-1', '标签1'] },
+      path: '/app/uploads/GalaxySpace-Lx10-2025Aug21-1224-V1006-Patch.tgz',
+      score: 0.92,
+      chunk: '包含 oam 组件，属于补丁包，版本 1.0.0.6，时间 2025-08-21.'
+    },
+    {
+      id: 'd87bb6e9-8c1d-42e5-90ca-5e7c72ae570f',
+      name: 'GalaxySpace-Lx10-2025Jul29-1348-V1025.tgz',
+      version: '10',
+      packageType: 'lingxi-10',
+      size: 136584794,
+      createdAt: '2025-08-22T06:31:16.590Z',
+      metadata: { isPatch: false, components: [], tags: [], sha256: '90c7...50c6d' },
+      path: '/app/uploads/GalaxySpace-Lx10-2025Jul29-1348-V1025.tgz',
+      score: 0.55,
+      chunk: '正式包，未包含 oam 组件。'
+    }
+  ],
+  answer:
+    '根据向量检索结果，最符合“包含组件 oam 且为补丁包的最新版本”的为 GalaxySpace-Lx10-2025Aug21-1224-V1006-Patch.tgz（版本 1.0.0.6，补丁包，包含 oam）。你可以点击查看详情或直接下载。'
+}
+
+function openAIDemo() {
+  // 打开模态框
+  const modalEl = document.getElementById('aiChatModal')
+  const modal = new window.bootstrap.Modal(modalEl)
+  modal.show()
+
+  const messages = document.getElementById('aiChatMessages')
+  const retrievedPanel = document.getElementById('aiRetrievedPanel')
+  const retrievedList = document.getElementById('aiRetrievedList')
+  const follow = document.getElementById('aiFollowupInput')
+
+  // 清空
+  messages.innerHTML = ''
+  retrievedList.innerHTML = ''
+  retrievedPanel.style.display = 'none'
+
+  // 预置问题
+  const naturalInput = document.getElementById('naturalSearchInput')
+  if (naturalInput) naturalInput.value = PRESET_DEMO.question
+
+  // 显示用户问题
+  appendAIMsg('user', PRESET_DEMO.question)
+
+  // 模拟检索延迟后显示候选片段
+  setTimeout(() => {
+    retrievedPanel.style.display = 'block'
+    PRESET_DEMO.retrieved.forEach((item) => {
+      const badge = `<span class="badge bg-${getPackageTypeColor(item.packageType)} me-2">${getPackageTypeDisplay(
+        item.packageType
+      )}</span>`
+      const ver = `<span class="badge bg-light text-dark me-2">v${item.version}</span>`
+      const isPatch = item.metadata?.isPatch ? '<span class="badge bg-danger me-2">补丁</span>' : ''
+      const comp = (item.metadata?.components || [])
+        .map((c) => `<span class="badge bg-success me-1">${c}</span>`)
+        .join('')
+      const html = `
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="me-2">
+              <div class="fw-semibold">${item.name}</div>
+              <div class="small text-muted">${badge}${ver}${isPatch}${comp}</div>
+              <div class="small mt-1">${item.chunk}</div>
+            </div>
+            <div class="text-end small text-muted">${formatDate(item.createdAt)}</div>
+          </div>
+        </div>`
+      retrievedList.insertAdjacentHTML('beforeend', html)
+    })
+  }, 400)
+
+  // 模拟流式回答
+  setTimeout(() => {
+    streamAIAnswer(PRESET_DEMO.answer)
+    if (follow) follow.placeholder = '例如：该包包含哪些组件？'
+  }, 800)
+}
+
+function appendAIMsg(role, text) {
+  const messages = document.getElementById('aiChatMessages')
+  const isUser = role === 'user'
+  const bubble = document.createElement('div')
+  bubble.className = `d-flex ${isUser ? 'justify-content-end' : 'justify-content-start'} mb-2`
+  bubble.innerHTML = `
+    <div class="p-2 rounded ${isUser ? 'bg-primary text-white' : 'bg-white'}" style="max-width:80%; box-shadow:0 2px 6px rgba(0,0,0,0.06)">
+      ${escapeHtml(text)}
+    </div>`
+  messages.appendChild(bubble)
+  messages.scrollTop = messages.scrollHeight
+}
+
+function streamAIAnswer(fullText) {
+  const messages = document.getElementById('aiChatMessages')
+  const container = document.createElement('div')
+  container.className = 'd-flex justify-content-start mb-2'
+  const bubble = document.createElement('div')
+  bubble.className = 'p-2 rounded bg-white'
+  bubble.style.maxWidth = '80%'
+  bubble.style.boxShadow = '0 2px 6px rgba(0,0,0,0.06)'
+  container.appendChild(bubble)
+  messages.appendChild(container)
+
+  let i = 0
+  const timer = setInterval(() => {
+    bubble.textContent = fullText.slice(0, i)
+    messages.scrollTop = messages.scrollHeight
+    i += Math.max(1, Math.round(fullText.length / 80))
+    if (i > fullText.length) {
+      bubble.textContent = fullText
+      clearInterval(timer)
+    }
+  }, 30)
+}
+
+function sendFollowup() {
+  const input = document.getElementById('aiFollowupInput')
+  const text = (input?.value || '').trim()
+  if (!text) return
+  appendAIMsg('user', text)
+  input.value = ''
+  // 简单基于关键字的模拟答复
+  let reply = '已根据你的问题进行了检索，结果与上方候选一致。'
+  if (/组件|components|包含/.test(text)) {
+    const comps = PRESET_DEMO.retrieved[0].metadata.components.join(', ')
+    reply = `该补丁包包含的组件有：${comps}。`
+  } else if (/下载|link|地址/.test(text)) {
+    reply = '你可以在主页面列表中点击该包的下载按钮进行下载。'
+  } else if (/是否补丁|patch|补丁包/.test(text)) {
+    reply = '是的，命中的包为补丁包（isPatch=true）。'
+  }
+  setTimeout(() => streamAIAnswer(reply), 400)
+}
+
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+// ================= AI 搜索演示（RAG 模拟） 结束 =================
+
+// ================= AI 搜索（真实后端） 开始 =================
+async function aiSearch(question) {
+  const filters = {
+    type: document.getElementById('typeFilter')?.value || undefined,
+    version: document.getElementById('versionFilter')?.value || undefined,
+    tags: (document.getElementById('tagsFilter')?.value || '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean),
+    isPatch: (() => {
+      const v = document.getElementById('patchFilter')?.value
+      return v === '' ? undefined : v === 'true'
+    })(),
+    dateFrom: document.getElementById('dateFromFilter')?.value || undefined,
+    dateTo: document.getElementById('dateToFilter')?.value || undefined,
+    components: getAllComponents()
+  }
+
+  const resp = await fetch('/api/ai/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, filters })
+  })
+  const json = await resp.json()
+  if (!json.success) throw new Error(json.message || 'AI 搜索失败')
+  return json.data
+}
+
+function aiStreamAnswer(question, retrievedIds = []) {
+  return new Promise((resolve, reject) => {
+    const messages = document.getElementById('aiChatMessages')
+    const container = document.createElement('div')
+    container.className = 'd-flex justify-content-start mb-2'
+    const bubble = document.createElement('div')
+    bubble.className = 'p-2 rounded bg-white'
+    bubble.style.maxWidth = '80%'
+    bubble.style.boxShadow = '0 2px 6px rgba(0,0,0,0.06)'
+    container.appendChild(bubble)
+    messages.appendChild(container)
+
+    const qs = new URLSearchParams({
+      question: question || '',
+      ids: (retrievedIds || []).join(',')
+    })
+    const es = new EventSource(`/api/ai/chat/stream?${qs.toString()}`)
+    let full = ''
+
+    es.onmessage = (ev) => {
+      if (ev.data === '[DONE]') {
+        es.close()
+        return resolve(full)
+      }
+      full += ev.data
+      bubble.textContent = full
+      messages.scrollTop = messages.scrollHeight
+    }
+    es.onerror = (err) => {
+      es.close()
+      reject(err)
+    }
+  })
+}
+
+async function openAIRag() {
+  // 打开模态框
+  const modalEl = document.getElementById('aiChatModal')
+  const modal = new window.bootstrap.Modal(modalEl)
+  modal.show()
+
+  const messages = document.getElementById('aiChatMessages')
+  const retrievedPanel = document.getElementById('aiRetrievedPanel')
+  const retrievedList = document.getElementById('aiRetrievedList')
+  const follow = document.getElementById('aiFollowupInput')
+  const input = document.getElementById('naturalSearchInput')
+
+  // 清空
+  messages.innerHTML = ''
+  retrievedList.innerHTML = ''
+  retrievedPanel.style.display = 'none'
+
+  const question = (input?.value || '').trim()
+  if (!question) return
+
+  // 显示用户问题
+  appendAIMsg('user', question)
+
+  try {
+    const data = await aiSearch(question)
+    const hits = data.hits || []
+    if (hits.length) {
+      retrievedPanel.style.display = 'block'
+      hits.forEach((item) => {
+        const badge = `<span class="badge bg-${getPackageTypeColor(item.packageType)} me-2">${getPackageTypeDisplay(
+          item.packageType
+        )}</span>`
+        const ver = `<span class="badge bg-light text-dark me-2">v${item.version}</span>`
+        const isPatch = item.metadata?.isPatch ? '<span class="badge bg-danger me-2">补丁</span>' : ''
+        const comp = (getComponentsArray(item.metadata?.components) || [])
+          .map((c) => `<span class="badge bg-success me-1">${c}</span>`)
+          .join('')
+        const html = `
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="me-2">
+                <div class="fw-semibold">${item.name}</div>
+                <div class="small text-muted">${badge}${ver}${isPatch}${comp}</div>
+                <div class="small mt-1">${item.chunk || ''}</div>
+              </div>
+              <div class="text-end small text-muted">${formatDate(item.createdAt)}</div>
+            </div>
+          </div>`
+        retrievedList.insertAdjacentHTML('beforeend', html)
+      })
+    }
+
+    if (follow) follow.placeholder = '例如：该包包含哪些组件？'
+
+    // 流式答案（SSE）
+    await aiStreamAnswer(
+      question,
+      hits.map((h) => h.id)
+    )
+  } catch (e) {
+    console.error('AI 检索失败:', e)
+    showAlert(e.message || 'AI 检索失败', 'danger')
+  }
+}
+// ================= AI 搜索（真实后端） 结束 =================
 
 // 格式化日期
 function formatDate(dateString) {
