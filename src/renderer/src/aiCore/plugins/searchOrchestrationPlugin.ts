@@ -119,7 +119,7 @@ async function analyzeSearchIntent(
   const provider = getProviderByModel(model)
 
   if (!provider || isEmpty(provider.apiKey)) {
-    console.error('Provider not found or missing API key')
+    logger.error('Provider not found or missing API key')
     return getFallbackResult()
   }
   // console.log('formattedPrompt', schema)
@@ -198,9 +198,9 @@ async function storeConversationMemory(
         content: getMessageContent(msg) || ''
       }))
       .filter((msg) => msg.content.trim().length > 0)
-    console.log('conversationMessages', conversationMessages)
+    logger.debug('conversationMessages', conversationMessages)
     if (conversationMessages.length < 2) {
-      console.log('Need at least a user message and assistant response for memory processing')
+      logger.info('Need at least a user message and assistant response for memory processing')
       return
     }
 
@@ -214,26 +214,26 @@ async function storeConversationMemory(
       context.requestId
     )
 
-    console.log('Processing conversation memory...', { messageCount: conversationMessages.length })
+    logger.info('Processing conversation memory...', { messageCount: conversationMessages.length })
 
     // 后台处理对话记忆（不阻塞 UI）
     const memoryProcessor = new MemoryProcessor()
     memoryProcessor
       .processConversation(conversationMessages, processorConfig)
       .then((result) => {
-        console.log('Memory processing completed:', result)
+        logger.info('Memory processing completed:', result)
         if (result.facts?.length > 0) {
-          console.log('Extracted facts from conversation:', result.facts)
-          console.log('Memory operations performed:', result.operations)
+          logger.info('Extracted facts from conversation:', result.facts)
+          logger.info('Memory operations performed:', result.operations)
         } else {
-          console.log('No facts extracted from conversation')
+          logger.info('No facts extracted from conversation')
         }
       })
       .catch((error) => {
-        console.error('Background memory processing failed:', error)
+        logger.error('Background memory processing failed:', error as Error)
       })
   } catch (error) {
-    console.error('Error in conversation memory processing:', error)
+    logger.error('Error in conversation memory processing:', error as Error)
     // 不抛出错误，避免影响主流程
   }
 }
@@ -302,11 +302,11 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
 
           if (analysisResult) {
             intentAnalysisResults[context.requestId] = analysisResult
-            // console.log('🧠 [SearchOrchestration] Intent analysis completed:', analysisResult)
+            // logger.info('🧠 Intent analysis completed:', analysisResult)
           }
         }
       } catch (error) {
-        console.error('🧠 [SearchOrchestration] Intent analysis failed:', error)
+        logger.error('🧠 Intent analysis failed:', error as Error)
         // 不抛出错误，让流程继续
       }
     },
@@ -316,12 +316,12 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
      */
     transformParams: async (params: any, context: AiRequestContext) => {
       if (context.isAnalyzing) return params
-      // console.log('🔧 [SearchOrchestration] Configuring tools based on intent...', context.requestId)
+      // logger.info('🔧 Configuring tools based on intent...', context.requestId)
 
       try {
         const analysisResult = intentAnalysisResults[context.requestId]
         // if (!analysisResult || !assistant) {
-        //   console.log('🔧 [SearchOrchestration] No analysis result or assistant, skipping tool configuration')
+        //   logger.info('🔧 No analysis result or assistant, skipping tool configuration')
         //   return params
         // }
 
@@ -336,7 +336,7 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
 
           if (needsSearch) {
             // onChunk({ type: ChunkType.EXTERNEL_TOOL_IN_PROGRESS })
-            // console.log('🌐 [SearchOrchestration] Adding web search tool with pre-extracted keywords')
+            // logger.info('🌐 Adding web search tool with pre-extracted keywords')
             params.tools['builtin_web_search'] = webSearchToolWithPreExtractedKeywords(
               assistant.webSearchProviderId,
               analysisResult.websearch,
@@ -358,7 +358,7 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
               question: [getMessageContent(userMessage) || 'search'],
               rewrite: getMessageContent(userMessage) || 'search'
             }
-            // console.log('📚 [SearchOrchestration] Adding knowledge search tool (force mode)')
+            // logger.info('📚 Adding knowledge search tool (force mode)')
             params.tools['builtin_knowledge_search'] = knowledgeSearchTool(
               assistant,
               fallbackKeywords,
@@ -374,7 +374,7 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
               analysisResult.knowledge.question[0] !== 'not_needed'
 
             if (needsKnowledgeSearch && analysisResult.knowledge) {
-              // console.log('📚 [SearchOrchestration] Adding knowledge search tool (intent-based)')
+              // logger.info('📚 Adding knowledge search tool (intent-based)')
               const userMessage = userMessages[context.requestId]
               params.tools['builtin_knowledge_search'] = knowledgeSearchTool(
                 assistant,
@@ -389,14 +389,14 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
         // 🧠 记忆搜索工具配置
         const globalMemoryEnabled = selectGlobalMemoryEnabled(store.getState())
         if (globalMemoryEnabled && assistant.enableMemory) {
-          // console.log('🧠 [SearchOrchestration] Adding memory search tool')
+          // logger.info('🧠 Adding memory search tool')
           params.tools['builtin_memory_search'] = memorySearchTool()
         }
 
-        // console.log('🔧 [SearchOrchestration] Tools configured:', Object.keys(params.tools))
+        // logger.info('🔧 Tools configured:', Object.keys(params.tools))
         return params
       } catch (error) {
-        console.error('🔧 [SearchOrchestration] Tool configuration failed:', error)
+        logger.error('🔧 Tool configuration failed:', error as Error)
         return params
       }
     },
@@ -407,8 +407,8 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
 
     onRequestEnd: async (context: AiRequestContext) => {
       // context.isAnalyzing = false
-      // console.log('context.isAnalyzing', context, result)
-      // console.log('💾 [SearchOrchestration] Starting memory storage...', context.requestId)
+      // logger.info('context.isAnalyzing', context, result)
+      // logger.info('💾 Starting memory storage...', context.requestId)
       if (context.isAnalyzing) return
       try {
         const messages = context.originalParams.messages
@@ -421,7 +421,7 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
         delete intentAnalysisResults[context.requestId]
         delete userMessages[context.requestId]
       } catch (error) {
-        console.error('💾 [SearchOrchestration] Memory storage failed:', error)
+        logger.error('💾 Memory storage failed:', error as Error)
         // 不抛出错误，避免影响主流程
       }
     }

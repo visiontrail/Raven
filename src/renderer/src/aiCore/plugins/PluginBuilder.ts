@@ -1,5 +1,6 @@
 import { AiPlugin } from '@cherrystudio/ai-core'
 import { createPromptToolUsePlugin, webSearchPlugin } from '@cherrystudio/ai-core/built-in/plugins'
+import { loggerService } from '@logger'
 import { getEnableDeveloperMode } from '@renderer/hooks/useSettings'
 import { Assistant } from '@renderer/types'
 
@@ -8,6 +9,7 @@ import reasoningTimePlugin from './reasoningTimePlugin'
 import { searchOrchestrationPlugin } from './searchOrchestrationPlugin'
 import { createTelemetryPlugin } from './telemetryPlugin'
 
+const logger = loggerService.withContext('PluginBuilder')
 /**
  * 根据条件构建插件数组
  */
@@ -70,8 +72,8 @@ export function buildPlugins(
   // if (!middlewareConfig.enableTool && middlewareConfig.mcpTools && middlewareConfig.mcpTools.length > 0) {
   //   plugins.push(createNativeToolUsePlugin())
   // }
-  console.log(
-    '最终插件列表:',
+  logger.info(
+    'Final plugin list:',
     plugins.map((p) => p.name)
   )
   return plugins

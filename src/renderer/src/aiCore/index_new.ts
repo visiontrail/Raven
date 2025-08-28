@@ -435,7 +435,7 @@ export default class ModernAiProvider {
         const result = await this.modernGenerateImage(params)
         return result
       } catch (error) {
-        console.warn('Modern AI SDK generateImage failed, falling back to legacy:', error)
+        logger.warn('Modern AI SDK generateImage failed, falling back to legacy:', error as Error)
         // fallback 到传统实现
         return this.legacyProvider.generateImage(params)
       }

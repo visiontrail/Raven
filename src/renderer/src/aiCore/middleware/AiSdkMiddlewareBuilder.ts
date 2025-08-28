@@ -3,8 +3,11 @@ import {
   LanguageModelV2Middleware,
   simulateStreamingMiddleware
 } from '@cherrystudio/ai-core'
+import { loggerService } from '@logger'
 import type { MCPTool, Model, Provider } from '@renderer/types'
 import type { Chunk } from '@renderer/types/chunk'
+
+const logger = loggerService.withContext('AiSdkMiddlewareBuilder')
 
 /**
  * AI SDK 中间件配置项
@@ -57,7 +60,7 @@ export class AiSdkMiddlewareBuilder {
     if (index !== -1) {
       this.middlewares.splice(index + 1, 0, middleware)
     } else {
-      console.warn(`AiSdkMiddlewareBuilder: 未找到名为 '${targetName}' 的中间件，无法插入`)
+      logger.warn(`AiSdkMiddlewareBuilder: Middleware named '${targetName}' not found, cannot insert`)
     }
     return this
   }
@@ -132,7 +135,7 @@ export function buildAiSdkMiddlewares(config: AiSdkMiddlewareConfig): LanguageMo
     })
   }
 
-  console.log('builder.build()', builder.buildNamed())
+  logger.info('builder.build()', builder.buildNamed())
   return builder.build()
 }
 

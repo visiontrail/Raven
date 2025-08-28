@@ -62,7 +62,7 @@ export class ApiClientFactory {
         instance = new GeminiAPIClient(provider) as BaseApiClient
         break
       case 'vertexai':
-        console.log(`[ApiClientFactory] Creating VertexAPIClient for provider: ${provider.id}`)
+        logger.debug(`Creating VertexAPIClient for provider: ${provider.id}`)
         // 检查 VertexAI 配置
         if (!isVertexAIConfigured()) {
           throw new Error(
