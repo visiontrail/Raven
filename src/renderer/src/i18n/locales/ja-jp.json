@@ -1420,7 +1420,7 @@
     },
     "websearch": {
       "cutoff": "検索内容を切り詰めています...",
-      "fetch_complete": "{{count}}回の検索を完了しました...",
+      "fetch_complete": "{{count}}件の検索結果",
       "rag": "RAGを実行中...",
       "rag_complete": "{{countBefore}}個の結果から{{countAfter}}個を保持...",
       "rag_failed": "RAGが失敗しました。空の結果を返します..."
