@@ -4,10 +4,10 @@
  * 提供工具调用相关的处理API，每个交互使用一个新的实例
  */
 
-import { ProviderMetadata, ToolSet, TypedToolCall, TypedToolResult } from '@cherrystudio/ai-core'
 import { loggerService } from '@logger'
 import { BaseTool, MCPTool, MCPToolResponse, NormalToolResponse } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
+import type { ProviderMetadata, ToolSet, TypedToolCall, TypedToolResult } from 'ai'
 // import type {
 //   AnthropicSearchOutput,
 //   WebSearchPluginConfig

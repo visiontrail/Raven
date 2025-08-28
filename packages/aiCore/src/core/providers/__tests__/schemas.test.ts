@@ -5,18 +5,11 @@ import {
   baseProviderIds,
   baseProviderIdSchema,
   baseProviders,
-  type DynamicProviderId,
-  dynamicProviderIdSchema,
-  dynamicProviderRegistrationSchema,
-  getBaseProviderConfig,
-  isBaseProviderId,
-  isValidDynamicProviderId,
+  type CustomProviderId,
+  customProviderIdSchema,
   providerConfigSchema,
   type ProviderId,
-  providerIdSchema,
-  validateDynamicProviderRegistration,
-  validateProviderConfig,
-  validateProviderId
+  providerIdSchema
 } from '../schemas'
 
 describe('Provider Schemas', () => {
@@ -90,22 +83,22 @@ describe('Provider Schemas', () => {
     })
   })
 
-  describe('dynamicProviderIdSchema', () => {
-    it('接受有效的动态 provider IDs', () => {
+  describe('customProviderIdSchema', () => {
+    it('接受有效的自定义 provider IDs', () => {
       const validIds = ['custom-provider', 'my-ai-service', 'company-llm-v2']
       validIds.forEach((id) => {
-        expect(dynamicProviderIdSchema.safeParse(id).success).toBe(true)
+        expect(customProviderIdSchema.safeParse(id).success).toBe(true)
       })
     })
 
     it('拒绝与基础 provider IDs 冲突的 IDs', () => {
       baseProviderIds.forEach((id) => {
-        expect(dynamicProviderIdSchema.safeParse(id).success).toBe(false)
+        expect(customProviderIdSchema.safeParse(id).success).toBe(false)
       })
     })
 
     it('拒绝空字符串', () => {
-      expect(dynamicProviderIdSchema.safeParse('').success).toBe(false)
+      expect(customProviderIdSchema.safeParse('').success).toBe(false)
     })
   })
 
@@ -116,9 +109,9 @@ describe('Provider Schemas', () => {
       })
     })
 
-    it('接受有效的动态 provider IDs', () => {
-      const validDynamicIds = ['custom-provider', 'my-ai-service']
-      validDynamicIds.forEach((id) => {
+    it('接受有效的自定义 provider IDs', () => {
+      const validCustomIds = ['custom-provider', 'my-ai-service']
+      validCustomIds.forEach((id) => {
         expect(providerIdSchema.safeParse(id).success).toBe(true)
       })
     })
@@ -134,8 +127,8 @@ describe('Provider Schemas', () => {
   describe('providerConfigSchema', () => {
     it('验证带有 creator 的有效配置', () => {
       const validConfig = {
-        id: 'openai',
-        name: 'OpenAI',
+        id: 'custom-provider',
+        name: 'Custom Provider',
         creator: vi.fn(),
         supportsImageGeneration: true
       }
@@ -175,12 +168,21 @@ describe('Provider Schemas', () => {
       }
     })
 
+    it('拒绝使用基础 provider ID 的配置', () => {
+      const invalidConfig = {
+        id: 'openai', // 基础 provider ID
+        name: 'Should Fail',
+        creator: vi.fn()
+      }
+      expect(providerConfigSchema.safeParse(invalidConfig).success).toBe(false)
+    })
+
     it('拒绝缺少必需字段的配置', () => {
       const invalidConfigs = [
         { name: 'Missing ID', creator: vi.fn() },
         { id: 'missing-name', creator: vi.fn() },
         { id: '', name: 'Empty ID', creator: vi.fn() },
-        { id: 'valid', name: '', creator: vi.fn() }
+        { id: 'valid-custom', name: '', creator: vi.fn() }
       ]
 
       invalidConfigs.forEach((config) => {
@@ -189,186 +191,55 @@ describe('Provider Schemas', () => {
     })
   })
 
-  describe('dynamicProviderRegistrationSchema', () => {
-    it('验证有效的动态 provider 注册配置', () => {
+  describe('Schema 验证功能', () => {
+    it('baseProviderIdSchema 正确验证基础 provider IDs', () => {
+      baseProviderIds.forEach((id) => {
+        expect(baseProviderIdSchema.safeParse(id).success).toBe(true)
+      })
+
+      expect(baseProviderIdSchema.safeParse('invalid-id').success).toBe(false)
+    })
+
+    it('customProviderIdSchema 正确验证自定义 provider IDs', () => {
+      const customIds = ['custom-provider', 'my-service', 'company-llm']
+      customIds.forEach((id) => {
+        expect(customProviderIdSchema.safeParse(id).success).toBe(true)
+      })
+
+      // 拒绝基础 provider IDs
+      baseProviderIds.forEach((id) => {
+        expect(customProviderIdSchema.safeParse(id).success).toBe(false)
+      })
+    })
+
+    it('providerIdSchema 接受基础和自定义 provider IDs', () => {
+      // 基础 IDs
+      baseProviderIds.forEach((id) => {
+        expect(providerIdSchema.safeParse(id).success).toBe(true)
+      })
+
+      // 自定义 IDs
+      const customIds = ['custom-provider', 'my-service']
+      customIds.forEach((id) => {
+        expect(providerIdSchema.safeParse(id).success).toBe(true)
+      })
+    })
+
+    it('providerConfigSchema 验证完整的 provider 配置', () => {
       const validConfig = {
         id: 'custom-provider',
         name: 'Custom Provider',
-        creator: vi.fn(),
-        supportsImageGeneration: true,
-        mappings: { model1: 'mapped-model1' }
-      }
-      expect(dynamicProviderRegistrationSchema.safeParse(validConfig).success).toBe(true)
-    })
-
-    it('拒绝使用基础 provider ID 的配置', () => {
-      const invalidConfig = {
-        id: 'openai',
-        name: 'Should Fail',
-        creator: vi.fn()
-      }
-      expect(dynamicProviderRegistrationSchema.safeParse(invalidConfig).success).toBe(false)
-    })
-
-    it('要求 creator 或 import 配置', () => {
-      const configWithoutCreator = {
-        id: 'custom-provider',
-        name: 'Custom Provider'
-      }
-      expect(dynamicProviderRegistrationSchema.safeParse(configWithoutCreator).success).toBe(false)
-    })
-  })
-
-  describe('validateProviderId', () => {
-    it('验证基础 provider IDs', () => {
-      baseProviderIds.forEach((id) => {
-        expect(validateProviderId(id)).toBe(true)
-      })
-    })
-
-    it('验证有效的动态 provider IDs', () => {
-      const validDynamicIds = ['custom-provider', 'my-service', 'company-llm']
-      validDynamicIds.forEach((id) => {
-        expect(validateProviderId(id)).toBe(true)
-      })
-    })
-
-    it('拒绝无效的 IDs', () => {
-      const invalidIds = [undefined as any, null as any, 123 as any]
-      invalidIds.forEach((id) => {
-        expect(validateProviderId(id)).toBe(false)
-      })
-
-      // 空字符串和只有空格的字符串会被当作有效的动态 provider ID
-      expect(validateProviderId('')).toBe(false)
-    })
-  })
-
-  describe('isBaseProviderId', () => {
-    it('正确识别基础 provider IDs', () => {
-      baseProviderIds.forEach((id) => {
-        expect(isBaseProviderId(id)).toBe(true)
-      })
-    })
-
-    it('拒绝动态 provider IDs', () => {
-      const dynamicIds = ['custom-provider', 'my-service']
-      dynamicIds.forEach((id) => {
-        expect(isBaseProviderId(id)).toBe(false)
-      })
-    })
-
-    it('拒绝无效的 IDs', () => {
-      const invalidIds = ['', 'invalid', undefined as any]
-      invalidIds.forEach((id) => {
-        expect(isBaseProviderId(id)).toBe(false)
-      })
-    })
-  })
-
-  describe('isValidDynamicProviderId', () => {
-    it('接受有效的动态 provider IDs', () => {
-      const validIds = ['custom-provider', 'my-ai-service', 'company-llm-v2']
-      validIds.forEach((id) => {
-        expect(isValidDynamicProviderId(id)).toBe(true)
-      })
-    })
-
-    it('拒绝基础 provider IDs', () => {
-      baseProviderIds.forEach((id) => {
-        expect(isValidDynamicProviderId(id)).toBe(false)
-      })
-    })
-
-    it('拒绝无效的 IDs', () => {
-      const invalidIds = [undefined as any, null as any]
-      invalidIds.forEach((id) => {
-        expect(isValidDynamicProviderId(id)).toBe(false)
-      })
-
-      // 空字符串会被 schema 拒绝
-      expect(isValidDynamicProviderId('')).toBe(false)
-      // 只有空格的字符串是有效的动态 provider ID（但不推荐使用）
-      expect(isValidDynamicProviderId('   ')).toBe(true)
-    })
-  })
-
-  describe('validateProviderConfig', () => {
-    it('返回有效配置', () => {
-      const validConfig = {
-        id: 'openai',
-        name: 'OpenAI',
         creator: vi.fn(),
         supportsImageGeneration: true
       }
-      const result = validateProviderConfig(validConfig)
-      expect(result).not.toBeNull()
-      expect(result?.id).toBe('openai')
-      expect(result?.name).toBe('OpenAI')
-    })
+      expect(providerConfigSchema.safeParse(validConfig).success).toBe(true)
 
-    it('对无效配置返回 null', () => {
       const invalidConfig = {
-        id: '',
-        name: 'Invalid'
+        id: 'openai', // 不允许基础 provider ID
+        name: 'OpenAI',
+        creator: vi.fn()
       }
-      const result = validateProviderConfig(invalidConfig)
-      expect(result).toBeNull()
-    })
-
-    it('处理完全无效的输入', () => {
-      const invalidInputs = [undefined, null, 'string', 123, []]
-      invalidInputs.forEach((input) => {
-        const result = validateProviderConfig(input)
-        expect(result).toBeNull()
-      })
-    })
-  })
-
-  describe('validateDynamicProviderRegistration', () => {
-    it('返回有效的动态 provider 注册配置', () => {
-      const validConfig = {
-        id: 'custom-provider',
-        name: 'Custom Provider',
-        creator: vi.fn(),
-        mappings: { model1: 'mapped-model1' }
-      }
-      const result = validateDynamicProviderRegistration(validConfig)
-      expect(result).not.toBeNull()
-      expect(result?.id).toBe('custom-provider')
-      expect(result?.name).toBe('Custom Provider')
-    })
-
-    it('对无效配置返回 null', () => {
-      const invalidConfig = {
-        id: 'openai',
-        name: 'Should Fail'
-      }
-      const result = validateDynamicProviderRegistration(invalidConfig)
-      expect(result).toBeNull()
-    })
-  })
-
-  describe('getBaseProviderConfig', () => {
-    it('返回有效基础 provider ID 的配置', () => {
-      const config = getBaseProviderConfig('openai')
-      expect(config).toBeDefined()
-      expect(config?.id).toBe('openai')
-      expect(config?.name).toBe('OpenAI')
-      expect(config?.creator).toBeDefined()
-    })
-
-    it('对无效 ID 返回 undefined', () => {
-      const config = getBaseProviderConfig('invalid' as BaseProviderId)
-      expect(config).toBeUndefined()
-    })
-
-    it('返回所有基础 providers 的配置', () => {
-      baseProviderIds.forEach((id) => {
-        const config = getBaseProviderConfig(id)
-        expect(config).toBeDefined()
-        expect(config?.id).toBe(id)
-      })
+      expect(providerConfigSchema.safeParse(invalidConfig).success).toBe(false)
     })
   })
 
@@ -378,16 +249,16 @@ describe('Provider Schemas', () => {
       expect(baseProviderIds).toContain(id)
     })
 
-    it('DynamicProviderId 类型是字符串', () => {
-      const id: DynamicProviderId = 'custom-provider'
+    it('CustomProviderId 类型是字符串', () => {
+      const id: CustomProviderId = 'custom-provider'
       expect(typeof id).toBe('string')
     })
 
-    it('ProviderId 类型支持基础和动态 IDs', () => {
+    it('ProviderId 类型支持基础和自定义 IDs', () => {
       const baseId: ProviderId = 'openai'
-      const dynamicId: ProviderId = 'custom-provider'
+      const customId: ProviderId = 'custom-provider'
       expect(typeof baseId).toBe('string')
-      expect(typeof dynamicId).toBe('string')
+      expect(typeof customId).toBe('string')
     })
   })
 })

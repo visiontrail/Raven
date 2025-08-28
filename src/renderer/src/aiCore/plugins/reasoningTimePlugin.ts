@@ -1,4 +1,5 @@
-import { definePlugin, TextStreamPart, ToolSet } from '@cherrystudio/ai-core'
+import { definePlugin } from '@cherrystudio/ai-core'
+import type { TextStreamPart, ToolSet } from 'ai'
 
 export default definePlugin({
   name: 'reasoningTimePlugin',

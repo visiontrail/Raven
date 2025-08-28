@@ -2,8 +2,8 @@ import { ImageModelV2 } from '@ai-sdk/provider'
 import { experimental_generateImage as aiGenerateImage, NoImageGeneratedError } from 'ai'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createImageModel } from '../../models/ModelCreator'
 import { type AiPlugin } from '../../plugins'
+import { globalRegistryManagement } from '../../providers/RegistryManagement'
 import { ImageGenerationError } from '../errors'
 import { RuntimeExecutor } from '../executor'
 
@@ -19,8 +19,10 @@ vi.mock('ai', () => ({
   }
 }))
 
-vi.mock('../../models/ModelCreator', () => ({
-  createImageModel: vi.fn()
+vi.mock('../../providers/RegistryManagement', () => ({
+  globalRegistryManagement: {
+    imageModel: vi.fn()
+  }
 }))
 
 describe('RuntimeExecutor.generateImage', () => {
@@ -67,8 +69,11 @@ describe('RuntimeExecutor.generateImage', () => {
     }
 
     // Setup mocks
-    vi.mocked(createImageModel).mockResolvedValue(mockImageModel)
+    vi.mocked(globalRegistryManagement.imageModel).mockReturnValue(mockImageModel)
     vi.mocked(aiGenerateImage).mockResolvedValue(mockGenerateImageResult)
+
+    // Reset mock implementation in case it was changed by previous tests
+    vi.mocked(globalRegistryManagement.imageModel).mockImplementation(() => mockImageModel)
   })
 
   describe('Basic functionality', () => {
@@ -77,7 +82,7 @@ describe('RuntimeExecutor.generateImage', () => {
         prompt: 'A futuristic cityscape at sunset'
       })
 
-      expect(createImageModel).toHaveBeenCalledWith('openai', 'dall-e-3', { apiKey: 'test-key' })
+      expect(globalRegistryManagement.imageModel).toHaveBeenCalledWith('openai:dall-e-3')
 
       expect(aiGenerateImage).toHaveBeenCalledWith({
         model: mockImageModel,
@@ -92,7 +97,7 @@ describe('RuntimeExecutor.generateImage', () => {
         prompt: 'A beautiful landscape'
       })
 
-      // Note: createImageModel may still be called due to resolveImageModel logic
+      // Note: globalRegistryManagement.imageModel may still be called due to resolveImageModel logic
       expect(aiGenerateImage).toHaveBeenCalledWith({
         model: mockImageModel,
         prompt: 'A beautiful landscape'
@@ -335,8 +340,10 @@ describe('RuntimeExecutor.generateImage', () => {
 
   describe('Error handling', () => {
     it('should handle model creation errors', async () => {
-      const modelError = new Error('Failed to create image model')
-      vi.mocked(createImageModel).mockRejectedValue(modelError)
+      const modelError = new Error('Failed to get image model')
+      vi.mocked(globalRegistryManagement.imageModel).mockImplementation(() => {
+        throw modelError
+      })
 
       await expect(
         executor.generateImage('invalid-model', {
@@ -431,7 +438,7 @@ describe('RuntimeExecutor.generateImage', () => {
         prompt: 'A landscape'
       })
 
-      expect(createImageModel).toHaveBeenCalledWith('google', 'imagen-3.0-generate-002', { apiKey: 'google-key' })
+      expect(globalRegistryManagement.imageModel).toHaveBeenCalledWith('google:imagen-3.0-generate-002')
     })
 
     it('should support xAI Grok image models', async () => {
@@ -443,7 +450,7 @@ describe('RuntimeExecutor.generateImage', () => {
         prompt: 'A futuristic robot'
       })
 
-      expect(createImageModel).toHaveBeenCalledWith('xai', 'grok-2-image', { apiKey: 'xai-key' })
+      expect(globalRegistryManagement.imageModel).toHaveBeenCalledWith('xai:grok-2-image')
     })
   })
 

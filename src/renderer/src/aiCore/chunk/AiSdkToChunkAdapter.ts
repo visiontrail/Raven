@@ -3,10 +3,10 @@
  * 用于将 AI SDK 的 fullStream 转换为 Cherry Studio 的 chunk 格式
  */
 
-import { TextStreamPart, ToolSet } from '@cherrystudio/ai-core'
 import { loggerService } from '@logger'
 import { MCPTool, WebSearchResults, WebSearchSource } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
+import type { TextStreamPart, ToolSet } from 'ai'
 
 import { ToolCallChunkHandler } from './handleToolCallChunk'
 

@@ -1,12 +1,12 @@
 /**
  * 职责：提供原子化的、无状态的API调用函数
  */
-import { StreamTextParams } from '@cherrystudio/ai-core'
 import { loggerService } from '@logger'
 import AiProvider from '@renderer/aiCore'
 import { CompletionsParams } from '@renderer/aiCore/legacy/middleware/schemas'
 import { AiSdkMiddlewareConfig } from '@renderer/aiCore/middleware/AiSdkMiddlewareBuilder'
 import { buildStreamTextParams } from '@renderer/aiCore/transformParameters'
+import type { StreamTextParams } from '@renderer/aiCore/types'
 import { isDedicatedImageGenerationModel, isEmbeddingModel, isQwenMTModel } from '@renderer/config/models'
 import { LANG_DETECT_PROMPT } from '@renderer/config/prompts'
 import { getStoreSetting } from '@renderer/hooks/useSettings'

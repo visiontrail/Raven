@@ -3,7 +3,6 @@
  * 统一管理从各个 apiClient 提取的参数处理和转换功能
  */
 
-import { stepCountIs, type StreamTextParams } from '@cherrystudio/ai-core'
 import { loggerService } from '@logger'
 import { DEFAULT_MAX_TOKENS } from '@renderer/config/constant'
 import {
@@ -31,8 +30,10 @@ import {
 } from '@renderer/utils/messageUtils/find'
 import { defaultTimeout } from '@shared/config/constant'
 import type { AssistantModelMessage, FilePart, ImagePart, ModelMessage, TextPart, UserModelMessage } from 'ai'
+import { stepCountIs } from 'ai'
 
 import { getAiSdkProviderId } from './provider/factory'
+import type { StreamTextParams } from './types'
 // import { webSearchTool } from './tools/WebSearchTool'
 // import { jsonSchemaToZod } from 'json-schema-to-zod'
 import { setupToolsConfig } from './utils/mcp'

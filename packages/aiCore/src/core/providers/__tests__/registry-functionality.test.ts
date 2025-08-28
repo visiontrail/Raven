@@ -34,34 +34,49 @@ vi.mock('@ai-sdk/xai', () => ({
 }))
 
 import {
-  AiProviderRegistry,
   cleanup,
-  getAllDynamicMappings,
-  getAllProviders,
-  getAllValidProviderIds,
-  getDynamicProviders,
-  getProvider,
-  getProviderMapping,
-  isDynamicProvider,
-  isProviderSupported,
-  registerDynamicProvider,
-  registerMultipleProviders,
+  clearAllProviders,
+  createAndRegisterProvider,
+  createProvider,
+  getAllProviderConfigAliases,
+  getAllProviderConfigs,
+  getInitializedProviders,
+  getLanguageModel,
+  getProviderConfig,
+  getProviderConfigByAlias,
+  getSupportedProviders,
+  hasInitializedProviders,
+  hasProviderConfig,
+  hasProviderConfigByAlias,
+  isProviderConfigAlias,
+  ProviderInitializationError,
+  providerRegistry,
+  registerMultipleProviderConfigs,
   registerProvider,
-  validateProviderIdRegistry
+  registerProviderConfig,
+  resolveProviderConfigId
 } from '../registry'
-import type { DynamicProviderRegistration, ProviderConfig } from '../schemas'
+import type { ProviderConfig } from '../schemas'
 
-describe('AiProviderRegistry 功能测试', () => {
+describe('Provider Registry 功能测试', () => {
   beforeEach(() => {
     // 清理状态
     cleanup()
   })
 
   describe('基础功能', () => {
-    it('能够获取所有 providers', () => {
-      const providers = getAllProviders()
+    it('能够获取支持的 providers 列表', () => {
+      const providers = getSupportedProviders()
       expect(Array.isArray(providers)).toBe(true)
       expect(providers.length).toBeGreaterThan(0)
+
+      // 检查返回的数据结构
+      providers.forEach((provider) => {
+        expect(provider).toHaveProperty('id')
+        expect(provider).toHaveProperty('name')
+        expect(typeof provider.id).toBe('string')
+        expect(typeof provider.name).toBe('string')
+      })
 
       // 包含基础 providers
       const providerIds = providers.map((p) => p.id)
@@ -70,74 +85,57 @@ describe('AiProviderRegistry 功能测试', () => {
       expect(providerIds).toContain('google')
     })
 
-    it('能够检查 provider 支持状态', () => {
-      expect(isProviderSupported('openai')).toBe(true)
-      expect(isProviderSupported('anthropic')).toBe(true)
-      expect(isProviderSupported('google')).toBe(true)
-      expect(isProviderSupported('non-existent')).toBe(true) // validateProviderId 通过
-      expect(isProviderSupported('')).toBe(false)
+    it('能够获取已初始化的 providers', () => {
+      // 初始状态下没有已初始化的 providers
+      expect(getInitializedProviders()).toEqual([])
+      expect(hasInitializedProviders()).toBe(false)
     })
 
-    it('能够获取有效的 provider IDs', () => {
-      const allIds = getAllValidProviderIds()
-      expect(Array.isArray(allIds)).toBe(true)
-      expect(allIds).toContain('openai')
-      expect(allIds).toContain('anthropic')
+    it('能够访问全局注册管理器', () => {
+      expect(providerRegistry).toBeDefined()
+      expect(typeof providerRegistry.clear).toBe('function')
+      expect(typeof providerRegistry.getRegisteredProviders).toBe('function')
+      expect(typeof providerRegistry.hasProviders).toBe('function')
     })
 
-    it('能够根据 ID 获取特定的 provider', () => {
-      // 获取存在的 provider
-      const openaiProvider = getProvider('openai')
-      expect(openaiProvider).toBeDefined()
-      expect(openaiProvider?.id).toBe('openai')
-      expect(openaiProvider?.name).toBe('OpenAI')
-
-      // 获取不存在的 provider，fallback到openai-compatible
-      const nonExistentProvider = getProvider('non-existent')
-      expect(nonExistentProvider).toBeDefined()
-      expect(nonExistentProvider?.id).toBe('openai-compatible')
-    })
-
-    it('能够验证 provider ID', () => {
-      expect(validateProviderIdRegistry('valid-id')).toBe(true)
-      expect(validateProviderIdRegistry('another-valid-id')).toBe(true)
-      expect(validateProviderIdRegistry('')).toBe(false)
-      // 注意：单个空格字符被认为是有效的，因为它不是空字符串
-      // 如果需要更严格的验证，schemas 包含更多验证规则
-      expect(validateProviderIdRegistry(' ')).toBe(true)
+    it('能够获取语言模型', () => {
+      // 在没有注册 provider 的情况下，这个函数可能会抛出错误或返回 undefined
+      expect(() => getLanguageModel('non-existent')).not.toThrow()
     })
   })
 
-  describe('动态 Provider 注册', () => {
-    it('能够注册动态 provider', () => {
-      const config = {
+  describe('Provider 配置注册', () => {
+    it('能够注册自定义 provider 配置', () => {
+      const config: ProviderConfig = {
         id: 'custom-provider',
         name: 'Custom Provider',
         creator: vi.fn(() => ({ name: 'custom' })),
         supportsImageGeneration: false
       }
 
-      const success = registerDynamicProvider(config)
+      const success = registerProviderConfig(config)
       expect(success).toBe(true)
 
-      expect(isDynamicProvider('custom-provider')).toBe(true)
-      expect(isProviderSupported('custom-provider')).toBe(true)
-
-      const allIds = getAllValidProviderIds()
-      expect(allIds).toContain('custom-provider')
+      expect(hasProviderConfig('custom-provider')).toBe(true)
+      expect(getProviderConfig('custom-provider')).toEqual(config)
     })
 
-    it('拒绝与基础 provider 冲突的配置', () => {
-      const config = {
-        id: 'openai',
-        name: 'Duplicate OpenAI',
-        creator: vi.fn(() => ({ name: 'duplicate' })),
-        supportsImageGeneration: false
+    it('能够注册带别名的 provider 配置', () => {
+      const config: ProviderConfig = {
+        id: 'custom-provider-with-aliases',
+        name: 'Custom Provider with Aliases',
+        creator: vi.fn(() => ({ name: 'custom-aliased' })),
+        supportsImageGeneration: false,
+        aliases: ['alias-1', 'alias-2']
       }
 
-      const success = registerDynamicProvider(config)
-      expect(success).toBe(false)
-      expect(isDynamicProvider('openai')).toBe(false)
+      const success = registerProviderConfig(config)
+      expect(success).toBe(true)
+
+      expect(hasProviderConfigByAlias('alias-1')).toBe(true)
+      expect(hasProviderConfigByAlias('alias-2')).toBe(true)
+      expect(getProviderConfigByAlias('alias-1')).toEqual(config)
+      expect(resolveProviderConfigId('alias-1')).toBe('custom-provider-with-aliases')
     })
 
     it('拒绝无效的配置', () => {
@@ -147,12 +145,12 @@ describe('AiProviderRegistry 功能测试', () => {
         // 缺少 name, creator 等
       }
 
-      const success = registerDynamicProvider(invalidConfig as any)
+      const success = registerProviderConfig(invalidConfig as any)
       expect(success).toBe(false)
     })
 
-    it('能够批量注册动态 providers', () => {
-      const configs: DynamicProviderRegistration[] = [
+    it('能够批量注册 provider 配置', () => {
+      const configs: ProviderConfig[] = [
         {
           id: 'provider-1',
           name: 'Provider 1',
@@ -166,146 +164,146 @@ describe('AiProviderRegistry 功能测试', () => {
           supportsImageGeneration: true
         },
         {
-          id: 'openai', // 这个失败，因为与基础 provider 冲突
+          id: '', // 无效配置
           name: 'Invalid Provider',
           creator: vi.fn(() => ({ name: 'invalid' })),
           supportsImageGeneration: false
-        }
+        } as any
       ]
 
-      const successCount = registerMultipleProviders(configs)
+      const successCount = registerMultipleProviderConfigs(configs)
       expect(successCount).toBe(2) // 只有前两个成功
 
-      expect(isDynamicProvider('provider-1')).toBe(true)
-      expect(isDynamicProvider('provider-2')).toBe(true)
-      expect(isDynamicProvider('openai')).toBe(false) // 基础 provider，不是动态的
+      expect(hasProviderConfig('provider-1')).toBe(true)
+      expect(hasProviderConfig('provider-2')).toBe(true)
+      expect(hasProviderConfig('')).toBe(false)
     })
 
-    it('支持带映射关系的动态 provider', () => {
-      const configWithMappings: DynamicProviderRegistration = {
-        id: 'custom-provider-with-mappings',
-        name: 'Custom Provider with Mappings',
-        creator: vi.fn(() => ({ name: 'custom-mapped' })),
+    it('能够获取所有配置和别名信息', () => {
+      // 注册一些配置
+      registerProviderConfig({
+        id: 'test-provider',
+        name: 'Test Provider',
+        creator: vi.fn(),
         supportsImageGeneration: false,
-        mappings: {
-          'custom-alias-1': 'custom-provider-with-mappings',
-          'custom-alias-2': 'custom-provider-with-mappings'
-        }
+        aliases: ['test-alias']
+      })
+
+      const allConfigs = getAllProviderConfigs()
+      expect(Array.isArray(allConfigs)).toBe(true)
+      expect(allConfigs.some((config) => config.id === 'test-provider')).toBe(true)
+
+      const aliases = getAllProviderConfigAliases()
+      expect(aliases['test-alias']).toBe('test-provider')
+      expect(isProviderConfigAlias('test-alias')).toBe(true)
+    })
+  })
+
+  describe('Provider 创建和注册', () => {
+    it('能够创建 provider 实例', async () => {
+      const config: ProviderConfig = {
+        id: 'test-create-provider',
+        name: 'Test Create Provider',
+        creator: vi.fn(() => ({ name: 'test-created' })),
+        supportsImageGeneration: false
       }
 
-      const success = registerDynamicProvider(configWithMappings)
+      // 先注册配置
+      registerProviderConfig(config)
+
+      // 创建 provider 实例
+      const provider = await createProvider('test-create-provider', { apiKey: 'test' })
+      expect(provider).toBeDefined()
+      expect(config.creator).toHaveBeenCalledWith({ apiKey: 'test' })
+    })
+
+    it('能够注册 provider 到全局管理器', () => {
+      const mockProvider = { name: 'mock-provider' }
+      const config: ProviderConfig = {
+        id: 'test-register-provider',
+        name: 'Test Register Provider',
+        creator: vi.fn(() => mockProvider),
+        supportsImageGeneration: false
+      }
+
+      // 先注册配置
+      registerProviderConfig(config)
+
+      // 注册 provider 到全局管理器
+      const success = registerProvider('test-register-provider', mockProvider)
       expect(success).toBe(true)
 
-      // 验证映射关系
-      expect(getProviderMapping('custom-alias-1')).toBe('custom-provider-with-mappings')
-      expect(getProviderMapping('custom-alias-2')).toBe('custom-provider-with-mappings')
-      expect(getProviderMapping('custom-provider-with-mappings')).toBe('custom-provider-with-mappings')
+      // 验证注册成功
+      const registeredProviders = getInitializedProviders()
+      expect(registeredProviders).toContain('test-register-provider')
+      expect(hasInitializedProviders()).toBe(true)
+    })
+
+    it('能够一步完成创建和注册', async () => {
+      const config: ProviderConfig = {
+        id: 'test-create-and-register',
+        name: 'Test Create and Register',
+        creator: vi.fn(() => ({ name: 'test-both' })),
+        supportsImageGeneration: false
+      }
+
+      // 先注册配置
+      registerProviderConfig(config)
+
+      // 一步完成创建和注册
+      const success = await createAndRegisterProvider('test-create-and-register', { apiKey: 'test' })
+      expect(success).toBe(true)
+
+      // 验证注册成功
+      const registeredProviders = getInitializedProviders()
+      expect(registeredProviders).toContain('test-create-and-register')
     })
   })
 
   describe('Registry 管理', () => {
-    it('能够清理动态 providers', () => {
-      // 注册动态 provider
-      registerDynamicProvider({
+    it('能够清理所有配置和注册的 providers', () => {
+      // 注册一些配置
+      registerProviderConfig({
         id: 'temp-provider',
         name: 'Temp Provider',
         creator: vi.fn(() => ({ name: 'temp' })),
         supportsImageGeneration: false
       })
 
-      expect(isDynamicProvider('temp-provider')).toBe(true)
+      expect(hasProviderConfig('temp-provider')).toBe(true)
 
       // 清理
       cleanup()
 
-      expect(isDynamicProvider('temp-provider')).toBe(false)
-      expect(isProviderSupported('openai')).toBe(true) // 基础 providers 仍存在
+      expect(hasProviderConfig('temp-provider')).toBe(false)
+      // 但基础配置应该重新加载
+      expect(hasProviderConfig('openai')).toBe(true) // 基础 providers 会重新初始化
     })
 
-    it('保持单例模式', () => {
-      const instance1 = AiProviderRegistry.getInstance()
-      const instance2 = AiProviderRegistry.getInstance()
-      expect(instance1).toBe(instance2)
+    it('能够单独清理已注册的 providers', () => {
+      // 清理所有 providers
+      clearAllProviders()
+
+      expect(getInitializedProviders()).toEqual([])
+      expect(hasInitializedProviders()).toBe(false)
     })
 
-    it('能够注册基础 provider', () => {
-      const customConfig: ProviderConfig = {
-        id: 'custom-base-provider',
-        name: 'Custom Base Provider',
-        creator: vi.fn(() => ({ name: 'custom-base' })),
-        supportsImageGeneration: false
-      }
-
-      // 注册基础 provider 不抛出错误
-      expect(() => registerProvider(customConfig)).not.toThrow()
-
-      // 验证注册成功
-      const registeredProvider = getProvider('custom-base-provider')
-      expect(registeredProvider).toBeDefined()
-      expect(registeredProvider?.id).toBe('custom-base-provider')
-      expect(registeredProvider?.name).toBe('Custom Base Provider')
-    })
-
-    it('能够获取动态 providers 列表', () => {
-      // 初始状态没有动态 providers
-      expect(getDynamicProviders()).toEqual([])
-
-      // 注册一些动态 providers
-      registerDynamicProvider({
-        id: 'dynamic-1',
-        name: 'Dynamic 1',
-        creator: vi.fn(() => ({ name: 'dynamic-1' })),
-        supportsImageGeneration: false
-      })
-
-      registerDynamicProvider({
-        id: 'dynamic-2',
-        name: 'Dynamic 2',
-        creator: vi.fn(() => ({ name: 'dynamic-2' })),
-        supportsImageGeneration: true
-      })
-
-      const dynamicProviders = getDynamicProviders()
-      expect(Array.isArray(dynamicProviders)).toBe(true)
-      expect(dynamicProviders).toContain('dynamic-1')
-      expect(dynamicProviders).toContain('dynamic-2')
-      expect(dynamicProviders.length).toBe(2)
-    })
-
-    it('能够获取所有动态映射', () => {
-      // 初始状态没有动态映射
-      expect(getAllDynamicMappings()).toEqual({})
-
-      // 注册带映射的动态 provider
-      registerDynamicProvider({
-        id: 'mapped-provider',
-        name: 'Mapped Provider',
-        creator: vi.fn(() => ({ name: 'mapped' })),
-        supportsImageGeneration: false,
-        mappings: {
-          'alias-1': 'mapped-provider',
-          'alias-2': 'mapped-provider',
-          'custom-name': 'mapped-provider'
-        }
-      })
-
-      const allMappings = getAllDynamicMappings()
-      expect(allMappings).toEqual({
-        'alias-1': 'mapped-provider',
-        'alias-2': 'mapped-provider',
-        'custom-name': 'mapped-provider'
-      })
+    it('ProviderInitializationError 错误类工作正常', () => {
+      const error = new ProviderInitializationError('Test error', 'test-provider')
+      expect(error.message).toBe('Test error')
+      expect(error.providerId).toBe('test-provider')
+      expect(error.name).toBe('ProviderInitializationError')
     })
   })
 
   describe('错误处理', () => {
     it('优雅处理空配置', () => {
-      const success = registerDynamicProvider(null as any)
+      const success = registerProviderConfig(null as any)
       expect(success).toBe(false)
     })
 
     it('优雅处理未定义配置', () => {
-      const success = registerDynamicProvider(undefined as any)
+      const success = registerProviderConfig(undefined as any)
       expect(success).toBe(false)
     })
 
@@ -317,27 +315,31 @@ describe('AiProviderRegistry 功能测试', () => {
         supportsImageGeneration: false
       }
 
-      const success = registerDynamicProvider(config)
+      const success = registerProviderConfig(config)
       expect(success).toBe(false)
     })
 
-    it('处理注册基础 provider 时的无效 ID', () => {
-      const invalidConfig: ProviderConfig = {
-        id: '', // 无效 ID
-        name: 'Invalid Provider',
-        creator: vi.fn(() => ({ name: 'invalid' })),
-        supportsImageGeneration: false
-      }
-
-      expect(() => registerProvider(invalidConfig)).toThrow('Invalid provider ID:')
+    it('处理创建不存在配置的 provider', async () => {
+      await expect(createProvider('non-existent-provider', {})).rejects.toThrow(
+        'ProviderConfig not found for id: non-existent-provider'
+      )
     })
 
-    it('处理获取不存在映射时的情况', () => {
-      expect(getProviderMapping('non-existent-mapping')).toBeUndefined()
+    it('处理注册不存在配置的 provider', () => {
+      const mockProvider = { name: 'mock' }
+      const success = registerProvider('non-existent-provider', mockProvider)
+      expect(success).toBe(false)
+    })
+
+    it('处理获取不存在配置的情况', () => {
+      expect(getProviderConfig('non-existent')).toBeUndefined()
+      expect(getProviderConfigByAlias('non-existent-alias')).toBeUndefined()
+      expect(hasProviderConfig('non-existent')).toBe(false)
+      expect(hasProviderConfigByAlias('non-existent-alias')).toBe(false)
     })
 
     it('处理批量注册时的部分失败', () => {
-      const mixedConfigs: DynamicProviderRegistration[] = [
+      const mixedConfigs: ProviderConfig[] = [
         {
           id: 'valid-provider-1',
           name: 'Valid Provider 1',
@@ -349,7 +351,7 @@ describe('AiProviderRegistry 功能测试', () => {
           name: 'Invalid Provider',
           creator: vi.fn(() => ({ name: 'invalid' })),
           supportsImageGeneration: false
-        },
+        } as any,
         {
           id: 'valid-provider-2',
           name: 'Valid Provider 2',
@@ -358,153 +360,168 @@ describe('AiProviderRegistry 功能测试', () => {
         }
       ]
 
-      const successCount = registerMultipleProviders(mixedConfigs)
+      const successCount = registerMultipleProviderConfigs(mixedConfigs)
       expect(successCount).toBe(2) // 只有两个有效配置成功
 
-      expect(isDynamicProvider('valid-provider-1')).toBe(true)
-      expect(isDynamicProvider('valid-provider-2')).toBe(true)
-      expect(getDynamicProviders()).not.toContain('')
+      expect(hasProviderConfig('valid-provider-1')).toBe(true)
+      expect(hasProviderConfig('valid-provider-2')).toBe(true)
+      expect(hasProviderConfig('')).toBe(false)
+    })
+
+    it('处理动态导入失败的情况', async () => {
+      const config: ProviderConfig = {
+        id: 'import-test-provider',
+        name: 'Import Test Provider',
+        import: vi.fn().mockRejectedValue(new Error('Import failed')),
+        creatorFunctionName: 'createTest',
+        supportsImageGeneration: false
+      }
+
+      registerProviderConfig(config)
+
+      await expect(createProvider('import-test-provider', {})).rejects.toThrow('Import failed')
     })
   })
 
   describe('集成测试', () => {
-    it('正确处理复杂的注册、映射和清理场景', () => {
+    it('正确处理复杂的配置、创建、注册和清理场景', async () => {
       // 初始状态验证
-      const initialProviders = getAllProviders()
-      const initialIds = getAllValidProviderIds()
-      expect(initialProviders.length).toBeGreaterThan(0)
-      expect(getDynamicProviders()).toEqual([])
-      expect(getAllDynamicMappings()).toEqual({})
+      const initialConfigs = getAllProviderConfigs()
+      expect(initialConfigs.length).toBeGreaterThan(0) // 有基础配置
+      expect(getInitializedProviders()).toEqual([])
 
-      // 注册多个带映射的动态 providers
-      const configs: DynamicProviderRegistration[] = [
+      // 注册多个带别名的 provider 配置
+      const configs: ProviderConfig[] = [
         {
           id: 'integration-provider-1',
           name: 'Integration Provider 1',
           creator: vi.fn(() => ({ name: 'integration-1' })),
           supportsImageGeneration: false,
-          mappings: {
-            'alias-1': 'integration-provider-1',
-            'short-name-1': 'integration-provider-1'
-          }
+          aliases: ['alias-1', 'short-name-1']
         },
         {
           id: 'integration-provider-2',
           name: 'Integration Provider 2',
           creator: vi.fn(() => ({ name: 'integration-2' })),
           supportsImageGeneration: true,
-          mappings: {
-            'alias-2': 'integration-provider-2',
-            'short-name-2': 'integration-provider-2'
-          }
+          aliases: ['alias-2', 'short-name-2']
         }
       ]
 
-      const successCount = registerMultipleProviders(configs)
+      const successCount = registerMultipleProviderConfigs(configs)
       expect(successCount).toBe(2)
 
-      // 验证注册后的状态
-      const afterRegisterProviders = getAllProviders()
-      const afterRegisterIds = getAllValidProviderIds()
-      expect(afterRegisterProviders.length).toBe(initialProviders.length + 2)
-      expect(afterRegisterIds.length).toBeGreaterThanOrEqual(initialIds.length + 2)
+      // 验证配置注册成功
+      expect(hasProviderConfig('integration-provider-1')).toBe(true)
+      expect(hasProviderConfig('integration-provider-2')).toBe(true)
+      expect(hasProviderConfigByAlias('alias-1')).toBe(true)
+      expect(hasProviderConfigByAlias('alias-2')).toBe(true)
 
-      // 验证动态 providers
-      const dynamicProviders = getDynamicProviders()
-      expect(dynamicProviders).toContain('integration-provider-1')
-      expect(dynamicProviders).toContain('integration-provider-2')
+      // 验证别名映射
+      const aliases = getAllProviderConfigAliases()
+      expect(aliases['alias-1']).toBe('integration-provider-1')
+      expect(aliases['alias-2']).toBe('integration-provider-2')
 
-      // 验证映射
-      const mappings = getAllDynamicMappings()
-      expect(mappings['alias-1']).toBe('integration-provider-1')
-      expect(mappings['alias-2']).toBe('integration-provider-2')
-      expect(mappings['short-name-1']).toBe('integration-provider-1')
-      expect(mappings['short-name-2']).toBe('integration-provider-2')
+      // 创建和注册 providers
+      const success1 = await createAndRegisterProvider('integration-provider-1', { apiKey: 'test1' })
+      const success2 = await createAndRegisterProvider('integration-provider-2', { apiKey: 'test2' })
+      expect(success1).toBe(true)
+      expect(success2).toBe(true)
 
-      // 验证通过映射能够获取 provider
-      expect(getProviderMapping('alias-1')).toBe('integration-provider-1')
-      expect(getProviderMapping('integration-provider-1')).toBe('integration-provider-1')
+      // 验证注册成功
+      const registeredProviders = getInitializedProviders()
+      expect(registeredProviders).toContain('integration-provider-1')
+      expect(registeredProviders).toContain('integration-provider-2')
+      expect(hasInitializedProviders()).toBe(true)
 
       // 清理
       cleanup()
 
       // 验证清理后的状态
-      const afterCleanupProviders = getAllProviders()
-      const afterCleanupIds = getAllValidProviderIds()
-      expect(afterCleanupProviders.length).toBe(initialProviders.length)
-      expect(afterCleanupIds.length).toBe(initialIds.length)
-      expect(getDynamicProviders()).toEqual([])
-      expect(getAllDynamicMappings()).toEqual({})
+      expect(getInitializedProviders()).toEqual([])
+      expect(hasProviderConfig('integration-provider-1')).toBe(false)
+      expect(hasProviderConfig('integration-provider-2')).toBe(false)
+      expect(getAllProviderConfigAliases()).toEqual({})
+
+      // 基础配置应该重新加载
+      expect(hasProviderConfig('openai')).toBe(true)
     })
 
-    it('正确处理 provider 的优先级和 fallback 机制', () => {
-      // 验证 getProvider 的 fallback 机制
-      const existingProvider = getProvider('openai')
-      expect(existingProvider?.id).toBe('openai')
-
-      const nonExistentProvider = getProvider('definitely-non-existent')
-      expect(nonExistentProvider?.id).toBe('openai-compatible') // fallback
-
-      // 注册自定义 provider 后能直接获取
-      registerDynamicProvider({
-        id: 'priority-test-provider',
-        name: 'Priority Test Provider',
-        creator: vi.fn(() => ({ name: 'priority-test' })),
+    it('正确处理动态导入配置的 provider', async () => {
+      const mockModule = { createCustomProvider: vi.fn(() => ({ name: 'custom-dynamic' })) }
+      const dynamicImportConfig: ProviderConfig = {
+        id: 'dynamic-import-provider',
+        name: 'Dynamic Import Provider',
+        import: vi.fn().mockResolvedValue(mockModule),
+        creatorFunctionName: 'createCustomProvider',
         supportsImageGeneration: false
-      })
+      }
 
-      const customProvider = getProvider('priority-test-provider')
-      expect(customProvider?.id).toBe('priority-test-provider')
-      expect(customProvider?.name).toBe('Priority Test Provider')
+      // 注册配置
+      const configSuccess = registerProviderConfig(dynamicImportConfig)
+      expect(configSuccess).toBe(true)
+
+      // 创建和注册 provider
+      const registerSuccess = await createAndRegisterProvider('dynamic-import-provider', { apiKey: 'test' })
+      expect(registerSuccess).toBe(true)
+
+      // 验证导入函数被调用
+      expect(dynamicImportConfig.import).toHaveBeenCalled()
+      expect(mockModule.createCustomProvider).toHaveBeenCalledWith({ apiKey: 'test' })
+
+      // 验证注册成功
+      expect(getInitializedProviders()).toContain('dynamic-import-provider')
     })
 
-    it('正确处理大量动态 providers 的注册和管理', () => {
-      const largeConfigList: DynamicProviderRegistration[] = []
+    it('正确处理大量配置的注册和管理', () => {
+      const largeConfigList: ProviderConfig[] = []
 
-      // 生成100个动态 providers
-      for (let i = 0; i < 100; i++) {
+      // 生成50个配置
+      for (let i = 0; i < 50; i++) {
         largeConfigList.push({
           id: `bulk-provider-${i}`,
           name: `Bulk Provider ${i}`,
           creator: vi.fn(() => ({ name: `bulk-${i}` })),
           supportsImageGeneration: i % 2 === 0, // 偶数支持图像生成
-          mappings: {
-            [`alias-${i}`]: `bulk-provider-${i}`,
-            [`short-${i}`]: `bulk-provider-${i}`
-          }
+          aliases: [`alias-${i}`, `short-${i}`]
         })
       }
 
-      const successCount = registerMultipleProviders(largeConfigList)
-      expect(successCount).toBe(100)
+      const successCount = registerMultipleProviderConfigs(largeConfigList)
+      expect(successCount).toBe(50)
 
-      // 验证所有 providers 都被正确注册
-      const dynamicProviders = getDynamicProviders()
-      expect(dynamicProviders.length).toBe(100)
+      // 验证所有配置都被正确注册
+      const allConfigs = getAllProviderConfigs()
+      expect(allConfigs.filter((config) => config.id.startsWith('bulk-provider-')).length).toBe(50)
 
-      // 验证映射数量
-      const mappings = getAllDynamicMappings()
-      expect(Object.keys(mappings).length).toBe(200) // 每个 provider 有2个映射
+      // 验证别名数量
+      const aliases = getAllProviderConfigAliases()
+      const bulkAliases = Object.keys(aliases).filter(
+        (alias) => alias.startsWith('alias-') || alias.startsWith('short-')
+      )
+      expect(bulkAliases.length).toBe(100) // 每个 provider 有2个别名
 
-      // 随机验证几个 providers
-      expect(isDynamicProvider('bulk-provider-0')).toBe(true)
-      expect(isDynamicProvider('bulk-provider-50')).toBe(true)
-      expect(isDynamicProvider('bulk-provider-99')).toBe(true)
+      // 随机验证几个配置
+      expect(hasProviderConfig('bulk-provider-0')).toBe(true)
+      expect(hasProviderConfig('bulk-provider-25')).toBe(true)
+      expect(hasProviderConfig('bulk-provider-49')).toBe(true)
 
-      // 验证映射工作正常
-      expect(getProviderMapping('alias-25')).toBe('bulk-provider-25')
-      expect(getProviderMapping('short-75')).toBe('bulk-provider-75')
+      // 验证别名工作正常
+      expect(resolveProviderConfigId('alias-25')).toBe('bulk-provider-25')
+      expect(isProviderConfigAlias('short-30')).toBe(true)
 
       // 清理能正确处理大量数据
       cleanup()
-      expect(getDynamicProviders()).toEqual([])
-      expect(getAllDynamicMappings()).toEqual({})
+      const cleanupAliases = getAllProviderConfigAliases()
+      expect(
+        Object.keys(cleanupAliases).filter((alias) => alias.startsWith('alias-') || alias.startsWith('short-'))
+      ).toEqual([])
     })
   })
 
   describe('边界测试', () => {
     it('处理包含特殊字符的 provider IDs', () => {
-      const specialCharsConfigs: DynamicProviderRegistration[] = [
+      const specialCharsConfigs: ProviderConfig[] = [
         {
           id: 'provider-with-dashes',
           name: 'Provider With Dashes',
@@ -525,26 +542,29 @@ describe('AiProviderRegistry 功能测试', () => {
         }
       ]
 
-      const successCount = registerMultipleProviders(specialCharsConfigs)
+      const successCount = registerMultipleProviderConfigs(specialCharsConfigs)
       expect(successCount).toBeGreaterThan(0) // 至少有一些成功
 
       // 验证支持的特殊字符格式
-      if (isDynamicProvider('provider-with-dashes')) {
-        expect(getProvider('provider-with-dashes')).toBeDefined()
+      if (hasProviderConfig('provider-with-dashes')) {
+        expect(getProviderConfig('provider-with-dashes')).toBeDefined()
       }
-      if (isDynamicProvider('provider_with_underscores')) {
-        expect(getProvider('provider_with_underscores')).toBeDefined()
+      if (hasProviderConfig('provider_with_underscores')) {
+        expect(getProviderConfig('provider_with_underscores')).toBeDefined()
       }
     })
 
     it('处理空的批量注册', () => {
-      const successCount = registerMultipleProviders([])
+      const successCount = registerMultipleProviderConfigs([])
       expect(successCount).toBe(0)
-      expect(getDynamicProviders()).toEqual([])
+
+      // 确保没有额外的配置被添加
+      const configsBefore = getAllProviderConfigs().length
+      expect(configsBefore).toBeGreaterThan(0) // 应该有基础配置
     })
 
-    it('处理重复的 provider 注册', () => {
-      const config: DynamicProviderRegistration = {
+    it('处理重复的配置注册', () => {
+      const config: ProviderConfig = {
         id: 'duplicate-test-provider',
         name: 'Duplicate Test Provider',
         creator: vi.fn(() => ({ name: 'duplicate' })),
@@ -552,17 +572,61 @@ describe('AiProviderRegistry 功能测试', () => {
       }
 
       // 第一次注册成功
-      expect(registerDynamicProvider(config)).toBe(true)
-      expect(isDynamicProvider('duplicate-test-provider')).toBe(true)
+      expect(registerProviderConfig(config)).toBe(true)
+      expect(hasProviderConfig('duplicate-test-provider')).toBe(true)
 
-      // 重复注册相同的 provider
-      expect(registerDynamicProvider(config)).toBe(true) // 允许覆盖
-      expect(isDynamicProvider('duplicate-test-provider')).toBe(true)
+      // 重复注册相同的配置（允许覆盖）
+      const updatedConfig: ProviderConfig = {
+        ...config,
+        name: 'Updated Duplicate Test Provider'
+      }
+      expect(registerProviderConfig(updatedConfig)).toBe(true)
+      expect(hasProviderConfig('duplicate-test-provider')).toBe(true)
 
-      // 验证只有一个实例
-      const dynamicProviders = getDynamicProviders()
-      const duplicateCount = dynamicProviders.filter((id) => id === 'duplicate-test-provider').length
-      expect(duplicateCount).toBe(1)
+      // 验证配置被更新
+      const retrievedConfig = getProviderConfig('duplicate-test-provider')
+      expect(retrievedConfig?.name).toBe('Updated Duplicate Test Provider')
+    })
+
+    it('处理极长的 ID 和名称', () => {
+      const longId = 'very-long-provider-id-' + 'x'.repeat(100)
+      const longName = 'Very Long Provider Name ' + 'Y'.repeat(100)
+
+      const config: ProviderConfig = {
+        id: longId,
+        name: longName,
+        creator: vi.fn(() => ({ name: 'long-test' })),
+        supportsImageGeneration: false
+      }
+
+      const success = registerProviderConfig(config)
+      expect(success).toBe(true)
+      expect(hasProviderConfig(longId)).toBe(true)
+
+      const retrievedConfig = getProviderConfig(longId)
+      expect(retrievedConfig?.name).toBe(longName)
+    })
+
+    it('处理大量别名的配置', () => {
+      const manyAliases = Array.from({ length: 50 }, (_, i) => `alias-${i}`)
+
+      const config: ProviderConfig = {
+        id: 'provider-with-many-aliases',
+        name: 'Provider With Many Aliases',
+        creator: vi.fn(() => ({ name: 'many-aliases' })),
+        supportsImageGeneration: false,
+        aliases: manyAliases
+      }
+
+      const success = registerProviderConfig(config)
+      expect(success).toBe(true)
+
+      // 验证所有别名都能正确解析
+      manyAliases.forEach((alias) => {
+        expect(hasProviderConfigByAlias(alias)).toBe(true)
+        expect(resolveProviderConfigId(alias)).toBe('provider-with-many-aliases')
+        expect(isProviderConfigAlias(alias)).toBe(true)
+      })
     })
   })
 })

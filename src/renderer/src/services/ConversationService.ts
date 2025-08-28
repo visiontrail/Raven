@@ -1,5 +1,5 @@
-import { StreamTextParams } from '@cherrystudio/ai-core'
 import { convertMessagesToSdkMessages } from '@renderer/aiCore/transformParameters'
+import type { StreamTextParams } from '@renderer/aiCore/types'
 import { Assistant, Message } from '@renderer/types'
 import { filterAdjacentUserMessaegs, filterLastAssistantMessage } from '@renderer/utils/messageUtils/filters'
 import { isEmpty, takeRight } from 'lodash'

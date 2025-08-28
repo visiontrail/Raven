@@ -6,8 +6,7 @@
  * 2. transformParams: 根据意图分析结果动态添加对应的工具
  * 3. onRequestEnd: 自动记忆存储
  */
-import type { AiRequestContext, ModelMessage } from '@cherrystudio/ai-core'
-import { definePlugin } from '@cherrystudio/ai-core'
+import { type AiRequestContext, definePlugin } from '@cherrystudio/ai-core'
 import { loggerService } from '@logger'
 // import { generateObject } from '@cherrystudio/ai-core'
 import {
@@ -20,6 +19,7 @@ import store from '@renderer/store'
 import { selectCurrentUserId, selectGlobalMemoryEnabled, selectMemoryConfig } from '@renderer/store/memory'
 import type { Assistant } from '@renderer/types'
 import { extractInfoFromXML, ExtractResults } from '@renderer/utils/extract'
+import type { ModelMessage } from 'ai'
 import { isEmpty } from 'lodash'
 
 import { MemoryProcessor } from '../../services/MemoryProcessor'

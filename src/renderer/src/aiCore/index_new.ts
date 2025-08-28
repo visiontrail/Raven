@@ -8,7 +8,7 @@
  * 3. 暂时保持接口兼容性
  */
 
-import { createExecutor, generateImage, StreamTextParams } from '@cherrystudio/ai-core'
+import { createExecutor, generateImage } from '@cherrystudio/ai-core'
 import { createAndRegisterProvider } from '@cherrystudio/ai-core/provider'
 import { loggerService } from '@logger'
 import { isNotSupportedImageSizeModel } from '@renderer/config/models'
@@ -23,6 +23,7 @@ import { CompletionsResult } from './legacy/middleware/schemas'
 import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/AiSdkMiddlewareBuilder'
 import { buildPlugins } from './plugins/PluginBuilder'
 import { getActualProvider, isModernSdkSupported, providerToAiSdkConfig } from './provider/ProviderConfigProcessor'
+import type { StreamTextParams } from './types'
 
 const logger = loggerService.withContext('ModernAiProvider')
 
