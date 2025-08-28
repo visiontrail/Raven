@@ -19,7 +19,7 @@ import { isAbortError, serializeError } from '@renderer/utils/error'
 import { createBaseMessageBlock, createErrorBlock } from '@renderer/utils/messageUtils/create'
 import { findAllBlocks, getMainTextContent } from '@renderer/utils/messageUtils/find'
 import { isFocused, isOnHomePage } from '@renderer/utils/window'
-import { AISDKError } from 'ai'
+import { AISDKError, NoOutputGeneratedError } from 'ai'
 
 import { BlockManager } from '../BlockManager'
 
@@ -82,6 +82,9 @@ export const createBaseCallbacks = (deps: BaseCallbacksDependencies) => {
 
     onError: async (error: AISDKError) => {
       logger.debug('onError', error)
+      if (NoOutputGeneratedError.isInstance(error)) {
+        return
+      }
       const isErrorTypeAbort = isAbortError(error)
       const serializableError = serializeError(error)
       if (isErrorTypeAbort) {

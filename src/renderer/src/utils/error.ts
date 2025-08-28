@@ -103,7 +103,13 @@ export const serializeError = (error: AISDKError) => {
     } catch (e: any) {
       logger.warn('Error parsing error response body:', e)
     }
-    return { ...baseError, status: error.statusCode, url: error.url, message: content }
+    return {
+      ...baseError,
+      status: error.statusCode,
+      url: error.url,
+      message: content,
+      requestBody: error.requestBodyValues
+    }
   }
   return baseError
 }
