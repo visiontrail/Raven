@@ -106,11 +106,13 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
         const experimental_transform =
           params?.experimental_transform ?? (streamTransforms.length > 0 ? streamTransforms : undefined)
 
-        return await streamText({
+        const finalParams = {
           model,
           ...transformedParams,
           experimental_transform
-        })
+        } as Parameters<typeof streamText>[0]
+
+        return await streamText(finalParams)
       }
     )
   }
@@ -147,9 +149,8 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       'generateText',
       typeof modelOrId === 'string' ? modelOrId : modelOrId.modelId,
       params,
-      async (model, transformedParams) => {
-        return await generateText({ model, ...transformedParams })
-      }
+      async (model, transformedParams) =>
+        generateText({ model, ...transformedParams } as Parameters<typeof generateText>[0])
     )
   }
 
@@ -183,7 +184,8 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       'generateObject',
       typeof modelOrId === 'string' ? modelOrId : modelOrId.modelId,
       params,
-      async (model, transformedParams) => await generateObject({ model, ...transformedParams })
+      async (model, transformedParams) =>
+        generateObject({ model, ...transformedParams } as Parameters<typeof generateObject>[0])
     )
   }
 
@@ -217,7 +219,8 @@ export class RuntimeExecutor<T extends ProviderId = ProviderId> {
       'streamObject',
       typeof modelOrId === 'string' ? modelOrId : modelOrId.modelId,
       params,
-      async (model, transformedParams) => await streamObject({ model, ...transformedParams })
+      async (model, transformedParams) =>
+        streamObject({ model, ...transformedParams } as Parameters<typeof streamObject>[0])
     )
   }
 

@@ -80,7 +80,7 @@ export class PluginManager {
     for (const plugin of this.plugins) {
       const hook = plugin[hookName]
       if (hook) {
-        result = await hook(result, context)
+        result = await hook<T>(result, context)
       }
     }
 
