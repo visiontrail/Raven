@@ -317,6 +317,15 @@ export type SystemProvider = Provider & {
   apiOptions?: never
 }
 
+export type VertexProvider = Provider & {
+  googleCredentials: {
+    privateKey: string
+    clientEmail: string
+  }
+  project: string
+  location: string
+}
+
 /**
  * 判断是否为系统内置的提供商。比直接使用`provider.isSystem`更好，因为该数据字段不会随着版本更新而变化。
  * @param provider - Provider对象，包含提供商的信息
