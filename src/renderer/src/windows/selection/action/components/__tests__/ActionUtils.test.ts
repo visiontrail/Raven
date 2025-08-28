@@ -1,7 +1,6 @@
 import type { Assistant, Topic } from '@renderer/types'
 import { ChunkType } from '@renderer/types/chunk'
 import { AssistantMessageStatus, MessageBlockStatus } from '@renderer/types/newMessage'
-import OpenAI from 'openai'
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest'
 
 import { processMessages } from '../ActionUtils'
@@ -165,28 +164,6 @@ describe('processMessages', () => {
         for (const chunk of mockChunks) {
           await onChunkReceived(chunk)
         }
-        const rawOutput: OpenAI.ChatCompletion = {
-          id: 'test-id',
-          model: 'test-model',
-          object: 'chat.completion',
-          created: Date.now(),
-          choices: [
-            {
-              index: 0,
-              message: {
-                role: 'assistant',
-                content: 'Here is my answer to your question.',
-                refusal: ''
-              },
-              finish_reason: 'stop',
-              logprobs: null
-            }
-          ]
-        }
-        return {
-          rawOutput,
-          getText: () => 'Here is my answer to your question.'
-        }
       })
 
       await processMessages(
@@ -295,28 +272,6 @@ describe('processMessages', () => {
         for (const chunk of mockChunks) {
           await onChunkReceived(chunk)
         }
-        const rawOutput: OpenAI.ChatCompletion = {
-          id: 'test-id',
-          model: 'test-model',
-          object: 'chat.completion',
-          created: Date.now(),
-          choices: [
-            {
-              index: 0,
-              message: {
-                role: 'assistant',
-                content: 'Partial response',
-                refusal: ''
-              },
-              finish_reason: 'stop',
-              logprobs: null
-            }
-          ]
-        }
-        return {
-          rawOutput,
-          getText: () => 'Partial response'
-        }
       })
 
       await processMessages(
@@ -404,28 +359,6 @@ describe('processMessages', () => {
       vi.mocked(fetchChatCompletion).mockImplementation(async ({ onChunkReceived }: any) => {
         for (const chunk of mockChunks) {
           await onChunkReceived(chunk)
-        }
-        const rawOutput: OpenAI.ChatCompletion = {
-          id: 'test-id',
-          model: 'test-model',
-          object: 'chat.completion',
-          created: Date.now(),
-          choices: [
-            {
-              index: 0,
-              message: {
-                role: 'assistant',
-                content: 'Partial',
-                refusal: ''
-              },
-              finish_reason: 'stop',
-              logprobs: null
-            }
-          ]
-        }
-        return {
-          rawOutput,
-          getText: () => 'Partial'
         }
       })
 
@@ -566,28 +499,6 @@ describe('processMessages', () => {
       vi.mocked(fetchChatCompletion).mockImplementation(async ({ onChunkReceived }: any) => {
         for (const chunk of mockChunks) {
           await onChunkReceived(chunk)
-        }
-        const rawOutput: OpenAI.ChatCompletion = {
-          id: 'test-id',
-          model: 'test-model',
-          object: 'chat.completion',
-          created: Date.now(),
-          choices: [
-            {
-              index: 0,
-              message: {
-                role: 'assistant',
-                content: 'Second text',
-                refusal: ''
-              },
-              finish_reason: 'stop',
-              logprobs: null
-            }
-          ]
-        }
-        return {
-          rawOutput,
-          getText: () => 'Second text'
         }
       })
 

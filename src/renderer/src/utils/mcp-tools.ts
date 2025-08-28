@@ -8,7 +8,7 @@ import store from '@renderer/store'
 import { addMCPServer } from '@renderer/store/mcp'
 import {
   Assistant,
-  BaseTool,
+  BuiltinMCPServerNames,
   MCPCallToolResponse,
   MCPServer,
   MCPTool,
@@ -29,12 +29,11 @@ import {
   ChatCompletionTool
 } from 'openai/resources'
 
+import { isToolUseModeFunction } from './assistant'
 import { convertBase64ImageToAwsBedrockFormat } from './aws-bedrock-utils'
 import { filterProperties, processSchemaForO3 } from './mcp-schema'
 
 const logger = loggerService.withContext('Utils:MCPTools')
-
-const MCP_AUTO_INSTALL_SERVER_NAME = '@cherry/mcp-auto-install'
 
 export function mcpToolsToOpenAIResponseTools(mcpTools: MCPTool[]): OpenAI.Responses.Tool[] {
   return mcpTools.map((tool) => {
@@ -147,7 +146,7 @@ export async function callMCPTool(
       },
       topicId ? currentSpan(topicId, modelName)?.spanContext() : undefined
     )
-    if (toolResponse.tool.serverName === MCP_AUTO_INSTALL_SERVER_NAME) {
+    if (toolResponse.tool.serverName === BuiltinMCPServerNames.mcpAutoInstall) {
       if (resp.data) {
         const mcpServer: MCPServer = {
           id: `f${nanoid()}`,
@@ -186,7 +185,7 @@ export function mcpToolsToAnthropicTools(mcpTools: MCPTool[]): Array<ToolUnion> 
     const t: ToolUnion = {
       name: tool.id,
       description: tool.description,
-      // @ts-ignore ignore type as it it unknow
+      // @ts-ignore ignore type as it it unknown
       input_schema: tool.inputSchema
     }
     return t
@@ -319,13 +318,12 @@ export function getMcpServerByTool(tool: MCPTool) {
   return servers.find((s) => s.id === tool.serverId)
 }
 
-export function isToolAutoApproved(tool: BaseTool, server?: MCPServer): boolean {
-  if (tool.type === 'builtin') {
+export function isToolAutoApproved(tool: MCPTool, server?: MCPServer): boolean {
+  if (tool.isBuiltIn) {
     return true
   }
-  const mcpTool = tool as MCPTool
-  const effectiveServer = server ?? getMcpServerByTool(mcpTool)
-  return effectiveServer ? !effectiveServer.disabledAutoApproveTools?.includes(mcpTool.name) : false
+  const effectiveServer = server ?? getMcpServerByTool(tool)
+  return effectiveServer ? !effectiveServer.disabledAutoApproveTools?.includes(tool.name) : false
 }
 
 export function parseToolUse(
@@ -836,11 +834,7 @@ export function mcpToolCallResponseToAwsBedrockMessage(
  */
 export function isSupportedToolUse(assistant: Assistant) {
   if (assistant.model) {
-    if (isFunctionCallingModel(assistant.model)) {
-      return true
-    } else {
-      return assistant.settings?.toolUseMode === 'prompt'
-    }
+    return isFunctionCallingModel(assistant.model) && isToolUseModeFunction(assistant)
   }
 
   return false

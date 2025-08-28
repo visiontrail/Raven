@@ -8,13 +8,13 @@ import {
   Cloud,
   Command,
   FileCode,
+  Hammer,
   HardDrive,
   Info,
   MonitorCog,
   Package,
   PictureInPicture2,
   Settings2,
-  SquareTerminal,
   TextCursorInput,
   Zap
 } from 'lucide-react'
@@ -26,10 +26,10 @@ import styled from 'styled-components'
 import AboutSettings from './AboutSettings'
 import DataSettings from './DataSettings/DataSettings'
 import DisplaySettings from './DisplaySettings/DisplaySettings'
+import DocProcessSettings from './DocProcessSettings'
 import GeneralSettings from './GeneralSettings'
 import MCPSettings from './MCPSettings'
 import MemorySettings from './MemorySettings'
-import PreprocessSettings from './PreprocessSettings'
 import ProvidersList from './ProviderSettings'
 import QuickAssistantSettings from './QuickAssistantSettings'
 import QuickPhraseSettings from './QuickPhraseSettings'
@@ -84,7 +84,7 @@ const SettingsPage: FC = () => {
           <Divider />
           <MenuItemLink to="/settings/mcp">
             <MenuItem className={isRoute('/settings/mcp')}>
-              <SquareTerminal size={18} />
+              <Hammer size={18} />
               {t('settings.mcp.title')}
             </MenuItem>
           </MenuItemLink>
@@ -100,8 +100,8 @@ const SettingsPage: FC = () => {
               {t('memory.title')}
             </MenuItem>
           </MenuItemLink>
-          <MenuItemLink to="/settings/preprocess">
-            <MenuItem className={isRoute('/settings/preprocess')}>
+          <MenuItemLink to="/settings/docprocess">
+            <MenuItem className={isRoute('/settings/docprocess')}>
               <FileCode size={18} />
               {t('settings.tool.preprocess.title')}
             </MenuItem>
@@ -144,7 +144,7 @@ const SettingsPage: FC = () => {
             <Route path="provider" element={<ProvidersList />} />
             <Route path="model" element={<ModelSettings />} />
             <Route path="websearch" element={<WebSearchSettings />} />
-            <Route path="preprocess" element={<PreprocessSettings />} />
+            <Route path="docprocess" element={<DocProcessSettings />} />
             <Route path="quickphrase" element={<QuickPhraseSettings />} />
             <Route path="mcp/*" element={<MCPSettings />} />
             <Route path="memory" element={<MemorySettings />} />

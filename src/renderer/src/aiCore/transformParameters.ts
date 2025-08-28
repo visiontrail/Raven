@@ -3,16 +3,7 @@
  * 统一管理从各个 apiClient 提取的参数处理和转换功能
  */
 
-import {
-  AssistantModelMessage,
-  FilePart,
-  ImagePart,
-  ModelMessage,
-  stepCountIs,
-  type StreamTextParams,
-  TextPart,
-  UserModelMessage
-} from '@cherrystudio/ai-core'
+import { stepCountIs, type StreamTextParams } from '@cherrystudio/ai-core'
 import { loggerService } from '@logger'
 import { DEFAULT_MAX_TOKENS } from '@renderer/config/constant'
 import {
@@ -39,6 +30,7 @@ import {
   getMainTextContent
 } from '@renderer/utils/messageUtils/find'
 import { defaultTimeout } from '@shared/config/constant'
+import type { AssistantModelMessage, FilePart, ImagePart, ModelMessage, TextPart, UserModelMessage } from 'ai'
 
 import { getAiSdkProviderId } from './provider/factory'
 // import { webSearchTool } from './tools/WebSearchTool'
@@ -329,14 +321,14 @@ export async function buildStreamTextParams(
 
   const model = assistant.model || getDefaultModel()
 
-  const { maxTokens, reasoning_effort } = getAssistantSettings(assistant)
+  const { maxTokens } = getAssistantSettings(assistant)
 
   // 这三个变量透传出来，交给下面动态启用插件/中间件
   // 也可以在外部构建好再传入buildStreamTextParams
   // FIXME: qwen3即使关闭思考仍然会导致enableReasoning的结果为true
   const enableReasoning =
     ((isSupportedThinkingTokenModel(model) || isSupportedReasoningEffortModel(model)) &&
-      reasoning_effort !== undefined) ||
+      assistant.settings?.reasoning_effort !== undefined) ||
     (isReasoningModel(model) && (!isSupportedThinkingTokenModel(model) || !isSupportedReasoningEffortModel(model)))
 
   const enableWebSearch =

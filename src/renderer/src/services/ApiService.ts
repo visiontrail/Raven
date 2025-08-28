@@ -7,7 +7,8 @@ import AiProvider from '@renderer/aiCore'
 import { CompletionsParams } from '@renderer/aiCore/legacy/middleware/schemas'
 import { AiSdkMiddlewareConfig } from '@renderer/aiCore/middleware/AiSdkMiddlewareBuilder'
 import { buildStreamTextParams } from '@renderer/aiCore/transformParameters'
-import { isDedicatedImageGenerationModel, isEmbeddingModel } from '@renderer/config/models'
+import { isDedicatedImageGenerationModel, isEmbeddingModel, isQwenMTModel } from '@renderer/config/models'
+import { LANG_DETECT_PROMPT } from '@renderer/config/prompts'
 import { getStoreSetting } from '@renderer/hooks/useSettings'
 import { getEnableDeveloperMode } from '@renderer/hooks/useSettings'
 import i18n from '@renderer/i18n'
@@ -20,6 +21,7 @@ import { removeSpecialCharactersForTopicName } from '@renderer/utils'
 import { isPromptToolUse, isSupportedToolUse } from '@renderer/utils/mcp-tools'
 import { findFileBlocks, getMainTextContent } from '@renderer/utils/messageUtils/find'
 import { containsSupportedVariables, replacePromptVariables } from '@renderer/utils/prompt'
+import { getTranslateOptions } from '@renderer/utils/translate'
 import { isEmpty, takeRight } from 'lodash'
 
 import AiProviderNew from '../aiCore/index_new'
@@ -29,7 +31,7 @@ import {
   getDefaultAssistant,
   getDefaultModel,
   getProviderByModel,
-  getTopNamingModel
+  getQuickModel
 } from './AssistantService'
 // import { processKnowledgeSearch } from './KnowledgeService'
 // import {
@@ -120,25 +122,6 @@ export async function fetchChatCompletion({
     requestOptions: options
   })
 
-  // const _messages = filterUserRoleStartMessages(
-  //   filterEmptyMessages(filterContextMessages(takeRight(filteredMessages, contextCount + 2))) // 取原来几个provider的最大值
-  // )
-
-  // const enableReasoning =
-  //   ((isSupportedThinkingTokenModel(model) || isSupportedReasoningEffortModel(model)) &&
-  //     assistant.settings?.reasoning_effort !== undefined) ||
-  //   (isReasoningModel(model) && (!isSupportedThinkingTokenModel(model) || !isSupportedReasoningEffortModel(model)))
-
-  // const enableWebSearch =
-  //   (assistant.enableWebSearch && isWebSearchModel(model)) ||
-  //   isOpenRouterBuiltInWebSearchModel(model) ||
-  //   model.id.includes('sonar') ||
-  //   false
-
-  // const enableGenerateImage =
-  //   isGenerateImageModel(model) && (isSupportedDisableGenerationModel(model) ? assistant.enableGenerateImage : true)
-  //   const enableUrlContext = assistant.enableUrlContext || false
-
   const middlewareConfig: AiSdkMiddlewareConfig = {
     streamOutput: assistant.settings?.streamOutput ?? true,
     onChunk: onChunkReceived,
@@ -152,9 +135,7 @@ export async function fetchChatCompletion({
     enableGenerateImage: capabilities.enableGenerateImage,
     mcpTools
   }
-  // if (capabilities.enableWebSearch) {
-  //   onChunkReceived({ type: ChunkType.LLM_WEB_SEARCH_IN_PROGRESS })
-  // }
+
   // --- Call AI Completions ---
   onChunkReceived({ type: ChunkType.LLM_RESPONSE_CREATED })
   const enableDeveloperMode = getEnableDeveloperMode()
@@ -176,82 +157,77 @@ export async function fetchChatCompletion({
   }
 }
 
-// interface FetchTranslateProps {
-//   content: string
-//   assistant: TranslateAssistant
-//   onResponse?: (text: string, isComplete: boolean) => void
-// }
+interface FetchLanguageDetectionProps {
+  text: string
+  onResponse?: (text: string, isComplete: boolean) => void
+}
 
-// export async function fetchTranslate({ content, assistant, onResponse }: FetchTranslateProps) {
-//   const model = getTranslateModel() || assistant.model || getDefaultModel()
+/**
+ * 检测文本语言
+ * @param params - 参数对象
+ * @param {string} params.text - 需要检测语言的文本内容
+ * @param {function} [params.onResponse] - 流式响应回调函数,用于实时获取检测结果
+ * @returns {Promise<string>} 返回检测到的语言代码,如果检测失败会抛出错误
+ * @throws {Error}
+ */
+export async function fetchLanguageDetection({ text, onResponse }: FetchLanguageDetectionProps) {
+  const translateLanguageOptions = await getTranslateOptions()
+  const listLang = translateLanguageOptions.map((item) => item.langCode)
+  const listLangText = JSON.stringify(listLang)
 
-//   if (!model) {
-//     throw new Error(i18n.t('error.provider_disabled'))
-//   }
+  const model = getQuickModel() || getDefaultModel()
+  if (!model) {
+    throw new Error(i18n.t('error.model.not_exists'))
+  }
 
-//   const provider = getProviderByModel(model)
+  if (isQwenMTModel(model)) {
+    logger.info('QwenMT cannot be used for language detection.')
+    if (isQwenMTModel(model)) {
+      throw new Error(i18n.t('translate.error.detect.qwen_mt'))
+    }
+  }
 
-//   if (!hasApiKey(provider)) {
-//     throw new Error(i18n.t('error.no_api_key'))
-//   }
+  const provider = getProviderByModel(model)
 
-//   const isSupportedStreamOutput = () => {
-//     if (!onResponse) {
-//       return false
-//     }
-//     return true
-//   }
+  if (!hasApiKey(provider)) {
+    throw new Error(i18n.t('error.no_api_key'))
+  }
 
-//   const stream = isSupportedStreamOutput()
-//   const enableReasoning =
-//     ((isSupportedThinkingTokenModel(model) || isSupportedReasoningEffortModel(model)) &&
-//       assistant.settings?.reasoning_effort !== undefined) ||
-//     (isReasoningModel(model) && (!isSupportedThinkingTokenModel(model) || !isSupportedReasoningEffortModel(model)))
+  const assistant: Assistant = getDefaultAssistant()
 
-//   const params: StreamTextParams = {
-//     system: assistant.prompt,
-//     prompt: content
-//   }
+  assistant.model = model
+  assistant.settings = {
+    temperature: 0.7
+  }
+  assistant.prompt = LANG_DETECT_PROMPT.replace('{{list_lang}}', listLangText).replace('{{input}}', text)
 
-//   const AI = new AiProviderNew(model)
+  const isSupportedStreamOutput = () => {
+    if (!onResponse) {
+      return false
+    }
+    return true
+  }
 
-//   const middlewareConfig: AiSdkMiddlewareConfig = {
-//     streamOutput: stream,
-//     enableReasoning,
-//     isPromptToolUse: false,
-//     isSupportedToolUse: false,
-//     isImageGenerationEndpoint: false,
-//     enableWebSearch: false,
-//     enableGenerateImage: false,
-//     onChunk: onResponse
-//       ? (chunk) => {
-//           if (chunk.type === ChunkType.TEXT_DELTA) {
-//             onResponse(chunk.text, false)
-//           } else if (chunk.type === ChunkType.TEXT_COMPLETE) {
-//             onResponse(chunk.text, true)
-//           }
-//         }
-//       : undefined
-//   }
+  const stream = isSupportedStreamOutput()
 
-//   try {
-//     return (
-//       (
-//         await AI.completions(model.id, params, {
-//           ...middlewareConfig,
-//           assistant,
-//           callType: 'translate'
-//         })
-//       ).getText() || ''
-//     )
-//   } catch (error: any) {
-//     return ''
-//   }
-// }
+  const params: CompletionsParams = {
+    callType: 'translate-lang-detect',
+    messages: 'follow system prompt',
+    assistant,
+    streamOutput: stream,
+    enableReasoning: false,
+    shouldThrow: true,
+    onResponse
+  }
+
+  const AI = new AiProvider(provider)
+
+  return (await AI.completions(params)).getText()
+}
 
 export async function fetchMessagesSummary({ messages, assistant }: { messages: Message[]; assistant: Assistant }) {
   let prompt = (getStoreSetting('topicNamingPrompt') as string) || i18n.t('prompts.title')
-  const model = getTopNamingModel() || assistant.model || getDefaultModel()
+  const model = getQuickModel() || assistant.model || getDefaultModel()
 
   if (prompt && containsSupportedVariables(prompt)) {
     prompt = await replacePromptVariables(prompt, model.name)
@@ -347,6 +323,29 @@ export async function fetchMessagesSummary({ messages, assistant }: { messages: 
     return null
   }
 }
+
+// export async function fetchSearchSummary({ messages, assistant }: { messages: Message[]; assistant: Assistant }) {
+//   const model = getQuickModel() || assistant.model || getDefaultModel()
+//   const provider = getProviderByModel(model)
+
+//   if (!hasApiKey(provider)) {
+//     return null
+//   }
+
+//   const topicId = messages?.find((message) => message.topicId)?.topicId || undefined
+
+//   const AI = new AiProvider(provider)
+
+//   const params: CompletionsParams = {
+//     callType: 'search',
+//     messages: messages,
+//     assistant,
+//     streamOutput: false,
+//     topicId
+//   }
+
+//   return await AI.completionsForTrace(params)
+// }
 
 export async function fetchGenerate({
   prompt,
@@ -504,6 +503,9 @@ export async function checkApi(provider: Provider, model: Model, timeout = 15000
       if (!result.getText()) {
         throw new Error('No response received')
       }
+      // if (streamError) {
+      //   throw streamError
+      // }
     }
   } catch (error: any) {
     // 失败回退legacy

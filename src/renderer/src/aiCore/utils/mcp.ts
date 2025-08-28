@@ -4,14 +4,15 @@ import { MCPTool, MCPToolResponse } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
 import { callMCPTool, getMcpServerByTool, isToolAutoApproved } from '@renderer/utils/mcp-tools'
 import { requestToolConfirmation } from '@renderer/utils/userConfirmation'
-import { jsonSchema, type Tool, tool } from 'ai'
+import { type Tool, type ToolSet } from 'ai'
+import { jsonSchema, tool } from 'ai'
 import { JSONSchema7 } from 'json-schema'
 
 const logger = loggerService.withContext('MCP-utils')
 
 // Setup tools configuration based on provided parameters
 export function setupToolsConfig(mcpTools?: MCPTool[]): Record<string, Tool> | undefined {
-  let tools: Record<string, Tool> = {}
+  let tools: ToolSet = {}
 
   if (!mcpTools?.length) {
     return undefined
@@ -25,8 +26,8 @@ export function setupToolsConfig(mcpTools?: MCPTool[]): Record<string, Tool> | u
 /**
  * 将 MCPTool 转换为 AI SDK 工具格式
  */
-export function convertMcpToolsToAiSdkTools(mcpTools: MCPTool[]): Record<string, Tool> {
-  const tools: Record<string, Tool> = {}
+export function convertMcpToolsToAiSdkTools(mcpTools: MCPTool[]): ToolSet {
+  const tools: ToolSet = {}
 
   for (const mcpTool of mcpTools) {
     tools[mcpTool.name] = tool({

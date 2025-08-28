@@ -3,7 +3,7 @@ import { ImageModelV2 } from '@ai-sdk/provider'
 import { LanguageModel } from 'ai'
 
 import { type AiPlugin, createContext, PluginManager } from '../plugins'
-import { type ProviderId, type ProviderSettingsMap } from '../providers/types'
+import { type ProviderId } from '../providers/types'
 
 /**
  * 插件增强的 AI 客户端
@@ -227,16 +227,5 @@ export class PluginEngine<T extends ProviderId = ProviderId> {
       await this.pluginManager.executeParallel('onError', context, undefined, error as Error)
       throw error
     }
-  }
-  // === 静态工厂方法 ===
-
-  /**
-   * 创建 OpenAI Compatible 客户端
-   */
-  static createOpenAICompatible(
-    config: ProviderSettingsMap['openai-compatible'],
-    plugins: AiPlugin[] = []
-  ): PluginEngine<'openai-compatible'> {
-    return new PluginEngine('openai-compatible', plugins)
   }
 }

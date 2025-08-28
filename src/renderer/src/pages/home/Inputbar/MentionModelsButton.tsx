@@ -10,7 +10,7 @@ import { getFancyProviderName } from '@renderer/utils'
 import { Avatar, Tooltip } from 'antd'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { first, sortBy } from 'lodash'
-import { AtSign, Plus } from 'lucide-react'
+import { AtSign, CircleX, Plus } from 'lucide-react'
 import { FC, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
@@ -24,6 +24,7 @@ interface Props {
   ref?: React.RefObject<MentionModelsButtonRef | null>
   mentionedModels: Model[]
   onMentionModel: (model: Model) => void
+  onClearMentionModels: () => void
   couldMentionNotVisionModel: boolean
   files: FileType[]
   ToolbarButton: any
@@ -34,6 +35,7 @@ const MentionModelsButton: FC<Props> = ({
   ref,
   mentionedModels,
   onMentionModel,
+  onClearMentionModels,
   couldMentionNotVisionModel,
   files,
   ToolbarButton,
@@ -46,6 +48,66 @@ const MentionModelsButton: FC<Props> = ({
 
   // 记录是否有模型被选择的动作发生
   const hasModelActionRef = useRef<boolean>(false)
+  // 记录触发信息，用于清除操作
+  const triggerInfoRef = useRef<{ type: 'input' | 'button'; position?: number; originalText?: string } | undefined>(
+    undefined
+  )
+
+  // 基于光标 + 搜索词定位并删除最近一次触发的 @ 及搜索文本
+  const removeAtSymbolAndText = useCallback(
+    (currentText: string, caretPosition: number, searchText?: string, fallbackPosition?: number) => {
+      const safeCaret = Math.max(0, Math.min(caretPosition ?? 0, currentText.length))
+
+      // ESC/精确删除：优先按 pattern = "@" + searchText 从光标向左最近匹配
+      if (searchText !== undefined) {
+        const pattern = '@' + searchText
+        const fromIndex = Math.max(0, safeCaret - 1)
+        const start = currentText.lastIndexOf(pattern, fromIndex)
+        if (start !== -1) {
+          const end = start + pattern.length
+          return currentText.slice(0, start) + currentText.slice(end)
+        }
+
+        // 兜底：使用打开时的 position 做校验后再删
+        if (typeof fallbackPosition === 'number' && currentText[fallbackPosition] === '@') {
+          const expected = pattern
+          const actual = currentText.slice(fallbackPosition, fallbackPosition + expected.length)
+          if (actual === expected) {
+            return currentText.slice(0, fallbackPosition) + currentText.slice(fallbackPosition + expected.length)
+          }
+          // 如果不完全匹配，安全起见仅删除单个 '@'
+          return currentText.slice(0, fallbackPosition) + currentText.slice(fallbackPosition + 1)
+        }
+
+        // 未找到匹配则不改动
+        return currentText
+      }
+
+      // 清除按钮：未知搜索词，删除离光标最近的 '@' 及后续连续非空白（到空格/换行/结尾）
+      {
+        const fromIndex = Math.max(0, safeCaret - 1)
+        const start = currentText.lastIndexOf('@', fromIndex)
+        if (start === -1) {
+          // 兜底：使用打开时的 position（若存在），按空白边界删除
+          if (typeof fallbackPosition === 'number' && currentText[fallbackPosition] === '@') {
+            let endPos = fallbackPosition + 1
+            while (endPos < currentText.length && currentText[endPos] !== ' ' && currentText[endPos] !== '\n') {
+              endPos++
+            }
+            return currentText.slice(0, fallbackPosition) + currentText.slice(endPos)
+          }
+          return currentText
+        }
+
+        let endPos = start + 1
+        while (endPos < currentText.length && currentText[endPos] !== ' ' && currentText[endPos] !== '\n') {
+          endPos++
+        }
+        return currentText.slice(0, start) + currentText.slice(endPos)
+      }
+    },
+    []
+  )
 
   const pinnedModels = useLiveQuery(
     async () => {
@@ -134,13 +196,49 @@ const MentionModelsButton: FC<Props> = ({
       isSelected: false
     })
 
+    items.unshift({
+      label: t('settings.input.clear.all'),
+      description: t('settings.input.clear.models'),
+      icon: <CircleX />,
+      alwaysVisible: true,
+      isSelected: false,
+      action: () => {
+        onClearMentionModels()
+
+        // 只有输入触发时才需要删除 @ 与搜索文本（未知搜索词，按光标就近删除）
+        if (triggerInfoRef.current?.type === 'input') {
+          setText((currentText) => {
+            const textArea = document.querySelector('.inputbar textarea') as HTMLTextAreaElement | null
+            const caret = textArea ? (textArea.selectionStart ?? currentText.length) : currentText.length
+            return removeAtSymbolAndText(currentText, caret, undefined, triggerInfoRef.current?.position)
+          })
+        }
+
+        quickPanel.close()
+      }
+    })
+
     return items
-  }, [pinnedModels, providers, t, couldMentionNotVisionModel, mentionedModels, onMentionModel, navigate])
+  }, [
+    pinnedModels,
+    providers,
+    t,
+    couldMentionNotVisionModel,
+    mentionedModels,
+    onMentionModel,
+    navigate,
+    quickPanel,
+    onClearMentionModels,
+    setText,
+    removeAtSymbolAndText
+  ])
 
   const openQuickPanel = useCallback(
     (triggerInfo?: { type: 'input' | 'button'; position?: number; originalText?: string }) => {
       // 重置模型动作标记
       hasModelActionRef.current = false
+      // 保存触发信息
+      triggerInfoRef.current = triggerInfo
 
       quickPanel.open({
         title: t('agents.edit.model.select.title'),
@@ -160,28 +258,11 @@ const MentionModelsButton: FC<Props> = ({
               closeTriggerInfo?.type === 'input' &&
               closeTriggerInfo?.position !== undefined
             ) {
-              // 使用React的setText来更新状态
+              // 基于当前光标 + 搜索词精确定位并删除，position 仅作兜底
               setText((currentText) => {
-                const position = closeTriggerInfo.position!
-                // 验证位置的字符是否仍是 @
-                if (currentText[position] !== '@') {
-                  return currentText
-                }
-
-                // 计算删除范围：@ + searchText
-                const deleteLength = 1 + (searchText?.length || 0)
-
-                // 验证要删除的内容是否匹配预期
-                const expectedText = '@' + (searchText || '')
-                const actualText = currentText.slice(position, position + deleteLength)
-
-                if (actualText !== expectedText) {
-                  // 如果实际文本不匹配，只删除 @ 字符
-                  return currentText.slice(0, position) + currentText.slice(position + 1)
-                }
-
-                // 删除 @ 和搜索文本
-                return currentText.slice(0, position) + currentText.slice(position + deleteLength)
+                const textArea = document.querySelector('.inputbar textarea') as HTMLTextAreaElement | null
+                const caret = textArea ? (textArea.selectionStart ?? currentText.length) : currentText.length
+                return removeAtSymbolAndText(currentText, caret, searchText || '', closeTriggerInfo.position!)
               })
             }
           }
@@ -190,7 +271,7 @@ const MentionModelsButton: FC<Props> = ({
         }
       })
     },
-    [modelItems, quickPanel, t, setText]
+    [modelItems, quickPanel, t, setText, removeAtSymbolAndText]
   )
 
   const handleOpenQuickPanel = useCallback(() => {

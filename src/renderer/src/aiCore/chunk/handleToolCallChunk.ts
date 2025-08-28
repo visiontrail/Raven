@@ -32,7 +32,7 @@ export class ToolCallChunkHandler {
   >()
   constructor(
     private onChunk: (chunk: Chunk) => void,
-    private mcpTools: BaseTool[]
+    private mcpTools: MCPTool[]
   ) {}
 
   //   /**

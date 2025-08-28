@@ -4,11 +4,12 @@ import { CopyIcon, DeleteIcon, EditIcon, RefreshIcon } from '@renderer/component
 import ObsidianExportPopup from '@renderer/components/Popups/ObsidianExportPopup'
 import SaveToKnowledgePopup from '@renderer/components/Popups/SaveToKnowledgePopup'
 import SelectModelPopup from '@renderer/components/Popups/SelectModelPopup'
-import { isVisionModel } from '@renderer/config/models'
+import { isEmbeddingModel, isRerankModel, isVisionModel } from '@renderer/config/models'
 import { useMessageEditing } from '@renderer/context/MessageEditingContext'
 import { useChatContext } from '@renderer/hooks/useChatContext'
 import { useMessageOperations, useTopicLoading } from '@renderer/hooks/useMessageOperations'
 import { useEnableDeveloperMode, useMessageStyle } from '@renderer/hooks/useSettings'
+import { useTemporaryValue } from '@renderer/hooks/useTemporaryValue'
 import useTranslate from '@renderer/hooks/useTranslate'
 import { EVENT_NAMES, EventEmitter } from '@renderer/services/EventService'
 import { getMessageTitle } from '@renderer/services/MessagesService'
@@ -78,7 +79,7 @@ const MessageMenubar: FC<Props> = (props) => {
   } = props
   const { t } = useTranslation()
   const { toggleMultiSelectMode } = useChatContext(props.topic)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useTemporaryValue(false, 2000)
   const [isTranslating, setIsTranslating] = useState(false)
   const [showRegenerateTooltip, setShowRegenerateTooltip] = useState(false)
   const [showDeleteTooltip, setShowDeleteTooltip] = useState(false)
@@ -136,9 +137,8 @@ const MessageMenubar: FC<Props> = (props) => {
 
       window.message.success({ content: t('message.copied'), key: 'copy-message' })
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
     },
-    [message, t] // message is needed for message.id and as a fallback. t is for translation.
+    [message, setCopied, t] // message is needed for message.id and as a fallback. t is for translation.
   )
 
   const onNewBranch = useCallback(async () => {
@@ -150,10 +150,7 @@ const MessageMenubar: FC<Props> = (props) => {
   const handleResendUserMessage = useCallback(
     async (messageUpdate?: Message) => {
       if (!loading) {
-        const assistantWithTopicPrompt = topic.prompt
-          ? { ...assistant, prompt: `${assistant.prompt}\n${topic.prompt}` }
-          : assistant
-        await resendMessage(messageUpdate ?? message, assistantWithTopicPrompt)
+        await resendMessage(messageUpdate ?? message, assistant)
       }
     },
     [assistant, loading, message, resendMessage, topic.prompt]
@@ -379,18 +376,16 @@ const MessageMenubar: FC<Props> = (props) => {
     // const _message = resetAssistantMessage(message, selectedModel)
     // editMessage(message.id, { ..._message }) // REMOVED
 
-    const assistantWithTopicPrompt = topic.prompt
-      ? { ...assistant, prompt: `${assistant.prompt}\n${topic.prompt}` }
-      : assistant
-
     // Call the function from the hook
-    regenerateAssistantMessage(message, assistantWithTopicPrompt)
+    regenerateAssistantMessage(message, assistant)
   }
 
   // 按条件筛选能够提及的模型，该函数仅在isAssistantMessage时会用到
   const mentionModelFilter = useMemo(() => {
+    const defaultFilter = (model: Model) => !isEmbeddingModel(model) && !isRerankModel(model)
+
     if (!isAssistantMessage) {
-      return () => true
+      return defaultFilter
     }
     const state = store.getState()
     const topicMessages: Message[] = selectMessagesForTopic(state, topic.id)
@@ -400,7 +395,7 @@ const MessageMenubar: FC<Props> = (props) => {
     })
     // 无关联用户消息时，默认返回所有模型
     if (!relatedUserMessage) {
-      return () => true
+      return defaultFilter
     }
 
     const relatedUserMessageBlocks = relatedUserMessage.blocks.map((msgBlockId) =>
@@ -408,13 +403,13 @@ const MessageMenubar: FC<Props> = (props) => {
     )
 
     if (!relatedUserMessageBlocks) {
-      return () => true
+      return defaultFilter
     }
 
     if (relatedUserMessageBlocks.some((block) => block && block.type === MessageBlockType.IMAGE)) {
-      return (m: Model) => isVisionModel(m)
+      return (m: Model) => isVisionModel(m) && defaultFilter(m)
     } else {
-      return () => true
+      return defaultFilter
     }
   }, [isAssistantMessage, message.askId, topic.id])
 

@@ -1,13 +1,13 @@
 import { loggerService } from '@logger'
 import { ApiClientFactory } from '@renderer/aiCore/legacy/clients/ApiClientFactory'
 import { BaseApiClient } from '@renderer/aiCore/legacy/clients/BaseApiClient'
-import { isDedicatedImageGenerationModel } from '@renderer/config/models'
+import { isDedicatedImageGenerationModel, isFunctionCallingModel } from '@renderer/config/models'
 import { getProviderByModel } from '@renderer/services/AssistantService'
 import { withSpanResult } from '@renderer/services/SpanManagerService'
 import { StartSpanParams } from '@renderer/trace/types/ModelSpanEntity'
 import type { GenerateImageParams, Model, Provider } from '@renderer/types'
 import type { RequestOptions, SdkModel } from '@renderer/types/sdk'
-import { isPromptToolUse } from '@renderer/utils/mcp-tools'
+import { isSupportedToolUse } from '@renderer/utils/mcp-tools'
 
 import { AihubmixAPIClient } from './clients/AihubmixAPIClient'
 import { VertexAPIClient } from './clients/gemini/VertexAPIClient'
@@ -20,7 +20,6 @@ import { MIDDLEWARE_NAME as FinalChunkConsumerMiddlewareName } from './middlewar
 import { applyCompletionsMiddlewares } from './middleware/composer'
 import { MIDDLEWARE_NAME as McpToolChunkMiddlewareName } from './middleware/core/McpToolChunkMiddleware'
 import { MIDDLEWARE_NAME as RawStreamListenerMiddlewareName } from './middleware/core/RawStreamListenerMiddleware'
-import { MIDDLEWARE_NAME as ThinkChunkMiddlewareName } from './middleware/core/ThinkChunkMiddleware'
 import { MIDDLEWARE_NAME as WebSearchMiddlewareName } from './middleware/core/WebSearchMiddleware'
 import { MIDDLEWARE_NAME as ImageGenerationMiddlewareName } from './middleware/feat/ImageGenerationMiddleware'
 import { MIDDLEWARE_NAME as ThinkingTagExtractionMiddlewareName } from './middleware/feat/ThinkingTagExtractionMiddleware'
@@ -92,7 +91,9 @@ export default class AiProvider {
       }
 
       const isAnthropicOrOpenAIResponseCompatible =
-        clientTypes.includes('AnthropicAPIClient') || clientTypes.includes('OpenAIResponseAPIClient')
+        clientTypes.includes('AnthropicAPIClient') ||
+        clientTypes.includes('OpenAIResponseAPIClient') ||
+        clientTypes.includes('AnthropicVertexAPIClient')
       if (!isAnthropicOrOpenAIResponseCompatible) {
         logger.silly('RawStreamListenerMiddleware is removed')
         builder.remove(RawStreamListenerMiddlewareName)
@@ -107,11 +108,11 @@ export default class AiProvider {
         builder.remove(McpToolChunkMiddlewareName)
         logger.silly('McpToolChunkMiddleware is removed')
       }
-      if (!isPromptToolUse(params.assistant)) {
+      if (isSupportedToolUse(params.assistant) && isFunctionCallingModel(model)) {
         builder.remove(ToolUseExtractionMiddlewareName)
         logger.silly('ToolUseExtractionMiddleware is removed')
       }
-      if (params.callType !== 'chat') {
+      if (params.callType !== 'chat' && params.callType !== 'check' && params.callType !== 'translate') {
         logger.silly('AbortHandlerMiddleware is removed')
         builder.remove(AbortHandlerMiddlewareName)
       }
@@ -120,13 +121,14 @@ export default class AiProvider {
         logger.silly('ErrorHandlerMiddleware is removed')
         builder.remove(FinalChunkConsumerMiddlewareName)
         logger.silly('FinalChunkConsumerMiddleware is removed')
-        builder.insertBefore(ThinkChunkMiddlewareName, MiddlewareRegistry[ThinkingTagExtractionMiddlewareName])
-        logger.silly('ThinkingTagExtractionMiddleware is inserted')
       }
     }
 
     const middlewares = builder.build()
-    logger.silly('middlewares', middlewares)
+    logger.silly(
+      'middlewares',
+      middlewares.map((m) => m.name)
+    )
 
     // 3. Create the wrapped SDK method with middlewares
     const wrappedCompletionMethod = applyCompletionsMiddlewares(client, client.createCompletions, middlewares)

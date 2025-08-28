@@ -1,4 +1,4 @@
-import { type ProviderId } from '../types'
+import { type ProviderId } from '../core/providers/types'
 
 export function isOpenAIChatCompletionOnlyModel(modelId: string): boolean {
   if (!modelId) {

@@ -32,12 +32,7 @@ export class ConversationService {
       filterEmptyMessages(filterAfterContextClearMessages(takeRight(filteredMessages4, contextCount + 2))) // 取原来几个provider的最大值
     )
 
-    const filteredMessages = filterUsefulMessages(_messages)
-    // Take the last `contextCount` messages, plus 2 to allow for a final user/assistant exchange.
-    const finalMessages = filterUserRoleStartMessages(
-      filterEmptyMessages(takeRight(filteredMessages, contextCount + 2))
-    )
-    return await convertMessagesToSdkMessages(finalMessages, assistant.model || getDefaultModel())
+    return await convertMessagesToSdkMessages(_messages, assistant.model || getDefaultModel())
   }
 
   static needsWebSearch(assistant: Assistant): boolean {

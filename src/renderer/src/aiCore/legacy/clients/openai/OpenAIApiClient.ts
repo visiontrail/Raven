@@ -5,10 +5,14 @@ import {
   GEMINI_FLASH_MODEL_REGEX,
   getOpenAIWebSearchParams,
   getThinkModelType,
+  isClaudeReasoningModel,
+  isDeepSeekHybridInferenceModel,
   isDoubaoThinkingAutoModel,
+  isGeminiReasoningModel,
   isGPT5SeriesModel,
   isGrokReasoningModel,
   isNotSupportSystemMessageModel,
+  isOpenAIOpenWeightModel,
   isOpenAIReasoningModel,
   isQwenAlwaysThinkModel,
   isQwenMTModel,
@@ -24,7 +28,8 @@ import {
   isSupportedThinkingTokenQwenModel,
   isSupportedThinkingTokenZhipuModel,
   isVisionModel,
-  MODEL_SUPPORTED_REASONING_EFFORT
+  MODEL_SUPPORTED_REASONING_EFFORT,
+  ZHIPU_RESULT_TOKENS
 } from '@renderer/config/models'
 import {
   isSupportArrayContentProvider,
@@ -40,12 +45,14 @@ import {
   Assistant,
   EFFORT_RATIO,
   FileTypes,
+  isSystemProvider,
   MCPCallToolResponse,
   MCPTool,
   MCPToolResponse,
   Model,
   OpenAIServiceTier,
   Provider,
+  SystemProviderIds,
   ToolCallResponse,
   TranslateAssistant,
   WebSearchSource
@@ -108,7 +115,7 @@ export class OpenAIAPIClient extends OpenAIBaseClient<
    */
   // Method for reasoning effort, moved from OpenAIProvider
   override getReasoningEffort(assistant: Assistant, model: Model): ReasoningEffortOptionalParams {
-    if (this.provider.id === 'groq') {
+    if (this.provider.id === SystemProviderIds.groq) {
       return {}
     }
 
@@ -116,22 +123,6 @@ export class OpenAIAPIClient extends OpenAIBaseClient<
       return {}
     }
     const reasoningEffort = assistant?.settings?.reasoning_effort
-
-    // Doubao 思考模式支持
-    if (isSupportedThinkingTokenDoubaoModel(model)) {
-      // reasoningEffort 为空，默认开启 enabled
-      if (!reasoningEffort) {
-        return { thinking: { type: 'disabled' } }
-      }
-      if (reasoningEffort === 'high') {
-        return { thinking: { type: 'enabled' } }
-      }
-      if (reasoningEffort === 'auto' && isDoubaoThinkingAutoModel(model)) {
-        return { thinking: { type: 'auto' } }
-      }
-      // 其他情况不带 thinking 字段
-      return {}
-    }
 
     if (isSupportedThinkingTokenZhipuModel(model)) {
       if (!reasoningEffort) {
@@ -141,7 +132,14 @@ export class OpenAIAPIClient extends OpenAIBaseClient<
     }
 
     if (!reasoningEffort) {
-      if (model.provider === 'openrouter') {
+      // DeepSeek hybrid inference models, v3.1 and maybe more in the future
+      // 不同的 provider 有不同的思考控制方式，在这里统一解决
+      // if (isDeepSeekHybridInferenceModel(model)) {
+      //   // do nothing for now. default to non-think.
+      // }
+
+      // openrouter: use reasoning
+      if (model.provider === SystemProviderIds.openrouter) {
         // Don't disable reasoning for Gemini models that support thinking tokens
         if (isSupportedThinkingTokenGeminiModel(model) && !GEMINI_FLASH_MODEL_REGEX.test(model.id)) {
           return {}
@@ -153,17 +151,22 @@ export class OpenAIAPIClient extends OpenAIBaseClient<
         return { reasoning: { enabled: false, exclude: true } }
       }
 
+      // providers that use enable_thinking
       if (
         isSupportEnableThinkingProvider(this.provider) &&
-        (isSupportedThinkingTokenQwenModel(model) || isSupportedThinkingTokenHunyuanModel(model))
+        (isSupportedThinkingTokenQwenModel(model) ||
+          isSupportedThinkingTokenHunyuanModel(model) ||
+          (this.provider.id === SystemProviderIds.dashscope && isDeepSeekHybridInferenceModel(model)))
       ) {
         return { enable_thinking: false }
       }
 
+      // claude
       if (isSupportedThinkingTokenClaudeModel(model)) {
         return {}
       }
 
+      // gemini
       if (isSupportedThinkingTokenGeminiModel(model)) {
         if (GEMINI_FLASH_MODEL_REGEX.test(model.id)) {
           return {
@@ -192,8 +195,48 @@ export class OpenAIAPIClient extends OpenAIBaseClient<
       (findTokenLimit(model.id)?.max! - findTokenLimit(model.id)?.min!) * effortRatio + findTokenLimit(model.id)?.min!
     )
 
+    // DeepSeek hybrid inference models, v3.1 and maybe more in the future
+    // 不同的 provider 有不同的思考控制方式，在这里统一解决
+    if (isDeepSeekHybridInferenceModel(model)) {
+      if (isSystemProvider(this.provider)) {
+        switch (this.provider.id) {
+          case SystemProviderIds.dashscope:
+            return {
+              enable_thinking: true,
+              incremental_output: true
+            }
+          case SystemProviderIds.silicon:
+            return {
+              enable_thinking: true
+            }
+          case SystemProviderIds.doubao:
+            return {
+              thinking: {
+                type: 'enabled' // auto is invalid
+              }
+            }
+          case SystemProviderIds.openrouter:
+            return {
+              reasoning: {
+                enabled: true
+              }
+            }
+          case 'nvidia':
+            return {
+              chat_template_kwargs: {
+                thinking: true
+              }
+            }
+          default:
+            logger.warn(
+              `Skipping thinking options for provider ${this.provider.name} as DeepSeek v3.1 thinking control method is unknown`
+            )
+        }
+      }
+    }
+
     // OpenRouter models
-    if (model.provider === 'openrouter') {
+    if (model.provider === SystemProviderIds.openrouter) {
       if (isSupportedReasoningEffortModel(model) || isSupportedThinkingTokenModel(model)) {
         return {
           reasoning: {
@@ -203,6 +246,18 @@ export class OpenAIAPIClient extends OpenAIBaseClient<
       }
     }
 
+    // Doubao 思考模式支持
+    if (isSupportedThinkingTokenDoubaoModel(model)) {
+      if (reasoningEffort === 'high') {
+        return { thinking: { type: 'enabled' } }
+      }
+      if (reasoningEffort === 'auto' && isDoubaoThinkingAutoModel(model)) {
+        return { thinking: { type: 'auto' } }
+      }
+      // 其他情况不带 thinking 字段
+      return {}
+    }
+
     // Qwen models
     if (isQwenReasoningModel(model)) {
       const thinkConfig = {
@@ -210,7 +265,7 @@ export class OpenAIAPIClient extends OpenAIBaseClient<
           isQwenAlwaysThinkModel(model) || !isSupportEnableThinkingProvider(this.provider) ? undefined : true,
         thinking_budget: budgetTokens
       }
-      if (this.provider.id === 'dashscope') {
+      if (this.provider.id === SystemProviderIds.dashscope) {
         return {
           ...thinkConfig,
           incremental_output: true
@@ -527,12 +582,12 @@ export class OpenAIAPIClient extends OpenAIBaseClient<
         // 1. 处理系统消息
         const systemMessage = { role: 'system', content: assistant.prompt || '' }
 
-        if (isSupportedReasoningEffortOpenAIModel(model)) {
-          if (isSupportDeveloperRoleProvider(this.provider)) {
-            systemMessage.role = 'developer'
-          } else {
-            systemMessage.role = 'system'
-          }
+        if (
+          isSupportedReasoningEffortOpenAIModel(model) &&
+          isSupportDeveloperRoleProvider(this.provider) &&
+          !isOpenAIOpenWeightModel(model)
+        ) {
+          systemMessage.role = 'developer'
         }
 
         if (model.id.includes('o1-mini') || model.id.includes('o1-preview')) {
@@ -556,24 +611,46 @@ export class OpenAIAPIClient extends OpenAIBaseClient<
             userMessages.push(await this.convertMessageToSdkParam(message, model))
           }
         }
+        if (userMessages.length === 0) {
+          logger.warn('No user message. Some providers may not support.')
+        }
+
+        // poe 需要通过用户消息传递 reasoningEffort
+        const reasoningEffort = this.getReasoningEffort(assistant, model)
 
         const lastUserMsg = userMessages.findLast((m) => m.role === 'user')
-        if (
-          lastUserMsg &&
-          isSupportedThinkingTokenQwenModel(model) &&
-          !isSupportEnableThinkingProvider(this.provider)
-        ) {
-          const postsuffix = '/no_think'
-          const qwenThinkModeEnabled = assistant.settings?.qwenThinkMode === true
-          const currentContent = lastUserMsg.content
+        if (lastUserMsg) {
+          if (isSupportedThinkingTokenQwenModel(model) && !isSupportEnableThinkingProvider(this.provider)) {
+            const qwenThinkModeEnabled = assistant.settings?.qwenThinkMode === true
+            const currentContent = lastUserMsg.content
 
-          lastUserMsg.content = processPostsuffixQwen3Model(currentContent, postsuffix, qwenThinkModeEnabled) as any
+            lastUserMsg.content = processPostsuffixQwen3Model(currentContent, qwenThinkModeEnabled)
+          }
+          if (this.provider.id === SystemProviderIds.poe) {
+            // 如果以后 poe 支持 reasoning_effort 参数了，可以删掉这部分
+            if (isGPT5SeriesModel(model) && reasoningEffort.reasoning_effort) {
+              lastUserMsg.content += ` --reasoning_effort ${reasoningEffort.reasoning_effort}`
+            } else if (isClaudeReasoningModel(model) && reasoningEffort.thinking?.budget_tokens) {
+              lastUserMsg.content += ` --thinking_budget ${reasoningEffort.thinking.budget_tokens}`
+            } else if (isGeminiReasoningModel(model) && reasoningEffort.extra_body?.google?.thinking_config) {
+              lastUserMsg.content += ` --thinking_budget ${reasoningEffort.extra_body.google.thinking_config.thinking_budget}`
+            }
+          }
         }
 
         // 4. 最终请求消息
         let reqMessages: OpenAISdkMessageParam[]
-        if (!systemMessage.content || isNotSupportSystemMessageModel(model)) {
+        if (!systemMessage.content) {
           reqMessages = [...userMessages]
+        } else if (isNotSupportSystemMessageModel(model)) {
+          // transform into user message
+          const firstUserMsg = userMessages.shift()
+          if (firstUserMsg) {
+            firstUserMsg.content = `System Instruction: \n${systemMessage.content}\n\nUser Message(s):\n${firstUserMsg.content}`
+            reqMessages = [firstUserMsg, ...userMessages]
+          } else {
+            reqMessages = []
+          }
         } else {
           reqMessages = [systemMessage, ...userMessages].filter(Boolean) as OpenAISdkMessageParam[]
         }
@@ -584,8 +661,6 @@ export class OpenAIAPIClient extends OpenAIBaseClient<
         // Create the appropriate parameters object based on whether streaming is enabled
         // Note: Some providers like Mistral don't support stream_options
         const shouldIncludeStreamOptions = streamOutput && isSupportStreamOptionsProvider(this.provider)
-
-        const reasoningEffort = this.getReasoningEffort(assistant, model)
 
         // minimal cannot be used with web_search tool
         if (isGPT5SeriesModel(model) && reasoningEffort.reasoning_effort === 'minimal' && enableWebSearch) {
@@ -806,7 +881,9 @@ export class OpenAIAPIClient extends OpenAIBaseClient<
                 (typeof choice.delta.content === 'string' && choice.delta.content !== '') ||
                 (typeof (choice.delta as any).reasoning_content === 'string' &&
                   (choice.delta as any).reasoning_content !== '') ||
-                (typeof (choice.delta as any).reasoning === 'string' && (choice.delta as any).reasoning !== ''))
+                (typeof (choice.delta as any).reasoning === 'string' && (choice.delta as any).reasoning !== '') ||
+                ((choice.delta as OpenAISdkRawContentSource).images &&
+                  Array.isArray((choice.delta as OpenAISdkRawContentSource).images)))
             ) {
               contentSource = choice.delta
             } else if ('message' in choice) {
@@ -884,12 +961,38 @@ export class OpenAIAPIClient extends OpenAIBaseClient<
                 accumulatingText = true
               }
               // logger.silly('enqueue TEXT_DELTA')
-              controller.enqueue({
-                type: ChunkType.TEXT_DELTA,
-                text: contentSource.content
-              })
+              // 处理特殊token
+              // 智谱api的一个chunk中只会输出一个token，因而使用 ===，避免正常内容被误判
+              if (
+                context.provider.id === SystemProviderIds.zhipu &&
+                ZHIPU_RESULT_TOKENS.some((pattern) => contentSource.content === pattern)
+              ) {
+                controller.enqueue({
+                  type: ChunkType.TEXT_DELTA,
+                  text: '**' // strong
+                })
+              } else {
+                controller.enqueue({
+                  type: ChunkType.TEXT_DELTA,
+                  text: contentSource.content
+                })
+              }
             } else {
               accumulatingText = false
+            }
+
+            // 处理图片内容 (e.g. from OpenRouter Gemini image generation models)
+            if (contentSource.images && Array.isArray(contentSource.images)) {
+              controller.enqueue({
+                type: ChunkType.IMAGE_CREATED
+              })
+              controller.enqueue({
+                type: ChunkType.IMAGE_COMPLETE,
+                image: {
+                  type: 'base64',
+                  images: contentSource.images.map((image) => image.image_url?.url || '')
+                }
+              })
             }
 
             // 处理工具调用
@@ -898,13 +1001,19 @@ export class OpenAIAPIClient extends OpenAIBaseClient<
                 if ('index' in toolCall) {
                   const { id, index, function: fun } = toolCall
                   if (fun?.name) {
-                    toolCalls[index] = {
+                    const toolCallObject = {
                       id: id || '',
                       function: {
                         name: fun.name,
                         arguments: fun.arguments || ''
                       },
-                      type: 'function'
+                      type: 'function' as const
+                    }
+
+                    if (index === -1) {
+                      toolCalls.push(toolCallObject)
+                    } else {
+                      toolCalls[index] = toolCallObject
                     }
                   } else if (fun?.arguments) {
                     if (toolCalls[index] && toolCalls[index].type === 'function' && 'function' in toolCalls[index]) {

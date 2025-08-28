@@ -3,7 +3,7 @@ import {
   LanguageModelV2Middleware,
   simulateStreamingMiddleware
 } from '@cherrystudio/ai-core'
-import type { BaseTool, Model, Provider } from '@renderer/types'
+import type { MCPTool, Model, Provider } from '@renderer/types'
 import type { Chunk } from '@renderer/types/chunk'
 
 /**
@@ -23,7 +23,7 @@ export interface AiSdkMiddlewareConfig {
   isImageGenerationEndpoint: boolean
   enableWebSearch: boolean
   enableGenerateImage: boolean
-  mcpTools?: BaseTool[]
+  mcpTools?: MCPTool[]
 }
 
 /**
@@ -172,7 +172,7 @@ function addProviderSpecificMiddlewares(builder: AiSdkMiddlewareBuilder, config:
 /**
  * 添加模型特定的中间件
  */
-function addModelSpecificMiddlewares(builder: AiSdkMiddlewareBuilder, config: AiSdkMiddlewareConfig): void {
+function addModelSpecificMiddlewares(_: AiSdkMiddlewareBuilder, config: AiSdkMiddlewareConfig): void {
   if (!config.model) return
 
   // 可以根据模型ID或特性添加特定中间件
