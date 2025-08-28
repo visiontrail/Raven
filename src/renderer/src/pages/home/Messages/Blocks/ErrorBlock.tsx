@@ -32,7 +32,7 @@ const MessageErrorInfo: React.FC<{ block: ErrorMessageBlock; message: Message }>
     return (
       <Alert
         description={getHttpMessageLabel(block.error.status)}
-        message={block.error?.message}
+        message={block.error.message}
         type="error"
         closable
         onClose={onRemoveBlock}

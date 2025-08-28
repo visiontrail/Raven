@@ -50,7 +50,7 @@ export interface BaseMessageBlock {
   status: MessageBlockStatus // 块状态
   model?: Model // 使用的模型
   metadata?: Record<string, any> // 通用元数据
-  error?: Record<string, any> // Added optional error field to base
+  error?: Record<string, any> // Serializable error object instead of AISDKError
 }
 
 export interface PlaceholderMessageBlock extends BaseMessageBlock {
