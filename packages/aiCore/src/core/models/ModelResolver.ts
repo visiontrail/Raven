@@ -9,7 +9,7 @@ import { EmbeddingModelV2, ImageModelV2, LanguageModelV2, LanguageModelV2Middlew
 
 import { isOpenAIChatCompletionOnlyModel } from '../../utils/model'
 import { wrapModelWithMiddlewares } from '../middleware/wrapper'
-import { globalRegistryManagement } from '../providers/RegistryManagement'
+import { DEFAULT_SEPARATOR, globalRegistryManagement } from '../providers/RegistryManagement'
 
 export class ModelResolver {
   /**
@@ -39,7 +39,7 @@ export class ModelResolver {
     }
 
     // 检查是否是命名空间格式
-    if (modelId.includes(':')) {
+    if (modelId.includes(DEFAULT_SEPARATOR)) {
       model = this.resolveNamespacedModel(modelId)
     } else {
       // 传统格式：使用处理后的 providerId + modelId
@@ -58,7 +58,7 @@ export class ModelResolver {
    * 解析文本嵌入模型
    */
   async resolveTextEmbeddingModel(modelId: string, fallbackProviderId: string): Promise<EmbeddingModelV2<string>> {
-    if (modelId.includes(':')) {
+    if (modelId.includes(DEFAULT_SEPARATOR)) {
       return this.resolveNamespacedEmbeddingModel(modelId)
     }
 
@@ -69,7 +69,7 @@ export class ModelResolver {
    * 解析图像模型
    */
   async resolveImageModel(modelId: string, fallbackProviderId: string): Promise<ImageModelV2> {
-    if (modelId.includes(':')) {
+    if (modelId.includes(DEFAULT_SEPARATOR)) {
       return this.resolveNamespacedImageModel(modelId)
     }
 
@@ -89,7 +89,7 @@ export class ModelResolver {
    * providerId: 'openai', modelId: 'gpt-4' -> globalRegistryManagement.languageModel('openai:gpt-4')
    */
   private resolveTraditionalModel(providerId: string, modelId: string): LanguageModelV2 {
-    const fullModelId = `${providerId}:${modelId}`
+    const fullModelId = `${providerId}${DEFAULT_SEPARATOR}${modelId}`
     return globalRegistryManagement.languageModel(fullModelId as any)
   }
 
@@ -104,7 +104,7 @@ export class ModelResolver {
    * 解析传统格式的嵌入模型
    */
   private resolveTraditionalEmbeddingModel(providerId: string, modelId: string): EmbeddingModelV2<string> {
-    const fullModelId = `${providerId}:${modelId}`
+    const fullModelId = `${providerId}${DEFAULT_SEPARATOR}${modelId}`
     return globalRegistryManagement.textEmbeddingModel(fullModelId as any)
   }
 
@@ -119,7 +119,7 @@ export class ModelResolver {
    * 解析传统格式的图像模型
    */
   private resolveTraditionalImageModel(providerId: string, modelId: string): ImageModelV2 {
-    const fullModelId = `${providerId}:${modelId}`
+    const fullModelId = `${providerId}${DEFAULT_SEPARATOR}${modelId}`
     return globalRegistryManagement.imageModel(fullModelId as any)
   }
 }

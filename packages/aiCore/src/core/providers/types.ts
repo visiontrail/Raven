@@ -4,6 +4,14 @@ import { type DeepSeekProviderSettings } from '@ai-sdk/deepseek'
 import { type GoogleGenerativeAIProviderSettings } from '@ai-sdk/google'
 import { type OpenAIProviderSettings } from '@ai-sdk/openai'
 import { type OpenAICompatibleProviderSettings } from '@ai-sdk/openai-compatible'
+import {
+  EmbeddingModelV2 as EmbeddingModel,
+  ImageModelV2 as ImageModel,
+  LanguageModelV2 as LanguageModel,
+  ProviderV2,
+  SpeechModelV2 as SpeechModel,
+  TranscriptionModelV2 as TranscriptionModel
+} from '@ai-sdk/provider'
 import { type XaiProviderSettings } from '@ai-sdk/xai'
 
 // 导入基于 Zod 的 ProviderId 类型
@@ -28,31 +36,6 @@ export interface DynamicProviderRegistry {
 
 // 合并基础和动态provider类型
 export type ProviderSettingsMap = ExtensibleProviderSettingsMap & DynamicProviderRegistry
-
-/**
- * Provider 相关核心类型定义
- * 只定义必要的接口，其他类型直接使用 AI SDK
- */
-
-// Provider 配置接口 - 支持灵活的创建方式
-// export interface ProviderConfig {
-//   id: string
-//   name: string
-
-//   // 方式一：直接提供 creator 函数（推荐用于自定义）
-//   creator?: (options: any) => any
-
-//   // 方式二：动态导入 + 函数名（用于包导入）
-//   import?: () => Promise<any>
-//   creatorFunctionName?: string
-
-//   // 图片生成支持
-//   supportsImageGeneration?: boolean
-//   imageCreator?: (options: any) => any
-
-//   // 可选的验证函数
-//   validateOptions?: (options: any) => boolean
-// }
 
 // 错误类型
 export class ProviderError extends Error {
@@ -85,4 +68,29 @@ export type {
   OpenAIProviderSettings,
   XaiProviderSettings
 }
-// 新的provider类型已经在上面直接export，不需要重复导出
+
+export type AiSdkModel = LanguageModel | ImageModel | EmbeddingModel<string> | TranscriptionModel | SpeechModel
+
+export type AiSdkModelType = 'text' | 'image' | 'embedding' | 'transcription' | 'speech'
+
+export const METHOD_MAP = {
+  text: 'languageModel',
+  image: 'imageModel',
+  embedding: 'textEmbeddingModel',
+  transcription: 'transcriptionModel',
+  speech: 'speechModel'
+} as const satisfies Record<AiSdkModelType, keyof ProviderV2>
+
+export type AiSdkModelMethodMap = Record<AiSdkModelType, keyof ProviderV2>
+
+export type AiSdkModelReturnMap = {
+  text: LanguageModel
+  image: ImageModel
+  embedding: EmbeddingModel<string>
+  transcription: TranscriptionModel
+  speech: SpeechModel
+}
+
+export type AiSdkMethodName<T extends AiSdkModelType> = (typeof METHOD_MAP)[T]
+
+export type AiSdkModelReturn<T extends AiSdkModelType> = AiSdkModelReturnMap[T]

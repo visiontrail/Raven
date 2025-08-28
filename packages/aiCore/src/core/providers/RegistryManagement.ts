@@ -9,7 +9,7 @@ import { createProviderRegistry, type ProviderRegistryProvider } from 'ai'
 
 type PROVIDERS = Record<string, ProviderV2>
 
-export const DEFAULT_SEPARATOR = ':'
+export const DEFAULT_SEPARATOR = '|'
 
 // export type MODEL_ID = `${string}${typeof DEFAULT_SEPARATOR}${string}`
 
@@ -216,5 +216,6 @@ export class RegistryManagement<SEPARATOR extends string = typeof DEFAULT_SEPARA
 
 /**
  * 全局注册表管理器实例
+ * 使用 | 作为分隔符，因为 : 会和 :free 等suffix冲突
  */
-export const globalRegistryManagement = new RegistryManagement<':'>()
+export const globalRegistryManagement = new RegistryManagement()

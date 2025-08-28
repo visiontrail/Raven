@@ -7,9 +7,7 @@ const logger = loggerService.withContext('ProviderConfigs')
  * 新Provider配置定义
  * 定义了需要动态注册的AI Providers
  */
-export const NEW_PROVIDER_CONFIGS: (ProviderConfig & {
-  mappings?: Record<string, string>
-})[] = [
+export const NEW_PROVIDER_CONFIGS: ProviderConfig[] = [
   {
     id: 'openrouter',
     name: 'OpenRouter',

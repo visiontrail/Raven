@@ -6,12 +6,15 @@ import {
 } from '@cherrystudio/ai-core/provider'
 import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
 import { getProviderByModel } from '@renderer/services/AssistantService'
+import { loggerService } from '@renderer/services/LoggerService'
 import type { Model, Provider } from '@renderer/types'
 import { formatApiHost } from '@renderer/utils/api'
 import { cloneDeep } from 'lodash'
 
 import { aihubmixProviderCreator, newApiResolverCreator } from './config'
 import { getAiSdkProviderId } from './factory'
+
+const logger = loggerService.withContext('ProviderConfigProcessor')
 
 /**
  * 处理特殊provider的转换逻辑
@@ -70,6 +73,7 @@ export function providerToAiSdkConfig(actualProvider: Provider): {
   options: ProviderSettingsMap[keyof ProviderSettingsMap]
 } {
   const aiSdkProviderId = getAiSdkProviderId(actualProvider)
+  logger.debug('providerToAiSdkConfig', { aiSdkProviderId })
 
   // 构建基础配置
   const baseConfig = {

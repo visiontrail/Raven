@@ -60,11 +60,13 @@ export function getAiSdkProviderId(provider: Provider): ProviderId | 'openai-com
   }
 
   // 2. 尝试解析provider.type
-  const resolvedFromType = tryResolveProviderId(provider.type)
-  if (resolvedFromType) {
-    return resolvedFromType
+  // 会把所有类型为openai的自定义provider解析到aisdk的openaiProvider上
+  if (provider.type !== 'openai') {
+    const resolvedFromType = tryResolveProviderId(provider.type)
+    if (resolvedFromType) {
+      return resolvedFromType
+    }
   }
-
   // 3. 最后的fallback（通常会成为openai-compatible）
   return provider.id as ProviderId
 }
