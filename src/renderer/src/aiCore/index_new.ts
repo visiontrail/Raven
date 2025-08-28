@@ -4,8 +4,7 @@
  *
  * 融合方案：简化实现，专注于核心功能
  * 1. 优先使用新AI SDK
- * 2. 失败时fallback到原有实现
- * 3. 暂时保持接口兼容性
+ * 2. 暂时保持接口兼容性
  */
 
 import { createExecutor, generateImage } from '@cherrystudio/ai-core'
