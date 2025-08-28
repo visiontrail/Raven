@@ -46,7 +46,7 @@ import {
   getTextFromDropEvent,
   isSendMessageKeyPressed
 } from '@renderer/utils/input'
-import { isSupportedToolUse } from '@renderer/utils/mcp-tools'
+import { isPromptToolUse, isSupportedToolUse } from '@renderer/utils/mcp-tools'
 import { documentExts, imageExts, textExts } from '@shared/config/constant'
 import { IpcChannel } from '@shared/IpcChannel'
 import { Button, Tooltip } from 'antd'
@@ -831,7 +831,7 @@ const Inputbar: FC<Props> = ({ assistant: _assistant, setActiveTopic, topic }) =
 
   const isExpanded = expanded || !!textareaHeight
   const showThinkingButton = isSupportedThinkingTokenModel(model) || isSupportedReasoningEffortModel(model)
-  const showMcpTools = isSupportedToolUse(assistant)
+  const showMcpTools = isSupportedToolUse(assistant) || isPromptToolUse(assistant)
 
   if (isMultiSelectMode) {
     return null
