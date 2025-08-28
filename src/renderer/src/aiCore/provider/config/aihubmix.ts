@@ -38,6 +38,7 @@ const AIHUBMIX_RULES: ModelRule[] = [
     provider: (provider: Provider) => {
       return extraProviderConfig({
         ...provider,
+        type: 'gemini',
         apiHost: 'https://aihubmix.com/gemini'
       })
     }
