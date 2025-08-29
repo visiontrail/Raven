@@ -32,6 +32,13 @@ import type { StreamTextParams } from './types'
 
 const logger = loggerService.withContext('ModernAiProvider')
 
+export type ModernAiProviderConfig = AiSdkMiddlewareConfig & {
+  assistant: Assistant
+  // topicId for tracing
+  topicId?: string
+  callType: string
+}
+
 export default class ModernAiProvider {
   private legacyProvider: LegacyAiProvider
   private config: ReturnType<typeof providerToAiSdkConfig>
@@ -49,16 +56,7 @@ export default class ModernAiProvider {
     return this.actualProvider
   }
 
-  public async completions(
-    modelId: string,
-    params: StreamTextParams,
-    config: AiSdkMiddlewareConfig & {
-      assistant: Assistant
-      // topicId for tracing
-      topicId?: string
-      callType: string
-    }
-  ) {
+  public async completions(modelId: string, params: StreamTextParams, config: ModernAiProviderConfig) {
     // 准备特殊配置
     await prepareSpecialProviderConfig(this.actualProvider, this.config)
 
@@ -78,12 +76,7 @@ export default class ModernAiProvider {
   private async _completions(
     modelId: string,
     params: StreamTextParams,
-    config: AiSdkMiddlewareConfig & {
-      assistant: Assistant
-      // topicId for tracing
-      topicId?: string
-      callType: string
-    }
+    config: ModernAiProviderConfig
   ): Promise<CompletionsResult> {
     // 初始化 provider 到全局管理器
     try {
@@ -114,12 +107,7 @@ export default class ModernAiProvider {
   private async _completionsForTrace(
     modelId: string,
     params: StreamTextParams,
-    config: AiSdkMiddlewareConfig & {
-      assistant: Assistant
-      // topicId for tracing
-      topicId: string
-      callType: string
-    }
+    config: ModernAiProviderConfig & { topicId: string }
   ): Promise<CompletionsResult> {
     const traceName = `${this.actualProvider.name}.${modelId}.${config.callType}`
     const traceParams: StartSpanParams = {
@@ -202,11 +190,7 @@ export default class ModernAiProvider {
   private async modernCompletions(
     modelId: string,
     params: StreamTextParams,
-    config: AiSdkMiddlewareConfig & {
-      assistant: Assistant
-      topicId?: string
-      callType: string
-    }
+    config: ModernAiProviderConfig
   ): Promise<CompletionsResult> {
     logger.info('Starting modernCompletions', {
       modelId,
@@ -335,12 +319,7 @@ export default class ModernAiProvider {
   private async modernImageGeneration(
     modelId: string,
     params: StreamTextParams,
-    config: AiSdkMiddlewareConfig & {
-      assistant: Assistant
-      // topicId for tracing
-      topicId?: string
-      callType: string
-    }
+    config: ModernAiProviderConfig
   ): Promise<CompletionsResult> {
     const { onChunk } = config
 
