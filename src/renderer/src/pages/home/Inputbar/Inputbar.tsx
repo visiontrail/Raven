@@ -900,7 +900,7 @@ const Inputbar: FC<Props> = ({ assistant: _assistant, setActiveTopic, topic }) =
               extensions={supportedExts}
               setFiles={setFiles}
               showThinkingButton={showThinkingButton}
-              showKnowledgeIcon={showKnowledgeIcon}
+              showKnowledgeIcon={showKnowledgeIcon && showMcpTools}
               showMcpTools={showMcpTools}
               selectedKnowledgeBases={selectedKnowledgeBases}
               handleKnowledgeBaseSelect={handleKnowledgeBaseSelect}
