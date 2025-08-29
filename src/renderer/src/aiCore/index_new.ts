@@ -62,7 +62,7 @@ export default class ModernAiProvider {
     // 准备特殊配置
     await prepareSpecialProviderConfig(this.actualProvider, this.config)
 
-    console.log('this.config', this.config)
+    logger.debug('this.config', this.config)
     if (config.topicId && getEnableDeveloperMode()) {
       // TypeScript类型窄化：确保topicId是string类型
       const traceConfig = {
