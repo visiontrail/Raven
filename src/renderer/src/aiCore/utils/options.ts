@@ -1,3 +1,4 @@
+import { baseProviderIdSchema, customProviderIdSchema } from '@cherrystudio/ai-core/provider'
 import { isOpenAIModel, isSupportFlexServiceTierModel } from '@renderer/config/models'
 import { isSupportServiceTierProvider } from '@renderer/config/providers'
 import {
@@ -67,41 +68,66 @@ export function buildProviderOptions(
     enableGenerateImage: boolean
   }
 ): Record<string, any> {
-  const providerId = getAiSdkProviderId(actualProvider)
+  const rawProviderId = getAiSdkProviderId(actualProvider)
   // 构建 provider 特定的选项
   let providerSpecificOptions: Record<string, any> = {}
   const serviceTierSetting = getServiceTier(model, actualProvider)
   providerSpecificOptions.serviceTier = serviceTierSetting
   // 根据 provider 类型分离构建逻辑
-  switch (providerId) {
-    case 'openai':
-    case 'azure':
-      providerSpecificOptions = {
-        ...buildOpenAIProviderOptions(assistant, model, capabilities, actualProvider),
-        serviceTier: serviceTierSetting
+  const { data: baseProviderId, success } = baseProviderIdSchema.safeParse(rawProviderId)
+  if (success) {
+    // 应该覆盖所有类型
+    switch (baseProviderId) {
+      case 'openai':
+      case 'azure':
+        providerSpecificOptions = {
+          ...buildOpenAIProviderOptions(assistant, model, capabilities, actualProvider),
+          serviceTier: serviceTierSetting
+        }
+        break
+
+      case 'anthropic':
+        providerSpecificOptions = buildAnthropicProviderOptions(assistant, model, capabilities)
+        break
+
+      case 'google':
+        providerSpecificOptions = buildGeminiProviderOptions(assistant, model, capabilities)
+        break
+
+      case 'xai':
+        providerSpecificOptions = buildXAIProviderOptions(assistant, model, capabilities)
+        break
+      case 'deepseek':
+      case 'openai-compatible':
+      case 'openai-responses':
+        // 对于其他 provider，使用通用的构建逻辑
+        providerSpecificOptions = {
+          ...buildGenericProviderOptions(assistant, model, capabilities),
+          serviceTier: serviceTierSetting
+        }
+        break
+      default:
+        throw new Error(`Unsupported base provider ${baseProviderId}`)
+    }
+  } else {
+    // 处理自定义 provider
+    const { data: providerId, success, error } = customProviderIdSchema.safeParse(rawProviderId)
+    if (success) {
+      switch (providerId) {
+        // 非 base provider 的单独处理逻辑
+        case 'google-vertex':
+          providerSpecificOptions = buildGeminiProviderOptions(assistant, model, capabilities)
+          break
+        default:
+          // 对于其他 provider，使用通用的构建逻辑
+          providerSpecificOptions = {
+            ...buildGenericProviderOptions(assistant, model, capabilities),
+            serviceTier: serviceTierSetting
+          }
       }
-      break
-
-    case 'anthropic':
-      providerSpecificOptions = buildAnthropicProviderOptions(assistant, model, capabilities)
-      break
-
-    case 'google':
-    case 'google-vertex':
-      providerSpecificOptions = buildGeminiProviderOptions(assistant, model, capabilities)
-      break
-
-    case 'xai':
-      providerSpecificOptions = buildXAIProviderOptions(assistant, model, capabilities)
-      break
-
-    default:
-      // 对于其他 provider，使用通用的构建逻辑
-      providerSpecificOptions = {
-        ...buildGenericProviderOptions(assistant, model, capabilities),
-        serviceTier: serviceTierSetting
-      }
-      break
+    } else {
+      throw error
+    }
   }
 
   // 合并自定义参数到 provider 特定的选项中
@@ -112,7 +138,7 @@ export function buildProviderOptions(
 
   // 返回 AI Core SDK 要求的格式：{ 'providerId': providerOptions }
   return {
-    [providerId]: providerSpecificOptions
+    [rawProviderId]: providerSpecificOptions
   }
 }
 
