@@ -365,7 +365,7 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
               getMessageContent(userMessage),
               topicId
             )
-            params.toolChoice = { type: 'tool', toolName: 'builtin_knowledge_search' }
+            // params.toolChoice = { type: 'tool', toolName: 'builtin_knowledge_search' }
           } else {
             // on 模式：根据意图识别结果决定是否添加工具
             const needsKnowledgeSearch =
