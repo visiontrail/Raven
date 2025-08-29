@@ -15,13 +15,15 @@ import { Assistant, MCPServer, MCPTool, Model, Provider } from '@renderer/types'
 import { type Chunk, ChunkType } from '@renderer/types/chunk'
 import { Message } from '@renderer/types/newMessage'
 import { SdkModel } from '@renderer/types/sdk'
-import { removeSpecialCharactersForTopicName } from '@renderer/utils'
+import { removeSpecialCharactersForTopicName, uuid } from '@renderer/utils'
+import { abortCompletion, readyToAbort } from '@renderer/utils/abortController'
+import { isAbortError } from '@renderer/utils/error'
 import { isPromptToolUse, isSupportedToolUse } from '@renderer/utils/mcp-tools'
 import { findFileBlocks, getMainTextContent } from '@renderer/utils/messageUtils/find'
 import { containsSupportedVariables, replacePromptVariables } from '@renderer/utils/prompt'
 import { isEmpty, takeRight } from 'lodash'
 
-import AiProviderNew from '../aiCore/index_new'
+import AiProviderNew, { ModernAiProviderConfig } from '../aiCore/index_new'
 import {
   // getAssistantProvider,
   // getAssistantSettings,
@@ -418,6 +420,7 @@ export async function checkApi(provider: Provider, model: Model, timeout = 15000
 
   const assistant = getDefaultAssistant()
   assistant.model = model
+  assistant.prompt = 'test' // 避免部分 provider 空系统提示词会报错
   try {
     if (isEmbeddingModel(model)) {
       // race 超时 15s
@@ -425,32 +428,41 @@ export async function checkApi(provider: Provider, model: Model, timeout = 15000
       const timerPromise = new Promise((_, reject) => setTimeout(() => reject('Timeout'), timeout))
       await Promise.race([ai.getEmbeddingDimensions(model), timerPromise])
     } else {
+      const abortId = uuid()
+      const signal = readyToAbort(abortId)
+      let chunkError
       const params: StreamTextParams = {
         system: assistant.prompt,
-        prompt: 'hi'
+        prompt: 'hi',
+        abortSignal: signal
       }
-      const middlewareConfig: AiSdkMiddlewareConfig = {
-        streamOutput: false,
+      const config: ModernAiProviderConfig = {
+        streamOutput: true,
         enableReasoning: false,
         isSupportedToolUse: false,
         isImageGenerationEndpoint: false,
         enableWebSearch: false,
         enableGenerateImage: false,
-        isPromptToolUse: false
+        isPromptToolUse: false,
+        assistant,
+        callType: 'check',
+        onChunk: (chunk: Chunk) => {
+          if (chunk.type === ChunkType.ERROR) {
+            chunkError = chunk.error
+          } else {
+            abortCompletion(abortId)
+          }
+        }
       }
 
       // Try streaming check first
-      const result = await ai.completions(model.id, params, {
-        ...middlewareConfig,
-        assistant,
-        callType: 'check'
-      })
-      if (!result.getText()) {
-        throw new Error('No response received')
+      try {
+        await ai.completions(model.id, params, config)
+      } catch (e) {
+        if (!isAbortError(e) && !isAbortError(chunkError)) {
+          throw e
+        }
       }
-      // if (streamError) {
-      //   throw streamError
-      // }
     }
   } catch (error: any) {
     // 失败回退legacy
