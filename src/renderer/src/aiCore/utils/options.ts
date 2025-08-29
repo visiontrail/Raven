@@ -1,16 +1,19 @@
 import { baseProviderIdSchema, customProviderIdSchema } from '@cherrystudio/ai-core/provider'
-import { isOpenAIModel, isSupportFlexServiceTierModel } from '@renderer/config/models'
+import { isOpenAIModel, isQwenMTModel, isSupportFlexServiceTierModel } from '@renderer/config/models'
 import { isSupportServiceTierProvider } from '@renderer/config/providers'
+import { mapLanguageToQwenMTModel } from '@renderer/config/translate'
 import {
   Assistant,
   GroqServiceTiers,
   isGroqServiceTier,
   isOpenAIServiceTier,
+  isTranslateAssistant,
   Model,
   OpenAIServiceTiers,
   Provider,
   SystemProviderIds
 } from '@renderer/types'
+import { t } from 'i18next'
 
 import { getAiSdkProviderId } from '../provider/factory'
 import { buildGeminiGenerateImageParams } from './image'
@@ -277,6 +280,23 @@ function buildGenericProviderOptions(
     providerOptions = {
       ...providerOptions,
       ...webSearchParams
+    }
+  }
+
+  // 特殊处理 Qwen MT
+  if (isQwenMTModel(model)) {
+    if (isTranslateAssistant(assistant)) {
+      const targetLanguage = assistant.targetLanguage
+      const translationOptions = {
+        source_lang: 'auto',
+        target_lang: mapLanguageToQwenMTModel(targetLanguage)
+      } as const
+      if (!translationOptions.target_lang) {
+        throw new Error(t('translate.error.not_supported', { language: targetLanguage.value }))
+      }
+      providerOptions.translation_options = translationOptions
+    } else {
+      throw new Error(t('translate.error.chat_qwen_mt'))
     }
   }
 
