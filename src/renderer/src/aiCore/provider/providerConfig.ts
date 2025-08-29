@@ -85,7 +85,7 @@ export function providerToAiSdkConfig(
     baseURL: actualProvider.apiHost,
     apiKey: actualProvider.apiKey
   }
-  // 处理OpenAI模式（简化逻辑）
+  // 处理OpenAI模式
   const extraOptions: any = {}
   if (actualProvider.type === 'openai-response' && !isOpenAIChatCompletionOnlyModel(model)) {
     extraOptions.mode = 'responses'
