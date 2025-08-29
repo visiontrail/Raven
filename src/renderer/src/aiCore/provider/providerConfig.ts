@@ -8,6 +8,7 @@ import { isOpenAIChatCompletionOnlyModel } from '@renderer/config/models'
 import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
 import { getProviderByModel } from '@renderer/services/AssistantService'
 import { loggerService } from '@renderer/services/LoggerService'
+import store from '@renderer/store'
 import type { Model, Provider } from '@renderer/types'
 import { formatApiHost } from '@renderer/utils/api'
 import { cloneDeep } from 'lodash'
@@ -97,6 +98,15 @@ export function providerToAiSdkConfig(
     extraOptions.headers = actualProvider.extra_headers
   }
 
+  // copilot
+  if (actualProvider.id === 'copilot') {
+    extraOptions.headers = {
+      ...extraOptions.extra_headers,
+      'editor-version': 'vscode/1.97.2',
+      'copilot-vision-request': 'true'
+    }
+  }
+
   // 如果AI SDK支持该provider，使用原生配置
   if (hasProviderConfig(aiSdkProviderId) && aiSdkProviderId !== 'openai-compatible') {
     const options = ProviderConfigFactory.fromProvider(aiSdkProviderId, baseConfig, extraOptions)
@@ -133,4 +143,19 @@ export function isModernSdkSupported(provider: Provider): boolean {
 
   // 如果映射到了支持的provider，则支持现代SDK
   return hasProviderConfig(aiSdkProviderId)
+}
+
+/**
+ * 准备特殊provider的配置,主要用于异步处理的配置
+ */
+export async function prepareSpecialProviderConfig(
+  provider: Provider,
+  config: ReturnType<typeof providerToAiSdkConfig>
+) {
+  if (provider.id === 'copilot') {
+    const defaultHeaders = store.getState().copilot.defaultHeaders
+    const { token } = await window.api.copilot.getToken(defaultHeaders)
+    config.options.apiKey = token
+  }
+  return config
 }

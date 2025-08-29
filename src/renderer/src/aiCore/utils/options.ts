@@ -68,7 +68,6 @@ export function buildProviderOptions(
   }
 ): Record<string, any> {
   const providerId = getAiSdkProviderId(actualProvider)
-  const serviceTierSetting = getServiceTier(model, actualProvider)
   // 构建 provider 特定的选项
   let providerSpecificOptions: Record<string, any> = {}
 
@@ -77,7 +76,7 @@ export function buildProviderOptions(
     case 'openai':
     case 'azure':
       providerSpecificOptions = {
-        ...buildOpenAIProviderOptions(assistant, model, capabilities)
+        ...buildOpenAIProviderOptions(assistant, model, capabilities, actualProvider)
       }
       break
 
@@ -103,7 +102,6 @@ export function buildProviderOptions(
   // 合并自定义参数到 provider 特定的选项中
   providerSpecificOptions = {
     ...providerSpecificOptions,
-    serviceTier: serviceTierSetting,
     ...getCustomParameters(assistant)
   }
 
@@ -123,17 +121,19 @@ function buildOpenAIProviderOptions(
     enableReasoning: boolean
     enableWebSearch: boolean
     enableGenerateImage: boolean
-  }
+  },
+  actualProvider: Provider
 ): Record<string, any> {
   const { enableReasoning } = capabilities
   let providerOptions: Record<string, any> = {}
-
+  const serviceTierSetting = getServiceTier(model, actualProvider)
   // OpenAI 推理参数
   if (enableReasoning) {
     const reasoningParams = getOpenAIReasoningParams(assistant, model)
     providerOptions = {
       ...providerOptions,
-      ...reasoningParams
+      ...reasoningParams,
+      serviceTier: serviceTierSetting
     }
   }
 

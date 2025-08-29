@@ -22,7 +22,12 @@ import LegacyAiProvider from './legacy/index'
 import { CompletionsResult } from './legacy/middleware/schemas'
 import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/AiSdkMiddlewareBuilder'
 import { buildPlugins } from './plugins/PluginBuilder'
-import { getActualProvider, isModernSdkSupported, providerToAiSdkConfig } from './provider/ProviderConfigProcessor'
+import {
+  getActualProvider,
+  isModernSdkSupported,
+  prepareSpecialProviderConfig,
+  providerToAiSdkConfig
+} from './provider/providerConfig'
 import type { StreamTextParams } from './types'
 
 const logger = loggerService.withContext('ModernAiProvider')
@@ -54,6 +59,10 @@ export default class ModernAiProvider {
       callType: string
     }
   ) {
+    // 准备特殊配置
+    await prepareSpecialProviderConfig(this.actualProvider, this.config)
+
+    console.log('this.config', this.config)
     if (config.topicId && getEnableDeveloperMode()) {
       // TypeScript类型窄化：确保topicId是string类型
       const traceConfig = {

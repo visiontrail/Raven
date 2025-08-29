@@ -2,7 +2,7 @@ import { hasProviderConfigByAlias, type ProviderId, resolveProviderConfigId } fr
 import { loggerService } from '@logger'
 import { Provider } from '@renderer/types'
 
-import { initializeNewProviders } from './providerConfigs'
+import { initializeNewProviders } from './providerInitialization'
 
 const logger = loggerService.withContext('ProviderFactory')
 
