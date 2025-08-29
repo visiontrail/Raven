@@ -1,4 +1,15 @@
-import { Assistant, Model, Provider } from '@renderer/types'
+import { isOpenAIModel, isSupportFlexServiceTierModel } from '@renderer/config/models'
+import { isSupportServiceTierProvider } from '@renderer/config/providers'
+import {
+  Assistant,
+  GroqServiceTiers,
+  isGroqServiceTier,
+  isOpenAIServiceTier,
+  Model,
+  OpenAIServiceTiers,
+  Provider,
+  SystemProviderIds
+} from '@renderer/types'
 
 import { getAiSdkProviderId } from '../provider/factory'
 import { buildGeminiGenerateImageParams } from './image'
@@ -11,6 +22,35 @@ import {
   getXAIReasoningParams
 } from './reasoning'
 import { getWebSearchParams } from './websearch'
+
+// copy from BaseApiClient.ts
+const getServiceTier = (model: Model, provider: Provider) => {
+  const serviceTierSetting = provider.serviceTier
+
+  if (!isSupportServiceTierProvider(provider) || !isOpenAIModel(model) || !serviceTierSetting) {
+    return undefined
+  }
+
+  // 处理不同供应商需要 fallback 到默认值的情况
+  if (provider.id === SystemProviderIds.groq) {
+    if (
+      !isGroqServiceTier(serviceTierSetting) ||
+      (serviceTierSetting === GroqServiceTiers.flex && !isSupportFlexServiceTierModel(model))
+    ) {
+      return undefined
+    }
+  } else {
+    // 其他 OpenAI 供应商，假设他们的服务层级设置和 OpenAI 完全相同
+    if (
+      !isOpenAIServiceTier(serviceTierSetting) ||
+      (serviceTierSetting === OpenAIServiceTiers.flex && !isSupportFlexServiceTierModel(model))
+    ) {
+      return undefined
+    }
+  }
+
+  return serviceTierSetting
+}
 
 /**
  * 构建 AI SDK 的 providerOptions
@@ -28,6 +68,7 @@ export function buildProviderOptions(
   }
 ): Record<string, any> {
   const providerId = getAiSdkProviderId(actualProvider)
+  const serviceTierSetting = getServiceTier(model, actualProvider)
   // 构建 provider 特定的选项
   let providerSpecificOptions: Record<string, any> = {}
 
@@ -62,6 +103,7 @@ export function buildProviderOptions(
   // 合并自定义参数到 provider 特定的选项中
   providerSpecificOptions = {
     ...providerSpecificOptions,
+    serviceTier: serviceTierSetting,
     ...getCustomParameters(assistant)
   }
 

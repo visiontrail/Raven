@@ -37,7 +37,7 @@ export default class ModernAiProvider {
     this.legacyProvider = new LegacyAiProvider(this.actualProvider)
 
     // 只保存配置，不预先创建executor
-    this.config = providerToAiSdkConfig(this.actualProvider)
+    this.config = providerToAiSdkConfig(this.actualProvider, model)
   }
 
   public getActualProvider() {
