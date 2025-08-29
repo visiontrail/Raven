@@ -181,6 +181,7 @@ ${t('error.stack')}: ${error.stack || 'N/A'}
 
   return (
     <Modal
+      centered
       title={t('error.detail')}
       open={open}
       onCancel={onClose}
