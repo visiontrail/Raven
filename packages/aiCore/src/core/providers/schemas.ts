@@ -12,6 +12,39 @@ import { createXai } from '@ai-sdk/xai'
 import * as z from 'zod'
 
 /**
+ * 基础 Provider IDs
+ */
+export const baseProviderIds = [
+  'openai',
+  'openai-responses',
+  'openai-compatible',
+  'anthropic',
+  'google',
+  'xai',
+  'azure',
+  'deepseek'
+] as const
+
+/**
+ * 基础 Provider ID Schema
+ */
+export const baseProviderIdSchema = z.enum(baseProviderIds)
+
+/**
+ * 基础 Provider ID
+ */
+export type BaseProviderId = z.infer<typeof baseProviderIdSchema>
+
+export const baseProviderSchema = z.object({
+  id: baseProviderIdSchema,
+  name: z.string(),
+  creator: z.function().args(z.any()).returns(z.any()),
+  supportsImageGeneration: z.boolean()
+})
+
+export type BaseProvider = z.infer<typeof baseProviderSchema>
+
+/**
  * 基础 Providers 定义
  * 作为唯一数据源，避免重复维护
  */
@@ -64,18 +97,7 @@ export const baseProviders = [
     creator: createDeepSeek,
     supportsImageGeneration: false
   }
-] as const
-
-/**
- * 基础 Provider IDs
- * 从 baseProviders 动态生成
- */
-export const baseProviderIds = baseProviders.map((p) => p.id) as unknown as readonly [string, ...string[]]
-
-/**
- * 基础 Provider ID Schema
- */
-export const baseProviderIdSchema = z.enum(baseProviderIds)
+] as const satisfies BaseProvider[]
 
 /**
  * 用户自定义 Provider ID Schema
@@ -117,7 +139,6 @@ export const providerConfigSchema = z
  * Provider ID 类型 - 基于 zod schema 推导
  */
 export type ProviderId = z.infer<typeof providerIdSchema>
-export type BaseProviderId = z.infer<typeof baseProviderIdSchema>
 export type CustomProviderId = z.infer<typeof customProviderIdSchema>
 
 /**
