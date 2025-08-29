@@ -95,7 +95,9 @@ type MessagesParams = BaseParams & {
 
 type PromptParams = BaseParams & {
   messages?: never
-  prompt: StreamTextParams['prompt']
+  // prompt: StreamTextParams['prompt']
+  // see https://github.com/vercel/ai/issues/8363
+  prompt: string
 }
 
 export type FetchChatCompletionParams = MessagesParams | PromptParams
@@ -125,6 +127,14 @@ export async function fetchChatCompletion({
 
   if (isSupportedToolUse(assistant)) {
     mcpTools.push(...(await fetchMcpTools(assistant)))
+  }
+  if (prompt) {
+    messages = [
+      {
+        role: 'user',
+        content: prompt
+      }
+    ]
   }
 
   // 使用 transformParameters 模块构建参数
