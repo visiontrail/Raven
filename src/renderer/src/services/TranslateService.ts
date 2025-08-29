@@ -3,6 +3,7 @@ import { db } from '@renderer/databases'
 import { CustomTranslateLanguage, TranslateHistory, TranslateLanguage, TranslateLanguageCode } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
 import { uuid } from '@renderer/utils'
+import { readyToAbort } from '@renderer/utils/abortController'
 import { formatErrorMessage, isAbortError } from '@renderer/utils/error'
 import { t } from 'i18next'
 
@@ -70,14 +71,14 @@ const logger = loggerService.withContext('TranslateService')
 export const translateText = async (
   text: string,
   targetLanguage: TranslateLanguage,
-  onResponse?: (text: string, isComplete: boolean) => void
-  // abortKey?: string
+  onResponse?: (text: string, isComplete: boolean) => void,
+  abortKey?: string
 ) => {
+  let abortError
   try {
     const assistant = getDefaultTranslateAssistant(targetLanguage, text)
 
-    const controller = new AbortController()
-    const signal = controller.signal
+    const signal = abortKey ? readyToAbort(abortKey) : undefined
 
     let translatedText = ''
     let completed = false
@@ -86,6 +87,11 @@ export const translateText = async (
         translatedText = chunk.text
       } else if (chunk.type === ChunkType.TEXT_COMPLETE) {
         completed = true
+      } else if (chunk.type === ChunkType.ERROR) {
+        if (isAbortError(chunk.error)) {
+          abortError = chunk.error
+          completed = true
+        }
       }
       onResponse?.(translatedText, completed)
     }
@@ -95,7 +101,7 @@ export const translateText = async (
     } satisfies FetchChatCompletionOptions
 
     await fetchChatCompletion({
-      prompt: 'translate it',
+      prompt: assistant.content,
       assistant,
       options,
       onChunkReceived: onChunk
@@ -111,11 +117,15 @@ export const translateText = async (
   } catch (e) {
     if (isAbortError(e)) {
       window.message.info(t('translate.info.aborted'))
+      throw e
+    } else if (isAbortError(abortError)) {
+      window.message.info(t('translate.info.aborted'))
+      throw abortError
     } else {
       logger.error('Failed to translate', e as Error)
       window.message.error(t('translate.error.failed' + ': ' + formatErrorMessage(e)))
+      throw e
     }
-    throw e
   }
 }
 

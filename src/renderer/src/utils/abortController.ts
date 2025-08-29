@@ -68,6 +68,6 @@ export function createAbortPromise<T>(signal: AbortSignal, finallyPromise: Promi
  */
 export function readyToAbort(key: string) {
   const controller = new AbortController()
-  addAbortController(key, controller.abort)
+  addAbortController(key, () => controller.abort())
   return controller.signal
 }
