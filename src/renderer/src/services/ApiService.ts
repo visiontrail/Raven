@@ -83,7 +83,7 @@ export type FetchChatCompletionOptions = {
 
 type BaseParams = {
   assistant: Assistant
-  options: FetchChatCompletionOptions
+  options?: FetchChatCompletionOptions
   onChunkReceived: (chunk: Chunk) => void
   topicId?: string // 添加 topicId 参数
 }
