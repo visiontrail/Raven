@@ -20,6 +20,7 @@ import {
   isSupportedThinkingTokenHunyuanModel,
   isSupportedThinkingTokenModel,
   isSupportedThinkingTokenQwenModel,
+  isSupportedThinkingTokenZhipuModel,
   MODEL_SUPPORTED_REASONING_EFFORT
 } from '@renderer/config/models'
 import { isSupportEnableThinkingProvider } from '@renderer/config/providers'
@@ -88,7 +89,8 @@ export function getReasoningEffort(assistant: Assistant, model: Model): Reasonin
       return {}
     }
 
-    if (isSupportedThinkingTokenDoubaoModel(model)) {
+    // use thinking, doubao, zhipu, etc.
+    if (isSupportedThinkingTokenDoubaoModel(model) || isSupportedThinkingTokenZhipuModel(model)) {
       return { thinking: { type: 'disabled' } }
     }
 
@@ -254,7 +256,7 @@ export function getReasoningEffort(assistant: Assistant, model: Model): Reasonin
     }
   }
 
-  // Doubao models, use thinking
+  // Use thinking, doubao, zhipu, etc.
   if (isSupportedThinkingTokenDoubaoModel(model)) {
     if (assistant.settings?.reasoning_effort === 'high') {
       return {
@@ -263,6 +265,9 @@ export function getReasoningEffort(assistant: Assistant, model: Model): Reasonin
         }
       }
     }
+  }
+  if (isSupportedThinkingTokenZhipuModel(model)) {
+    return { thinking: { type: 'enabled' } }
   }
 
   // Default case: no special thinking settings
