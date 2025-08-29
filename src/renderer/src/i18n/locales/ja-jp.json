@@ -854,6 +854,7 @@
       "title": "レンダリングエラー"
     },
     "requestBody": "要求されたコンテンツ",
+    "requestUrl": "リクエストパス",
     "stack": "スタック情報",
     "status": "ステータスコード",
     "unknown": "不明なエラー",

@@ -854,6 +854,7 @@
       "title": "渲染錯誤"
     },
     "requestBody": "請求內容",
+    "requestUrl": "請求路徑",
     "stack": "堆棧信息",
     "status": "狀態碼",
     "unknown": "未知錯誤",
