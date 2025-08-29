@@ -77,7 +77,7 @@ export function buildProviderOptions(
     case 'openai':
     case 'azure':
       providerSpecificOptions = {
-        ...buildOpenAIProviderOptions(assistant, model, capabilities),
+        ...buildOpenAIProviderOptions(assistant, model, capabilities, actualProvider),
         serviceTier: serviceTierSetting
       }
       break
@@ -126,7 +126,8 @@ function buildOpenAIProviderOptions(
     enableReasoning: boolean
     enableWebSearch: boolean
     enableGenerateImage: boolean
-  }
+  },
+  actualProvider: Provider
 ): Record<string, any> {
   const { enableReasoning } = capabilities
   let providerOptions: Record<string, any> = {}
@@ -137,6 +138,11 @@ function buildOpenAIProviderOptions(
       ...providerOptions,
       ...reasoningParams
     }
+  }
+
+  if (actualProvider.id === 'azure') {
+    providerOptions.apiVersion = actualProvider.apiVersion
+    providerOptions.useDeploymentBasedUrls = true
   }
 
   return providerOptions
