@@ -4,8 +4,8 @@
  */
 
 import { loggerService } from '@logger'
-import { DEFAULT_MAX_TOKENS } from '@renderer/config/constant'
 import {
+  isClaudeReasoningModel,
   isGenerateImageModel,
   isNotSupportTemperatureAndTopP,
   isOpenRouterBuiltInWebSearchModel,
@@ -44,15 +44,29 @@ const logger = loggerService.withContext('transformParameters')
 /**
  * 获取温度参数
  */
-export function getTemperature(assistant: Assistant, model: Model): number | undefined {
-  return isNotSupportTemperatureAndTopP(model) ? undefined : assistant.settings?.temperature
+function getTemperature(assistant: Assistant, model: Model): number | undefined {
+  if (assistant.settings?.reasoning_effort && isClaudeReasoningModel(model)) {
+    return undefined
+  }
+  if (isNotSupportTemperatureAndTopP(model)) {
+    return undefined
+  }
+  const assistantSettings = getAssistantSettings(assistant)
+  return assistantSettings?.enableTemperature ? assistantSettings?.temperature : undefined
 }
 
 /**
  * 获取 TopP 参数
  */
-export function getTopP(assistant: Assistant, model: Model): number | undefined {
-  return isNotSupportTemperatureAndTopP(model) ? undefined : assistant.settings?.topP
+function getTopP(assistant: Assistant, model: Model): number | undefined {
+  if (assistant.settings?.reasoning_effort && isClaudeReasoningModel(model)) {
+    return undefined
+  }
+  if (isNotSupportTemperatureAndTopP(model)) {
+    return undefined
+  }
+  const assistantSettings = getAssistantSettings(assistant)
+  return assistantSettings?.enableTopP ? assistantSettings?.topP : undefined
 }
 
 /**
@@ -360,7 +374,7 @@ export async function buildStreamTextParams(
   // 构建基础参数
   const params: StreamTextParams = {
     messages: sdkMessages,
-    maxOutputTokens: maxTokens || DEFAULT_MAX_TOKENS,
+    maxOutputTokens: maxTokens,
     temperature: getTemperature(assistant, model),
     topP: getTopP(assistant, model),
     abortSignal: options.requestOptions?.signal,
@@ -372,7 +386,7 @@ export async function buildStreamTextParams(
   if (assistant.prompt) {
     params.system = assistant.prompt
   }
-
+  logger.debug('params', params)
   return {
     params,
     modelId: model.id,

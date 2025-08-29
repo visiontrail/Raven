@@ -7,8 +7,7 @@ import { CompletionsParams } from '@renderer/aiCore/legacy/middleware/schemas'
 import { AiSdkMiddlewareConfig } from '@renderer/aiCore/middleware/AiSdkMiddlewareBuilder'
 import { buildStreamTextParams } from '@renderer/aiCore/transformParameters'
 import type { StreamTextParams } from '@renderer/aiCore/types'
-import { isDedicatedImageGenerationModel, isEmbeddingModel, isQwenMTModel } from '@renderer/config/models'
-import { LANG_DETECT_PROMPT } from '@renderer/config/prompts'
+import { isDedicatedImageGenerationModel, isEmbeddingModel } from '@renderer/config/models'
 import { getStoreSetting } from '@renderer/hooks/useSettings'
 import i18n from '@renderer/i18n'
 import store from '@renderer/store'
@@ -16,14 +15,15 @@ import { Assistant, MCPServer, MCPTool, Model, Provider } from '@renderer/types'
 import { type Chunk, ChunkType } from '@renderer/types/chunk'
 import { Message } from '@renderer/types/newMessage'
 import { SdkModel } from '@renderer/types/sdk'
-import { removeSpecialCharactersForTopicName } from '@renderer/utils'
+import { removeSpecialCharactersForTopicName, uuid } from '@renderer/utils'
+import { abortCompletion, readyToAbort } from '@renderer/utils/abortController'
+import { isAbortError } from '@renderer/utils/error'
 import { isPromptToolUse, isSupportedToolUse } from '@renderer/utils/mcp-tools'
 import { findFileBlocks, getMainTextContent } from '@renderer/utils/messageUtils/find'
 import { containsSupportedVariables, replacePromptVariables } from '@renderer/utils/prompt'
-import { getTranslateOptions } from '@renderer/utils/translate'
 import { isEmpty, takeRight } from 'lodash'
 
-import AiProviderNew from '../aiCore/index_new'
+import AiProviderNew, { ModernAiProviderConfig } from '../aiCore/index_new'
 import {
   // getAssistantProvider,
   // getAssistantSettings,
@@ -75,25 +75,44 @@ export async function fetchMcpTools(assistant: Assistant) {
   return mcpTools
 }
 
+export type FetchChatCompletionOptions = {
+  signal?: AbortSignal
+  timeout?: number
+  headers?: Record<string, string>
+}
+
+type BaseParams = {
+  assistant: Assistant
+  options?: FetchChatCompletionOptions
+  onChunkReceived: (chunk: Chunk) => void
+  topicId?: string // 添加 topicId 参数
+}
+
+type MessagesParams = BaseParams & {
+  messages: StreamTextParams['messages']
+  prompt?: never
+}
+
+type PromptParams = BaseParams & {
+  messages?: never
+  // prompt: StreamTextParams['prompt']
+  // see https://github.com/vercel/ai/issues/8363
+  prompt: string
+}
+
+export type FetchChatCompletionParams = MessagesParams | PromptParams
+
 export async function fetchChatCompletion({
   messages,
+  prompt,
   assistant,
   options,
   onChunkReceived,
   topicId
-}: {
-  messages: StreamTextParams['messages']
-  assistant: Assistant
-  options: {
-    signal?: AbortSignal
-    timeout?: number
-    headers?: Record<string, string>
-  }
-  onChunkReceived: (chunk: Chunk) => void
-  topicId?: string // 添加 topicId 参数
-}) {
+}: FetchChatCompletionParams) {
   logger.info('fetchChatCompletion called with detailed context', {
     messageCount: messages?.length || 0,
+    prompt: prompt,
     assistantId: assistant.id,
     topicId,
     hasTopicId: !!topicId,
@@ -108,6 +127,14 @@ export async function fetchChatCompletion({
 
   if (isSupportedToolUse(assistant)) {
     mcpTools.push(...(await fetchMcpTools(assistant)))
+  }
+  if (prompt) {
+    messages = [
+      {
+        role: 'user',
+        content: prompt
+      }
+    ]
   }
 
   // 使用 transformParameters 模块构建参数
@@ -143,74 +170,6 @@ export async function fetchChatCompletion({
     topicId,
     callType: 'chat'
   })
-}
-
-interface FetchLanguageDetectionProps {
-  text: string
-  onResponse?: (text: string, isComplete: boolean) => void
-}
-
-/**
- * 检测文本语言
- * @param params - 参数对象
- * @param {string} params.text - 需要检测语言的文本内容
- * @param {function} [params.onResponse] - 流式响应回调函数,用于实时获取检测结果
- * @returns {Promise<string>} 返回检测到的语言代码,如果检测失败会抛出错误
- * @throws {Error}
- */
-export async function fetchLanguageDetection({ text, onResponse }: FetchLanguageDetectionProps) {
-  const translateLanguageOptions = await getTranslateOptions()
-  const listLang = translateLanguageOptions.map((item) => item.langCode)
-  const listLangText = JSON.stringify(listLang)
-
-  const model = getQuickModel() || getDefaultModel()
-  if (!model) {
-    throw new Error(i18n.t('error.model.not_exists'))
-  }
-
-  if (isQwenMTModel(model)) {
-    logger.info('QwenMT cannot be used for language detection.')
-    if (isQwenMTModel(model)) {
-      throw new Error(i18n.t('translate.error.detect.qwen_mt'))
-    }
-  }
-
-  const provider = getProviderByModel(model)
-
-  if (!hasApiKey(provider)) {
-    throw new Error(i18n.t('error.no_api_key'))
-  }
-
-  const assistant: Assistant = getDefaultAssistant()
-
-  assistant.model = model
-  assistant.settings = {
-    temperature: 0.7
-  }
-  assistant.prompt = LANG_DETECT_PROMPT.replace('{{list_lang}}', listLangText).replace('{{input}}', text)
-
-  const isSupportedStreamOutput = () => {
-    if (!onResponse) {
-      return false
-    }
-    return true
-  }
-
-  const stream = isSupportedStreamOutput()
-
-  const params: CompletionsParams = {
-    callType: 'translate-lang-detect',
-    messages: 'follow system prompt',
-    assistant,
-    streamOutput: stream,
-    enableReasoning: false,
-    shouldThrow: true,
-    onResponse
-  }
-
-  const AI = new AiProvider(provider)
-
-  return (await AI.completions(params)).getText()
 }
 
 export async function fetchMessagesSummary({ messages, assistant }: { messages: Message[]; assistant: Assistant }) {
@@ -461,6 +420,7 @@ export async function checkApi(provider: Provider, model: Model, timeout = 15000
 
   const assistant = getDefaultAssistant()
   assistant.model = model
+  assistant.prompt = 'test' // 避免部分 provider 空系统提示词会报错
   try {
     if (isEmbeddingModel(model)) {
       // race 超时 15s
@@ -468,32 +428,41 @@ export async function checkApi(provider: Provider, model: Model, timeout = 15000
       const timerPromise = new Promise((_, reject) => setTimeout(() => reject('Timeout'), timeout))
       await Promise.race([ai.getEmbeddingDimensions(model), timerPromise])
     } else {
+      const abortId = uuid()
+      const signal = readyToAbort(abortId)
+      let chunkError
       const params: StreamTextParams = {
         system: assistant.prompt,
-        prompt: 'hi'
+        prompt: 'hi',
+        abortSignal: signal
       }
-      const middlewareConfig: AiSdkMiddlewareConfig = {
-        streamOutput: false,
+      const config: ModernAiProviderConfig = {
+        streamOutput: true,
         enableReasoning: false,
         isSupportedToolUse: false,
         isImageGenerationEndpoint: false,
         enableWebSearch: false,
         enableGenerateImage: false,
-        isPromptToolUse: false
+        isPromptToolUse: false,
+        assistant,
+        callType: 'check',
+        onChunk: (chunk: Chunk) => {
+          if (chunk.type === ChunkType.ERROR) {
+            chunkError = chunk.error
+          } else {
+            abortCompletion(abortId)
+          }
+        }
       }
 
       // Try streaming check first
-      const result = await ai.completions(model.id, params, {
-        ...middlewareConfig,
-        assistant,
-        callType: 'check'
-      })
-      if (!result.getText()) {
-        throw new Error('No response received')
+      try {
+        await ai.completions(model.id, params, config)
+      } catch (e) {
+        if (!isAbortError(e) && !isAbortError(chunkError)) {
+          throw e
+        }
       }
-      // if (streamError) {
-      //   throw streamError
-      // }
     }
   } catch (error: any) {
     // 失败回退legacy

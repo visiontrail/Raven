@@ -46,9 +46,7 @@ Call this tool to execute the search. You can optionally provide additional cont
           return {
             summary: 'No knowledge base configured for this assistant.',
             knowledgeReferences: [],
-            sources: '',
-            instructions: '',
-            rawResults: []
+            instructions: ''
           }
         }
 
@@ -69,9 +67,7 @@ Call this tool to execute the search. You can optionally provide additional cont
           return {
             summary: 'No search needed based on the query analysis.',
             knowledgeReferences: [],
-            sources: '',
-            instructions: '',
-            rawResults: []
+            instructions: ''
           }
         }
 
@@ -109,22 +105,20 @@ Call this tool to execute the search. You can optionally provide additional cont
           file: ref.file
         }))
 
-        const referenceContent = `\`\`\`json\n${JSON.stringify(knowledgeReferencesData, null, 2)}\n\`\`\``
-
+        // const referenceContent = `\`\`\`json\n${JSON.stringify(knowledgeReferencesData, null, 2)}\n\`\`\``
+        // TODO 在工具函数中添加搜索缓存机制
+        // const searchCacheKey = `${topicId}-${JSON.stringify(finalQueries)}`
+        // 可以在插件层面管理已搜索的查询，避免重复搜索
         const fullInstructions = REFERENCE_PROMPT.replace(
           '{question}',
           "Based on the knowledge references, please answer the user's question with proper citations."
-        ).replace('{references}', referenceContent)
+        ).replace('{references}', 'knowledgeReferences:')
 
         // 返回结果
         return {
           summary: `Found ${knowledgeReferencesData.length} relevant sources. Use [number] format to cite specific information.`,
           knowledgeReferences: knowledgeReferencesData,
-          // sources: citationData
-          //   .map((source) => `[${source.number}] ${source.title}\n${source.content}\nURL: ${source.url}`)
-          //   .join('\n\n'),
           instructions: fullInstructions
-          // rawResults: citationData
         }
       } catch (error) {
         // 返回空对象而不是抛出错误，避免中断对话流程
@@ -132,7 +126,6 @@ Call this tool to execute the search. You can optionally provide additional cont
           summary: `Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
           knowledgeReferences: [],
           instructions: ''
-          // rawResults: []
         }
       }
     }

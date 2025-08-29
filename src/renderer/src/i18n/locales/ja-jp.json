@@ -240,6 +240,7 @@
       "compressing": "圧縮中...",
       "copying_files": "ファイルコピー中... {{progress}}%",
       "preparing": "バックアップ準備中...",
+      "preparing_compression": "圧縮準備中...",
       "title": "バックアップ進捗",
       "writing_data": "データ書き込み中..."
     },
@@ -853,6 +854,7 @@
       "title": "レンダリングエラー"
     },
     "requestBody": "要求されたコンテンツ",
+    "requestUrl": "リクエストパス",
     "stack": "スタック情報",
     "status": "ステータスコード",
     "unknown": "不明なエラー",
@@ -874,6 +876,8 @@
   "files": {
     "actions": "操作",
     "all": "すべてのファイル",
+    "batch_delete": "一括削除",
+    "batch_operation": "すべて選択",
     "count": "ファイル",
     "created_at": "作成日",
     "delete": {
@@ -922,6 +926,11 @@
     "title": "トピック検索"
   },
   "html_artifacts": {
+    "capture": {
+      "label": "ページをキャプチャ",
+      "to_clipboard": "クリップボードにコピー",
+      "to_file": "画像として保存"
+    },
     "code": "コード",
     "empty_preview": "表示するコンテンツがありません",
     "generating": "生成中",
@@ -1593,6 +1602,9 @@
     "tip": "応答が成功した場合、30秒を超えるメッセージのみに通知を行います"
   },
   "ocr": {
+    "builtin": {
+      "system": "システム OCR"
+    },
     "error": {
       "provider": {
         "cannot_remove_builtin": "組み込みプロバイダーは削除できません",
@@ -3537,17 +3549,30 @@
     "title": "設定",
     "tool": {
       "ocr": {
+        "common": {
+          "langs": "サポートされている言語"
+        },
+        "error": {
+          "not_system": "システムOCRはWindowsとMacOSのみをサポートしています"
+        },
         "image": {
           "error": {
             "provider_not_found": "該提供者は存在しません"
           },
-          "tesseract": {
-            "langs": "サポートされている言語",
-            "temp_tooltip": "現在のところ、中国語と英語のみをサポートしています"
+          "system": {
+            "no_need_configure": "MacOS は設定不要"
           },
           "title": "画像"
         },
         "image_provider": "OCRサービスプロバイダー",
+        "system": {
+          "win": {
+            "langs_tooltip": "Windows が提供するサービスに依存しており、関連する言語をサポートするには、システムで言語パックをダウンロードする必要があります。"
+          }
+        },
+        "tesseract": {
+          "langs_tooltip": "ドキュメントを読んで、どのカスタム言語がサポートされているかを確認してください。"
+        },
         "title": "OCRサービス"
       },
       "preprocess": {
@@ -3775,6 +3800,7 @@
     },
     "empty": "翻訳内容が空です",
     "error": {
+      "chat_qwen_mt": "Qwen MT モデルは対話で使用できません。翻訳ページに移動してください",
       "detect": {
         "qwen_mt": "QwenMTモデルは言語検出に使用できません",
         "unknown": "検出された言語は不明です",
@@ -3793,6 +3819,7 @@
     "files": {
       "drag_text": "ここにドラッグ＆ドロップしてください",
       "error": {
+        "check_type": "ファイルタイプの確認中にエラーが発生しました",
         "multiple": "複数のファイルのアップロードは許可されていません",
         "too_large": "ファイルが大きすぎます",
         "unknown": "ファイルの内容を読み取るのに失敗しました"
@@ -3817,7 +3844,7 @@
       "aborted": "翻訳中止"
     },
     "input": {
-      "placeholder": "翻訳するテキストを入力"
+      "placeholder": "テキスト、ファイル、画像（OCR対応）を貼り付けたりドラッグアンドドロップしたりできます"
     },
     "language": {
       "not_pair": "ソース言語が設定された言語と異なります",

@@ -22,19 +22,33 @@ import LegacyAiProvider from './legacy/index'
 import { CompletionsResult } from './legacy/middleware/schemas'
 import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/AiSdkMiddlewareBuilder'
 import { buildPlugins } from './plugins/PluginBuilder'
-import { getActualProvider, isModernSdkSupported, providerToAiSdkConfig } from './provider/ProviderConfigProcessor'
+import {
+  getActualProvider,
+  isModernSdkSupported,
+  prepareSpecialProviderConfig,
+  providerToAiSdkConfig
+} from './provider/providerConfig'
 import type { StreamTextParams } from './types'
 
 const logger = loggerService.withContext('ModernAiProvider')
+
+export type ModernAiProviderConfig = AiSdkMiddlewareConfig & {
+  assistant: Assistant
+  // topicId for tracing
+  topicId?: string
+  callType: string
+}
 
 export default class ModernAiProvider {
   private legacyProvider: LegacyAiProvider
   private config: ReturnType<typeof providerToAiSdkConfig>
   private actualProvider: Provider
+  private model: Model
 
   constructor(model: Model, provider?: Provider) {
     this.actualProvider = provider || getActualProvider(model)
     this.legacyProvider = new LegacyAiProvider(this.actualProvider)
+    this.model = model
 
     // 只保存配置，不预先创建executor
     this.config = providerToAiSdkConfig(this.actualProvider, model)
@@ -44,16 +58,11 @@ export default class ModernAiProvider {
     return this.actualProvider
   }
 
-  public async completions(
-    modelId: string,
-    params: StreamTextParams,
-    config: AiSdkMiddlewareConfig & {
-      assistant: Assistant
-      // topicId for tracing
-      topicId?: string
-      callType: string
-    }
-  ) {
+  public async completions(modelId: string, params: StreamTextParams, config: ModernAiProviderConfig) {
+    // 准备特殊配置
+    await prepareSpecialProviderConfig(this.actualProvider, this.config)
+
+    logger.debug('this.config', this.config)
     if (config.topicId && getEnableDeveloperMode()) {
       // TypeScript类型窄化：确保topicId是string类型
       const traceConfig = {
@@ -69,12 +78,7 @@ export default class ModernAiProvider {
   private async _completions(
     modelId: string,
     params: StreamTextParams,
-    config: AiSdkMiddlewareConfig & {
-      assistant: Assistant
-      // topicId for tracing
-      topicId?: string
-      callType: string
-    }
+    config: ModernAiProviderConfig
   ): Promise<CompletionsResult> {
     // 初始化 provider 到全局管理器
     try {
@@ -105,12 +109,7 @@ export default class ModernAiProvider {
   private async _completionsForTrace(
     modelId: string,
     params: StreamTextParams,
-    config: AiSdkMiddlewareConfig & {
-      assistant: Assistant
-      // topicId for tracing
-      topicId: string
-      callType: string
-    }
+    config: ModernAiProviderConfig & { topicId: string }
   ): Promise<CompletionsResult> {
     const traceName = `${this.actualProvider.name}.${modelId}.${config.callType}`
     const traceParams: StartSpanParams = {
@@ -193,11 +192,7 @@ export default class ModernAiProvider {
   private async modernCompletions(
     modelId: string,
     params: StreamTextParams,
-    config: AiSdkMiddlewareConfig & {
-      assistant: Assistant
-      topicId?: string
-      callType: string
-    }
+    config: ModernAiProviderConfig
   ): Promise<CompletionsResult> {
     logger.info('Starting modernCompletions', {
       modelId,
@@ -244,7 +239,8 @@ export default class ModernAiProvider {
         topicId: config.topicId
       })
 
-      const adapter = new AiSdkToChunkAdapter(config.onChunk, config.mcpTools)
+      const accumulate = this.model.supported_text_delta !== false // true and undefined
+      const adapter = new AiSdkToChunkAdapter(config.onChunk, config.mcpTools, accumulate)
 
       logger.debug('Final params before streamText', {
         modelId,
@@ -326,12 +322,7 @@ export default class ModernAiProvider {
   private async modernImageGeneration(
     modelId: string,
     params: StreamTextParams,
-    config: AiSdkMiddlewareConfig & {
-      assistant: Assistant
-      // topicId for tracing
-      topicId?: string
-      callType: string
-    }
+    config: ModernAiProviderConfig
   ): Promise<CompletionsResult> {
     const { onChunk } = config
 
