@@ -106,6 +106,17 @@ export function providerToAiSdkConfig(
       'copilot-vision-request': 'true'
     }
   }
+  // azure
+  if (aiSdkProviderId === 'azure' || actualProvider.type === 'azure-openai') {
+    extraOptions.apiVersion = actualProvider.apiVersion
+    baseConfig.baseURL += '/openai'
+    if (actualProvider.apiVersion === 'preview') {
+      extraOptions.mode = 'responses'
+    } else {
+      extraOptions.mode = 'chat'
+      extraOptions.useDeploymentBasedUrls = true
+    }
+  }
 
   // 如果AI SDK支持该provider，使用原生配置
   if (hasProviderConfig(aiSdkProviderId) && aiSdkProviderId !== 'openai-compatible') {

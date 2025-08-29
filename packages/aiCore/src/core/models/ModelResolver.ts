@@ -28,8 +28,8 @@ export class ModelResolver {
     let finalProviderId = fallbackProviderId
     let model: LanguageModelV2
     // 🎯 处理 OpenAI 模式选择逻辑 (从 ModelCreator 迁移)
-    if (fallbackProviderId === 'openai' && providerOptions?.mode === 'chat') {
-      finalProviderId = 'openai-chat'
+    if ((fallbackProviderId === 'openai' || fallbackProviderId === 'azure') && providerOptions?.mode === 'chat') {
+      finalProviderId = `${fallbackProviderId}-chat`
     }
 
     // 检查是否是命名空间格式
@@ -84,6 +84,7 @@ export class ModelResolver {
    */
   private resolveTraditionalModel(providerId: string, modelId: string): LanguageModelV2 {
     const fullModelId = `${providerId}${DEFAULT_SEPARATOR}${modelId}`
+    console.log('fullModelId', fullModelId)
     return globalRegistryManagement.languageModel(fullModelId as any)
   }
 
