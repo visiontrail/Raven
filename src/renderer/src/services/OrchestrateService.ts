@@ -22,6 +22,7 @@ export interface OrchestrationRequest {
  * The OrchestrationService is responsible for orchestrating the different services
  * to handle a user's message. It contains the core logic of the application.
  */
+// NOTE：暂时没有用到这个类
 export class OrchestrationService {
   constructor() {
     // In the future, this could be a singleton, but for now, a new instance is fine.
@@ -55,6 +56,11 @@ export class OrchestrationService {
   }
 }
 
+/**
+ * 将用户消息转换为LLM可以理解的格式并发送请求
+ * @param request - 包含消息内容和助手信息的请求对象
+ * @param onChunkReceived - 接收流式响应数据的回调函数
+ */
 // 目前先按照函数来写,后续如果有需要到class的地方就改回来
 export async function transformMessagesAndFetch(
   request: OrchestrationRequest,
