@@ -1,5 +1,6 @@
 import { Assistant, Message } from '@renderer/types'
 import { Chunk, ChunkType } from '@renderer/types/chunk'
+import { replacePromptVariables } from '@renderer/utils/prompt'
 
 import { fetchChatCompletion } from './ApiService'
 import { ConversationService } from './ConversationService'
@@ -70,6 +71,9 @@ export async function transformMessagesAndFetch(
 
   try {
     const llmMessages = await ConversationService.prepareMessagesForModel(messages, assistant)
+
+    // replace prompt variables
+    assistant.prompt = await replacePromptVariables(assistant.prompt, assistant.model?.name)
 
     await fetchChatCompletion({
       messages: llmMessages,
