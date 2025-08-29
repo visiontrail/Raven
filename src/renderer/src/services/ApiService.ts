@@ -75,6 +75,12 @@ export async function fetchMcpTools(assistant: Assistant) {
   return mcpTools
 }
 
+export type FetchChatCompletionOptions = {
+  signal?: AbortSignal
+  timeout?: number
+  headers?: Record<string, string>
+}
+
 export async function fetchChatCompletion({
   messages,
   assistant,
@@ -84,11 +90,7 @@ export async function fetchChatCompletion({
 }: {
   messages: StreamTextParams['messages']
   assistant: Assistant
-  options: {
-    signal?: AbortSignal
-    timeout?: number
-    headers?: Record<string, string>
-  }
+  options: FetchChatCompletionOptions
   onChunkReceived: (chunk: Chunk) => void
   topicId?: string // 添加 topicId 参数
 }) {
