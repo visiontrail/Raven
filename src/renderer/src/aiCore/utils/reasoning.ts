@@ -13,7 +13,9 @@ import {
   isSupportedThinkingTokenModel,
   isSupportedThinkingTokenQwenModel
 } from '@renderer/config/models'
+import { getStoreSetting } from '@renderer/hooks/useSettings'
 import { getAssistantSettings, getProviderByModel } from '@renderer/services/AssistantService'
+import { SettingsState } from '@renderer/store/settings'
 import { Assistant, EFFORT_RATIO, Model } from '@renderer/types'
 import { ReasoningEffortOptionalParams } from '@renderer/types/sdk'
 
@@ -205,6 +207,16 @@ export function getOpenAIReasoningParams(assistant: Assistant, model: Model): Re
   if (!isReasoningModel(model)) {
     return {}
   }
+  const openAI = getStoreSetting('openAI') as SettingsState['openAI']
+  const summaryText = openAI?.summaryText || 'off'
+
+  let reasoningSummary: string | undefined = undefined
+
+  if (summaryText === 'off' || model.id.includes('o1-pro')) {
+    reasoningSummary = undefined
+  } else {
+    reasoningSummary = summaryText
+  }
 
   const reasoningEffort = assistant?.settings?.reasoning_effort
 
@@ -215,7 +227,8 @@ export function getOpenAIReasoningParams(assistant: Assistant, model: Model): Re
   // OpenAI 推理参数
   if (isSupportedReasoningEffortOpenAIModel(model)) {
     return {
-      reasoningEffort
+      reasoningEffort,
+      reasoningSummary
     }
   }
 

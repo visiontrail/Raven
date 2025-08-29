@@ -4,6 +4,7 @@ import {
   type ProviderId,
   type ProviderSettingsMap
 } from '@cherrystudio/ai-core/provider'
+import { isOpenAIChatCompletionOnlyModel } from '@renderer/config/models'
 import { createVertexProvider, isVertexAIConfigured, isVertexProvider } from '@renderer/hooks/useVertexAI'
 import { getProviderByModel } from '@renderer/services/AssistantService'
 import { loggerService } from '@renderer/services/LoggerService'
@@ -68,7 +69,10 @@ export function getActualProvider(model: Model): Provider {
  * 将 Provider 配置转换为新 AI SDK 格式
  * 简化版：利用新的别名映射系统
  */
-export function providerToAiSdkConfig(actualProvider: Provider): {
+export function providerToAiSdkConfig(
+  actualProvider: Provider,
+  model: Model
+): {
   providerId: ProviderId | 'openai-compatible'
   options: ProviderSettingsMap[keyof ProviderSettingsMap]
 } {
@@ -80,10 +84,9 @@ export function providerToAiSdkConfig(actualProvider: Provider): {
     baseURL: actualProvider.apiHost,
     apiKey: actualProvider.apiKey
   }
-
   // 处理OpenAI模式（简化逻辑）
   const extraOptions: any = {}
-  if (actualProvider.type === 'openai-response') {
+  if (actualProvider.type === 'openai-response' && !isOpenAIChatCompletionOnlyModel(model)) {
     extraOptions.mode = 'responses'
   } else if (aiSdkProviderId === 'openai') {
     extraOptions.mode = 'chat'

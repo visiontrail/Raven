@@ -7,7 +7,6 @@
 
 import { EmbeddingModelV2, ImageModelV2, LanguageModelV2, LanguageModelV2Middleware } from '@ai-sdk/provider'
 
-import { isOpenAIChatCompletionOnlyModel } from '../../utils/model'
 import { wrapModelWithMiddlewares } from '../middleware/wrapper'
 import { DEFAULT_SEPARATOR, globalRegistryManagement } from '../providers/RegistryManagement'
 
@@ -28,14 +27,9 @@ export class ModelResolver {
   ): Promise<LanguageModelV2> {
     let finalProviderId = fallbackProviderId
     let model: LanguageModelV2
-
     // 🎯 处理 OpenAI 模式选择逻辑 (从 ModelCreator 迁移)
     if (fallbackProviderId === 'openai' && providerOptions?.mode === 'chat') {
-      // 检查是否支持 chat 模式且不是只支持 chat 的模型
-      if (!isOpenAIChatCompletionOnlyModel(modelId)) {
-        finalProviderId = 'openai-chat'
-      }
-      // 否则使用默认的 openai (responses 模式)
+      finalProviderId = 'openai-chat'
     }
 
     // 检查是否是命名空间格式
