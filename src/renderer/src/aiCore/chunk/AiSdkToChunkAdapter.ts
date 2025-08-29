@@ -28,11 +28,14 @@ export interface CherryStudioChunk {
  */
 export class AiSdkToChunkAdapter {
   toolCallHandler: ToolCallChunkHandler
+  private accumulate: boolean | undefined
   constructor(
     private onChunk: (chunk: Chunk) => void,
-    mcpTools: MCPTool[] = []
+    mcpTools: MCPTool[] = [],
+    accumulate?: boolean
   ) {
     this.toolCallHandler = new ToolCallChunkHandler(onChunk, mcpTools)
+    this.accumulate = accumulate
   }
 
   /**
@@ -95,7 +98,11 @@ export class AiSdkToChunkAdapter {
         })
         break
       case 'text-delta':
-        final.text += chunk.text || ''
+        if (this.accumulate) {
+          final.text += chunk.text || ''
+        } else {
+          final.text = chunk.text || ''
+        }
         this.onChunk({
           type: ChunkType.TEXT_DELTA,
           text: final.text || ''

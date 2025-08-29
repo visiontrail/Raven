@@ -43,10 +43,12 @@ export default class ModernAiProvider {
   private legacyProvider: LegacyAiProvider
   private config: ReturnType<typeof providerToAiSdkConfig>
   private actualProvider: Provider
+  private model: Model
 
   constructor(model: Model, provider?: Provider) {
     this.actualProvider = provider || getActualProvider(model)
     this.legacyProvider = new LegacyAiProvider(this.actualProvider)
+    this.model = model
 
     // 只保存配置，不预先创建executor
     this.config = providerToAiSdkConfig(this.actualProvider, model)
@@ -237,7 +239,8 @@ export default class ModernAiProvider {
         topicId: config.topicId
       })
 
-      const adapter = new AiSdkToChunkAdapter(config.onChunk, config.mcpTools)
+      const accumulate = this.model.supported_text_delta !== false // true and undefined
+      const adapter = new AiSdkToChunkAdapter(config.onChunk, config.mcpTools, accumulate)
 
       logger.debug('Final params before streamText', {
         modelId,
