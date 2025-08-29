@@ -10,7 +10,6 @@ import type { StreamTextParams } from '@renderer/aiCore/types'
 import { isDedicatedImageGenerationModel, isEmbeddingModel, isQwenMTModel } from '@renderer/config/models'
 import { LANG_DETECT_PROMPT } from '@renderer/config/prompts'
 import { getStoreSetting } from '@renderer/hooks/useSettings'
-import { getEnableDeveloperMode } from '@renderer/hooks/useSettings'
 import i18n from '@renderer/i18n'
 import store from '@renderer/store'
 import { Assistant, MCPServer, MCPTool, Model, Provider } from '@renderer/types'
@@ -138,23 +137,12 @@ export async function fetchChatCompletion({
 
   // --- Call AI Completions ---
   onChunkReceived({ type: ChunkType.LLM_RESPONSE_CREATED })
-  const enableDeveloperMode = getEnableDeveloperMode()
-  // 在 AI SDK 调用时设置正确的 OpenTelemetry 上下文
-  if (topicId && enableDeveloperMode) {
-    // 使用带trace支持的completions方法，它会自动创建子span并关联到父span
-    await AI.completionsForTrace(modelId, aiSdkParams, {
-      ...middlewareConfig,
-      assistant,
-      topicId,
-      callType: 'chat'
-    })
-  } else {
-    await AI.completions(modelId, aiSdkParams, {
-      ...middlewareConfig,
-      assistant,
-      callType: 'chat'
-    })
-  }
+  await AI.completions(modelId, aiSdkParams, {
+    ...middlewareConfig,
+    assistant,
+    topicId,
+    callType: 'chat'
+  })
 }
 
 interface FetchLanguageDetectionProps {
@@ -311,7 +299,7 @@ export async function fetchMessagesSummary({ messages, assistant }: { messages: 
       await appendTrace({ topicId, traceId: messageWithTrace.traceId, model })
     }
 
-    const { getText } = await AI.completionsForTrace(model.id, llmMessages, {
+    const { getText } = await AI.completions(model.id, llmMessages, {
       ...middlewareConfig,
       assistant: summaryAssistant,
       topicId,

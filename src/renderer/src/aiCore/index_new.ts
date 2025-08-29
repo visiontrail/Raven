@@ -11,6 +11,7 @@ import { createExecutor, generateImage } from '@cherrystudio/ai-core'
 import { createAndRegisterProvider } from '@cherrystudio/ai-core/provider'
 import { loggerService } from '@logger'
 import { isNotSupportedImageSizeModel } from '@renderer/config/models'
+import { getEnableDeveloperMode } from '@renderer/hooks/useSettings'
 import { addSpan, endSpan } from '@renderer/services/SpanManagerService'
 import { StartSpanParams } from '@renderer/trace/types/ModelSpanEntity'
 import type { Assistant, GenerateImageParams, Model, Provider } from '@renderer/types'
@@ -52,6 +53,28 @@ export default class ModernAiProvider {
       topicId?: string
       callType: string
     }
+  ) {
+    if (config.topicId && getEnableDeveloperMode()) {
+      // TypeScript类型窄化：确保topicId是string类型
+      const traceConfig = {
+        ...config,
+        topicId: config.topicId
+      }
+      return await this._completionsForTrace(modelId, params, traceConfig)
+    } else {
+      return await this._completions(modelId, params, config)
+    }
+  }
+
+  private async _completions(
+    modelId: string,
+    params: StreamTextParams,
+    config: AiSdkMiddlewareConfig & {
+      assistant: Assistant
+      // topicId for tracing
+      topicId?: string
+      callType: string
+    }
   ): Promise<CompletionsResult> {
     // 初始化 provider 到全局管理器
     try {
@@ -79,7 +102,7 @@ export default class ModernAiProvider {
    * 带trace支持的completions方法
    * 类似于legacy的completionsForTrace，确保AI SDK spans在正确的trace上下文中
    */
-  public async completionsForTrace(
+  private async _completionsForTrace(
     modelId: string,
     params: StreamTextParams,
     config: AiSdkMiddlewareConfig & {
@@ -114,7 +137,7 @@ export default class ModernAiProvider {
         modelId,
         traceName
       })
-      return await this.completions(modelId, params, config)
+      return await this._completions(modelId, params, config)
     }
 
     try {
@@ -126,7 +149,7 @@ export default class ModernAiProvider {
         parentSpanCreated: true
       })
 
-      const result = await this.completions(modelId, params, config)
+      const result = await this._completions(modelId, params, config)
 
       logger.info('Completions finished, ending parent span', {
         spanId: span.spanContext().spanId,
@@ -172,7 +195,6 @@ export default class ModernAiProvider {
     params: StreamTextParams,
     config: AiSdkMiddlewareConfig & {
       assistant: Assistant
-      // topicId for tracing
       topicId?: string
       callType: string
     }
