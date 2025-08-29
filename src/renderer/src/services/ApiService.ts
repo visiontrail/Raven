@@ -81,21 +81,36 @@ export type FetchChatCompletionOptions = {
   headers?: Record<string, string>
 }
 
-export async function fetchChatCompletion({
-  messages,
-  assistant,
-  options,
-  onChunkReceived,
-  topicId
-}: {
-  messages: StreamTextParams['messages']
+type BaseParams = {
   assistant: Assistant
   options: FetchChatCompletionOptions
   onChunkReceived: (chunk: Chunk) => void
   topicId?: string // 添加 topicId 参数
-}) {
+}
+
+type MessagesParams = BaseParams & {
+  messages: StreamTextParams['messages']
+  prompt?: never
+}
+
+type PromptParams = BaseParams & {
+  messages?: never
+  prompt: StreamTextParams['prompt']
+}
+
+export type FetchChatCompletionParams = MessagesParams | PromptParams
+
+export async function fetchChatCompletion({
+  messages,
+  prompt,
+  assistant,
+  options,
+  onChunkReceived,
+  topicId
+}: FetchChatCompletionParams) {
   logger.info('fetchChatCompletion called with detailed context', {
     messageCount: messages?.length || 0,
+    prompt: prompt,
     assistantId: assistant.id,
     topicId,
     hasTopicId: !!topicId,
