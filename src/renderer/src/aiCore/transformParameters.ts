@@ -4,7 +4,6 @@
  */
 
 import { loggerService } from '@logger'
-import { DEFAULT_MAX_TOKENS } from '@renderer/config/constant'
 import {
   isClaudeReasoningModel,
   isGenerateImageModel,
@@ -375,7 +374,7 @@ export async function buildStreamTextParams(
   // 构建基础参数
   const params: StreamTextParams = {
     messages: sdkMessages,
-    maxOutputTokens: maxTokens || DEFAULT_MAX_TOKENS,
+    maxOutputTokens: maxTokens,
     temperature: getTemperature(assistant, model),
     topP: getTopP(assistant, model),
     abortSignal: options.requestOptions?.signal,
@@ -387,7 +386,7 @@ export async function buildStreamTextParams(
   if (assistant.prompt) {
     params.system = assistant.prompt
   }
-  console.log('params', params)
+  logger.debug('params', params)
   return {
     params,
     modelId: model.id,
