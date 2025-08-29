@@ -36,10 +36,19 @@ export type Assistant = {
   regularPhrases?: QuickPhrase[] // Added for regular phrase
   tags?: string[] // 助手标签
   enableMemory?: boolean
+  // for translate. 更好的做法是定义base assistant，把 Assistant 作为多种不同定义 assistant 的联合类型，但重构代价太大
+  content?: string
+  targetLanguage?: TranslateLanguage
 }
 
 export type TranslateAssistant = Assistant & {
-  targetLanguage?: TranslateLanguage
+  model: Model
+  content: string
+  targetLanguage: TranslateLanguage
+}
+
+export const isTranslateAssistant = (assistant: Assistant): assistant is TranslateAssistant => {
+  return (assistant.model && assistant.targetLanguage && typeof assistant.content === 'string') !== undefined
 }
 
 export type AssistantsSortType = 'tags' | 'list'
@@ -676,6 +685,7 @@ export type GenerateImageResponse = {
 }
 
 // 为了支持自定义语言，设置为string别名
+/** zh-cn, en-us, etc. */
 export type TranslateLanguageCode = string
 
 // langCode应当能够唯一确认一种语言
