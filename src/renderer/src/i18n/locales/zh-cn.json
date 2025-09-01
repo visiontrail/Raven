@@ -893,7 +893,7 @@
       "view_details": "查看详情"
     },
     "package_type": "包类型",
-    "packages": "包",
+    "packages": "升级包",
     "packages_count": "{{count}} 个包",
     "patch": "补丁",
     "path": "路径",
@@ -2401,7 +2401,7 @@
         "open": "打开",
         "title": "调试面板"
       },
-      "description": "一款为创造者而生的 AI 助手",
+      "description": "一款为载荷测试而生的智能助手，让测试更高效、更简单。",
       "downloading": "正在下载更新...",
       "feedback": {
         "button": "反馈",
@@ -3054,6 +3054,9 @@
       "backup": {
         "button": "备份",
         "title": "数据备份与恢复"
+      },
+      "custom_update_server": {
+        "title": "使用自定义更新服务器"
       },
       "display": {
         "title": "显示设置"

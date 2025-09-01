@@ -1316,11 +1316,6 @@
         "title": "刪除分組訊息"
       }
     },
-    "ignore": {
-      "knowledge": {
-        "base": "網路模式開啟，忽略知識庫"
-      }
-    },
     "loading": {
       "notion": {
         "exporting_progress": "正在匯出到 Notion ...",
@@ -1419,73 +1414,6 @@
       "keep_alive_time.placeholder": "分鐘",
       "keep_alive_time.title": "保持活躍時間",
       "title": "Ollama"
-    },
-    "packager": {
-      "clearSelections": "清空選擇",
-      "componentSelection": "元件選擇",
-      "components": {
-        "config": {
-          "cucp_gnb": "CUCP GNB 配置",
-          "cucp_stack": "CUCP Stack 配置",
-          "cuup_gnb": "CUUP GNB 配置",
-          "cuup_stack": "CUUP Stack 配置",
-          "cwmp_data": "CWMP 資料檔案",
-          "du_gnb": "DU GNB 配置",
-          "du_stack": "DU Stack 配置"
-        },
-        "lingxi-07a": {
-          "bpoqv_fpga": "QV 基頻 FPGA",
-          "bposc_fpga": "基頻板 FPGA",
-          "cucp": "協定堆疊 CUCP",
-          "cuup": "協定堆疊 CUUP",
-          "du": "協定堆疊 DU",
-          "oam": "OAM 軟體",
-          "sct_fpga": "主控板 FPGA"
-        },
-        "lingxi-10": {
-          "bpodvb_fpga": "DVB 基頻 FPGA",
-          "bposc_fpga": "基頻板 FPGA",
-          "cucp": "協定堆疊 CUCP",
-          "cuup": "協定堆疊 CUUP",
-          "du": "協定堆疊 DU",
-          "galaxy_core_network": "銀河自研核心網",
-          "oam": "OAM 軟體",
-          "satellite_app_server": "星載應用伺服器",
-          "sct_fpga": "主控板 FPGA"
-        }
-      },
-      "configDescription": "配置檔案包僅適用於靈犀07A和靈犀10AB衛星，不適用靈犀06一標段和三標段",
-      "controlPanel": "控制面板",
-      "error": {
-        "autoVersion": "自動識別版本號失敗",
-        "noComponents": "請至少選擇一個元件進行打包。",
-        "noPackageType": "包類型未定義，無法打包。",
-        "noPackageVersion": "請輸入整包版本號。",
-        "selectFile": "選擇檔案失敗"
-      },
-      "infoPreview": "資訊預覽",
-      "isPatch": "是否為 PATCH 包",
-      "log": {
-        "cleared": "已清空所有選擇",
-        "errorUnknown": "打包過程中發生未知錯誤",
-        "failure": "打包失敗",
-        "start": "開始打包...",
-        "success": "打包成功！輸出路徑:"
-      },
-      "operationLog": "操作日誌",
-      "packageVersion": "整包版本號",
-      "selectFile": "選擇檔案",
-      "siIniPreview": "si.ini 預覽",
-      "startPackaging": "開始打包",
-      "title": "打包工具",
-      "types": {
-        "config": "配置檔案包",
-        "lingxi-06-thrid": "靈犀 06 三標段",
-        "lingxi-07a": "靈犀 07A",
-        "lingxi-10": "靈犀 10"
-      },
-      "versionInputPlaceholder": "自動識別或手動輸入",
-      "versionPlaceholder": "例如: 1.0.0.7"
     },
     "paintings": {
       "aspect_ratio": "畫幅比例",
@@ -1940,6 +1868,73 @@
       "title": "保持活躍時間"
     },
     "title": "Ollama"
+  },
+  "packager": {
+    "clearSelections": "[to be translated]:清空选择",
+    "componentSelection": "[to be translated]:组件选择",
+    "components": {
+      "config": {
+        "cucp_gnb": "[to be translated]:CUCP GNB配置",
+        "cucp_stack": "[to be translated]:CUCP Stack配置",
+        "cuup_gnb": "[to be translated]:CUUP GNB配置",
+        "cuup_stack": "[to be translated]:CUUP Stack配置",
+        "cwmp_data": "[to be translated]:CWMP数据文件",
+        "du_gnb": "[to be translated]:DU GNB配置",
+        "du_stack": "[to be translated]:DU Stack配置"
+      },
+      "lingxi-07a": {
+        "bpoqv_fpga": "[to be translated]:QV基带FPGA",
+        "bposc_fpga": "[to be translated]:基带板FPGA",
+        "cucp": "[to be translated]:协议栈CUCP",
+        "cuup": "[to be translated]:协议栈CUUP",
+        "du": "[to be translated]:协议栈DU",
+        "oam": "[to be translated]:OAM软件",
+        "sct_fpga": "[to be translated]:主控板FPGA"
+      },
+      "lingxi-10": {
+        "bpodvb_fpga": "[to be translated]:DVB基带FPGA",
+        "bposc_fpga": "[to be translated]:基带板FPGA",
+        "cucp": "[to be translated]:协议栈CUCP",
+        "cuup": "[to be translated]:协议栈CUUP",
+        "du": "[to be translated]:协议栈DU",
+        "galaxy_core_network": "[to be translated]:银河自研核心网",
+        "oam": "[to be translated]:OAM软件",
+        "satellite_app_server": "[to be translated]:星载应用服务器",
+        "sct_fpga": "[to be translated]:主控板FPGA"
+      }
+    },
+    "configDescription": "[to be translated]:配置文件包仅适用于灵犀07A和灵犀10AB卫星，不适用灵犀06一标段和三标段",
+    "controlPanel": "[to be translated]:控制面板",
+    "error": {
+      "autoVersion": "[to be translated]:自动识别版本号失败",
+      "noComponents": "[to be translated]:请至少选择一个组件进行打包。",
+      "noPackageType": "[to be translated]:包类型未定义，无法打包。",
+      "noPackageVersion": "[to be translated]:请输入整包版本号。",
+      "selectFile": "[to be translated]:选择文件失败"
+    },
+    "infoPreview": "[to be translated]:信息预览",
+    "isPatch": "[to be translated]:是否为PATCH包",
+    "log": {
+      "cleared": "[to be translated]:已清空所有选择",
+      "errorUnknown": "[to be translated]:打包过程中发生未知错误",
+      "failure": "[to be translated]:打包失败",
+      "start": "[to be translated]:开始打包...",
+      "success": "[to be translated]:打包成功！输出路径:"
+    },
+    "operationLog": "[to be translated]:操作日志",
+    "packageVersion": "[to be translated]:整包版本号",
+    "selectFile": "[to be translated]:选择文件",
+    "siIniPreview": "[to be translated]:si.ini 预览",
+    "startPackaging": "[to be translated]:开始打包",
+    "title": "[to be translated]:打包工具",
+    "types": {
+      "config": "[to be translated]:配置文件包",
+      "lingxi-06-thrid": "[to be translated]:灵犀 06 三标段",
+      "lingxi-07a": "[to be translated]:灵犀 07A",
+      "lingxi-10": "[to be translated]:灵犀 10"
+    },
+    "versionInputPlaceholder": "[to be translated]:自动识别或手动输入",
+    "versionPlaceholder": "[to be translated]:例如: 1.0.0.7"
   },
   "paintings": {
     "aspect_ratio": "畫幅比例",
@@ -2406,7 +2401,7 @@
         "open": "開啟",
         "title": "調試面板"
       },
-      "description": "一款為創作者而生的強大 AI 助手",
+      "description": "一款為載荷測試而生的智慧助手，讓測試更高效、更簡單。",
       "downloading": "正在下載...",
       "feedback": {
         "button": "回饋",
@@ -3059,6 +3054,9 @@
       "backup": {
         "button": "備份",
         "title": "資料備份與復原"
+      },
+      "custom_update_server": {
+        "title": "使用自定義更新伺服器"
       },
       "display": {
         "title": "顯示設定"

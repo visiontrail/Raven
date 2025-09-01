@@ -1316,11 +1316,6 @@
         "title": "Delete Group Message"
       }
     },
-    "ignore": {
-      "knowledge": {
-        "base": "Web search mode is enabled, ignore knowledge base"
-      }
-    },
     "loading": {
       "notion": {
         "exporting_progress": "Exporting to Notion ...",
@@ -1419,73 +1414,6 @@
       "keep_alive_time.placeholder": "Minutes",
       "keep_alive_time.title": "Keep Alive Time",
       "title": "Ollama"
-    },
-    "packager": {
-      "clearSelections": "Clear Selections",
-      "componentSelection": "Component Selection",
-      "components": {
-        "config": {
-          "cucp_gnb": "CUCP GNB Configuration",
-          "cucp_stack": "CUCP Stack Configuration",
-          "cuup_gnb": "CUUP GNB Configuration",
-          "cuup_stack": "CUUP Stack Configuration",
-          "cwmp_data": "CWMP Data File",
-          "du_gnb": "DU GNB Configuration",
-          "du_stack": "DU Stack Configuration"
-        },
-        "lingxi-07a": {
-          "bpoqv_fpga": "QV Baseband FPGA",
-          "bposc_fpga": "Baseband Board FPGA",
-          "cucp": "Protocol Stack CUCP",
-          "cuup": "Protocol Stack CUUP",
-          "du": "Protocol Stack DU",
-          "oam": "OAM Software",
-          "sct_fpga": "Main Control Board FPGA"
-        },
-        "lingxi-10": {
-          "bpodvb_fpga": "DVB Baseband FPGA",
-          "bposc_fpga": "Baseband Board FPGA",
-          "cucp": "Protocol Stack CUCP",
-          "cuup": "Protocol Stack CUUP",
-          "du": "Protocol Stack DU",
-          "galaxy_core_network": "Galaxy Self-developed Core Network",
-          "oam": "OAM Software",
-          "satellite_app_server": "Satellite Application Server",
-          "sct_fpga": "Main Control Board FPGA"
-        }
-      },
-      "configDescription": "Configuration package only applies to Lingxi 07A and Lingxi 10AB satellites, not applicable to Lingxi 06 Phase 1 and Phase 3",
-      "controlPanel": "Control Panel",
-      "error": {
-        "autoVersion": "Failed to auto-detect version number",
-        "noComponents": "Please select at least one component for packaging.",
-        "noPackageType": "Package type undefined, cannot package.",
-        "noPackageVersion": "Please enter the full package version number.",
-        "selectFile": "Failed to select file"
-      },
-      "infoPreview": "Information Preview",
-      "isPatch": "Is PATCH Package",
-      "log": {
-        "cleared": "All selections cleared",
-        "errorUnknown": "Unknown error occurred during packaging",
-        "failure": "Packaging failed",
-        "start": "Starting packaging...",
-        "success": "Packaging successful! Output path:"
-      },
-      "operationLog": "Operation Log",
-      "packageVersion": "Full Package Version",
-      "selectFile": "Select File",
-      "siIniPreview": "si.ini Preview",
-      "startPackaging": "Start Packaging",
-      "title": "Packaging Tool",
-      "types": {
-        "config": "Configuration Package",
-        "lingxi-06-thrid": "Lingxi 06 Phase 3",
-        "lingxi-07a": "Lingxi 07A",
-        "lingxi-10": "Lingxi 10"
-      },
-      "versionInputPlaceholder": "Auto-detect or manual input",
-      "versionPlaceholder": "Example: 1.0.0.7"
     },
     "paintings": {
       "aspect_ratio": "Aspect Ratio",
@@ -1940,6 +1868,73 @@
       "title": "Keep Alive Time"
     },
     "title": "Ollama"
+  },
+  "packager": {
+    "clearSelections": "[to be translated]:清空选择",
+    "componentSelection": "[to be translated]:组件选择",
+    "components": {
+      "config": {
+        "cucp_gnb": "[to be translated]:CUCP GNB配置",
+        "cucp_stack": "[to be translated]:CUCP Stack配置",
+        "cuup_gnb": "[to be translated]:CUUP GNB配置",
+        "cuup_stack": "[to be translated]:CUUP Stack配置",
+        "cwmp_data": "[to be translated]:CWMP数据文件",
+        "du_gnb": "[to be translated]:DU GNB配置",
+        "du_stack": "[to be translated]:DU Stack配置"
+      },
+      "lingxi-07a": {
+        "bpoqv_fpga": "[to be translated]:QV基带FPGA",
+        "bposc_fpga": "[to be translated]:基带板FPGA",
+        "cucp": "[to be translated]:协议栈CUCP",
+        "cuup": "[to be translated]:协议栈CUUP",
+        "du": "[to be translated]:协议栈DU",
+        "oam": "[to be translated]:OAM软件",
+        "sct_fpga": "[to be translated]:主控板FPGA"
+      },
+      "lingxi-10": {
+        "bpodvb_fpga": "[to be translated]:DVB基带FPGA",
+        "bposc_fpga": "[to be translated]:基带板FPGA",
+        "cucp": "[to be translated]:协议栈CUCP",
+        "cuup": "[to be translated]:协议栈CUUP",
+        "du": "[to be translated]:协议栈DU",
+        "galaxy_core_network": "[to be translated]:银河自研核心网",
+        "oam": "[to be translated]:OAM软件",
+        "satellite_app_server": "[to be translated]:星载应用服务器",
+        "sct_fpga": "[to be translated]:主控板FPGA"
+      }
+    },
+    "configDescription": "[to be translated]:配置文件包仅适用于灵犀07A和灵犀10AB卫星，不适用灵犀06一标段和三标段",
+    "controlPanel": "[to be translated]:控制面板",
+    "error": {
+      "autoVersion": "[to be translated]:自动识别版本号失败",
+      "noComponents": "[to be translated]:请至少选择一个组件进行打包。",
+      "noPackageType": "[to be translated]:包类型未定义，无法打包。",
+      "noPackageVersion": "[to be translated]:请输入整包版本号。",
+      "selectFile": "[to be translated]:选择文件失败"
+    },
+    "infoPreview": "[to be translated]:信息预览",
+    "isPatch": "[to be translated]:是否为PATCH包",
+    "log": {
+      "cleared": "[to be translated]:已清空所有选择",
+      "errorUnknown": "[to be translated]:打包过程中发生未知错误",
+      "failure": "[to be translated]:打包失败",
+      "start": "[to be translated]:开始打包...",
+      "success": "[to be translated]:打包成功！输出路径:"
+    },
+    "operationLog": "[to be translated]:操作日志",
+    "packageVersion": "[to be translated]:整包版本号",
+    "selectFile": "[to be translated]:选择文件",
+    "siIniPreview": "[to be translated]:si.ini 预览",
+    "startPackaging": "[to be translated]:开始打包",
+    "title": "[to be translated]:打包工具",
+    "types": {
+      "config": "[to be translated]:配置文件包",
+      "lingxi-06-thrid": "[to be translated]:灵犀 06 三标段",
+      "lingxi-07a": "[to be translated]:灵犀 07A",
+      "lingxi-10": "[to be translated]:灵犀 10"
+    },
+    "versionInputPlaceholder": "[to be translated]:自动识别或手动输入",
+    "versionPlaceholder": "[to be translated]:例如: 1.0.0.7"
   },
   "paintings": {
     "aspect_ratio": "Aspect Ratio",
@@ -2406,7 +2401,7 @@
         "open": "Open",
         "title": "Debug"
       },
-      "description": "A powerful AI assistant for producer",
+      "description": "An intelligent assistant born for load testing, making testing more efficient and simpler.",
       "downloading": "Downloading...",
       "feedback": {
         "button": "Feedback",
@@ -3059,6 +3054,9 @@
       "backup": {
         "button": "Backup",
         "title": "Data Backup and Recovery"
+      },
+      "custom_update_server": {
+        "title": "Use Custom Update Server"
       },
       "display": {
         "title": "Display Settings"
