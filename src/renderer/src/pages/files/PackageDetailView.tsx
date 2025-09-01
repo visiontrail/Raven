@@ -1,15 +1,8 @@
-import {
-  DeleteOutlined,
-  EditOutlined,
-  ExclamationCircleOutlined,
-  FolderOpenOutlined,
-  SaveOutlined,
-  UploadOutlined
-} from '@ant-design/icons'
+import { DeleteOutlined, ExclamationCircleOutlined, FolderOpenOutlined, UploadOutlined } from '@ant-design/icons'
 import { Button, Card, Descriptions, Flex, Form, Input, message, Popconfirm, Select, Switch, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import { Package as PackageIcon } from 'lucide-react'
-import { FC, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
@@ -26,7 +19,6 @@ interface PackageDetailViewProps {
 const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, onPackageUpdated }) => {
   const { t } = useTranslation()
   const { updatePackageMetadata, deletePackage, openPackageLocation, uploadToFTP, uploadToHTTP } = usePackages()
-  const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [form] = Form.useForm()
 
@@ -41,31 +33,29 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
     })
   }
 
-  // Handle metadata editing
-  const handleEdit = () => {
-    setIsEditing(true)
+  useEffect(() => {
     initializeForm()
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pkg.id])
 
-  // Handle save metadata
-  const handleSave = async () => {
+  // Auto save metadata
+  const handleAutoSave = async () => {
+    if (loading) return
     try {
-      const values = await form.validateFields()
+      const values = form.getFieldsValue(true)
       setLoading(true)
 
       const updatedMetadata: PackageMetadata = {
-        isPatch: values.isPatch || false,
+        ...pkg.metadata,
+        isPatch: !!values.isPatch,
         components: values.components || [],
         description: values.description || '',
-        tags: values.tags || [],
-        customFields: values.customFields || {}
+        tags: values.tags || []
       }
 
       const success = await updatePackageMetadata(pkg.id, updatedMetadata)
       if (success) {
         message.success(t('files.package.metadata_updated'))
-        setIsEditing(false)
-        // Update the package object with new metadata
         const updatedPackage = { ...pkg, metadata: updatedMetadata }
         onPackageUpdated?.(updatedPackage)
       } else {
@@ -77,12 +67,6 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
     } finally {
       setLoading(false)
     }
-  }
-
-  // Handle cancel editing
-  const handleCancel = () => {
-    setIsEditing(false)
-    form.resetFields()
   }
 
   // Handle package deletion
@@ -221,85 +205,51 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
         </Card>
 
         {/* Package Metadata */}
-        <Card
-          title={t('files.package.metadata')}
-          extra={
-            !isEditing ? (
-              <Button type="text" icon={<EditOutlined />} onClick={handleEdit}>
-                {t('common.edit')}
-              </Button>
-            ) : (
-              <Flex gap={8}>
-                <Button size="small" onClick={handleCancel}>
-                  {t('common.cancel')}
-                </Button>
-                <Button type="primary" size="small" icon={<SaveOutlined />} onClick={handleSave} loading={loading}>
-                  {t('common.save')}
-                </Button>
-              </Flex>
-            )
-          }
-          style={{ marginBottom: 16 }}>
-          {!isEditing ? (
-            <Descriptions column={1} size="small">
-              <Descriptions.Item label={t('files.patch')}>
-                {pkg.metadata.isPatch ? (
-                  <Tag color="red">{t('files.patch')}</Tag>
-                ) : (
-                  <Tag color="green">{t('files.full')}</Tag>
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('files.package.components')}>
-                {pkg.metadata.components.length > 0 ? (
-                  <Flex gap={4} wrap="wrap">
-                    {pkg.metadata.components.map((component, index) => (
-                      <Tag key={index}>{component}</Tag>
-                    ))}
-                  </Flex>
-                ) : (
-                  <span style={{ color: 'var(--color-text-secondary)' }}>{t('files.package.no_components')}</span>
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('files.package.description')}>
-                {pkg.metadata.description || (
-                  <span style={{ color: 'var(--color-text-secondary)' }}>{t('files.package.no_description')}</span>
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('files.package.tags')}>
-                {pkg.metadata.tags.length > 0 ? (
-                  <Flex gap={4} wrap="wrap">
-                    {pkg.metadata.tags.map((tag, index) => (
-                      <Tag key={index} color="blue">
-                        {tag}
-                      </Tag>
-                    ))}
-                  </Flex>
-                ) : (
-                  <span style={{ color: 'var(--color-text-secondary)' }}>{t('files.package.no_tags')}</span>
-                )}
-              </Descriptions.Item>
-            </Descriptions>
-          ) : (
-            <Form form={form} layout="vertical">
-              <Form.Item name="isPatch" label={t('files.patch')} valuePropName="checked">
-                <Switch checkedChildren={t('files.patch')} unCheckedChildren={t('files.full')} />
-              </Form.Item>
-              <Form.Item name="components" label={t('files.package.components')}>
-                <Select mode="tags" placeholder={t('files.package.components_placeholder')} style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item name="description" label={t('files.package.description')}>
-                <Input.TextArea
-                  placeholder={t('files.package.description_placeholder')}
-                  rows={3}
-                  maxLength={500}
-                  showCount
-                />
-              </Form.Item>
-              <Form.Item name="tags" label={t('files.package.tags')}>
-                <Select mode="tags" placeholder={t('files.package.tags_placeholder')} style={{ width: '100%' }} />
-              </Form.Item>
-            </Form>
-          )}
+        <Card title={t('files.package.metadata')} style={{ marginBottom: 16 }}>
+          <Form form={form} layout="vertical">
+            <Form.Item name="isPatch" label={t('files.patch')} valuePropName="checked">
+              <Switch
+                checkedChildren={t('files.patch')}
+                unCheckedChildren={t('files.full')}
+                onChange={handleAutoSave}
+              />
+            </Form.Item>
+            <Form.Item name="components" label={t('files.package.components')}>
+              <Select
+                mode="tags"
+                placeholder={t('files.package.components_placeholder')}
+                style={{ width: '100%' }}
+                onBlur={handleAutoSave}
+                onInputKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setTimeout(() => handleAutoSave(), 0)
+                  }
+                }}
+              />
+            </Form.Item>
+            <Form.Item name="description" label={t('files.package.description')}>
+              <Input.TextArea
+                placeholder={t('files.package.description_placeholder')}
+                rows={3}
+                maxLength={500}
+                showCount
+                onBlur={handleAutoSave}
+              />
+            </Form.Item>
+            <Form.Item name="tags" label={t('files.package.tags')}>
+              <Select
+                mode="tags"
+                placeholder={t('files.package.tags_placeholder')}
+                style={{ width: '100%' }}
+                onBlur={handleAutoSave}
+                onInputKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setTimeout(() => handleAutoSave(), 0)
+                  }
+                }}
+              />
+            </Form.Item>
+          </Form>
         </Card>
 
         {/* Actions */}
