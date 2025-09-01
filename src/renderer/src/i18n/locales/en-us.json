@@ -890,6 +890,7 @@
       "upload_server_todo": "Upload to server feature will be implemented",
       "upload_to_device": "Upload to Device",
       "upload_to_server": "Upload to Server",
+      "upload_success": "Upload successful",
       "view_details": "View Details"
     },
     "package_type": "Package Type",

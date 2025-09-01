@@ -890,6 +890,7 @@
       "upload_server_todo": "サーバーへのアップロード機能は今後実装予定です",
       "upload_to_device": "デバイスにアップロード",
       "upload_to_server": "サーバーにアップロード",
+      "upload_success": "アップロードが成功しました",
       "view_details": "詳細を表示"
     },
     "package_type": "パッケージタイプ",

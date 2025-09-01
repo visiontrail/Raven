@@ -890,6 +890,7 @@
       "upload_server_todo": "Функция загрузки на сервер будет реализована",
       "upload_to_device": "Загрузить на устройство",
       "upload_to_server": "Загрузить на сервер",
+      "upload_success": "Загрузка успешна",
       "view_details": "Просмотр деталей"
     },
     "package_type": "Тип пакета",

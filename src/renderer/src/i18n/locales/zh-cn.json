@@ -890,6 +890,7 @@
       "upload_server_todo": "上传到服务器功能将会实现",
       "upload_to_device": "上传到设备",
       "upload_to_server": "上传到服务器",
+      "upload_success": "上传成功",
       "view_details": "查看详情"
     },
     "package_type": "包类型",
