@@ -3,7 +3,7 @@ import { isMac } from '@renderer/config/constant'
 import { useTheme } from '@renderer/context/ThemeProvider'
 import { useAssistant } from '@renderer/hooks/useAssistant'
 import { useSettings } from '@renderer/hooks/useSettings'
-import i18n from '@renderer/i18n'
+import i18n, { changeLanguageNormalized } from '@renderer/i18n'
 import { fetchChatCompletion } from '@renderer/services/ApiService'
 import { getDefaultTopic } from '@renderer/services/AssistantService'
 import { getAssistantMessage, getUserMessage } from '@renderer/services/MessagesService'
@@ -77,7 +77,7 @@ const HomeWindow: FC<{ draggable?: boolean }> = ({ draggable = true }) => {
   }, [isFirstMessage, referenceText, userInputText])
 
   useEffect(() => {
-    i18n.changeLanguage(language || navigator.language || defaultLanguage)
+    changeLanguageNormalized(language || navigator.language || defaultLanguage)
   }, [language])
 
   // Reset state when switching to home route

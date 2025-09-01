@@ -2,6 +2,7 @@ import { DropResult } from '@hello-pangea/dnd'
 import { loggerService } from '@logger'
 import { DraggableVirtualList, useDraggableReorder } from '@renderer/components/DraggableList'
 import { DeleteIcon, EditIcon } from '@renderer/components/Icons'
+import { isFeatureDisabled, isLockedModeEnabled } from '@renderer/config/locked-settings'
 import { getProviderLogo } from '@renderer/config/providers'
 import { useAllProviders, useProviders } from '@renderer/hooks/useProvider'
 import { getProviderLabel } from '@renderer/i18n/label'
@@ -39,6 +40,7 @@ const ProvidersList: FC = () => {
   const [searchText, setSearchText] = useState<string>('')
   const [dragging, setDragging] = useState(false)
   const [providerLogos, setProviderLogos] = useState<Record<string, string>>({})
+  const isLocked = isLockedModeEnabled()
 
   const setSelectedProvider = useCallback(
     (provider: Provider) => {
@@ -322,6 +324,8 @@ const ProvidersList: FC = () => {
       key: 'edit',
       icon: <EditIcon size={14} />,
       async onClick() {
+        if (isLocked || isFeatureDisabled('DISABLE_PROVIDER_DELETION')) return
+
         const { name, type, logoFile, logo } = await AddProviderPopup.show(provider)
 
         if (name) {
@@ -360,7 +364,10 @@ const ProvidersList: FC = () => {
       key: 'delete',
       icon: <DeleteIcon size={14} className="lucide-custom" />,
       danger: true,
+      disabled: isLocked || isFeatureDisabled('DISABLE_PROVIDER_DELETION'),
       async onClick() {
+        if (isLocked || isFeatureDisabled('DISABLE_PROVIDER_DELETION')) return
+
         window.modal.confirm({
           title: t('settings.provider.delete.title'),
           content: t('settings.provider.delete.content'),
@@ -459,19 +466,19 @@ const ProvidersList: FC = () => {
         <AddButtonWrapper>
           <Input
             type="text"
-            placeholder={t('settings.provider.search')}
+            placeholder={isLocked ? t('settings.provider.locked_search') : t('settings.provider.search')}
             value={searchText}
             style={{ borderRadius: 'var(--list-item-border-radius)', height: 35 }}
             suffix={<Search size={14} />}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={(e) => !isLocked && setSearchText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
                 e.stopPropagation()
                 setSearchText('')
               }
             }}
-            allowClear
-            disabled={dragging}
+            allowClear={!isLocked}
+            disabled={dragging || isLocked}
           />
         </AddButtonWrapper>
         <DraggableVirtualList

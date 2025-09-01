@@ -1,3 +1,4 @@
+import { isLockedModeEnabled } from '@renderer/config/locked-settings'
 import { Input, InputRef, Tooltip } from 'antd'
 import { Search } from 'lucide-react'
 import { motion } from 'motion/react'
@@ -20,19 +21,23 @@ const CollapsibleSearchBar: React.FC<CollapsibleSearchBarProps> = ({ onSearch, i
   const [searchText, setSearchText] = useState('')
   const inputRef = useRef<InputRef>(null)
 
+  const isLocked = isLockedModeEnabled()
+
   const handleTextChange = useCallback(
     (text: string) => {
+      if (isLocked) return
       setSearchText(text)
       onSearch(text)
     },
-    [onSearch]
+    [onSearch, isLocked]
   )
 
   const handleClear = useCallback(() => {
+    if (isLocked) return
     setSearchText('')
     setSearchVisible(false)
     onSearch('')
-  }, [onSearch])
+  }, [onSearch, isLocked])
 
   useEffect(() => {
     if (searchVisible && inputRef.current) {
@@ -53,22 +58,22 @@ const CollapsibleSearchBar: React.FC<CollapsibleSearchBarProps> = ({ onSearch, i
         <Input
           ref={inputRef}
           type="text"
-          placeholder={t('models.search')}
+          placeholder={isLocked ? t('settings.provider.locked_search') : t('models.search')}
           size="small"
           suffix={icon || <Search size={14} color="var(--color-icon)" />}
           value={searchText}
           autoFocus
-          allowClear
-          onChange={(e) => handleTextChange(e.target.value)}
+          allowClear={!isLocked}
+          disabled={isLocked}
+          onChange={(e) => !isLocked && handleTextChange(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              e.stopPropagation()
+            if (e.key === 'Escape' && !isLocked) {
               handleTextChange('')
               if (!searchText) setSearchVisible(false)
             }
           }}
           onBlur={() => {
-            if (!searchText) setSearchVisible(false)
+            if (!searchText && !isLocked) setSearchVisible(false)
           }}
           onClear={handleClear}
           style={{ width: '100%' }}
@@ -81,10 +86,10 @@ const CollapsibleSearchBar: React.FC<CollapsibleSearchBarProps> = ({ onSearch, i
           visible: { opacity: 1, transition: { duration: 0.1, delay: 0.3, ease: 'easeInOut' } },
           hidden: { opacity: 0, transition: { duration: 0.1, ease: 'easeInOut' } }
         }}
-        style={{ cursor: 'pointer', display: 'flex' }}
-        onClick={() => setSearchVisible(true)}>
-        <Tooltip title={t('models.search')} mouseLeaveDelay={0}>
-          {icon || <Search size={14} color="var(--color-icon)" />}
+        style={{ cursor: isLocked ? 'not-allowed' : 'pointer', display: 'flex' }}
+        onClick={() => !isLocked && setSearchVisible(true)}>
+        <Tooltip title={isLocked ? t('settings.provider.locked_search') : t('models.search')} mouseEnterDelay={0.5}>
+          <Search size={14} color={isLocked ? 'var(--color-text-disabled)' : 'var(--color-icon)'} />
         </Tooltip>
       </motion.div>
     </div>

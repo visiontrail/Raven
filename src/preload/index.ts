@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import type { ExtractChunkData } from '@cherrystudio/embedjs-interfaces'
 import { electronAPI } from '@electron-toolkit/preload'
 import { SpanEntity, TokenUsage } from '@mcp-trace/trace-core'
@@ -54,6 +56,10 @@ const api = {
   setTrayOnClose: (isActive: boolean) => ipcRenderer.invoke(IpcChannel.App_SetTrayOnClose, isActive),
   setTestPlan: (isActive: boolean) => ipcRenderer.invoke(IpcChannel.App_SetTestPlan, isActive),
   setTestChannel: (channel: UpgradeChannel) => ipcRenderer.invoke(IpcChannel.App_SetTestChannel, channel),
+  setUseCustomUpdateServer: (useCustomServer: boolean) =>
+    ipcRenderer.invoke(IpcChannel.App_SetUseCustomUpdateServer, useCustomServer),
+  setCustomUpdateServerUrl: (serverUrl: string) =>
+    ipcRenderer.invoke(IpcChannel.App_SetCustomUpdateServerUrl, serverUrl),
   setTheme: (theme: ThemeMode) => ipcRenderer.invoke(IpcChannel.App_SetTheme, theme),
   handleZoomFactor: (delta: number, reset: boolean = false) =>
     ipcRenderer.invoke(IpcChannel.App_HandleZoomFactor, delta, reset),
@@ -302,6 +308,29 @@ const api = {
   python: {
     execute: (script: string, context?: Record<string, any>, timeout?: number) =>
       ipcRenderer.invoke(IpcChannel.Python_Execute, script, context, timeout)
+  },
+  packager: {
+    getInfo: (packageType: string) => ipcRenderer.invoke(IpcChannel.Packager_GetInfo, packageType),
+    getAutoVersion: (filePath: string) => ipcRenderer.invoke(IpcChannel.Packager_GetAutoVersion, filePath),
+    getAutoVersionFromFilename: (filename: string) =>
+      ipcRenderer.invoke(IpcChannel.Packager_GetAutoVersionFromFilename, filename),
+    generateSiIni: (config) => ipcRenderer.invoke(IpcChannel.Packager_GenerateSiIni, config),
+    createPackage: (config) => ipcRenderer.invoke(IpcChannel.Packager_CreatePackage, config),
+    selectFile: () => ipcRenderer.invoke(IpcChannel.Packager_SelectFile)
+  },
+  package: {
+    getAll: () => ipcRenderer.invoke(IpcChannel.Package_GetAll),
+    getById: (id: string) => ipcRenderer.invoke(IpcChannel.Package_GetById, id),
+    updateMetadata: (id: string, metadata: any) => ipcRenderer.invoke(IpcChannel.Package_UpdateMetadata, id, metadata),
+    delete: (id: string) => ipcRenderer.invoke(IpcChannel.Package_Delete, id),
+    scanForPackages: () => ipcRenderer.invoke(IpcChannel.Package_ScanForPackages),
+    uploadToFTP: (id: string, ftpConfig: any) => ipcRenderer.invoke(IpcChannel.Package_UploadToFTP, id, ftpConfig),
+    uploadToHTTP: (id: string, httpConfig: any) => ipcRenderer.invoke(IpcChannel.Package_UploadToHTTP, id, httpConfig),
+    scanDirectory: (directoryPath: string) => ipcRenderer.invoke(IpcChannel.Package_ScanDirectory, directoryPath),
+    extractMetadata: (filePath: string) => ipcRenderer.invoke(IpcChannel.Package_ExtractMetadata, filePath)
+  },
+  path: {
+    basename: (filePath: string) => path.basename(filePath)
   },
   shell: {
     openExternal: (url: string, options?: Electron.OpenExternalOptions) => shell.openExternal(url, options)

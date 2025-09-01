@@ -189,15 +189,12 @@ const MCPToolsButton: FC<Props> = ({ ref, setInputValue, resizeTextArea, Toolbar
       label: t('settings.input.clear.all'),
       description: t('settings.mcp.disable.description'),
       icon: <CircleX />,
-      isSelected: false,
-      action: () => {
-        updateMcpEnabled(false)
-        quickPanel.close()
-      }
+      isSelected: !(assistant.mcpServers && assistant.mcpServers.length > 0),
+      action: () => updateMcpEnabled(false)
     })
 
     return newList
-  }, [activedMcpServers, t, assistantMcpServers, navigate, updateMcpEnabled, quickPanel])
+  }, [activedMcpServers, t, assistant.mcpServers, assistantMcpServers, navigate, updateMcpEnabled])
 
   const openQuickPanel = useCallback(() => {
     quickPanel.open({

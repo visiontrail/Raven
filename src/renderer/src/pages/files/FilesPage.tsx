@@ -1,9 +1,8 @@
-import { ExclamationCircleOutlined } from '@ant-design/icons'
+import { ExclamationCircleOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons'
 import { Navbar, NavbarCenter } from '@renderer/components/app/Navbar'
 import { DeleteIcon, EditIcon } from '@renderer/components/Icons'
 import ListItem from '@renderer/components/ListItem'
 import db from '@renderer/databases'
-import { getFileFieldLabel } from '@renderer/i18n/label'
 import { handleDelete, handleRename, sortFiles, tempFilesSort } from '@renderer/services/FileAction'
 import FileManager from '@renderer/services/FileManager'
 import { FileMetadata, FileTypes } from '@renderer/types'
@@ -11,19 +10,13 @@ import { formatFileSize } from '@renderer/utils'
 import { Button, Empty, Flex, Popconfirm } from 'antd'
 import dayjs from 'dayjs'
 import { useLiveQuery } from 'dexie-react-hooks'
-import {
-  ArrowDownNarrowWide,
-  ArrowUpWideNarrow,
-  File as FileIcon,
-  FileImage,
-  FileText,
-  FileType as FileTypeIcon
-} from 'lucide-react'
+import { File as FileIcon, FileText, FileType as FileTypeIcon, Package } from 'lucide-react'
 import { FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import FileList from './FileList'
+import PackageListView from './PackageListView'
 
 type SortField = 'created_at' | 'size' | 'name'
 type SortOrder = 'asc' | 'desc'
@@ -78,8 +71,8 @@ const FilesPage: FC = () => {
 
   const menuItems = [
     { key: FileTypes.DOCUMENT, label: t('files.document'), icon: <FileIcon size={16} /> },
-    { key: FileTypes.IMAGE, label: t('files.image'), icon: <FileImage size={16} /> },
     { key: FileTypes.TEXT, label: t('files.text'), icon: <FileTypeIcon size={16} /> },
+    { key: FileTypes.PACKAGE, label: t('files.packages'), icon: <Package size={16} /> },
     { key: 'all', label: t('files.all'), icon: <FileText size={16} /> }
   ]
 
@@ -101,29 +94,35 @@ const FilesPage: FC = () => {
           ))}
         </SideNav>
         <MainContent>
-          <SortContainer>
-            {(['created_at', 'size', 'name'] as const).map((field) => (
-              <SortButton
-                key={field}
-                active={sortField === field}
-                onClick={() => {
-                  if (sortField === field) {
-                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-                  } else {
-                    setSortField(field as 'created_at' | 'size' | 'name')
-                    setSortOrder('desc')
-                  }
-                }}>
-                {getFileFieldLabel(field)}
-                {sortField === field &&
-                  (sortOrder === 'desc' ? <ArrowUpWideNarrow size={12} /> : <ArrowDownNarrowWide size={12} />)}
-              </SortButton>
-            ))}
-          </SortContainer>
-          {dataSource && dataSource?.length > 0 ? (
-            <FileList id={fileType} list={dataSource} files={sortedFiles} />
+          {fileType === FileTypes.PACKAGE ? (
+            <PackageListView />
           ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <>
+              <SortContainer>
+                {['created_at', 'size', 'name'].map((field) => (
+                  <SortButton
+                    key={field}
+                    active={sortField === field}
+                    onClick={() => {
+                      if (sortField === field) {
+                        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                      } else {
+                        setSortField(field as 'created_at' | 'size' | 'name')
+                        setSortOrder('desc')
+                      }
+                    }}>
+                    {t(`files.${field}`)}
+                    {sortField === field &&
+                      (sortOrder === 'desc' ? <SortDescendingOutlined /> : <SortAscendingOutlined />)}
+                  </SortButton>
+                ))}
+              </SortContainer>
+              {dataSource && dataSource?.length > 0 ? (
+                <FileList id={fileType} list={dataSource} files={sortedFiles} />
+              ) : (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              )}
+            </>
           )}
         </MainContent>
       </ContentContainer>

@@ -38,36 +38,52 @@ const VertexAISettings: FC<Props> = ({ providerId }) => {
   }
 
   const handleProjectIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalProjectId(e.target.value)
+    if (!isLocked) {
+      setLocalProjectId(e.target.value)
+    }
   }
 
   const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newLocation = e.target.value
-    setLocalLocation(newLocation)
+    if (!isLocked) {
+      const newLocation = e.target.value
+      setLocalLocation(newLocation)
+    }
   }
 
   const handleServiceAccountPrivateKeyChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setServiceAccountPrivateKey(e.target.value)
+    if (!isLocked) {
+      setServiceAccountPrivateKey(e.target.value)
+    }
   }
 
   const handleServiceAccountPrivateKeyBlur = () => {
-    setServiceAccountPrivateKey(serviceAccount.privateKey)
+    if (!isLocked) {
+      setServiceAccountPrivateKey(serviceAccount.privateKey)
+    }
   }
 
   const handleServiceAccountClientEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setServiceAccountClientEmail(e.target.value)
+    if (!isLocked) {
+      setServiceAccountClientEmail(e.target.value)
+    }
   }
 
   const handleServiceAccountClientEmailBlur = () => {
-    setServiceAccountClientEmail(serviceAccount.clientEmail)
+    if (!isLocked) {
+      setServiceAccountClientEmail(serviceAccount.clientEmail)
+    }
   }
 
   const handleProjectIdBlur = () => {
-    setProjectId(localProjectId)
+    if (!isLocked) {
+      setProjectId(localProjectId)
+    }
   }
 
   const handleLocationBlur = () => {
-    setLocation(localLocation)
+    if (!isLocked) {
+      setLocation(localLocation)
+    }
   }
 
   return (
@@ -98,11 +114,16 @@ const VertexAISettings: FC<Props> = ({ providerId }) => {
         {t('settings.provider.vertex_ai.service_account.client_email')}
       </SettingSubtitle>
       <Input.Password
-        value={serviceAccount.clientEmail}
-        placeholder={t('settings.provider.vertex_ai.service_account.client_email_placeholder')}
+        value={isLocked ? lockedSettings.clientEmail : serviceAccount.clientEmail}
+        placeholder={
+          isLocked
+            ? t('settings.provider.locked_value')
+            : t('settings.provider.vertex_ai.service_account.client_email_placeholder')
+        }
         onChange={handleServiceAccountClientEmailChange}
         onBlur={handleServiceAccountClientEmailBlur}
         style={{ marginTop: 5 }}
+        disabled={isLocked || isFeatureDisabled('DISABLE_API_KEY_EDITING')}
       />
       <SettingHelpTextRow>
         <SettingHelpText>{t('settings.provider.vertex_ai.service_account.client_email_help')}</SettingHelpText>
@@ -112,13 +133,18 @@ const VertexAISettings: FC<Props> = ({ providerId }) => {
         {t('settings.provider.vertex_ai.service_account.private_key')}
       </SettingSubtitle>
       <Input.TextArea
-        value={serviceAccount.privateKey}
-        placeholder={t('settings.provider.vertex_ai.service_account.private_key_placeholder')}
+        value={isLocked ? lockedSettings.privateKey : serviceAccount.privateKey}
+        placeholder={
+          isLocked
+            ? t('settings.provider.locked_value')
+            : t('settings.provider.vertex_ai.service_account.private_key_placeholder')
+        }
         onChange={handleServiceAccountPrivateKeyChange}
         onBlur={handleServiceAccountPrivateKeyBlur}
         style={{ marginTop: 5 }}
         spellCheck={false}
         autoSize={{ minRows: 4, maxRows: 4 }}
+        disabled={isLocked || isFeatureDisabled('DISABLE_API_KEY_EDITING')}
       />
       {apiKeyWebsite && (
         <SettingHelpTextRow style={{ justifyContent: 'space-between' }}>
@@ -133,11 +159,14 @@ const VertexAISettings: FC<Props> = ({ providerId }) => {
       <>
         <SettingSubtitle style={{ marginTop: 5 }}>{t('settings.provider.vertex_ai.project_id')}</SettingSubtitle>
         <Input.Password
-          value={localProjectId}
-          placeholder={t('settings.provider.vertex_ai.project_id_placeholder')}
+          value={isLocked ? lockedProjectId : localProjectId}
+          placeholder={
+            isLocked ? t('settings.provider.locked_value') : t('settings.provider.vertex_ai.project_id_placeholder')
+          }
           onChange={handleProjectIdChange}
           onBlur={handleProjectIdBlur}
           style={{ marginTop: 5 }}
+          disabled={isLocked || isFeatureDisabled('DISABLE_API_KEY_EDITING')}
         />
         <SettingHelpTextRow>
           <SettingHelpText>{t('settings.provider.vertex_ai.project_id_help')}</SettingHelpText>
@@ -145,11 +174,12 @@ const VertexAISettings: FC<Props> = ({ providerId }) => {
 
         <SettingSubtitle style={{ marginTop: 5 }}>{t('settings.provider.vertex_ai.location')}</SettingSubtitle>
         <Input
-          value={localLocation}
-          placeholder="us-central1"
+          value={isLocked ? lockedLocation : localLocation}
+          placeholder={isLocked ? t('settings.provider.locked_value') : 'us-central1'}
           onChange={handleLocationChange}
           onBlur={handleLocationBlur}
           style={{ marginTop: 5 }}
+          disabled={isLocked || isFeatureDisabled('DISABLE_API_KEY_EDITING')}
         />
         <SettingHelpTextRow>
           <SettingHelpText>{t('settings.provider.vertex_ai.location_help')}</SettingHelpText>

@@ -12,9 +12,8 @@ import BailianProviderLogo from '@renderer/assets/images/providers/bailian.png'
 import BurnCloudProviderLogo from '@renderer/assets/images/providers/burncloud.png'
 import CephalonProviderLogo from '@renderer/assets/images/providers/cephalon.jpeg'
 import DeepSeekProviderLogo from '@renderer/assets/images/providers/deepseek.png'
-import DmxapiProviderLogo from '@renderer/assets/images/providers/DMXAPI.png'
+import DmxapiProviderLogo from '@renderer/assets/images/providers/dmxapi-logo.webp'
 import FireworksProviderLogo from '@renderer/assets/images/providers/fireworks.png'
-import GiteeAIProviderLogo from '@renderer/assets/images/providers/gitee-ai.png'
 import GithubProviderLogo from '@renderer/assets/images/providers/github.png'
 import GoogleProviderLogo from '@renderer/assets/images/providers/google.png'
 import GPUStackProviderLogo from '@renderer/assets/images/providers/gpustack.svg'
@@ -600,15 +599,6 @@ const PROVIDER_LOGO_MAP: AtLeast<SystemProviderId, string> = {
   openai: OpenAiProviderLogo,
   silicon: SiliconFlowProviderLogo,
   deepseek: DeepSeekProviderLogo,
-  'gitee-ai': GiteeAIProviderLogo,
-  yi: ZeroOneProviderLogo,
-  groq: GroqProviderLogo,
-  zhipu: ZhipuProviderLogo,
-  ollama: OllamaProviderLogo,
-  lmstudio: LMStudioProviderLogo,
-  moonshot: MoonshotProviderLogo,
-  openrouter: OpenRouterProviderLogo,
-  baichuan: BaichuanProviderLogo,
   dashscope: BailianProviderLogo,
   modelscope: ModelScopeProviderLogo,
   xirang: XirangProviderLogo,
@@ -621,6 +611,9 @@ const PROVIDER_LOGO_MAP: AtLeast<SystemProviderId, string> = {
   minimax: MinimaxProviderLogo,
   github: GithubProviderLogo,
   copilot: GithubProviderLogo,
+  openrouter: OpenRouterProviderLogo,
+  ollama: OllamaProviderLogo,
+  lmstudio: LMStudioProviderLogo,
   ocoolai: OcoolAiProviderLogo,
   together: TogetherProviderLogo,
   fireworks: FireworksProviderLogo,
@@ -629,6 +622,7 @@ const PROVIDER_LOGO_MAP: AtLeast<SystemProviderId, string> = {
   'azure-openai': AzureProviderLogo,
   hunyuan: HunyuanProviderLogo,
   grok: GrokProviderLogo,
+  groq: GroqProviderLogo,
   hyperbolic: HyperbolicProviderLogo,
   mistral: MistralProviderLogo,
   jina: JinaProviderLogo,
@@ -637,6 +631,10 @@ const PROVIDER_LOGO_MAP: AtLeast<SystemProviderId, string> = {
   dmxapi: DmxapiProviderLogo,
   perplexity: PerplexityProviderLogo,
   infini: InfiniProviderLogo,
+  zhipu: ZhipuProviderLogo,
+  yi: ZeroOneProviderLogo,
+  moonshot: MoonshotProviderLogo,
+  baichuan: BaichuanProviderLogo,
   o3: O3ProviderLogo,
   'tencent-cloud-ti': TencentCloudProviderLogo,
   gpustack: GPUStackProviderLogo,
@@ -675,13 +673,13 @@ type ProviderUrls = {
 export const PROVIDER_URLS: Record<SystemProviderId, ProviderUrls> = {
   ph8: {
     api: {
-      url: 'https://ph8.co'
+      url: 'https://api.deepseek.com'
     },
     websites: {
-      official: 'https://ph8.co',
-      apiKey: 'https://ph8.co/apiKey',
-      docs: 'https://m1r239or5aw.feishu.cn/wiki/SegzwS4x1i2P4OksFY2cMvujn9f',
-      models: 'https://ph8.co/v1/models'
+      official: 'https://deepseek.com/',
+      apiKey: 'https://platform.deepseek.com/api_keys',
+      docs: 'https://platform.deepseek.com/api-docs/',
+      models: 'https://platform.deepseek.com/api-docs/'
     }
   },
   '302ai': {
@@ -740,6 +738,7 @@ export const PROVIDER_URLS: Record<SystemProviderId, ProviderUrls> = {
       models: 'https://ai.google.dev/gemini-api/docs/models/gemini'
     }
   },
+  // duplicate removed: dashscope already defined above
   silicon: {
     api: {
       url: 'https://api.siliconflow.cn'

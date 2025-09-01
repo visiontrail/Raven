@@ -1,4 +1,4 @@
-import i18n from '@renderer/i18n'
+import i18n, { changeLanguageNormalized } from '@renderer/i18n'
 import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
@@ -23,7 +23,7 @@ const App = () => {
     }
 
     const setLangHandler = (_, data) => {
-      i18n.changeLanguage(data.lang)
+      changeLanguageNormalized(data.lang)
       const newTitle = i18n.t('trace.traceWindow')
       if (newTitle !== title) {
         window.api.trace.setTraceWindowTitle(i18n.t('trace.traceWindow'))

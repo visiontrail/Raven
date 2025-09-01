@@ -1,6 +1,7 @@
 import { CustomTranslateLanguage, FileMetadata, KnowledgeItem, QuickPhrase, TranslateHistory } from '@renderer/types'
 // Import necessary types for blocks and new message structure
 import type { Message as NewMessage, MessageBlock } from '@renderer/types/newMessage'
+import type { Package } from '@renderer/types/package'
 import { Dexie, type EntityTable } from 'dexie'
 
 import { upgradeToV5, upgradeToV7, upgradeToV8 } from './upgrades'
@@ -17,6 +18,7 @@ export const db = new Dexie('CherryStudio', {
   quick_phrases: EntityTable<QuickPhrase, 'id'>
   message_blocks: EntityTable<MessageBlock, 'id'> // Correct type for message_blocks
   translate_languages: EntityTable<CustomTranslateLanguage, 'id'>
+  packages: EntityTable<Package, 'id'> // Package management table
 }
 
 db.version(1).stores({

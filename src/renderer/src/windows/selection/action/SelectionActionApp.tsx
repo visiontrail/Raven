@@ -1,7 +1,7 @@
 import { isMac } from '@renderer/config/constant'
 import { useSelectionAssistant } from '@renderer/hooks/useSelectionAssistant'
 import { useSettings } from '@renderer/hooks/useSettings'
-import i18n from '@renderer/i18n'
+import i18n, { changeLanguageNormalized } from '@renderer/i18n'
 import type { ActionItem } from '@renderer/types/selectionTypes'
 import { defaultLanguage } from '@shared/config/constant'
 import { IpcChannel } from '@shared/IpcChannel'
@@ -71,7 +71,7 @@ const SelectionActionApp: FC = () => {
   }, [isAutoClose, isPinned])
 
   useEffect(() => {
-    i18n.changeLanguage(language || navigator.language || defaultLanguage)
+    changeLanguageNormalized(language || navigator.language || defaultLanguage)
   }, [language])
 
   useEffect(() => {

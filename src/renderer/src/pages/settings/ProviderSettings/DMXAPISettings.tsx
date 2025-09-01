@@ -1,9 +1,10 @@
 import DmxapiLogo from '@renderer/assets/images/providers/dmxapi-logo.webp'
 import DmxapiLogoDark from '@renderer/assets/images/providers/dmxapi-logo-dark.webp'
+import { isFeatureDisabled, isLockedModeEnabled, LOCKED_SETTINGS } from '@renderer/config/locked-settings'
 import { useTheme } from '@renderer/context/ThemeProvider'
 import { useProvider } from '@renderer/hooks/useProvider'
 import { Radio, RadioChangeEvent, Space } from 'antd'
-import { FC, useCallback, useState } from 'react'
+import { FC, useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
@@ -44,9 +45,15 @@ const DMXAPISettings: FC<DMXAPISettingsProps> = ({ providerId }) => {
   const { theme } = useTheme()
 
   const { t } = useTranslation()
+  const isLocked = isLockedModeEnabled()
+  const lockedPlatform = LOCKED_SETTINGS.DMXAPI_PLATFORM
 
   // 获取当前选中的平台，如果没有设置则默认为官方平台
   const getCurrentPlatform = (): PlatformType => {
+    if (isLocked && lockedPlatform) {
+      return lockedPlatform as PlatformType
+    }
+
     if (!provider.apiHost) return PlatformType.OFFICIAL
 
     if (provider.apiHost.includes('DMXAPI.com')) {
@@ -59,14 +66,24 @@ const DMXAPISettings: FC<DMXAPISettingsProps> = ({ providerId }) => {
   // 状态管理
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformType>(getCurrentPlatform())
 
+  // 在锁定模式下自动应用设置
+  useEffect(() => {
+    if (isLocked && lockedPlatform && provider.apiHost !== lockedPlatform) {
+      updateProvider({ ...provider, apiHost: lockedPlatform })
+      setSelectedPlatform(lockedPlatform as PlatformType)
+    }
+  }, [isLocked, lockedPlatform, provider, updateProvider])
+
   // 处理平台选择变更
   const handlePlatformChange = useCallback(
     (e: RadioChangeEvent) => {
-      const platform = e.target.value as PlatformType
-      setSelectedPlatform(platform)
-      updateProvider({ ...provider, apiHost: platform })
+      if (!isLocked && !isFeatureDisabled('DISABLE_API_HOST_EDITING')) {
+        const platform = e.target.value as PlatformType
+        setSelectedPlatform(platform)
+        updateProvider({ ...provider, apiHost: platform })
+      }
     },
-    [provider, updateProvider]
+    [provider, updateProvider, isLocked]
   )
 
   return (
@@ -85,14 +102,17 @@ const DMXAPISettings: FC<DMXAPISettingsProps> = ({ providerId }) => {
           }}
           onChange={handlePlatformChange}
           value={selectedPlatform}
+          disabled={isLocked || isFeatureDisabled('DISABLE_API_HOST_EDITING')}
           options={PlatformOptions.map((option) => ({
             ...option,
             label: (
               <span>
                 {option.label}{' '}
-                <a href={option.apiKeyWebsite} target="_blank" rel="noopener noreferrer">
-                  (获得 API密钥)
-                </a>
+                {!isLocked && (
+                  <a href={option.apiKeyWebsite} target="_blank" rel="noopener noreferrer">
+                    (获得 API密钥)
+                  </a>
+                )}
               </span>
             )
           }))}></Radio.Group>

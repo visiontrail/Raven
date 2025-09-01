@@ -32,31 +32,24 @@
 该 slice 导出以下 actions (由 `createSlice` 和 `createEntityAdapter` 自动生成或自定义)：
 
 - **`upsertOneBlock(payload: MessageBlock)`**:
-
   - 添加一个新的 `MessageBlock` 或更新一个已存在的 `MessageBlock`。如果 payload 中的 `id` 已存在，则执行更新；否则执行插入。
 
 - **`upsertManyBlocks(payload: MessageBlock[])`**:
-
   - 添加或更新多个 `MessageBlock`。常用于批量加载数据（例如，加载一个 Topic 的所有消息块）。
 
 - **`removeOneBlock(payload: string)`**:
-
   - 根据提供的 `id` (payload) 移除单个 `MessageBlock`。
 
 - **`removeManyBlocks(payload: string[])`**:
-
   - 根据提供的 `id` 数组 (payload) 移除多个 `MessageBlock`。常用于删除消息或清空 Topic 时清理相关的块。
 
 - **`removeAllBlocks()`**:
-
   - 移除 state 中的所有 `MessageBlock` 实体。
 
 - **`updateOneBlock(payload: { id: string; changes: Partial<MessageBlock> })`**:
-
   - 更新一个已存在的 `MessageBlock`。`payload` 需要包含块的 `id` 和一个包含要更改的字段的 `changes` 对象。
 
 - **`setMessageBlocksLoading(payload: 'idle' | 'loading')`**:
-
   - (自定义) 设置 `loadingState` 属性。
 
 - **`setMessageBlocksError(payload: string)`**:

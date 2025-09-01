@@ -34,45 +34,18 @@ export default defineConfig({
       },
       sourcemap: isDev
     },
-    esbuild: isProd ? { legalComments: 'none' } : {},
-    optimizeDeps: {
-      noDiscovery: isDev
-    }
+    optimizeDeps: { noDiscovery: process.env.NODE_ENV === 'development' }
   },
   preload: {
-    plugins: [
-      react({
-        tsDecorators: true
-      }),
-      externalizeDepsPlugin()
-    ],
-    resolve: {
-      alias: {
-        '@shared': resolve('packages/shared'),
-        '@mcp-trace/trace-core': resolve('packages/mcp-trace/trace-core')
-      }
-    },
-    build: {
-      sourcemap: isDev
-    }
+    plugins: [externalizeDepsPlugin()],
+    resolve: { alias: { '@shared': resolve('packages/shared') } },
+    build: { sourcemap: process.env.NODE_ENV === 'development' }
   },
   renderer: {
     plugins: [
-      react({
-        tsDecorators: true,
-        plugins: [
-          [
-            '@swc/plugin-styled-components',
-            {
-              displayName: true, // 开发环境下启用组件名称
-              fileName: false, // 不在类名中包含文件名
-              pure: true, // 优化性能
-              ssr: false // 不需要服务端渲染
-            }
-          ]
-        ]
-      }),
-      ...(isDev ? [CodeInspectorPlugin({ bundler: 'vite' })] : []), // 只在开发环境下启用 CodeInspectorPlugin
+      react(),
+      // 只在开发环境下启用 CodeInspectorPlugin
+      ...(process.env.NODE_ENV === 'development' ? [CodeInspectorPlugin({ bundler: 'vite' })] : []),
       ...visualizerPlugin('renderer')
     ],
     resolve: {
@@ -85,14 +58,9 @@ export default defineConfig({
       }
     },
     optimizeDeps: {
-      exclude: ['pyodide'],
-      esbuildOptions: {
-        target: 'esnext' // for dev
-      }
+      exclude: ['pyodide']
     },
-    worker: {
-      format: 'es'
-    },
+    worker: { format: 'es' },
     build: {
       target: 'esnext', // for build
       rollupOptions: {
@@ -100,11 +68,31 @@ export default defineConfig({
           index: resolve(__dirname, 'src/renderer/index.html'),
           miniWindow: resolve(__dirname, 'src/renderer/miniWindow.html'),
           selectionToolbar: resolve(__dirname, 'src/renderer/selectionToolbar.html'),
-          selectionAction: resolve(__dirname, 'src/renderer/selectionAction.html'),
-          traceWindow: resolve(__dirname, 'src/renderer/traceWindow.html')
+          selectionAction: resolve(__dirname, 'src/renderer/selectionAction.html')
+        },
+        output: {
+          // 修复 antd createContext 问题 - 暂时禁用 antd 代码分割
+          manualChunks: (id) => {
+            // 将 node_modules 中的大型库分离到单独的 chunk
+            if (id.includes('node_modules')) {
+              // 暂时不分割 antd 和 @ant-design 以避免 React 加载顺序问题
+              // if (id.includes('antd')) return 'antd'
+              // if (id.includes('@ant-design')) return 'ant-design'
+
+              // 注释掉React分割以避免初始化顺序问题
+              // if (id.includes('react') || id.includes('react-dom')) return 'react'
+              if (id.includes('lodash')) return 'lodash'
+              if (id.includes('monaco-editor')) return 'monaco'
+              return 'vendor'
+            }
+            return undefined
+          }
         }
-      }
-    },
-    esbuild: isProd ? { legalComments: 'none' } : {}
+      },
+      // 减少并行处理以降低内存使用
+      minify: 'esbuild',
+      // 禁用源码映射以节省内存
+      sourcemap: false
+    }
   }
 })

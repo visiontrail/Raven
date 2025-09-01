@@ -5,7 +5,7 @@ import Selector from '@renderer/components/Selector'
 import { useTheme } from '@renderer/context/ThemeProvider'
 import { useEnableDeveloperMode, useSettings } from '@renderer/hooks/useSettings'
 import { useTimer } from '@renderer/hooks/useTimer'
-import i18n from '@renderer/i18n'
+import i18n, { changeLanguageNormalized } from '@renderer/i18n'
 import { RootState, useAppDispatch } from '@renderer/store'
 import {
   setEnableDataCollection,
@@ -86,7 +86,7 @@ const GeneralSettings: FC = () => {
     dispatch(setLanguage(value))
     localStorage.setItem('language', value)
     window.api.setLanguage(value)
-    i18n.changeLanguage(value)
+    changeLanguageNormalized(value)
   }
 
   const handleSpellCheckChange = (checked: boolean) => {

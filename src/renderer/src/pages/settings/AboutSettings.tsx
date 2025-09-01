@@ -28,7 +28,18 @@ const AboutSettings: FC = () => {
   const [version, setVersion] = useState('')
   const [isPortable, setIsPortable] = useState(false)
   const { t } = useTranslation()
-  const { autoCheckUpdate, setAutoCheckUpdate, testPlan, setTestPlan, testChannel, setTestChannel } = useSettings()
+  const {
+    autoCheckUpdate,
+    setAutoCheckUpdate,
+    testPlan,
+    setTestPlan,
+    testChannel,
+    setTestChannel,
+    useCustomUpdateServer,
+    setUseCustomUpdateServer
+    // customUpdateServerUrl,
+    // setCustomUpdateServerUrl
+  } = useSettings()
   const { theme } = useTheme()
   const dispatch = useAppDispatch()
   const { update } = useRuntime()
@@ -235,6 +246,13 @@ const AboutSettings: FC = () => {
             <SettingRow>
               <SettingRowTitle>{t('settings.general.auto_check_update.title')}</SettingRowTitle>
               <Switch value={autoCheckUpdate} onChange={(v) => setAutoCheckUpdate(v)} />
+            </SettingRow>
+            <SettingDivider />
+            <SettingRow>
+              <SettingRowTitle>
+                {t('settings.general.custom_update_server.title', 'Use Custom Update Server')}
+              </SettingRowTitle>
+              <Switch value={useCustomUpdateServer} onChange={(v) => setUseCustomUpdateServer(v)} />
             </SettingRow>
             <SettingDivider />
             <SettingRow>

@@ -41,6 +41,40 @@ export interface LlmState {
   settings: LlmSettings
 }
 
+export const INITIAL_PROVIDERS: Provider[] = [
+  {
+    id: 'deepseek',
+    name: 'deepseek',
+    type: 'openai',
+    apiKey: '',
+    apiHost: 'https://api.deepseek.com',
+    models: SYSTEM_MODELS.deepseek,
+    isSystem: true,
+    enabled: false
+  },
+  {
+    id: 'dashscope',
+    name: 'Bailian',
+    type: 'openai',
+    apiKey: '',
+    apiHost: 'https://dashscope.aliyuncs.com/compatible-mode/v1/',
+    models: SYSTEM_MODELS.dashscope,
+    isSystem: true,
+    enabled: false
+  },
+  {
+    id: 'gemini',
+    name: 'Gemini',
+    type: 'gemini',
+    apiKey: '',
+    apiHost: 'https://generativelanguage.googleapis.com',
+    models: SYSTEM_MODELS.gemini,
+    isSystem: true,
+    enabled: false,
+    isVertex: false
+  }
+]
+
 export const initialState: LlmState = {
   defaultModel: SYSTEM_MODELS.defaultModel[0],
   topicNamingModel: SYSTEM_MODELS.defaultModel[1],

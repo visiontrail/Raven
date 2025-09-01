@@ -1122,7 +1122,7 @@ export class SelectionService {
         preload: join(__dirname, '../preload/index.js'),
         contextIsolation: true,
         nodeIntegration: false,
-        sandbox: true,
+        sandbox: false,
         devTools: true
       }
     })

@@ -27,7 +27,9 @@ export enum ConfigKeys {
   SelectionAssistantFilterList = 'selectionAssistantFilterList',
   DisableHardwareAcceleration = 'disableHardwareAcceleration',
   Proxy = 'proxy',
-  EnableDeveloperMode = 'enableDeveloperMode'
+  EnableDeveloperMode = 'enableDeveloperMode',
+  UseCustomUpdateServer = 'useCustomUpdateServer',
+  CustomUpdateServerUrl = 'customUpdateServerUrl'
 }
 
 export class ConfigManager {
@@ -227,6 +229,22 @@ export class ConfigManager {
 
   setDisableHardwareAcceleration(value: boolean) {
     this.set(ConfigKeys.DisableHardwareAcceleration, value)
+  }
+
+  getUseCustomUpdateServer(): boolean {
+    return this.get<boolean>(ConfigKeys.UseCustomUpdateServer, false)
+  }
+
+  setUseCustomUpdateServer(value: boolean) {
+    this.set(ConfigKeys.UseCustomUpdateServer, value)
+  }
+
+  getCustomUpdateServerUrl(): string {
+    return this.get<string>(ConfigKeys.CustomUpdateServerUrl, 'http://localhost:3000')
+  }
+
+  setCustomUpdateServerUrl(value: string) {
+    this.set(ConfigKeys.CustomUpdateServerUrl, value)
   }
 
   setAndNotify(key: string, value: unknown) {

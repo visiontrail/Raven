@@ -8,7 +8,7 @@ import { useTags } from '@renderer/hooks/useTags'
 import { Assistant, AssistantsSortType } from '@renderer/types'
 import { Tooltip, Typography } from 'antd'
 import { Plus } from 'lucide-react'
-import { FC, useCallback, useMemo, useRef, useState } from 'react'
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
@@ -33,6 +33,17 @@ const Assistants: FC<AssistantsTabProps> = ({
   const { getGroupedAssistants, collapsedTags, toggleTagCollapse } = useTags()
   const { assistantsTabSortType = 'list', setAssistantsTabSortType } = useAssistantsTabSortType()
   const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.debug('[AssistantsTab] render', {
+        assistantsCount: assistants?.length,
+        assistants,
+        activeAssistantId: activeAssistant?.id,
+        assistantsTabSortType
+      })
+    }
+  }, [assistants, activeAssistant?.id, assistantsTabSortType])
 
   const onDelete = useCallback(
     (assistant: Assistant) => {

@@ -23,8 +23,9 @@ import { RemoteSyncState } from './backup'
 
 export type SendMessageShortcut = 'Enter' | 'Shift+Enter' | 'Ctrl+Enter' | 'Command+Enter' | 'Alt+Enter'
 
-// Re-export for backward compatibility
-export { DEFAULT_SIDEBAR_ICONS }
+export type SidebarIcon = 'assistants' | 'agents' | 'knowledge' | 'files' | 'packager' | 'minapp'
+
+export const DEFAULT_SIDEBAR_ICONS: SidebarIcon[] = ['assistants', 'agents', 'knowledge', 'files', 'packager']
 
 export interface NutstoreSyncRuntime extends RemoteSyncState {}
 
@@ -211,6 +212,9 @@ export interface SettingsState {
   // API Server
   apiServer: ApiServerConfig
   showMessageOutline?: boolean
+  // 自定义更新服务器配置
+  useCustomUpdateServer: boolean
+  customUpdateServerUrl: string
 }
 
 export type MultiModelMessageStyle = 'horizontal' | 'vertical' | 'fold' | 'grid'
@@ -391,7 +395,7 @@ export const initialState: SettingsState = {
   // Developer mode
   enableDeveloperMode: false,
   // UI
-  navbarPosition: 'top',
+  navbarPosition: 'left',
   // API Server
   apiServer: {
     enabled: false,
@@ -399,7 +403,10 @@ export const initialState: SettingsState = {
     port: 23333,
     apiKey: `cs-sk-${uuid()}`
   },
-  showMessageOutline: undefined
+  showMessageOutline: undefined,
+  // 自定义更新服务器配置
+  useCustomUpdateServer: false,
+  customUpdateServerUrl: 'http://localhost:3000'
 }
 
 const settingsSlice = createSlice({
@@ -650,6 +657,10 @@ const settingsSlice = createSlice({
         state.sidebarIcons.disabled = action.payload.disabled
       }
     },
+    resetSidebarIcons: (state) => {
+      state.sidebarIcons.visible = DEFAULT_SIDEBAR_ICONS
+      state.sidebarIcons.disabled = []
+    },
     setNarrowMode: (state, action: PayloadAction<boolean>) => {
       state.narrowMode = action.payload
     },
@@ -831,6 +842,12 @@ const settingsSlice = createSlice({
     },
     setShowMessageOutline: (state, action: PayloadAction<boolean>) => {
       state.showMessageOutline = action.payload
+    },
+    setUseCustomUpdateServer: (state, action: PayloadAction<boolean>) => {
+      state.useCustomUpdateServer = action.payload
+    },
+    setCustomUpdateServerUrl: (state, action: PayloadAction<string>) => {
+      state.customUpdateServerUrl = action.payload
     }
   }
 })
@@ -904,6 +921,7 @@ export const {
   setCustomCss,
   setTopicNamingPrompt,
   setSidebarIcons,
+  resetSidebarIcons,
   setNarrowMode,
   setClickTrayToShowQuickAssistant,
   setEnableQuickAssistant,
@@ -960,7 +978,9 @@ export const {
   // API Server actions
   setApiServerEnabled,
   setApiServerPort,
-  setApiServerApiKey
+  setApiServerApiKey,
+  setUseCustomUpdateServer,
+  setCustomUpdateServerUrl
 } = settingsSlice.actions
 
 export default settingsSlice.reducer

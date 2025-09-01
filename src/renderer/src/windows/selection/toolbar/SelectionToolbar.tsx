@@ -5,7 +5,7 @@ import { AppLogo } from '@renderer/config/env'
 import { useSelectionAssistant } from '@renderer/hooks/useSelectionAssistant'
 import { useSettings } from '@renderer/hooks/useSettings'
 import { useTimer } from '@renderer/hooks/useTimer'
-import i18n from '@renderer/i18n'
+import i18n, { changeLanguageNormalized } from '@renderer/i18n'
 import type { ActionItem } from '@renderer/types/selectionTypes'
 import { defaultLanguage } from '@shared/config/constant'
 import { IpcChannel } from '@shared/IpcChannel'
@@ -166,7 +166,7 @@ const SelectionToolbar: FC<{ demo?: boolean }> = ({ demo = false }) => {
   }, [demo, isCompact, actionItems])
 
   useEffect(() => {
-    !demo && i18n.changeLanguage(language || navigator.language || defaultLanguage)
+    !demo && changeLanguageNormalized(language || navigator.language || defaultLanguage)
   }, [language, demo])
 
   useEffect(() => {

@@ -193,8 +193,10 @@ export const GB = 1024 * MB
 export const defaultLanguage = 'en-US'
 
 export enum FeedUrl {
-  PRODUCTION = 'https://releases.cherry-ai.com',
-  GITHUB_LATEST = 'https://github.com/CherryHQ/cherry-studio/releases/latest/download'
+  PRODUCTION = 'https://releases.yinhe.ht',
+  GITHUB_LATEST = 'https://github.com/visiontrail/Raven/releases/latest/download',
+  PRERELEASE_LOWEST = 'https://github.com/visiontrail/Raven/releases/download/v0.0.1',
+  CUSTOM_SERVER = 'http://localhost:3000'
 }
 
 export enum UpgradeChannel {

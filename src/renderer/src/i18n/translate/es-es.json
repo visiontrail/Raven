@@ -1564,6 +1564,73 @@
     },
     "title": "Ollama"
   },
+  "packager": {
+    "title": "Empaquetador",
+    "controlPanel": "Panel de control",
+    "packageVersion": "Versión del paquete",
+    "versionPlaceholder": "p. ej., 1.0.0.7",
+    "componentSelection": "Selección de componentes",
+    "selectFile": "Seleccionar archivo",
+    "versionInputPlaceholder": "Detección automática o entrada manual",
+    "isPatch": "¿Es un paquete PATCH?",
+    "startPackaging": "Iniciar empaquetado",
+    "clearSelections": "Borrar selección",
+    "infoPreview": "Vista previa de información",
+    "operationLog": "Registro de operaciones",
+    "siIniPreview": "Vista previa de si.ini",
+    "configDescription": "El paquete de archivos de configuración solo es aplicable a los satélites Lingxi 07A y Lingxi 10AB, no a Lingxi 06 Fase 1 y Fase 3.",
+    "types": {
+      "lingxi-10": "Lingxi 10",
+      "lingxi-07a": "Lingxi 07A",
+      "config": "Paquete de configuración",
+      "lingxi-06-thrid": "Lingxi 06 Fase 3"
+    },
+    "components": {
+      "lingxi-07a": {
+        "oam": "Software OAM",
+        "sct_fpga": "SCT FPGA",
+        "bposc_fpga": "BPOSC FPGA",
+        "bpoqv_fpga": "BPOQV FPGA",
+        "cucp": "Pila de protocolos CUCP",
+        "cuup": "Pila de protocolos CUUP",
+        "du": "Pila de protocolos DU"
+      },
+      "lingxi-10": {
+        "oam": "Software OAM",
+        "sct_fpga": "SCT FPGA",
+        "bposc_fpga": "BPOSC FPGA",
+        "bpodvb_fpga": "BPODVB FPGA",
+        "cucp": "Pila de protocolos CUCP",
+        "cuup": "Pila de protocolos CUUP",
+        "du": "Pila de protocolos DU",
+        "galaxy_core_network": "Red central Galaxy",
+        "satellite_app_server": "Servidor de aplicaciones satelital"
+      },
+      "config": {
+        "cwmp_data": "Archivo de datos CWMP",
+        "cucp_gnb": "Configuración CUCP GNB",
+        "cucp_stack": "Configuración CUCP Stack",
+        "cuup_gnb": "Configuración CUUP GNB",
+        "cuup_stack": "Configuración CUUP Stack",
+        "du_gnb": "Configuración DU GNB",
+        "du_stack": "Configuración DU Stack"
+      }
+    },
+    "error": {
+      "autoVersion": "No se pudo detectar automáticamente la versión",
+      "selectFile": "No se pudo seleccionar el archivo",
+      "noPackageType": "El tipo de paquete no está definido, no se puede empaquetar.",
+      "noPackageVersion": "Ingrese la versión del paquete.",
+      "noComponents": "Seleccione al menos un componente para empaquetar."
+    },
+    "log": {
+      "start": "Iniciando empaquetado...",
+      "success": "¡Empaquetado exitoso! Ruta de salida:",
+      "failure": "Fallo en el empaquetado",
+      "errorUnknown": "Ocurrió un error desconocido durante el empaquetado",
+      "cleared": "Se han borrado todas las selecciones"
+    }
+  },
   "paintings": {
     "aspect_ratio": "Relación de aspecto",
     "aspect_ratios": {
@@ -3365,6 +3432,8 @@
       "remove_invalid_keys": "Eliminar claves inválidas",
       "search": "Buscar plataforma de modelos...",
       "search_placeholder": "Buscar ID o nombre del modelo",
+      "locked_search": "Búsqueda bloqueada por el administrador",
+      "locked_api_host": "Host de API bloqueado por el administrador",
       "title": "Servicio de modelos",
       "vertex_ai": {
         "api_host_help": "Dirección de la API de Vertex AI, no se recomienda completar, normalmente aplicable al proxy inverso",

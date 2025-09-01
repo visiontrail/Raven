@@ -28,7 +28,7 @@ export function useActiveTopic(assistantId: string, topic?: Topic) {
   _setActiveTopic = setActiveTopic
 
   useEffect(() => {
-    if (activeTopic) {
+    if (activeTopic?.id) {
       store.dispatch(loadTopicMessagesThunk(activeTopic.id))
       EventEmitter.emit(EVENT_NAMES.CHANGE_TOPIC, activeTopic)
     }
@@ -131,7 +131,7 @@ export const autoRenameTopic = async (assistant: Assistant, topicId: string) => 
           startTopicRenaming(topicId)
 
           const data = { ...topic, name: topicName } as Topic
-          topic.id === _activeTopic.id && _setActiveTopic(data)
+          topic.id === _activeTopic?.id && _setActiveTopic(data)
           store.dispatch(updateTopic({ assistantId: assistant.id, topic: data }))
         } finally {
           finishTopicRenaming(topicId)
@@ -146,7 +146,7 @@ export const autoRenameTopic = async (assistant: Assistant, topicId: string) => 
         const summaryText = await fetchMessagesSummary({ messages: topic.messages, assistant })
         if (summaryText) {
           const data = { ...topic, name: summaryText }
-          topic.id === _activeTopic.id && _setActiveTopic(data)
+          topic.id === _activeTopic?.id && _setActiveTopic(data)
           store.dispatch(updateTopic({ assistantId: assistant.id, topic: data }))
         }
       } finally {

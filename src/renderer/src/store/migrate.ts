@@ -2174,6 +2174,89 @@ const migrateConfig = {
       logger.error('migrate 136 error', error as Error)
       return state
     }
+  },
+  '121': (state: RootState) => {
+    try {
+      // Filter providers to only keep DeepSeek, Alibaba Cloud (dashscope), and Gemini
+      const allowedProviders = ['deepseek', 'dashscope', 'gemini']
+      state.llm.providers = state.llm.providers.filter((provider) => allowedProviders.includes(provider.id))
+
+      // Reset to initial state if no providers remain
+      if (state.llm.providers.length === 0) {
+        state.llm.providers = INITIAL_PROVIDERS
+      }
+
+      return state
+    } catch (error) {
+      return state
+    }
+  },
+  '122': (state: RootState) => {
+    try {
+      // 删除侧边栏配置中的 paintings 选项
+      if (state.settings.sidebarIcons) {
+        state.settings.sidebarIcons.visible = state.settings.sidebarIcons.visible.filter(
+          (icon) => icon !== ('paintings' as any)
+        )
+        state.settings.sidebarIcons.disabled = state.settings.sidebarIcons.disabled.filter(
+          (icon) => icon !== ('paintings' as any)
+        )
+      }
+      return state
+    } catch (error) {
+      return state
+    }
+  },
+  '123': (state: RootState) => {
+    try {
+      // 删除侧边栏配置中的 translate 选项
+      if (state.settings.sidebarIcons) {
+        state.settings.sidebarIcons.visible = state.settings.sidebarIcons.visible.filter(
+          (icon) => icon !== ('translate' as any)
+        )
+        state.settings.sidebarIcons.disabled = state.settings.sidebarIcons.disabled.filter(
+          (icon) => icon !== ('translate' as any)
+        )
+      }
+      return state
+    } catch (error) {
+      return state
+    }
+  },
+  '124': (state: RootState) => {
+    try {
+      // 删除侧边栏配置中的 minapp 选项
+      if (state.settings.sidebarIcons) {
+        state.settings.sidebarIcons.visible = state.settings.sidebarIcons.visible.filter(
+          (icon) => icon !== ('minapp' as any)
+        )
+        state.settings.sidebarIcons.disabled = state.settings.sidebarIcons.disabled.filter(
+          (icon) => icon !== ('minapp' as any)
+        )
+      }
+      return state
+    } catch (error) {
+      return state
+    }
+  },
+  '127': (state: RootState) => {
+    try {
+      // 强制更新阿里云百炼提供商的模型列表为只包含 qwen-plus
+      if (state.llm && state.llm.providers) {
+        state.llm.providers = state.llm.providers.map((provider) => {
+          if (provider.id === 'bailian' || provider.id === 'dashscope') {
+            return {
+              ...provider,
+              models: SYSTEM_MODELS.bailian || []
+            }
+          }
+          return provider
+        })
+      }
+      return state
+    } catch (error) {
+      return state
+    }
   }
 }
 

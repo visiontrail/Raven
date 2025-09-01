@@ -522,31 +522,31 @@ export const SYSTEM_MODELS: Record<SystemProviderId | 'defaultModel', Model[]> =
   defaultModel: [
     {
       // 默认助手模型
-      id: 'deepseek-ai/DeepSeek-V3',
-      name: 'deepseek-ai/DeepSeek-V3',
-      provider: 'silicon',
-      group: 'deepseek-ai'
+      id: 'qwen-plus-2025-07-14',
+      name: 'qwen-plus-2025-07-14',
+      provider: 'dashscope',
+      group: 'qwen-plus-2025-07-14'
     },
     {
       // 默认话题命名模型
-      id: 'Qwen/Qwen3-8B',
-      name: 'Qwen/Qwen3-8B',
-      provider: 'silicon',
-      group: 'Qwen'
+      id: 'qwen-plus-2025-07-14',
+      name: 'qwen-plus-2025-07-14',
+      provider: 'dashscope',
+      group: 'qwen-plus-2025-07-14'
     },
     {
       // 默认翻译模型
-      id: 'deepseek-ai/DeepSeek-V3',
-      name: 'deepseek-ai/DeepSeek-V3',
-      provider: 'silicon',
-      group: 'deepseek-ai'
+      id: 'qwen-plus-2025-07-14',
+      name: 'qwen-plus-2025-07-14',
+      provider: 'dashscope',
+      group: 'qwen-plus-2025-07-14'
     },
     {
       // 默认快捷助手模型
-      id: 'deepseek-ai/DeepSeek-V3',
-      name: 'deepseek-ai/DeepSeek-V3',
-      provider: 'silicon',
-      group: 'deepseek-ai'
+      id: 'qwen-plus-2025-07-14',
+      name: 'qwen-plus-2025-07-14',
+      provider: 'dashscope',
+      group: 'qwen-plus-2025-07-14'
     }
   ],
   vertexai: [],
@@ -1407,16 +1407,11 @@ export const SYSTEM_MODELS: Record<SystemProviderId | 'defaultModel', Model[]> =
   ],
   stepfun: [
     {
-      id: 'step-1-8k',
-      provider: 'stepfun',
-      name: 'Step 1 8K',
-      group: 'Step 1'
-    },
-    {
-      id: 'step-1-flash',
-      provider: 'stepfun',
-      name: 'Step 1 Flash',
-      group: 'Step 1'
+      id: 'qwen-plus-2025-07-14',
+      name: 'qwen-plus-2025-07-14',
+      provider: 'dashscope',
+      group: 'qwen-plus-2025-07-14',
+      owned_by: 'system'
     }
   ],
   doubao: [
@@ -1992,9 +1987,9 @@ export const SYSTEM_MODELS: Record<SystemProviderId | 'defaultModel', Model[]> =
     },
     {
       id: 'gemini-2.0-flash',
-      provider: 'dmxapi',
-      name: 'gemini-2.0-flash',
-      group: 'Gemini'
+      provider: 'gemini',
+      name: 'Gemini 2.0 Flash',
+      group: 'Gemini 2.0'
     }
   ],
   perplexity: [
@@ -2364,78 +2359,7 @@ export const SYSTEM_MODELS: Record<SystemProviderId | 'defaultModel', Model[]> =
 }
 
 export const TEXT_TO_IMAGES_MODELS = [
-  {
-    id: 'Kwai-Kolors/Kolors',
-    provider: 'silicon',
-    name: 'Kolors',
-    group: 'Kwai-Kolors'
-  }
-  // {
-  //   id: 'black-forest-labs/FLUX.1-schnell',
-  //   provider: 'silicon',
-  //   name: 'FLUX.1 Schnell',
-  //   group: 'FLUX'
-  // },
-  // {
-  //   id: 'black-forest-labs/FLUX.1-dev',
-  //   provider: 'silicon',
-  //   name: 'FLUX.1 Dev',
-  //   group: 'FLUX'
-  // },
-  // {
-  //   id: 'black-forest-labs/FLUX.1-pro',
-  //   provider: 'silicon',
-  //   name: 'FLUX.1 Pro',
-  //   group: 'FLUX'
-  // },
-  // {
-  //   id: 'Pro/black-forest-labs/FLUX.1-schnell',
-  //   provider: 'silicon',
-  //   name: 'FLUX.1 Schnell Pro',
-  //   group: 'FLUX'
-  // },
-  // {
-  //   id: 'LoRA/black-forest-labs/FLUX.1-dev',
-  //   provider: 'silicon',
-  //   name: 'FLUX.1 Dev LoRA',
-  //   group: 'FLUX'
-  // },
-  // {
-  //   id: 'deepseek-ai/Janus-Pro-7B',
-  //   provider: 'silicon',
-  //   name: 'Janus-Pro-7B',
-  //   group: 'deepseek-ai'
-  // },
-  // {
-  //   id: 'stabilityai/stable-diffusion-3-5-large',
-  //   provider: 'silicon',
-  //   name: 'Stable Diffusion 3.5 Large',
-  //   group: 'Stable Diffusion'
-  // },
-  // {
-  //   id: 'stabilityai/stable-diffusion-3-5-large-turbo',
-  //   provider: 'silicon',
-  //   name: 'Stable Diffusion 3.5 Large Turbo',
-  //   group: 'Stable Diffusion'
-  // },
-  // {
-  //   id: 'stabilityai/stable-diffusion-3-medium',
-  //   provider: 'silicon',
-  //   name: 'Stable Diffusion 3 Medium',
-  //   group: 'Stable Diffusion'
-  // },
-  // {
-  //   id: 'stabilityai/stable-diffusion-2-1',
-  //   provider: 'silicon',
-  //   name: 'Stable Diffusion 2.1',
-  //   group: 'Stable Diffusion'
-  // },
-  // {
-  //   id: 'stabilityai/stable-diffusion-xl-base-1.0',
-  //   provider: 'silicon',
-  //   name: 'Stable Diffusion XL Base 1.0',
-  //   group: 'Stable Diffusion'
-  // }
+  // Removed silicon provider models since we only support deepseek, dashscope, and gemini
 ]
 
 export const TEXT_TO_IMAGES_MODELS_SUPPORT_IMAGE_ENHANCEMENT = [

@@ -16,6 +16,7 @@ import { registerIpc } from './ipc'
 import { configManager } from './services/ConfigManager'
 import mcpService from './services/MCPService'
 import { nodeTraceService } from './services/NodeTraceService'
+import { packagingService } from './services/packagingService'
 import {
   CHERRY_STUDIO_PROTOCOL,
   handleProtocolUrl,
@@ -137,7 +138,8 @@ if (!app.requestSingleInstanceLock()) {
     // Setup deep link for AppImage on Linux
     await setupAppImageDeepLink()
 
-    if (isDev) {
+    // Enable devtools extensions only when explicitly allowed
+    if (isDev && process.env.ENABLE_DEVTOOLS_EXTENSIONS === '1') {
       installExtension([REDUX_DEVTOOLS, REACT_DEVELOPER_TOOLS])
         .then((name) => logger.info(`Added Extension:  ${name}`))
         .catch((err) => logger.error('An error occurred: ', err))
@@ -145,6 +147,14 @@ if (!app.requestSingleInstanceLock()) {
 
     //start selection assistant service
     initSelectionService()
+
+    // Initialize packaging service
+    try {
+      await packagingService.initialize()
+      console.log('Packaging service initialized successfully')
+    } catch (error) {
+      console.error('Failed to initialize packaging service:', error)
+    }
   })
 
   registerProtocolClient(app)
@@ -190,6 +200,7 @@ if (!app.requestSingleInstanceLock()) {
     // 简单的资源清理，不阻塞退出流程
     try {
       await mcpService.cleanup()
+      packagingService.cleanup()
     } catch (error) {
       logger.warn('Error cleaning up MCP service:', error as Error)
     }

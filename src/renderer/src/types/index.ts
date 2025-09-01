@@ -5,7 +5,7 @@ import type { CSSProperties } from 'react'
 import * as z from 'zod/v4'
 
 export * from './file'
-
+export * from './package'
 import type { FileMetadata } from './file'
 import type { Message } from './newMessage'
 
@@ -700,6 +700,7 @@ export type SidebarIcon =
   | 'minapp'
   | 'knowledge'
   | 'files'
+  | 'packager'
   | 'code_tools'
 
 export type ExternalToolResult = {

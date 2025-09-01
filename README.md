@@ -30,84 +30,57 @@
 
 <h1 align="center">
   <a href="https://github.com/CherryHQ/cherry-studio/releases">
-    <img src="https://github.com/CherryHQ/cherry-studio/blob/main/build/icon.png?raw=true" width="150" height="150" alt="banner" /><br>
+    <img src="./build/icon.png" width="120" height="120" alt="Raven Logo" /><br>
   </a>
 </h1>
 
 <p align="center">English | <a href="./docs/README.zh.md">中文</a> | <a href="https://cherry-ai.com">Official Site</a> | <a href="https://docs.cherry-ai.com/cherry-studio-wen-dang/en-us">Documents</a> | <a href="./docs/dev.md">Development</a> | <a href="https://github.com/CherryHQ/cherry-studio/issues">Feedback</a><br></p>
 
-<div align="center">
-  
-[![][deepwiki-shield]][deepwiki-link]
-[![][twitter-shield]][twitter-link]
-[![][discord-shield]][discord-link]
-[![][telegram-shield]][telegram-link]
+# 🚀 Raven - Satellite Baseband Payload Testing Platform
 
-</div>
-<div align="center">
-  
-[![][github-release-shield]][github-release-link]
-[![][github-nightly-shield]][github-nightly-link]
-[![][github-contributors-shield]][github-contributors-link]
-[![][license-shield]][license-link]
-[![][commercial-shield]][commercial-link]
-[![][sponsor-shield]][sponsor-link]
+Raven is an AI-powered satellite baseband payload testing and development platform, built on top of Cherry Studio. It revolutionizes satellite testing workflows by integrating natural language processing, automated testing, and intelligent payload control systems.
 
-</div>
+# 🎯 Project Objectives
 
-<div align="center">
- <a href="https://hellogithub.com/repository/1605492e1e2a4df3be07abfa4578dd37" target="_blank" style="text-decoration: none"><img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=1605492e1e2a4df3be07abfa4578dd37" alt="Featured｜HelloGitHub"  width="220" height="55" /></a>
- <a href="https://trendshift.io/repositories/11772" target="_blank" style="text-decoration: none"><img src="https://trendshift.io/api/badge/repositories/11772" alt="kangfenmao%2Fcherry-studio | Trendshift" width="220" height="55" /></a>
- <a href="https://www.producthunt.com/posts/cherry-studio?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-cherry&#0045;studio" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=496640&theme=light" alt="Cherry&#0032;Studio - AI&#0032;Chatbots&#0044;&#0032;AI&#0032;Desktop&#0032;Client | Product Hunt" width="220" height="55" /></a>
-</div>
+## Core Goals
 
-# 🍒 Cherry Studio
+- **Enhance Testing Efficiency**: Improve satellite baseband payload testing and development workflows, reducing manual Linux system operations and optimizing testing processes.
+- **Reduce Communication Costs**: Minimize communication and operational complexity between development and testing teams, enabling more efficient testing and validation processes.
 
 Cherry Studio is a desktop client that supports multiple LLM providers, available on Windows, Mac and Linux.
 
-👏 Join [Telegram Group](https://t.me/CherryStudioAI)｜[Discord](https://discord.gg/wez8HtpxqQ) | [QQ Group(575014769)](https://qm.qq.com/q/lo0D4qVZKi)
-
-❤️ Like Cherry Studio? Give it a star 🌟 or [Sponsor](docs/sponsor.md) to support the development!
-
-# 🌠 Screenshot
-
-![](https://github.com/user-attachments/assets/36dddb2c-e0fb-4a5f-9411-91447bab6e18)
-
-![](https://github.com/user-attachments/assets/f549e8a0-2385-40b4-b52b-2039e39f2930)
-
-![](https://github.com/user-attachments/assets/58e0237c-4d36-40de-b428-53051d982026)
+- **Improve Development Efficiency**: Achieve 5%+ efficiency improvement through automation tools and AI assistance, reducing manual intervention.
+- **Reduce Management Costs**: Simplify patch management, task scheduling, and test execution, reducing traditional manual operations and management resource waste by 10%+.
+- **Enhance Collaboration**: Integrate natural language understanding and Python code execution, allowing testers to focus more time on designing and orchestrating test cases while AI executes them through Python scripts, improving test accuracy and reducing execution time.
 
 # 🌟 Key Features
 
-1. **Diverse LLM Provider Support**:
+## 1. **Satellite Payload Management**
 
-- ☁️ Major LLM Cloud Services: OpenAI, Gemini, Anthropic, and more
-- 🔗 AI Web Service Integration: Claude, Peplexity, Poe, and others
-- 💻 Local Model Support with Ollama, LM Studio
+- 🛰️ **Internal Tools**: Python-based secondary encapsulation of common OAM interfaces (e.g., satellite software interfaces) for baseband payloads, supporting operator simulation of network management operations.
+- 📦 **Patch Management System**: Convenient packaging tools for developers to upload patches with automatic server backup, ensuring testers always have access to the latest code versions.
+- 🔄 **Automated Upload**: Streamlined patch upload and version management, improving efficiency by 50%.
 
-2. **AI Assistants & Conversations**:
+## 2. **AI-Powered Natural Language Control**
 
-- 📚 300+ Pre-configured AI Assistants
-- 🤖 Custom Assistant Creation
-- 💬 Multi-model Simultaneous Conversations
+- 🗣️ **Natural Language Operations**: Direct payload status queries and control operations through natural language instructions via MCP Server interfaces.
+- 🤖 **Large Language Model Integration**: Support for major LLMs including Alibaba Qwen, DeepSeek, Gemini, and more.
+- 📚 **RAG Knowledge Base**: Enhanced understanding of satellite baseband payload private domain knowledge, reducing instruction parsing errors and system operation errors.
 
-3. **Document & Data Processing**:
+## 3. **Automated Testing & Code Execution**
 
 - 📄 Supports Text, Images, Office, PDF, and more
 - ☁️ WebDAV File Management and Backup
 - 📊 Mermaid Chart Visualization
 - 💻 Code Syntax Highlighting
 
-4. **Practical Tools Integration**:
+## 4. **Enhanced Client Experience**
 
-- 🔍 Global Search Functionality
-- 📝 Topic Management System
-- 🔤 AI-powered Translation
-- 🎯 Drag-and-drop Sorting
-- 🔌 Mini Program Support
-- ⚙️ MCP(Model Context Protocol) Server
+- 💬 **AI ChatBot Client**: Based on open-source Cherry Studio, featuring simplified operations and MCP Client support for large model operations on base station external tool sets.
+- 📋 **Pre-configured Templates**: Pre-installed "Baseband Payload Testing Assistant" Prompt templates for immediate use.
+- 🎯 **Streamlined Workflow**: Optimized interface for efficient patch management and real-time test content updates.
 
-5. **Enhanced User Experience**:
+## 5. **Cross-Platform Support**
 
 - 🖥️ Cross-platform Support for Windows, Mac, and Linux
 - 📦 Ready to Use - No Environment Setup Required
@@ -117,9 +90,12 @@ Cherry Studio is a desktop client that supports multiple LLM providers, availabl
 
 # 📝 Roadmap
 
-We're actively working on the following features and improvements:
+## Phase 1: Core Infrastructure ✅
 
-1. 🎯 **Core Features**
+- [x] Satellite payload internal tools development
+- [x] MCP Server integration
+- [x] Basic natural language control
+- [x] Patch management system
 
 - Selection Assistant with smart content selection enhancement
 - Deep Research with advanced research capabilities
@@ -127,61 +103,42 @@ We're actively working on the following features and improvements:
 - Document Preprocessing with improved document handling
 - MCP Marketplace for Model Context Protocol ecosystem
 
-2. 🗂 **Knowledge Management**
+- [ ] Advanced RAG knowledge base optimization
+- [ ] Multi-model LLM support expansion
+- [ ] Enhanced natural language understanding
+- [ ] Automated test case generation
 
-- Notes and Collections
-- Dynamic Canvas visualization
-- OCR capabilities
-- TTS (Text-to-Speech) support
+## Phase 3: Advanced Features 📋
 
-3. 📱 **Platform Support**
+- [ ] Real-time payload monitoring
+- [ ] Advanced analytics and reporting
+- [ ] Multi-satellite support
+- [ ] Integration with satellite ground stations
 
-- HarmonyOS Edition (PC)
-- Android App (Phase 1)
-- iOS App (Phase 1)
-- Multi-Window support
-- Window Pinning functionality
+## Phase 4: Enterprise Features 🔮
 
-4. 🔌 **Advanced Features**
-
-- Plugin System
-- ASR (Automatic Speech Recognition)
-- Assistant and Topic Interaction Refactoring
-
-Track our progress and contribute on our [project board](https://github.com/orgs/CherryHQ/projects/7).
-
-Want to influence our roadmap? Join our [GitHub Discussions](https://github.com/CherryHQ/cherry-studio/discussions) to share your ideas and feedback!
-
-# 🌈 Theme
-
-- Theme Gallery: <https://cherrycss.com>
-- Aero Theme: <https://github.com/hakadao/CherryStudio-Aero>
-- PaperMaterial Theme: <https://github.com/rainoffallingstar/CherryStudio-PaperMaterial>
-- Claude dynamic-style: <https://github.com/bjl101501/CherryStudio-Claudestyle-dynamic>
-- Maple Neon Theme: <https://github.com/BoningtonChen/CherryStudio_themes>
-
-Welcome PR for more themes
+- [ ] Team collaboration features
+- [ ] Advanced access control
+- [ ] Enterprise-grade security
+- [ ] Custom deployment options
 
 # 🤝 Contributing
 
-We welcome contributions to Cherry Studio! Here are some ways you can contribute:
+We welcome contributions to Raven! Here are some ways you can contribute:
 
-1. **Contribute Code**: Develop new features or optimize existing code.
-2. **Fix Bugs**: Submit fixes for any bugs you find.
-3. **Maintain Issues**: Help manage GitHub issues.
-4. **Product Design**: Participate in design discussions.
-5. **Write Documentation**: Improve user manuals and guides.
-6. **Community Engagement**: Join discussions and help users.
-7. **Promote Usage**: Spread the word about Cherry Studio.
-
-Refer to the [Branching Strategy](docs/branching-strategy-en.md) for contribution guidelines
+1. **Satellite Domain Expertise**: Share knowledge about satellite operations and testing
+2. **AI/ML Development**: Improve natural language processing and automation
+3. **Testing Framework**: Enhance automated testing capabilities
+4. **Documentation**: Improve user guides and technical documentation
+5. **Bug Reports**: Help identify and fix issues
+6. **Feature Requests**: Suggest new capabilities and improvements
 
 ## Getting Started
 
-1. **Fork the Repository**: Fork and clone it to your local machine.
-2. **Create a Branch**: For your changes.
-3. **Submit Changes**: Commit and push your changes.
-4. **Open a Pull Request**: Describe your changes and reasons.
+1. **Fork the Repository**: Fork and clone it to your local machine
+2. **Create a Branch**: Create a feature branch for your changes
+3. **Submit Changes**: Commit and push your changes
+4. **Open a Pull Request**: Describe your changes and their impact
 
 For more detailed guidelines, please refer to our [Contributing Guide](CONTRIBUTING.md).
 
@@ -247,10 +204,10 @@ The Enterprise Edition addresses core challenges in team collaboration by centra
 
 | Feature           | Community Edition                          | Enterprise Edition                                                                                                                      |
 | :---------------- | :----------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
-| **Open Source**   | ✅ Yes                                     | ⭕️ Partially released to customers                                                                                                      |
+| **Open Source**   | ✅ Yes                                      | ⭕️ Partially released to customers                                                                                                       |
 | **Cost**          | Free for Personal Use / Commercial License | Buyout / Subscription Fee                                                                                                               |
 | **Admin Backend** | —                                          | ● Centralized **Model** Access<br>● **Employee** Management<br>● Shared **Knowledge Base**<br>● **Access** Control<br>● **Data** Backup |
-| **Server**        | —                                          | ✅ Dedicated Private Deployment                                                                                                         |
+| **Server**        | —                                          | ✅ Dedicated Private Deployment                                                                                                          |
 
 ## Get the Enterprise Edition
 
@@ -265,26 +222,13 @@ We believe the Enterprise Edition will become your team's AI productivity engine
 
 - [ublacklist](https://github.com/iorate/ublacklist): Blocks specific sites from appearing in Google search results
 
-# 🚀 Contributors
+This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE) file for details.
 
-<a href="https://github.com/CherryHQ/cherry-studio/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=CherryHQ/cherry-studio" />
-</a>
-<br /><br />
+For commercial licensing inquiries, please contact: **📧 [license@cherry-ai.com](mailto:license@cherry-ai.com)**
 
-# 📊 GitHub Stats
+---
 
-![Stats](https://repobeats.axiom.co/api/embed/a693f2e5f773eed620f70031e974552156c7f397.svg 'Repobeats analytics image')
-
-# ⭐️ Star History
-
-<a href="https://www.star-history.com/#CherryHQ/cherry-studio&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=CherryHQ/cherry-studio&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=CherryHQ/cherry-studio&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=CherryHQ/cherry-studio&type=Date" />
- </picture>
-</a>
+**Raven** - Revolutionizing satellite testing through AI-powered automation and natural language control.
 
 <!-- Links & Images -->
 

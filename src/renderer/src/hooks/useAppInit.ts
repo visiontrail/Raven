@@ -3,7 +3,7 @@ import { isMac } from '@renderer/config/constant'
 import { isLocalAi } from '@renderer/config/env'
 import { useTheme } from '@renderer/context/ThemeProvider'
 import db from '@renderer/databases'
-import i18n from '@renderer/i18n'
+import i18n, { changeLanguageNormalized } from '@renderer/i18n'
 import KnowledgeQueue from '@renderer/queue/KnowledgeQueue'
 import MemoryService from '@renderer/services/MemoryService'
 import { useAppDispatch } from '@renderer/store'
@@ -96,7 +96,7 @@ export function useAppInit() {
   }, [proxyUrl, proxyMode, proxyBypassRules])
 
   useEffect(() => {
-    i18n.changeLanguage(language || navigator.language || defaultLanguage)
+    changeLanguageNormalized(language || navigator.language || defaultLanguage)
   }, [language])
 
   useEffect(() => {

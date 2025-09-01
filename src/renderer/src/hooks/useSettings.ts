@@ -4,6 +4,7 @@ import {
   SendMessageShortcut,
   setAssistantIconType,
   setAutoCheckUpdate as _setAutoCheckUpdate,
+  setCustomUpdateServerUrl as _setCustomUpdateServerUrl,
   setDisableHardwareAcceleration,
   setEnableDeveloperMode,
   setLaunchOnBoot,
@@ -21,6 +22,7 @@ import {
   setTopicPosition,
   setTray as _setTray,
   setTrayOnClose,
+  setUseCustomUpdateServer as _setUseCustomUpdateServer,
   setWindowStyle
 } from '@renderer/store/settings'
 import { SidebarIcon, ThemeMode, TranslateLanguageCode } from '@renderer/types'
@@ -107,6 +109,16 @@ export function useSettings() {
     setDisableHardwareAcceleration(disableHardwareAcceleration: boolean) {
       dispatch(setDisableHardwareAcceleration(disableHardwareAcceleration))
       window.api.setDisableHardwareAcceleration(disableHardwareAcceleration)
+    },
+
+    setUseCustomUpdateServer(useCustomUpdateServer: boolean) {
+      dispatch(_setUseCustomUpdateServer(useCustomUpdateServer))
+      window.api.setUseCustomUpdateServer(useCustomUpdateServer)
+    },
+
+    setCustomUpdateServerUrl(customUpdateServerUrl: string) {
+      dispatch(_setCustomUpdateServerUrl(customUpdateServerUrl))
+      window.api.setCustomUpdateServerUrl(customUpdateServerUrl)
     }
   }
 }

@@ -2,13 +2,14 @@ import OpenAIAlert from '@renderer/components/Alert/OpenAIAlert'
 import { LoadingIcon } from '@renderer/components/Icons'
 import { HStack } from '@renderer/components/Layout'
 import { ApiKeyListPopup } from '@renderer/components/Popups/ApiKeyListPopup'
+import { isFeatureDisabled, isLockedModeEnabled, LOCKED_SETTINGS, getLockedApiKey, getLockedApiHost, getLockedApiVersion } from '@renderer/config/locked-settings'
 import { isEmbeddingModel, isRerankModel } from '@renderer/config/models'
 import { PROVIDER_URLS } from '@renderer/config/providers'
 import { useTheme } from '@renderer/context/ThemeProvider'
 import { useAllProviders, useProvider, useProviders } from '@renderer/hooks/useProvider'
 import { useTimer } from '@renderer/hooks/useTimer'
 import i18n from '@renderer/i18n'
-import { ModelList } from '@renderer/pages/settings/ProviderSettings/ModelList'
+import ModelList from '@renderer/pages/settings/ProviderSettings/ModelList/ModelList'
 import { checkApi } from '@renderer/services/ApiService'
 import { isProviderSupportAuth } from '@renderer/services/ProviderService'
 import { isSystemProvider } from '@renderer/types'
@@ -67,7 +68,13 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
 
   const fancyProviderName = getFancyProviderName(provider)
 
-  const [localApiKey, setLocalApiKey] = useState(provider.apiKey)
+  // Locked mode settings
+  const isLocked = isLockedModeEnabled()
+  const lockedApiKey = getLockedApiKey(provider.id)
+  const lockedApiHost = getLockedApiHost(provider.id)
+  const lockedApiVersion = getLockedApiVersion(provider.id)
+
+  const [localApiKey, setLocalApiKey] = useState(isLocked && lockedApiKey ? lockedApiKey : provider.apiKey)
   const [apiKeyConnectivity, setApiKeyConnectivity] = useState<ApiKeyConnectivity>({
     status: HealthStatus.NOT_CHECKED,
     checking: false
@@ -80,6 +87,26 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
     }, 150),
     []
   )
+
+  // 在锁定模式下，自动应用锁定的设置
+  useEffect(() => {
+    if (isLocked) {
+      const updates: any = {}
+      if (lockedApiKey && provider.apiKey !== lockedApiKey) {
+        updates.apiKey = lockedApiKey
+      }
+      if (lockedApiHost && provider.apiHost !== lockedApiHost) {
+        updates.apiHost = lockedApiHost
+      }
+      if (lockedApiVersion && provider.apiVersion !== lockedApiVersion) {
+        updates.apiVersion = lockedApiVersion
+      }
+
+      if (Object.keys(updates).length > 0) {
+        updateProvider({ ...provider, ...updates })
+      }
+    }
+  }, [isLocked, lockedApiKey, lockedApiHost, lockedApiVersion, provider, updateProvider])
 
   // 同步 provider.apiKey 到 localApiKey
   // 重置连通性检查状态
@@ -298,7 +325,9 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
               type={isApiKeyConnectable ? 'primary' : 'default'}
               ghost={isApiKeyConnectable}
               onClick={onCheckApi}
-              disabled={!apiHost || apiKeyConnectivity.checking}>
+              disabled={
+                !apiHost || apiKeyConnectivity.checking || (isLocked && isFeatureDisabled('DISABLE_API_KEY_EDITING'))
+              }>
               {apiKeyConnectivity.checking ? (
                 <LoadingIcon />
               ) : apiKeyConnectivity.status === 'success' ? (
@@ -333,12 +362,13 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
               <Space.Compact style={{ width: '100%', marginTop: 5 }}>
                 <Input
                   value={apiHost}
-                  placeholder={t('settings.provider.api_host')}
-                  onChange={(e) => setApiHost(e.target.value)}
-                  onBlur={onUpdateApiHost}
+                  placeholder={isLocked ? t('settings.provider.locked_api_host') : t('settings.provider.api_host')}
+                  onChange={(e) => !isLocked && setApiHost(e.target.value)}
+                  onBlur={!isLocked ? onUpdateApiHost : undefined}
+                  disabled={isLocked || isFeatureDisabled('DISABLE_API_HOST_EDITING')}
                 />
-                {!isEmpty(configedApiHost) && apiHost !== configedApiHost && (
-                  <Button danger onClick={onReset}>
+                {!isEmpty(configedApiHost) && apiHost !== configedApiHost && !isLocked && (
+                  <Button danger onClick={onReset} disabled={isLocked}>
                     {t('settings.provider.api.url.reset')}
                   </Button>
                 )}
@@ -364,9 +394,10 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
           <Space.Compact style={{ width: '100%', marginTop: 5 }}>
             <Input
               value={apiVersion}
-              placeholder="2024-xx-xx-preview"
-              onChange={(e) => setApiVersion(e.target.value)}
-              onBlur={onUpdateApiVersion}
+              placeholder={isLocked ? t('settings.provider.locked_api_version') : '2024-xx-xx-preview'}
+              onChange={(e) => !isLocked && setApiVersion(e.target.value)}
+              onBlur={!isLocked ? onUpdateApiVersion : undefined}
+              disabled={isLocked || isFeatureDisabled('DISABLE_API_HOST_EDITING')}
             />
           </Space.Compact>
           <SettingHelpTextRow style={{ justifyContent: 'space-between' }}>

@@ -424,8 +424,10 @@ class FileStorage {
     }
   }
 
-  public openPath = async (_: Electron.IpcMainInvokeEvent, path: string): Promise<void> => {
-    shell.openPath(path).catch((err) => logger.error('[IPC - Error] Failed to open file:', err))
+  public openPath = async (_: Electron.IpcMainInvokeEvent, filePath: string): Promise<void> => {
+    // Extract the directory path from the file path
+    const directoryPath = path.dirname(filePath)
+    shell.openPath(directoryPath).catch((err) => logger.error('[IPC - Error] Failed to open directory:', err))
   }
 
   /**

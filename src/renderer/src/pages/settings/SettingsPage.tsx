@@ -24,7 +24,6 @@ import { Link, Route, Routes, useLocation } from 'react-router-dom'
 import styled from 'styled-components'
 
 import AboutSettings from './AboutSettings'
-import DataSettings from './DataSettings/DataSettings'
 import DisplaySettings from './DisplaySettings/DisplaySettings'
 import GeneralSettings from './GeneralSettings'
 import MCPSettings from './MCPSettings'
@@ -33,7 +32,6 @@ import PreprocessSettings from './PreprocessSettings'
 import ProvidersList from './ProviderSettings'
 import QuickAssistantSettings from './QuickAssistantSettings'
 import QuickPhraseSettings from './QuickPhraseSettings'
-import SelectionAssistantSettings from './SelectionAssistantSettings/SelectionAssistantSettings'
 import ShortcutSettings from './ShortcutSettings'
 import WebSearchSettings from './WebSearchSettings'
 
@@ -152,8 +150,6 @@ const SettingsPage: FC = () => {
             <Route path="display" element={<DisplaySettings />} />
             <Route path="shortcut" element={<ShortcutSettings />} />
             <Route path="quickAssistant" element={<QuickAssistantSettings />} />
-            <Route path="selectionAssistant" element={<SelectionAssistantSettings />} />
-            <Route path="data" element={<DataSettings />} />
             <Route path="about" element={<AboutSettings />} />
           </Routes>
         </SettingContent>

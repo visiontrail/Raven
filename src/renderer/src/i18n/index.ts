@@ -31,12 +31,33 @@ const resources = Object.fromEntries(
   ].map(([locale, translation]) => [locale, { translation }])
 )
 
+export const normalizeLanguage = (lang: string): string => {
+  const l = (lang || '').toLowerCase()
+  if (!l) return defaultLanguage
+  if (l.startsWith('en')) return 'en-US'
+  if (l.startsWith('zh-cn') || l === 'zh' || l.startsWith('zh-hans')) return 'zh-CN'
+  if (l.startsWith('zh-tw') || l.startsWith('zh-hant') || l.startsWith('zh-hk')) return 'zh-TW'
+  if (l.startsWith('ja')) return 'ja-JP'
+  if (l.startsWith('ru')) return 'ru-RU'
+  if (l.startsWith('el')) return 'el-GR'
+  if (l.startsWith('es')) return 'es-ES'
+  if (l.startsWith('fr')) return 'fr-FR'
+  if (l.startsWith('pt')) return 'pt-PT'
+  return defaultLanguage
+}
+
 export const getLanguage = () => {
-  return localStorage.getItem('language') || navigator.language || defaultLanguage
+  const saved = localStorage.getItem('language')
+  const nav = navigator.language
+  return normalizeLanguage(saved || nav || defaultLanguage)
 }
 
 export const getLanguageCode = () => {
   return getLanguage().split('-')[0]
+}
+
+export const changeLanguageNormalized = (lang: string) => {
+  return i18n.changeLanguage(normalizeLanguage(lang))
 }
 
 i18n.use(initReactI18next).init({

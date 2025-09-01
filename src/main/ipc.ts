@@ -30,6 +30,8 @@ import { openTraceWindow, setTraceWindowTitle } from './services/NodeTraceServic
 import NotificationService from './services/NotificationService'
 import * as NutstoreService from './services/NutstoreService'
 import ObsidianVaultService from './services/ObsidianVaultService'
+import { packageService } from './services/PackageService'
+import { packagingService } from './services/packagingService'
 import { proxyManager } from './services/ProxyManager'
 import { pythonService } from './services/PythonService'
 import { FileServiceManager } from './services/remotefile/FileServiceManager'
@@ -176,6 +178,22 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
     if (channel !== configManager.getTestChannel()) {
       appUpdater.cancelDownload()
       configManager.setTestChannel(channel)
+    }
+  })
+
+  ipcMain.handle(IpcChannel.App_SetUseCustomUpdateServer, async (_, useCustomServer: boolean) => {
+    logger.info('set use custom update server', useCustomServer)
+    if (useCustomServer !== configManager.getUseCustomUpdateServer()) {
+      appUpdater.cancelDownload()
+      configManager.setUseCustomUpdateServer(useCustomServer)
+    }
+  })
+
+  ipcMain.handle(IpcChannel.App_SetCustomUpdateServerUrl, async (_, serverUrl: string) => {
+    logger.info('set custom update server url', serverUrl)
+    if (serverUrl !== configManager.getCustomUpdateServerUrl()) {
+      appUpdater.cancelDownload()
+      configManager.setCustomUpdateServerUrl(serverUrl)
     }
   })
 
@@ -615,6 +633,61 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
       return await pythonService.executeScript(script, context, timeout)
     }
   )
+
+  // Packager
+  ipcMain.handle(IpcChannel.Packager_GetInfo, (_, packageType: string) => {
+    return packagingService.getComponentTemplate(packageType)
+  })
+  ipcMain.handle(IpcChannel.Packager_GenerateSiIni, (_, config) => {
+    return packagingService.generateSiIni(config)
+  })
+  ipcMain.handle(IpcChannel.Packager_CreatePackage, (_, config) => {
+    return packagingService.handleCreatePackage(_, config)
+  })
+  ipcMain.handle(IpcChannel.Packager_GetAutoVersion, (_, filePath: string) => {
+    return packagingService.getAutoVersion(filePath)
+  })
+  ipcMain.handle(IpcChannel.Packager_GetAutoVersionFromFilename, (_, filename: string) => {
+    return packagingService.getAutoVersionFromFilename(filename)
+  })
+  ipcMain.handle(IpcChannel.Packager_SelectFile, async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      properties: ['openFile']
+    })
+    if (canceled || filePaths.length === 0) {
+      return null
+    }
+    return filePaths[0]
+  })
+
+  // Package Management
+  ipcMain.handle(IpcChannel.Package_GetAll, () => {
+    return packageService.getPackages()
+  })
+  ipcMain.handle(IpcChannel.Package_GetById, (_, id: string) => {
+    return packageService.getPackageById(id)
+  })
+  ipcMain.handle(IpcChannel.Package_UpdateMetadata, (_, id: string, metadata: any) => {
+    return packageService.updatePackageMetadata(id, metadata)
+  })
+  ipcMain.handle(IpcChannel.Package_Delete, (_, id: string) => {
+    return packageService.deletePackage(id)
+  })
+  ipcMain.handle(IpcChannel.Package_ScanForPackages, () => {
+    return packagingService.indexExistingPackages()
+  })
+  ipcMain.handle(IpcChannel.Package_UploadToFTP, (_, id: string, ftpConfig: any) => {
+    return packageService.uploadPackageToFTP(id, ftpConfig)
+  })
+  ipcMain.handle(IpcChannel.Package_UploadToHTTP, (_, id: string, httpConfig: any) => {
+    return packageService.uploadPackageToHTTP(id, httpConfig)
+  })
+  ipcMain.handle(IpcChannel.Package_ScanDirectory, (_, directoryPath: string) => {
+    return packageService.scanPackagesInDirectory(directoryPath)
+  })
+  ipcMain.handle(IpcChannel.Package_ExtractMetadata, (_, filePath: string) => {
+    return packageService.extractPackageMetadata(filePath)
+  })
 
   ipcMain.handle(IpcChannel.App_IsBinaryExist, (_, name: string) => isBinaryExists(name))
   ipcMain.handle(IpcChannel.App_GetBinaryPath, (_, name: string) => getBinaryPath(name))
