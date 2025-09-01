@@ -107,11 +107,7 @@ export class HTTPService implements IHTTPService {
       const fileHash = await this.calculateFileHash(filePath)
       console.log('文件SHA-256哈希值:', fileHash)
 
-      // Create form data with file and complete package information
-      const formData = new FormData()
-      const fileStream = fs.createReadStream(filePath)
-
-      formData.append('file', fileStream, fileName)
+      // Build package info payload once
       // Send complete package information with SHA-256 hash in metadata
       const packageInfoData = {
         id: packageInfo.id,
@@ -134,7 +130,77 @@ export class HTTPService implements IHTTPService {
       console.log('文件大小:', totalBytes, 'bytes')
       console.log('包信息 (packageInfo):', JSON.stringify(packageInfoData, null, 2))
 
-      formData.append('packageInfo', JSON.stringify(packageInfoData))
+      const packageInfoJson = JSON.stringify(packageInfoData)
+
+      // Sanitize user headers to avoid conflicting content-type/content-length
+      const userHeaders: Record<string, string> = { ...httpConfig.headers }
+      for (const key of Object.keys(userHeaders)) {
+        const lower = key.toLowerCase()
+        if (lower === 'content-type' || lower === 'content-length' || lower === 'transfer-encoding') {
+          delete userHeaders[key]
+        }
+      }
+
+      // Prefer native fetch with Web FormData/Blob to avoid adapter body length mismatches
+      const hasWebFormData =
+        typeof (globalThis as any).FormData === 'function' && typeof (globalThis as any).Blob === 'function'
+      if (hasWebFormData) {
+        const WebFormData = (globalThis as any).FormData
+        const WebBlob = (globalThis as any).Blob
+
+        const form = new WebFormData()
+        const fileBuffer = await fs.readFile(filePath)
+        const blob = new WebBlob([fileBuffer])
+        form.append('file', blob, fileName)
+        form.append('packageInfo', packageInfoJson)
+
+        const headersForFetch: Record<string, string> = { ...userHeaders }
+
+        // Add authentication to headers
+        if (httpConfig.authentication) {
+          const dummy: AxiosRequestConfig = { headers: { ...headersForFetch } }
+          this.addAuthentication(dummy, httpConfig.authentication)
+          Object.assign(headersForFetch, dummy.headers)
+        }
+
+        // Do not set Content-Type for fetch with FormData; undici will set with boundary
+        delete headersForFetch['Content-Type']
+        delete headersForFetch['content-type']
+
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 300000)
+
+        try {
+          const res = await fetch(httpConfig.url, {
+            method: httpConfig.method,
+            headers: headersForFetch as any,
+            body: form as any,
+            signal: controller.signal
+          } as any)
+
+          clearTimeout(timeoutId)
+
+          if (res.ok) {
+            console.log(`Successfully uploaded ${fileName} to ${httpConfig.url}`)
+            return true
+          }
+
+          throw new Error(`HTTP upload failed with status ${res.status}: ${res.statusText}`)
+        } catch (err: any) {
+          // Align error surface with axios branch
+          if (err?.name === 'AbortError') {
+            throw new Error('Request timeout: The server did not respond within the expected time')
+          }
+          throw err
+        }
+      }
+
+      // Fallback to axios with node form-data (ensure no Content-Length mismatch by leaving it unset)
+      const formData = new FormData()
+      ;(formData as any).maxDataSize = Number.MAX_SAFE_INTEGER
+      const fileStream = fs.createReadStream(filePath)
+      formData.append('file', fileStream, { filename: fileName, knownLength: totalBytes })
+      formData.append('packageInfo', packageInfoJson)
 
       // Prepare request configuration
       const requestConfig: AxiosRequestConfig = {
@@ -142,13 +208,17 @@ export class HTTPService implements IHTTPService {
         url: httpConfig.url,
         data: formData,
         headers: {
-          ...httpConfig.headers,
+          ...userHeaders,
           ...formData.getHeaders()
         },
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
         timeout: 300000 // 5 minutes timeout
       }
+
+      // Force Node http adapter (avoid fetch/undici content-length mismatch with node FormData)
+      ;(requestConfig as any).adapter = 'http'
+      ;(requestConfig as any).env = {}
 
       // Add authentication if provided
       if (httpConfig.authentication) {
