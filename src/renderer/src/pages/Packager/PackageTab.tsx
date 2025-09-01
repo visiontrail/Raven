@@ -354,13 +354,18 @@ const PackageTab: React.FC = () => {
       <Col span={10}>
         <Card title={t('packager.infoPreview')}>
           <Title level={5}>{t('packager.operationLog')}</Title>
-          <TextArea rows={8} value={log} readOnly style={{ marginBottom: 16, backgroundColor: '#f0f2f5' }} />
+          <TextArea
+            rows={8}
+            value={log}
+            readOnly
+            style={{ marginBottom: 16, backgroundColor: 'var(--color-background-soft)' }}
+          />
           <Title level={5}>{t('packager.siIniPreview')}</Title>
           <TextArea
             autoSize={{ minRows: 10 }}
             value={siIniPreview}
             readOnly
-            style={{ fontFamily: 'monospace', backgroundColor: '#f0f2f5' }}
+            style={{ fontFamily: 'monospace', backgroundColor: 'var(--color-background-soft)' }}
           />
         </Card>
       </Col>

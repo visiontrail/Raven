@@ -68,7 +68,7 @@ const SettingMenus = styled.ul`
   border-left: 0.5px solid var(--color-border);
   padding: 10px;
   user-select: none;
-  background: #fff;
+  background: var(--color-background);
 `
 
 const MenuItemLink = styled(Link)`
