@@ -20,57 +20,18 @@
 
 ---
 
-## 2. 关键文件
+## 2. 现状与约束
 - 元数据文件：`package-metadata.json`（所有包数据统一存储），由服务在运行时读写与更新。
-  - 当该元数据文件更新时，需要更新向量数据库
-  - 该元数据文件是标准的json格式，文档切分直接按照一个json数据块切分即可
-  - 实例如下：
+- 服务端关键位置：
+  - 元数据路径定义与加载：`src/services/PackageService.js` 构造函数内：
+    - `this.metadataFilePath = path.join(__dirname, '../../data/package-metadata.json')`
+  - 静态资源页面：`public/index.html`，现有搜索输入框位于页面顶部，计划在旁新增“AI 搜索/向量搜索”按钮与交互。
 
-```json
-[
-  {
-    "id": "3a9ef06d-52f9-4c1f-83bd-e4c916417412",
-    "name": "GalaxySpace-Lx10-2025Aug21-1224-V1006-Patch.tgz",
-    "version": "1.0.0.6",
-    "packageType": "lingxi-10",
-    "size": 2311733,
-    "createdAt": "2025-08-21T04:24:20.713Z",
-    "metadata": {
-      "isPatch": true,
-      "components": [
-        "oam",
-        "cucp",
-        "cuup",
-        "du"
-      ],
-      "description": "这是一个测试包",
-      "tags": [
-        "Tags-1",
-        "标签1"
-      ],
-      "customFields": {}
-    },
-    "path": "/app/uploads/GalaxySpace-Lx10-2025Aug21-1224-V1006-Patch.tgz"
-  },
-  {
-    "id": "d87bb6e9-8c1d-42e5-90ca-5e7c72ae570f",
-    "name": "GalaxySpace-Lx10-2025Jul29-1348-V1025.tgz",
-    "path": "/app/uploads/GalaxySpace-Lx10-2025Jul29-1348-V1025.tgz",
-    "size": 136584794,
-    "createdAt": "2025-08-22T06:31:16.590Z",
-    "packageType": "lingxi-10",
-    "version": "10",
-    "metadata": {
-      "isPatch": "false",
-      "components": "[]",
-      "description": "",
-      "tags": "[]",
-      "sha256": "90c7b3c2bab17c64ce09fa977af5575b04b601ce69abe5916f5d32f734450c6d",
-      "customFields": {}
-    }
-  }
-]
-```
+约束：
+- 运行环境为 Node.js 服务；优先不引入沉重依赖；
+- 先支持小规模数据的精准向量检索（暴力余弦相似度），规模扩大再引入近似算法（如 HNSW）。
+
+---
 
 ## 3. 需求说明
 ### 3.1 功能需求
@@ -84,8 +45,6 @@
    - 在现有搜索框旁新增“AI 搜索/向量搜索”入口；
    - 支持 Loading、无结果、错误状态展示；
    - 结果列表与现有 UI 风格一致，可显示匹配理由（简要片段或高亮字段）。
-   - 当用户点击AI搜索后，弹出一个简单的ChatBot窗口，该窗口会以流的方式输出大模型的检索结果
-   - 提供一个“继续提问”的按钮，点击后显示输入框和发送按钮允许用户继续根据结果提问
 4. 降级与容错
    - 当向量服务不可用时，自动回退至原关键字检索；
    - 允许在配置层面关闭/隐藏“AI 搜索”。
@@ -105,26 +64,14 @@
 
 ## 4. 方案概述
 - 嵌入生成（Embedding）
-  - 使用第三方Embedding API，
-- 前后端交互
-  - 前端（public/index.html + public/app.js）调用 Node 代理接口：
-    - `POST /api/ai/search` 发送 { question, filters }，返回 { hits, answer? }
-    - `GET /api/ai/chat/stream?question=...&ids=...` 通过 SSE 接收流式回答
-  - Node 服务新增 `src/routes/ai.js` 作为代理层，转发到 Python 服务：
-    - `AI_SERVICE_URL` 通过环境变量配置（默认 `http://localhost:9090`）
-    - 统一错误处理与鉴权注入（如需要）
-  - Python FastAPI 提供实际 RAG 能力：
-    - `POST /rag/search` 返回命中的包列表与可选答案
-    - `GET /rag/chat/stream` 返回 SSE 流式回答
+  - 方案 A（本地优先，离线可用）：轻量本地嵌入模型（通过子进程或本地服务）
+  - 方案 B（在线，易落地）：第三方嵌入 API（OpenAI/HF），通过 .env 配置开关
 - 索引与检索
   - V1：小规模数据，暴力余弦相似度（精确、实现简单）；
   - V2：规模扩大后，引入 HNSW 近似检索（如 hnswlib 绑定）
 - 存储
   - 初期：`embeddings.json`（包含版本、维度、更新时间、items 列表）；
   - 可平滑迁移至 sqlite/LevelDB，以支持更大规模与并发。
-- Python Server
-  - 运行一个Python server用于和前端界面以及大模型API进行交互
-  - 该Python Server依赖langchain框架对接大模型
 
 ---
 

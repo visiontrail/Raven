@@ -14,7 +14,6 @@ services:
       - PORT=8083
       - UPLOAD_DIR=/app/uploads
       - DATA_DIR=/app/data
-      - AI_SERVICE_URL=http://galaxy-package-ai-service:9090
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:8083/health']
@@ -22,29 +21,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - package-network
-    depends_on:
-      - ai-service
-
-  ai-service:
-    build: ./ai-service
-    container_name: galaxy-package-ai-service
-    expose:
-      - '9090'
-    environment:
-      - DATA_DIR=/app/data
-      - UPLOAD_DIR=/app/uploads
-      - VECTOR_DIR=/app/data/chroma
-      - EMBEDDING_MODEL=text-embedding-v4
-      - EMBEDDING_DIM=1024
-      - TOPK_DEFAULT=20
-      - SCORE_THRESHOLD=0.0
-      - DASHSCOPE_API_KEY=sk-f580e7deed644abd961ca8d1f8a63115
-    volumes:
-      - ./data:/app/data
-      - ./uploads:/app/uploads
-    restart: unless-stopped
     networks:
       - package-network
 
