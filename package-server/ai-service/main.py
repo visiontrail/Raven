@@ -11,7 +11,6 @@ from pydantic import BaseModel
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import FakeEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from http import HTTPStatus
 
 # ---------- Config ----------
 DATA_DIR = os.getenv("DATA_DIR", "/app/data")
@@ -21,18 +20,6 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-v4")
 EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "1024"))
 TOPK_DEFAULT = int(os.getenv("TOPK_DEFAULT", "20"))
 SCORE_THRESHOLD = float(os.getenv("SCORE_THRESHOLD", "0.0"))
-LLM_MODEL = os.getenv("LLM_MODEL", "qwen-turbo")
-LLM_SYSTEM_PROMPT = os.getenv(
-    "LLM_SYSTEM_PROMPT",
-    (
-        "你是一个资深的软件包检索优化助手。已给出用户问题与初步检索结果，请你：\n"
-        "1) 按相关性与实用性对候选结果进行重排序；\n"
-        "2) 尽量去重与合并明显重复项；\n"
-        "3) 保留有代表性的少量高质量结果（可小幅裁剪）；\n"
-        "4) 输出规范 JSON：{\"refined\":[{id,name,version,packageType,createdAt,path,metadata,score}],\"notes\":\"简短说明\"}。\n"
-        "请只输出 JSON，不要加入额外文本。"
-    ),
-)
 
 METADATA_FILE = os.path.join(DATA_DIR, "package-metadata.json")
 
@@ -150,110 +137,6 @@ index.load()
 app = FastAPI()
 
 
-# ---------- LLM refinement ----------
-def _call_llm_with_messages(messages: List[dict]) -> Optional[str]:
-    """Call DashScope Generation with messages format. Returns text or None on failure."""
-    api_key = os.getenv("DASHSCOPE_API_KEY")
-    if not api_key:
-        return None
-    try:
-        # Lazy import to avoid hard dependency if key is absent
-        from dashscope import Generation  # type: ignore
-
-        resp = Generation.call(
-            model=LLM_MODEL,
-            input={"messages": messages},
-        )
-        # dashscope returns HTTPStatus in status_code
-        if getattr(resp, "status_code", None) == HTTPStatus.OK:
-            # Prefer output_text if available, otherwise stringify output
-            text = getattr(resp, "output_text", None)
-            if text:
-                return text
-            # Some SDK versions return structured output
-            output = getattr(resp, "output", None)
-            if isinstance(output, dict):
-                # Try to get choices[0].message.content
-                choices = output.get("choices") or []
-                if choices and isinstance(choices, list):
-                    msg = choices[0].get("message") or {}
-                    return msg.get("content")
-            return None
-        return None
-    except Exception:
-        return None
-
-
-def refine_hits_with_llm(question: str, hits: List[dict]) -> dict:
-    """Return { refined: List[dict], notes: str, error: Optional[str] }.
-    Falls back to passthrough when LLM unavailable or parsing fails.
-    """
-    if not hits:
-        return {"refined": [], "notes": "empty hits", "error": None}
-
-    # Compose messages with a system role prompt
-    messages = [
-        {"role": "system", "content": LLM_SYSTEM_PROMPT},
-        {
-            "role": "user",
-            "content": json.dumps(
-                {
-                    "question": question,
-                    "candidates": hits,
-                },
-                ensure_ascii=False,
-            ),
-        },
-    ]
-
-    text = _call_llm_with_messages(messages)
-    if not text:
-        return {"refined": hits, "notes": "passthrough", "error": "llm_unavailable"}
-
-    # Try to parse JSON strictly; if it fails, attempt to extract a JSON object
-    parsed = None
-    try:
-        parsed = json.loads(text)
-    except Exception:
-        # best-effort extraction
-        try:
-            start = text.find("{")
-            end = text.rfind("}")
-            if start != -1 and end != -1 and end > start:
-                parsed = json.loads(text[start : end + 1])
-        except Exception:
-            parsed = None
-
-    if not isinstance(parsed, dict):
-        return {"refined": hits, "notes": "passthrough", "error": "parse_failed"}
-
-    refined_items = parsed.get("refined")
-    notes = parsed.get("notes") if isinstance(parsed.get("notes"), str) else None
-
-    # If the model returned a list of objects, accept; if it returned list of ids, map back
-    if isinstance(refined_items, list) and refined_items and isinstance(refined_items[0], dict):
-        # Ensure basic shape and keep original fields where missing
-        by_id = {h.get("id"): h for h in hits}
-        normalized: List[dict] = []
-        for item in refined_items:
-            item_id = item.get("id")
-            base = by_id.get(item_id, {})
-            merged = {**base, **item}
-            normalized.append(merged)
-        return {"refined": normalized, "notes": notes, "error": None}
-
-    if isinstance(refined_items, list) and refined_items and not isinstance(refined_items[0], dict):
-        by_id = {h.get("id"): h for h in hits}
-        ordered = [by_id[i] for i in refined_items if i in by_id]
-        # Fallback: append any missing items to preserve coverage
-        seen = set(refined_items)
-        ordered.extend([h for h in hits if h.get("id") not in seen])
-        return {"refined": ordered, "notes": notes, "error": None}
-
-    # Otherwise fallback
-    return {"refined": hits, "notes": "passthrough", "error": "unexpected_format"}
-
-
 class SearchRequest(BaseModel):
     question: str
     filters: Optional[dict] = None
@@ -296,13 +179,7 @@ async def rag_search(req: SearchRequest):
         return True
 
     filtered_hits = [h for h in hits if match_filters(h)]
-    refinement = refine_hits_with_llm(req.question, filtered_hits)
-    return {
-        "hits": filtered_hits,
-        "refined": refinement.get("refined", filtered_hits),
-        "notes": refinement.get("notes"),
-        "llmError": refinement.get("error"),
-    }
+    return {"hits": filtered_hits}
 
 
 @app.get("/rag/chat/stream")
