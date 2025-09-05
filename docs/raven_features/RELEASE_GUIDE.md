@@ -141,6 +141,7 @@ yarn dev
 
 ```bash
 yarn build:mac         # 仅构建 macOS 产物
+yarn build:win:x64     # 仅构建 Windows x64 产物
 # 如需 Windows/Linux，请在对应平台执行 yarn build:win / yarn build:linux
 ```
 
