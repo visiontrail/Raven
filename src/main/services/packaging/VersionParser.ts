@@ -79,24 +79,5 @@ export class VersionParser {
     return null
   }
 
-  /**
-   * 转换版本格式 v1001 -> 1.0.0.1 或 十六进制格式
-   */
-  private static convertVersionFormat(versionStr: string): string {
-    if (versionStr.length === 8 && /^[0-9A-Fa-f]+$/.test(versionStr)) {
-      // 十六进制格式: 00020A09 -> 0.2.10.9
-      const major = parseInt(versionStr.substring(0, 2), 16).toString()
-      const minor = parseInt(versionStr.substring(2, 4), 16).toString()
-      const patch = parseInt(versionStr.substring(4, 6), 16).toString()
-      const build = parseInt(versionStr.substring(6, 8), 16).toString()
-      return `${major}.${minor}.${patch}.${build}`
-    } else if (versionStr.length === 4 && /^\d+$/.test(versionStr)) {
-      const major = versionStr[0]
-      const minor = versionStr[1]
-      const patch = versionStr[2]
-      const build = versionStr[3]
-      return `${major}.${minor}.${patch}.${build}`
-    }
-    return versionStr
-  }
+
 }

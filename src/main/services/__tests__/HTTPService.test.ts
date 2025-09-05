@@ -5,7 +5,7 @@ import FormData from 'form-data'
 import * as fs from 'fs-extra'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { HTTPConfig, PackageMetadata } from '../../../renderer/src/types/package'
+import { HTTPConfig, Package } from '../../../renderer/src/types/package'
 import { HTTPService } from '../HTTPService'
 
 // Mock dependencies
@@ -45,12 +45,21 @@ describe('HTTPService', () => {
     }
   }
 
-  const mockPackageMetadata: PackageMetadata = {
-    isPatch: false,
-    components: ['core', 'ui'],
-    description: 'Test package',
-    tags: ['test'],
-    customFields: {}
+  const mockPackageMetadata: Package = {
+    id: 'test-package-id',
+    name: 'test-package',
+    path: '/path/to/package.tgz',
+    size: 1024,
+    createdAt: new Date(),
+    version: '1.0.0',
+    packageType: 'config' as any,
+    metadata: {
+      isPatch: false,
+      components: ['core', 'ui'],
+      description: 'Test package',
+      tags: ['test'],
+      customFields: {}
+    }
   }
 
   const mockFilePath = '/path/to/package.tgz'

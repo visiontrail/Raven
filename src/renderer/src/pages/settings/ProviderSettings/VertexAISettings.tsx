@@ -1,4 +1,5 @@
 import { HStack } from '@renderer/components/Layout'
+import { isFeatureDisabled, isLockedModeEnabled } from '@renderer/config/locked-settings'
 import { PROVIDER_URLS } from '@renderer/config/providers'
 import { useProvider } from '@renderer/hooks/useProvider'
 import { useVertexAISettings } from '@renderer/hooks/useVertexAI'
@@ -32,6 +33,15 @@ const VertexAISettings: FC<Props> = ({ providerId }) => {
 
   const providerConfig = PROVIDER_URLS['vertexai']
   const apiKeyWebsite = providerConfig?.websites?.apiKey
+
+  // Define locked mode variables
+  const isLocked = isLockedModeEnabled()
+  const lockedSettings = {
+    clientEmail: '',
+    privateKey: ''
+  }
+  const lockedProjectId = ''
+  const lockedLocation = ''
 
   const onUpdateApiHost = () => {
     updateProvider({ apiHost })

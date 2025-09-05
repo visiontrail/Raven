@@ -5,6 +5,7 @@ import type { ActionItem } from '@renderer/types/selectionTypes'
 import SelectionToolbar from '@renderer/windows/selection/toolbar/SelectionToolbar'
 import { Row } from 'antd'
 import { FC } from 'react'
+import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import { SettingDivider, SettingGroup } from '../..'
@@ -25,6 +26,7 @@ interface SelectionActionsListProps {
 }
 
 const SelectionActionsList: FC<SelectionActionsListProps> = ({ actionItems, setActionItems }) => {
+  const { t } = useTranslation()
   const {
     enabledItems,
     disabledItems,
@@ -59,6 +61,8 @@ const SelectionActionsList: FC<SelectionActionsListProps> = ({ actionItems, setA
         maxCustomItems={MAX_CUSTOM_ITEMS}
         onReset={handleReset}
         onAdd={handleAddNewAction}
+        onAddAction={handleAddNewAction}
+        canAddMore={customItemsCount < MAX_CUSTOM_ITEMS}
       />
 
       <SettingDivider />
@@ -71,8 +75,10 @@ const SelectionActionsList: FC<SelectionActionsListProps> = ({ actionItems, setA
         <ActionsListSection>
           <ActionColumn>
             <ActionsList
+              title={t('selection.settings.actions.enabled')}
               droppableId="enabled"
               items={enabledItems}
+              maxItems={MAX_ENABLED_ITEMS}
               isLastEnabledItem={enabledItems.length === 1}
               onEdit={handleEditActionItem}
               onDelete={handleDeleteActionItem}
@@ -82,8 +88,11 @@ const SelectionActionsList: FC<SelectionActionsListProps> = ({ actionItems, setA
             <ActionsListDivider enabledCount={enabledItems.length} maxEnabled={MAX_ENABLED_ITEMS} />
 
             <ActionsList
+              title={t('selection.settings.actions.disabled')}
               droppableId="disabled"
               items={disabledItems}
+              showAddButton={customItemsCount < MAX_CUSTOM_ITEMS}
+              onAdd={handleAddNewAction}
               isLastEnabledItem={false}
               onEdit={handleEditActionItem}
               onDelete={handleDeleteActionItem}
@@ -94,6 +103,7 @@ const SelectionActionsList: FC<SelectionActionsListProps> = ({ actionItems, setA
       </DragDropContext>
 
       <SelectionActionUserModal
+        open={isUserModalOpen}
         isModalOpen={isUserModalOpen}
         editingAction={userEditingAction}
         onOk={handleUserModalOk}

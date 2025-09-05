@@ -5,7 +5,7 @@ import Selector from '@renderer/components/Selector'
 import { useTheme } from '@renderer/context/ThemeProvider'
 import { useEnableDeveloperMode, useSettings } from '@renderer/hooks/useSettings'
 import { useTimer } from '@renderer/hooks/useTimer'
-import i18n, { changeLanguageNormalized } from '@renderer/i18n'
+import { changeLanguageNormalized } from '@renderer/i18n'
 import { RootState, useAppDispatch } from '@renderer/store'
 import {
   setEnableDataCollection,

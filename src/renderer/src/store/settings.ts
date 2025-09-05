@@ -11,9 +11,9 @@ import {
   OpenAISummaryText,
   PaintingProvider,
   S3Config,
-  SidebarIcon,
   ThemeMode,
-  TranslateLanguageCode
+  TranslateLanguageCode,
+  SidebarIcon
 } from '@renderer/types'
 import { uuid } from '@renderer/utils'
 import { UpgradeChannel } from '@shared/config/constant'
@@ -22,10 +22,6 @@ import { OpenAIVerbosity } from '@types'
 import { RemoteSyncState } from './backup'
 
 export type SendMessageShortcut = 'Enter' | 'Shift+Enter' | 'Ctrl+Enter' | 'Command+Enter' | 'Alt+Enter'
-
-export type SidebarIcon = 'assistants' | 'agents' | 'knowledge' | 'files' | 'packager' | 'minapp'
-
-export const DEFAULT_SIDEBAR_ICONS: SidebarIcon[] = ['assistants', 'agents', 'knowledge', 'files', 'packager']
 
 export interface NutstoreSyncRuntime extends RemoteSyncState {}
 

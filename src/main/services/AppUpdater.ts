@@ -170,7 +170,7 @@ export default class AppUpdater {
       const customServerUrl = configManager.getCustomUpdateServerUrl()
       this.autoUpdater.channel = UpgradeChannel.LATEST
       this.autoUpdater.setFeedURL(customServerUrl)
-      logger.info('使用自定义更新服务器:', customServerUrl)
+      logger.info('使用自定义更新服务器:', { customServerUrl })
       return
     }
 

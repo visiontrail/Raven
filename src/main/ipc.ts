@@ -182,7 +182,7 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
   })
 
   ipcMain.handle(IpcChannel.App_SetUseCustomUpdateServer, async (_, useCustomServer: boolean) => {
-    logger.info('set use custom update server', useCustomServer)
+    logger.info('set use custom update server', { useCustomServer })
     if (useCustomServer !== configManager.getUseCustomUpdateServer()) {
       appUpdater.cancelDownload()
       configManager.setUseCustomUpdateServer(useCustomServer)
@@ -190,7 +190,7 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
   })
 
   ipcMain.handle(IpcChannel.App_SetCustomUpdateServerUrl, async (_, serverUrl: string) => {
-    logger.info('set custom update server url', serverUrl)
+    logger.info('set custom update server url', { serverUrl })
     if (serverUrl !== configManager.getCustomUpdateServerUrl()) {
       appUpdater.cancelDownload()
       configManager.setCustomUpdateServerUrl(serverUrl)

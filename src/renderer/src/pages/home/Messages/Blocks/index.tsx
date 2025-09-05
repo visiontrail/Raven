@@ -29,7 +29,7 @@ const blockWrapperVariants = {
   visible: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.3, type: 'spring', bounce: 0 }
+    transition: { duration: 0.3, type: 'spring' as const, bounce: 0 }
   },
   hidden: {
     opacity: 0,

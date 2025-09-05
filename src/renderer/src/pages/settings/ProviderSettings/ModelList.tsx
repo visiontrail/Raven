@@ -186,7 +186,14 @@ const ModelList: React.FC<ModelListProps> = ({ providerId, modelStatuses = [], s
 
   const onManageModel = useCallback(() => {
     if (!isLocked && !isFeatureDisabled('DISABLE_MODEL_ADDITION')) {
-      EditModelPopup.show({ provider })
+      // Create a default model for adding new models
+      const defaultModel: Model = {
+        id: '',
+        name: '',
+        provider: provider.id,
+        group: 'custom'
+      }
+      EditModelPopup.show({ provider, model: defaultModel })
     }
   }, [provider, isLocked])
 
@@ -351,7 +358,7 @@ const ModelList: React.FC<ModelListProps> = ({ providerId, modelStatuses = [], s
             model={model}
             onUpdateModel={onUpdateModel}
             open={editingModel?.id === model.id && !isLocked}
-            onClose={() => setEditingModel(null)}
+            onCancel={() => setEditingModel(null)}
             key={model.id}
           />
         ))}
