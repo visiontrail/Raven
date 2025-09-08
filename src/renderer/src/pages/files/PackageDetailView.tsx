@@ -1,4 +1,11 @@
-import { DeleteOutlined, ExclamationCircleOutlined, FolderOpenOutlined, UploadOutlined } from '@ant-design/icons'
+import {
+  CloseOutlined,
+  CopyOutlined,
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  FolderOpenOutlined,
+  UploadOutlined
+} from '@ant-design/icons'
 import { Button, Card, Descriptions, Flex, Form, Input, message, Popconfirm, Select, Switch, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import { Package as PackageIcon } from 'lucide-react'
@@ -20,6 +27,8 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
   const { t } = useTranslation()
   const { updatePackageMetadata, deletePackage, openPackageLocation, uploadToFTP, uploadToHTTP } = usePackages()
   const [loading, setLoading] = useState(false)
+  const [showPrompt, setShowPrompt] = useState(false)
+  const [promptText, setPromptText] = useState('')
   const [form] = Form.useForm()
 
   // Initialize form with current metadata
@@ -93,6 +102,17 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
     await openPackageLocation(pkg.path)
   }
 
+  // Handle copying prompt text
+  const handleCopyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(promptText)
+      message.success(t('common.copied'))
+    } catch (error) {
+      console.error('Error copying to clipboard:', error)
+      message.error(t('common.copy_failed'))
+    }
+  }
+
   // Handle upload to device (FTP)
   const handleUploadToDevice = async () => {
     // Hardcoded FTP configuration
@@ -104,7 +124,15 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
       remotePath: '/firmware'
     }
 
+    // 创建提示词并设置状态
+    const text = `将${pkg.name}对星载基带载荷进行重构任务`
+    setPromptText(text)
+    setShowPrompt(true)
+
     try {
+      // 复制到剪贴板
+      await navigator.clipboard.writeText(text)
+
       setLoading(true)
       const success = await uploadToFTP(pkg.id, ftpConfig)
       if (success) {
@@ -251,6 +279,27 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
             </Form.Item>
           </Form>
         </Card>
+
+        {/* Prompt Card - Only shown when showPrompt is true */}
+        {showPrompt && (
+          <Card style={{ marginBottom: 16, backgroundColor: '#f0f7ff', border: '1px solid #91caff' }}>
+            <Flex justify="space-between" align="center">
+              <div style={{ flex: 1, fontWeight: 'bold', fontSize: '16px' }}>{promptText}</div>
+              <Flex gap={8}>
+                <Button type="text" icon={<CopyOutlined />} onClick={handleCopyPrompt} title={t('common.copy')} />
+                <Button
+                  type="text"
+                  icon={<CloseOutlined />}
+                  onClick={() => setShowPrompt(false)}
+                  title={t('common.close')}
+                />
+              </Flex>
+            </Flex>
+            <div style={{ marginTop: 8, fontSize: '14px', color: '#666' }}>
+              {t('files.package.prompt_hint') || '您可以到聊天窗口使用该提示词'}
+            </div>
+          </Card>
+        )}
 
         {/* Actions */}
         <Card title={t('files.actions')}>
