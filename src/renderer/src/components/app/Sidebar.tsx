@@ -13,7 +13,7 @@ import { getSidebarIconLabel, getThemeModeLabel } from '@renderer/i18n/label'
 import { ThemeMode } from '@renderer/types'
 import { isEmoji } from '@renderer/utils'
 import { Avatar, Tooltip } from 'antd'
-import { Code, FileSearch, Folder, MessageSquare, Monitor, Moon, Package, Settings, Sparkle, Sun } from 'lucide-react'
+import { FileSearch, Folder, MessageSquare, Monitor, Moon, Package, Settings, Sparkle, Sun } from 'lucide-react'
 import { FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -121,7 +121,6 @@ const MainMenus: FC = () => {
     agents: <Sparkle size={18} className="icon" />,
     knowledge: <FileSearch size={18} className="icon" />,
     files: <Folder size={17} className="icon" />,
-    code_tools: <Code size={18} className="icon" />,
     packager: <Package size={18} className="icon" />
   }
 
@@ -130,7 +129,6 @@ const MainMenus: FC = () => {
     agents: '/agents',
     knowledge: '/knowledge',
     files: '/files',
-    code_tools: '/code',
     packager: '/packager'
   }
 
