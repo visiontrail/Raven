@@ -888,9 +888,9 @@
       "upload_device_todo": "デバイスへのアップロード機能は今後実装予定です",
       "upload_failed": "アップロードに失敗しました",
       "upload_server_todo": "サーバーへのアップロード機能は今後実装予定です",
+      "upload_success": "アップロードが成功しました",
       "upload_to_device": "デバイスにアップロード",
       "upload_to_server": "サーバーにアップロード",
-      "upload_success": "アップロードが成功しました",
       "view_details": "詳細を表示"
     },
     "package_type": "パッケージタイプ",
@@ -1871,71 +1871,71 @@
     "title": "Ollama"
   },
   "packager": {
-    "clearSelections": "[to be translated]:清空选择",
-    "componentSelection": "[to be translated]:组件选择",
+    "clearSelections": "選択をクリア",
+    "componentSelection": "コンポーネント選択",
     "components": {
       "config": {
-        "cucp_gnb": "[to be translated]:CUCP GNB配置",
-        "cucp_stack": "[to be translated]:CUCP Stack配置",
-        "cuup_gnb": "[to be translated]:CUUP GNB配置",
-        "cuup_stack": "[to be translated]:CUUP Stack配置",
-        "cwmp_data": "[to be translated]:CWMP数据文件",
-        "du_gnb": "[to be translated]:DU GNB配置",
-        "du_stack": "[to be translated]:DU Stack配置"
+        "cucp_gnb": "CUCP GNB設定",
+        "cucp_stack": "CUCP Stack設定",
+        "cuup_gnb": "CUUP GNB設定",
+        "cuup_stack": "CUUP Stack設定",
+        "cwmp_data": "CWMPデータファイル",
+        "du_gnb": "DU GNB設定",
+        "du_stack": "DU Stack設定"
       },
       "lingxi-07a": {
-        "bpoqv_fpga": "[to be translated]:QV基带FPGA",
-        "bposc_fpga": "[to be translated]:基带板FPGA",
-        "cucp": "[to be translated]:协议栈CUCP",
-        "cuup": "[to be translated]:协议栈CUUP",
-        "du": "[to be translated]:协议栈DU",
-        "oam": "[to be translated]:OAM软件",
-        "sct_fpga": "[to be translated]:主控板FPGA"
+        "bpoqv_fpga": "QVベースバンドFPGA",
+        "bposc_fpga": "ベースバンドボードFPGA",
+        "cucp": "プロトコルスタックCUCP",
+        "cuup": "プロトコルスタックCUUP",
+        "du": "プロトコルスタックDU",
+        "oam": "OAMソフトウェア",
+        "sct_fpga": "メインコントロールボードFPGA"
       },
       "lingxi-10": {
-        "bpodvb_fpga": "[to be translated]:DVB基带FPGA",
-        "bposc_fpga": "[to be translated]:基带板FPGA",
-        "cucp": "[to be translated]:协议栈CUCP",
-        "cuup": "[to be translated]:协议栈CUUP",
-        "du": "[to be translated]:协议栈DU",
-        "galaxy_core_network": "[to be translated]:银河自研核心网",
-        "oam": "[to be translated]:OAM软件",
-        "satellite_app_server": "[to be translated]:星载应用服务器",
-        "sct_fpga": "[to be translated]:主控板FPGA"
+        "bpodvb_fpga": "DVBベースバンドFPGA",
+        "bposc_fpga": "ベースバンドボードFPGA",
+        "cucp": "プロトコルスタックCUCP",
+        "cuup": "プロトコルスタックCUUP",
+        "du": "プロトコルスタックDU",
+        "galaxy_core_network": "ギャラクシー自社開発コアネットワーク",
+        "oam": "OAMソフトウェア",
+        "satellite_app_server": "衛星搭載アプリケーションサーバー",
+        "sct_fpga": "メインコントロールボードFPGA"
       }
     },
-    "configDescription": "[to be translated]:配置文件包仅适用于灵犀07A和灵犀10AB卫星，不适用灵犀06一标段和三标段",
-    "controlPanel": "[to be translated]:控制面板",
+    "configDescription": "設定ファイルパッケージはLingxi 07AとLingxi 10AB衛星のみに対応し、Lingxi 06の第一期と第三期には対応していません",
+    "controlPanel": "コントロールパネル",
     "error": {
-      "autoVersion": "[to be translated]:自动识别版本号失败",
-      "noComponents": "[to be translated]:请至少选择一个组件进行打包。",
-      "noPackageType": "[to be translated]:包类型未定义，无法打包。",
-      "noPackageVersion": "[to be translated]:请输入整包版本号。",
-      "selectFile": "[to be translated]:选择文件失败"
+      "autoVersion": "バージョン番号の自動認識に失敗しました",
+      "noComponents": "パッケージング用に少なくとも1つのコンポーネントを選択してください。",
+      "noPackageType": "パッケージタイプが未定義のため、パッケージングできません。",
+      "noPackageVersion": "パッケージのバージョン番号を入力してください。",
+      "selectFile": "ファイルの選択に失敗しました"
     },
-    "infoPreview": "[to be translated]:信息预览",
-    "isPatch": "[to be translated]:是否为PATCH包",
+    "infoPreview": "情報プレビュー",
+    "isPatch": "パッチパッケージですか",
     "log": {
-      "cleared": "[to be translated]:已清空所有选择",
-      "errorUnknown": "[to be translated]:打包过程中发生未知错误",
-      "failure": "[to be translated]:打包失败",
-      "start": "[to be translated]:开始打包...",
-      "success": "[to be translated]:打包成功！输出路径:"
+      "cleared": "すべての選択をクリアしました",
+      "errorUnknown": "パッケージング中に不明なエラーが発生しました",
+      "failure": "パッケージングに失敗しました",
+      "start": "パッケージングを開始...",
+      "success": "パッケージングが成功しました！出力パス:"
     },
-    "operationLog": "[to be translated]:操作日志",
-    "packageVersion": "[to be translated]:整包版本号",
-    "selectFile": "[to be translated]:选择文件",
-    "siIniPreview": "[to be translated]:si.ini 预览",
-    "startPackaging": "[to be translated]:开始打包",
+    "operationLog": "操作ログ",
+    "packageVersion": "パッケージバージョン番号",
+    "selectFile": "ファイルを選択",
+    "siIniPreview": "si.ini プレビュー",
+    "startPackaging": "パッケージングを開始",
     "title": "パッケージングツール",
     "types": {
-      "config": "[to be translated]:配置文件包",
-      "lingxi-06-thrid": "[to be translated]:灵犀 06 三标段",
-      "lingxi-07a": "[to be translated]:灵犀 07A",
-      "lingxi-10": "[to be translated]:灵犀 10"
+      "config": "設定ファイルパッケージ",
+      "lingxi-06-thrid": "Lingxi 06 第三期",
+      "lingxi-07a": "Lingxi 07A",
+      "lingxi-10": "Lingxi 10"
     },
-    "versionInputPlaceholder": "[to be translated]:自动识别或手动输入",
-    "versionPlaceholder": "[to be translated]:例如: 1.0.0.7"
+    "versionInputPlaceholder": "自動認識または手動入力",
+    "versionPlaceholder": "例: 1.0.0.7"
   },
   "paintings": {
     "aspect_ratio": "画幅比例",

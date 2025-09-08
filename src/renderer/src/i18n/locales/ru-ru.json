@@ -888,9 +888,9 @@
       "upload_device_todo": "Функция загрузки на устройство будет реализована",
       "upload_failed": "Ошибка загрузки",
       "upload_server_todo": "Функция загрузки на сервер будет реализована",
+      "upload_success": "Загрузка успешна",
       "upload_to_device": "Загрузить на устройство",
       "upload_to_server": "Загрузить на сервер",
-      "upload_success": "Загрузка успешна",
       "view_details": "Просмотр деталей"
     },
     "package_type": "Тип пакета",
@@ -1871,71 +1871,71 @@
     "title": "Ollama"
   },
   "packager": {
-    "clearSelections": "[to be translated]:清空选择",
-    "componentSelection": "[to be translated]:组件选择",
+    "clearSelections": "Очистить выбор",
+    "componentSelection": "Выбор компонентов",
     "components": {
       "config": {
-        "cucp_gnb": "[to be translated]:CUCP GNB配置",
-        "cucp_stack": "[to be translated]:CUCP Stack配置",
-        "cuup_gnb": "[to be translated]:CUUP GNB配置",
-        "cuup_stack": "[to be translated]:CUUP Stack配置",
-        "cwmp_data": "[to be translated]:CWMP数据文件",
-        "du_gnb": "[to be translated]:DU GNB配置",
-        "du_stack": "[to be translated]:DU Stack配置"
+        "cucp_gnb": "Конфигурация CUCP GNB",
+        "cucp_stack": "Конфигурация стека CUCP",
+        "cuup_gnb": "Конфигурация CUUP GNB",
+        "cuup_stack": "Конфигурация стека CUUP",
+        "cwmp_data": "Файлы данных CWMP",
+        "du_gnb": "Конфигурация DU GNB",
+        "du_stack": "Конфигурация стека DU"
       },
       "lingxi-07a": {
-        "bpoqv_fpga": "[to be translated]:QV基带FPGA",
-        "bposc_fpga": "[to be translated]:基带板FPGA",
-        "cucp": "[to be translated]:协议栈CUCP",
-        "cuup": "[to be translated]:协议栈CUUP",
-        "du": "[to be translated]:协议栈DU",
-        "oam": "[to be translated]:OAM软件",
-        "sct_fpga": "[to be translated]:主控板FPGA"
+        "bpoqv_fpga": "FPGA базовой полосы QV",
+        "bposc_fpga": "FPGA базовой платы",
+        "cucp": "Стек протоколов CUCP",
+        "cuup": "Стек протоколов CUUP",
+        "du": "Стек протоколов DU",
+        "oam": "Программное обеспечение OAM",
+        "sct_fpga": "FPGA платы управления"
       },
       "lingxi-10": {
-        "bpodvb_fpga": "[to be translated]:DVB基带FPGA",
-        "bposc_fpga": "[to be translated]:基带板FPGA",
-        "cucp": "[to be translated]:协议栈CUCP",
-        "cuup": "[to be translated]:协议栈CUUP",
-        "du": "[to be translated]:协议栈DU",
-        "galaxy_core_network": "[to be translated]:银河自研核心网",
-        "oam": "[to be translated]:OAM软件",
-        "satellite_app_server": "[to be translated]:星载应用服务器",
-        "sct_fpga": "[to be translated]:主控板FPGA"
+        "bpodvb_fpga": "FPGA базовой полосы DVB",
+        "bposc_fpga": "FPGA базовой платы",
+        "cucp": "Стек протоколов CUCP",
+        "cuup": "Стек протоколов CUUP",
+        "du": "Стек протоколов DU",
+        "galaxy_core_network": "Самостоятельно разработанная базовая сеть Galaxy",
+        "oam": "Программное обеспечение OAM",
+        "satellite_app_server": "Сервер спутниковых приложений",
+        "sct_fpga": "FPGA платы управления"
       }
     },
-    "configDescription": "[to be translated]:配置文件包仅适用于灵犀07A和灵犀10AB卫星，不适用灵犀06一标段和三标段",
-    "controlPanel": "[to be translated]:控制面板",
+    "configDescription": "Пакет конфигурации применим только к спутникам Lingxi 07A и Lingxi 10AB, не применим к первому и третьему этапам Lingxi 06",
+    "controlPanel": "Панель управления",
     "error": {
-      "autoVersion": "[to be translated]:自动识别版本号失败",
-      "noComponents": "[to be translated]:请至少选择一个组件进行打包。",
-      "noPackageType": "[to be translated]:包类型未定义，无法打包。",
-      "noPackageVersion": "[to be translated]:请输入整包版本号。",
-      "selectFile": "[to be translated]:选择文件失败"
+      "autoVersion": "Не удалось автоматически определить номер версии",
+      "noComponents": "Пожалуйста, выберите хотя бы один компонент для упаковки.",
+      "noPackageType": "Тип пакета не определен, упаковка невозможна.",
+      "noPackageVersion": "Пожалуйста, введите номер версии полного пакета.",
+      "selectFile": "Не удалось выбрать файл"
     },
-    "infoPreview": "[to be translated]:信息预览",
-    "isPatch": "[to be translated]:是否为PATCH包",
+    "infoPreview": "Предварительный просмотр информации",
+    "isPatch": "Является ли это PATCH-пакетом",
     "log": {
-      "cleared": "[to be translated]:已清空所有选择",
-      "errorUnknown": "[to be translated]:打包过程中发生未知错误",
-      "failure": "[to be translated]:打包失败",
-      "start": "[to be translated]:开始打包...",
-      "success": "[to be translated]:打包成功！输出路径:"
+      "cleared": "Все выборы очищены",
+      "errorUnknown": "Произошла неизвестная ошибка во время упаковки",
+      "failure": "Упаковка не удалась",
+      "start": "Начало упаковки...",
+      "success": "Упаковка успешна! Путь вывода:"
     },
-    "operationLog": "[to be translated]:操作日志",
-    "packageVersion": "[to be translated]:整包版本号",
-    "selectFile": "[to be translated]:选择文件",
-    "siIniPreview": "[to be translated]:si.ini 预览",
-    "startPackaging": "[to be translated]:开始打包",
-    "title": "[to be translated]:打包工具",
+    "operationLog": "Журнал операций",
+    "packageVersion": "Номер версии полного пакета",
+    "selectFile": "Выбрать файл",
+    "siIniPreview": "Предварительный просмотр si.ini",
+    "startPackaging": "Начать упаковку",
+    "title": "Инструмент упаковки",
     "types": {
-      "config": "[to be translated]:配置文件包",
-      "lingxi-06-thrid": "[to be translated]:灵犀 06 三标段",
-      "lingxi-07a": "[to be translated]:灵犀 07A",
-      "lingxi-10": "[to be translated]:灵犀 10"
+      "config": "Пакет конфигурации",
+      "lingxi-06-thrid": "Lingxi 06 третий этап",
+      "lingxi-07a": "Lingxi 07A",
+      "lingxi-10": "Lingxi 10"
     },
-    "versionInputPlaceholder": "[to be translated]:自动识别或手动输入",
-    "versionPlaceholder": "[to be translated]:例如: 1.0.0.7"
+    "versionInputPlaceholder": "Автоматическое определение или ручной ввод",
+    "versionPlaceholder": "Например: 1.0.0.7"
   },
   "paintings": {
     "aspect_ratio": "Пропорции изображения",
