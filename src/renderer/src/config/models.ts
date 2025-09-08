@@ -522,31 +522,31 @@ export const SYSTEM_MODELS: Record<SystemProviderId | 'defaultModel', Model[]> =
   defaultModel: [
     {
       // 默认助手模型
-      id: 'qwen-plus-2025-07-14',
-      name: 'qwen-plus-2025-07-14',
+      id: 'qwen-plus',
+      name: 'qwen-plus',
       provider: 'dashscope',
-      group: 'qwen-plus-2025-07-14'
+      group: 'qwen-plus'
     },
     {
       // 默认话题命名模型
-      id: 'qwen-plus-2025-07-14',
-      name: 'qwen-plus-2025-07-14',
+      id: 'qwen-plus',
+      name: 'qwen-plus',
       provider: 'dashscope',
-      group: 'qwen-plus-2025-07-14'
+      group: 'qwen-plus'
     },
     {
       // 默认翻译模型
-      id: 'qwen-plus-2025-07-14',
-      name: 'qwen-plus-2025-07-14',
+      id: 'qwen-plus',
+      name: 'qwen-plus',
       provider: 'dashscope',
-      group: 'qwen-plus-2025-07-14'
+      group: 'qwen-plus'
     },
     {
       // 默认快捷助手模型
-      id: 'qwen-plus-2025-07-14',
-      name: 'qwen-plus-2025-07-14',
+      id: 'qwen-plus',
+      name: 'qwen-plus',
       provider: 'dashscope',
-      group: 'qwen-plus-2025-07-14'
+      group: 'qwen-plus'
     }
   ],
   vertexai: [],
@@ -1407,10 +1407,10 @@ export const SYSTEM_MODELS: Record<SystemProviderId | 'defaultModel', Model[]> =
   ],
   stepfun: [
     {
-      id: 'qwen-plus-2025-07-14',
-      name: 'qwen-plus-2025-07-14',
+      id: 'qwen-plus',
+      name: 'qwen-plus',
       provider: 'dashscope',
-      group: 'qwen-plus-2025-07-14',
+      group: 'qwen-plus',
       owned_by: 'system'
     }
   ],
@@ -2682,7 +2682,7 @@ export function isSupportedThinkingTokenQwenModel(model?: Model): boolean {
     'qwen-plus-0428',
     'qwen-plus-2025-04-28',
     'qwen-plus-0714',
-    'qwen-plus-2025-07-14',
+    'qwen-plus',
     'qwen-turbo',
     'qwen-turbo-latest',
     'qwen-turbo-0428',
