@@ -9,7 +9,6 @@ import { useSettings } from '@renderer/hooks/useSettings'
 import i18n from '@renderer/i18n'
 import { handleSaveData, useAppDispatch } from '@renderer/store'
 import { setUpdateState } from '@renderer/store/runtime'
-import { ThemeMode } from '@renderer/types'
 import { runAsyncFunction } from '@renderer/utils'
 import { UpgradeChannel } from '@shared/config/constant'
 import { Avatar, Button, Progress, Radio, Row, Switch, Tag, Tooltip } from 'antd'
@@ -76,7 +75,7 @@ const AboutSettings: FC = () => {
   }
 
   const mailto = async () => {
-    const email = 'support@cherry-ai.com'
+    const email = 'guoliang@yinhe.ht'
     const subject = `${APP_NAME} Feedback`
     const version = (await window.api.getAppInfo()).version
     const platform = window.electron.process.platform
@@ -99,13 +98,12 @@ const AboutSettings: FC = () => {
   }
 
   const showReleases = async () => {
-    const { appPath } = await window.api.getAppInfo()
-    openMinapp({
-      id: 'cherrystudio-releases',
-      name: t('settings.about.releases.title'),
-      url: `file://${appPath}/resources/cherry-studio/releases.html?theme=${theme === ThemeMode.dark ? 'dark' : 'light'}`,
-      logo: AppLogo
-    })
+    const isChinese = i18n.language.startsWith('zh')
+    window.api.openWebsite(
+      isChinese
+        ? 'https://github.com/visiontrail/Raven/releases/latest/'
+        : 'https://github.com/visiontrail/Raven/releases/latest/'
+    )
   }
 
   const currentChannelByVersion =
@@ -330,7 +328,7 @@ const AboutSettings: FC = () => {
             <Github size={18} />
             {t('settings.about.feedback.title')}
           </SettingRowTitle>
-          <Button onClick={() => onOpenWebsite('https://github.com/CherryHQ/cherry-studio/issues/new/choose')}>
+          <Button onClick={() => onOpenWebsite('https://github.com/visiontrail/Raven/issues/new/choose')}>
             {t('settings.about.feedback.button')}
           </Button>
         </SettingRow>
