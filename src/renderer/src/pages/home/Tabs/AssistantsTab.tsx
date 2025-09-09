@@ -5,6 +5,7 @@ import { useAgents } from '@renderer/hooks/useAgents'
 import { useAssistants } from '@renderer/hooks/useAssistant'
 import { useAssistantsTabSortType } from '@renderer/hooks/useStore'
 import { useTags } from '@renderer/hooks/useTags'
+import { loggerService } from '@renderer/services/LoggerService'
 import { Assistant, AssistantsSortType } from '@renderer/types'
 import { Tooltip, Typography } from 'antd'
 import { Plus } from 'lucide-react'
@@ -36,7 +37,7 @@ const Assistants: FC<AssistantsTabProps> = ({
 
   useEffect(() => {
     if (import.meta.env.DEV) {
-      console.debug('[AssistantsTab] render', {
+      loggerService.debug('[AssistantsTab] render', {
         assistantsCount: assistants?.length,
         assistants,
         activeAssistantId: activeAssistant?.id,

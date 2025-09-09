@@ -151,9 +151,9 @@ if (!app.requestSingleInstanceLock()) {
     // Initialize packaging service
     try {
       await packagingService.initialize()
-      console.log('Packaging service initialized successfully')
+      logger.info('Packaging service initialized successfully')
     } catch (error) {
-      console.error('Failed to initialize packaging service:', error)
+      logger.error('Failed to initialize packaging service:', error as Error)
     }
   })
 

@@ -2,6 +2,7 @@ import { Form, Input, Modal, Select } from 'antd'
 import { FC, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { loggerService } from '../services/LoggerService'
 import { HTTPConfig } from '../types/package'
 
 interface HTTPConfigModalProps {
@@ -70,7 +71,7 @@ const HTTPConfigModal: FC<HTTPConfigModalProps> = ({ visible, onOk, onCancel, lo
 
       onOk(config)
     } catch (error) {
-      console.error('Form validation failed:', error)
+      loggerService.error('Form validation failed:', error as Error)
     }
   }
 

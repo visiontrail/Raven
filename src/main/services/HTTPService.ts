@@ -1,5 +1,6 @@
 // src/main/services/HTTPService.ts
 
+import { loggerService } from '@logger'
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
 import * as crypto from 'crypto'
 import FormData from 'form-data'
@@ -7,6 +8,8 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 
 import { HTTPConfig, Package } from '../../renderer/src/types/package'
+
+const logger = loggerService.withContext('HTTPService')
 
 /**
  * Interface for HTTP upload progress callback
@@ -181,7 +184,7 @@ export class HTTPService implements IHTTPService {
           clearTimeout(timeoutId)
 
           if (res.ok) {
-            console.log(`Successfully uploaded ${fileName} to ${httpConfig.url}`)
+            logger.info(`Successfully uploaded ${fileName} to ${httpConfig.url}`)
             return true
           }
 
@@ -239,28 +242,28 @@ export class HTTPService implements IHTTPService {
         }
       }
 
-      console.log('请求头信息:', JSON.stringify(requestConfig.headers, null, 2))
-      console.log('=== 开始发送HTTP请求 ===')
+      logger.debug(`请求头信息: ${JSON.stringify(requestConfig.headers, null, 2)}`)
+      logger.debug('=== 开始发送HTTP请求 ===')
 
       // Make the HTTP request
       const response: AxiosResponse = await axios(requestConfig)
 
-      console.log('=== HTTP响应信息 ===')
-      console.log('响应状态码:', response.status)
-      console.log('响应状态文本:', response.statusText)
-      console.log('响应头:', JSON.stringify(response.headers, null, 2))
-      console.log('响应数据:', JSON.stringify(response.data, null, 2))
-      console.log('=== HTTP上传完成 ===')
+      logger.debug('=== HTTP响应信息 ===')
+      logger.debug(`响应状态码: ${response.status}`)
+      logger.debug(`响应状态文本: ${response.statusText}`)
+      logger.debug(`响应头: ${JSON.stringify(response.headers, null, 2)}`)
+      logger.debug(`响应数据: ${JSON.stringify(response.data, null, 2)}`)
+      logger.debug('=== HTTP上传完成 ===')
 
       // Check if response indicates success
       if (response.status >= 200 && response.status < 300) {
-        console.log(`Successfully uploaded ${fileName} to ${httpConfig.url}`)
+        logger.info(`Successfully uploaded ${fileName} to ${httpConfig.url}`)
         return true
       } else {
         throw new Error(`HTTP upload failed with status ${response.status}: ${response.statusText}`)
       }
     } catch (error) {
-      console.error('HTTP upload failed:', error)
+      logger.error('HTTP upload failed:', error as Error)
 
       // Provide more specific error messages
       if (axios.isAxiosError(error)) {
@@ -302,14 +305,14 @@ export class HTTPService implements IHTTPService {
 
       // Check if response indicates the endpoint is accessible
       if (response.status >= 200 && response.status < 500) {
-        console.log(`HTTP connection test successful for ${httpConfig.url}`)
+        logger.info(`HTTP connection test successful for ${httpConfig.url}`)
         return true
       } else {
-        console.warn(`HTTP connection test returned status ${response.status} for ${httpConfig.url}`)
+        logger.warn(`HTTP connection test returned status ${response.status} for ${httpConfig.url}`)
         return false
       }
     } catch (error) {
-      console.error('HTTP connection test failed:', error)
+      logger.error('HTTP connection test failed:', error as Error)
 
       // Some endpoints might not support HEAD, try with OPTIONS
       if (axios.isAxiosError(error) && error.response?.status === 405) {
@@ -327,11 +330,11 @@ export class HTTPService implements IHTTPService {
 
           const optionsResponse = await axios(optionsConfig)
           if (optionsResponse.status >= 200 && optionsResponse.status < 500) {
-            console.log(`HTTP connection test successful (via OPTIONS) for ${httpConfig.url}`)
+            logger.info(`HTTP connection test successful (via OPTIONS) for ${httpConfig.url}`)
             return true
           }
         } catch (optionsError) {
-          console.error('HTTP connection test with OPTIONS also failed:', optionsError)
+          logger.error('HTTP connection test with OPTIONS also failed:', optionsError as Error)
         }
       }
 

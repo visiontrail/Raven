@@ -2,6 +2,7 @@ import { useAssistants, useDefaultAssistant } from '@renderer/hooks/useAssistant
 import { useNavbarPosition, useSettings } from '@renderer/hooks/useSettings'
 import { useActiveTopic } from '@renderer/hooks/useTopic'
 import { EVENT_NAMES, EventEmitter } from '@renderer/services/EventService'
+import { loggerService } from '@renderer/services/LoggerService'
 import NavigationService from '@renderer/services/NavigationService'
 import { newMessagesActions } from '@renderer/store/newMessage'
 import { Assistant, Topic } from '@renderer/types'
@@ -80,7 +81,7 @@ const HomePage: FC = () => {
     if (assistants && assistants.length === 0) {
       const assistant = { ...defaultAssistant, id: uuid() }
       if (import.meta.env.DEV) {
-        console.debug('[HomePage] seeding default assistant', assistant)
+        loggerService.debug('[HomePage] seeding default assistant', assistant)
       }
       addAssistant(assistant)
       setActiveAssistant(assistant)
@@ -90,7 +91,7 @@ const HomePage: FC = () => {
 
   useEffect(() => {
     if (import.meta.env.DEV) {
-      console.debug('[HomePage] state', {
+      loggerService.debug('[HomePage] state', {
         assistantsCount: assistants?.length,
         activeAssistantId: activeAssistant?.id,
         activeTopicId: activeTopic?.id

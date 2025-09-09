@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import { usePackages } from '../../hooks/usePackages'
+import { loggerService } from '../../services/LoggerService'
 import { Package, PackageType } from '../../types/package'
 import { formatFileSize } from '../../utils'
 import PackageDetailView from './PackageDetailView'
@@ -129,7 +130,7 @@ const PackageListView: FC<PackageListViewProps> = () => {
     const success = await deletePackage(pkg.id)
     if (!success) {
       // TODO: Show error notification
-      console.error('Failed to delete package')
+      loggerService.error('Failed to delete package')
     }
   }
 
@@ -153,14 +154,14 @@ const PackageListView: FC<PackageListViewProps> = () => {
       setUploadingPackageId(pkg.id)
       const success = await uploadToFTP(pkg.id, ftpConfig)
       if (success) {
-        console.log('Package uploaded successfully to FTP:', pkg.name)
+        loggerService.info(`Package uploaded successfully to FTP: ${pkg.name}`)
         // TODO: Show success notification
       } else {
-        console.error('Failed to upload package to FTP:', pkg.name)
+        loggerService.error(`Failed to upload package to FTP: ${pkg.name}`)
         // TODO: Show error notification
       }
     } catch (error) {
-      console.error('Error uploading package to FTP:', error)
+      loggerService.error('Error uploading package to FTP:', error as Error)
       // TODO: Show error notification
     } finally {
       setUploadingPackageId(null)

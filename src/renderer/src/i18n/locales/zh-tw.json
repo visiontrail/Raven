@@ -855,10 +855,13 @@
     "all_types": "所有類型",
     "count": "個檔案",
     "created_at": "建立時間",
-    "delete": "刪除",
-    "delete.content": "刪除檔案會刪除檔案在所有訊息中的引用，確定要刪除此檔案嗎？",
-    "delete.paintings.warning": "繪圖中包含該圖片，暫時無法刪除",
-    "delete.title": "刪除檔案",
+    "delete": {
+      "content": "[to be translated]:删除文件会删除文件在所有消息中的引用，确定要删除此文件吗？",
+      "paintings": {
+        "warning": "[to be translated]:绘图中包含该图片，暂时无法删除"
+      },
+      "title": "[to be translated]:删除文件"
+    },
     "document": "文件",
     "edit": "編輯",
     "error_loading_packages": "載入套件時出錯",
@@ -883,6 +886,7 @@
       "no_components": "未指定元件",
       "no_description": "未提供描述",
       "no_tags": "未指定標籤",
+      "prompt_hint": "您可以到聊天視窗使用該提示詞",
       "tags": "標籤",
       "tags_placeholder": "輸入標籤",
       "upload_device_todo": "上傳到裝置功能將會實現",
@@ -1407,13 +1411,17 @@
     },
     "notification": {
       "assistant": "助手回應",
-      "knowledge.error": "無法將 {{type}} 加入知識庫: {{error}}",
-      "knowledge.success": "成功將 {{type}} 新增至知識庫"
+      "knowledge": {
+        "error": "[to be translated]:{{error}}",
+        "success": "[to be translated]:成功添加 {{type}} 到知识库"
+      }
     },
     "ollama": {
-      "keep_alive_time.description": "對話後模型在記憶體中保持的時間（預設為 5 分鐘）",
-      "keep_alive_time.placeholder": "分鐘",
-      "keep_alive_time.title": "保持活躍時間",
+      "keep_alive_time": {
+        "description": "[to be translated]:对话后模型在内存中保持的时间（默认：5 分钟）",
+        "placeholder": "[to be translated]:分钟",
+        "title": "[to be translated]:保持活跃时间"
+      },
       "title": "Ollama"
     },
     "paintings": {
@@ -1431,9 +1439,15 @@
         "opaque": "不透明",
         "transparent": "透明"
       },
-      "button.delete.image": "刪除繪圖",
-      "button.delete.image.confirm": "確定要刪除此繪圖嗎？",
-      "button.new.image": "新繪圖",
+      "button": {
+        "delete": {
+          "confirm": "[to be translated]:确定要删除此图片吗？",
+          "image": "[to be translated]:删除图片"
+        },
+        "new": {
+          "image": "[to be translated]:新建图片"
+        }
+      },
       "edit": {
         "image_file": "編輯圖像",
         "magic_prompt_option_tip": "智能優化編輯提示詞",
@@ -1458,7 +1472,9 @@
       "go_to_settings": "去設置",
       "guidance_scale": "引導比例",
       "guidance_scale_tip": "無分類器指導。控制模型在尋找相關影像時對提示詞的遵循程度",
-      "image.size": "影像尺寸",
+      "image": {
+        "size": "[to be translated]:图片尺寸"
+      },
       "image_file_required": "請先上傳圖片",
       "image_file_retry": "請重新上傳圖片",
       "image_handle_required": "請先上傳圖片。",
@@ -1513,7 +1529,9 @@
         "low": "低",
         "medium": "中"
       },
-      "regenerate.confirm": "這將覆蓋已生成的圖片，是否繼續？",
+      "regenerate": {
+        "confirm": "[to be translated]:这将覆盖已生成的图片，是否继续？"
+      },
       "remix": {
         "image_file": "參考圖",
         "image_weight": "參考圖權重",

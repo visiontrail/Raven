@@ -1,13 +1,12 @@
-import { Draggable, Droppable } from '@hello-pangea/dnd'
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
+import { Draggable, Droppable } from '@hello-pangea/dnd'
+import type { ActionItem } from '@renderer/types/selectionTypes'
 import { Button, Card, Empty, Space, Typography } from 'antd'
-import { DynamicIcon } from 'lucide-react/dynamic'
 import { MessageSquareHeart } from 'lucide-react'
+import { DynamicIcon } from 'lucide-react/dynamic'
 import { FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
-
-import type { ActionItem } from '@renderer/types/selectionTypes'
 
 const { Text } = Typography
 

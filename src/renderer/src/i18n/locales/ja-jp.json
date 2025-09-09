@@ -855,10 +855,13 @@
     "all_types": "すべてのタイプ",
     "count": "個のファイル",
     "created_at": "作成日時",
-    "delete": "削除",
-    "delete.content": "ファイルを削除すると、すべてのメッセージ内のファイル参照も削除されます。このファイルを削除してもよろしいですか？",
-    "delete.paintings.warning": "この画像は描画に使用されているため、現在削除できません",
-    "delete.title": "ファイルを削除",
+    "delete": {
+      "content": "[to be translated]:删除文件会删除文件在所有消息中的引用，确定要删除此文件吗？",
+      "paintings": {
+        "warning": "[to be translated]:绘图中包含该图片，暂时无法删除"
+      },
+      "title": "[to be translated]:删除文件"
+    },
     "document": "ドキュメント",
     "edit": "編集",
     "error_loading_packages": "パッケージの読み込み中にエラーが発生しました",
@@ -883,6 +886,7 @@
       "no_components": "コンポーネントが指定されていません",
       "no_description": "説明がありません",
       "no_tags": "タグが指定されていません",
+      "prompt_hint": "このプロンプトはチャットウィンドウで使用できます",
       "tags": "タグ",
       "tags_placeholder": "タグを入力",
       "upload_device_todo": "デバイスへのアップロード機能は今後実装予定です",
@@ -1407,13 +1411,17 @@
     },
     "notification": {
       "assistant": "助手回應",
-      "knowledge.error": "{{error}}",
-      "knowledge.success": "ナレッジベースに{{type}}を正常に追加しました"
+      "knowledge": {
+        "error": "[to be translated]:{{error}}",
+        "success": "[to be translated]:成功添加 {{type}} 到知识库"
+      }
     },
     "ollama": {
-      "keep_alive_time.description": "モデルがメモリに保持される時間（デフォルト：5分）",
-      "keep_alive_time.placeholder": "分",
-      "keep_alive_time.title": "保持時間",
+      "keep_alive_time": {
+        "description": "[to be translated]:对话后模型在内存中保持的时间（默认：5 分钟）",
+        "placeholder": "[to be translated]:分钟",
+        "title": "[to be translated]:保持活跃时间"
+      },
       "title": "Ollama"
     },
     "paintings": {
@@ -1431,9 +1439,15 @@
         "opaque": "不透明",
         "transparent": "透明"
       },
-      "button.delete.image": "画像を削除",
-      "button.delete.image.confirm": "この画像を削除してもよろしいですか？",
-      "button.new.image": "新しい画像",
+      "button": {
+        "delete": {
+          "confirm": "[to be translated]:确定要删除此图片吗？",
+          "image": "[to be translated]:删除图片"
+        },
+        "new": {
+          "image": "[to be translated]:新建图片"
+        }
+      },
       "edit": {
         "image_file": "編集画像",
         "magic_prompt_option_tip": "編集効果を向上させるための提示詞を最適化します",
@@ -1458,7 +1472,9 @@
       "go_to_settings": "設定に移動",
       "guidance_scale": "ガイダンススケール",
       "guidance_scale_tip": "分類器なしのガイダンス。モデルが関連する画像を探す際にプロンプトにどれだけ従うかを制御します",
-      "image.size": "画像サイズ",
+      "image": {
+        "size": "[to be translated]:图片尺寸"
+      },
       "image_file_required": "画像を先にアップロードしてください",
       "image_file_retry": "画像を先にアップロードしてください",
       "image_handle_required": "最初に画像をアップロードしてください。",
@@ -1513,7 +1529,9 @@
         "low": "低",
         "medium": "中"
       },
-      "regenerate.confirm": "これにより、既存の生成画像が置き換えられます。続行しますか？",
+      "regenerate": {
+        "confirm": "[to be translated]:这将覆盖已生成的图片，是否继续？"
+      },
       "remix": {
         "image_file": "参照画像",
         "image_weight": "参照画像の重み",

@@ -34,7 +34,9 @@ function AppInitializer() {
 
   useEffect(() => {
     // 在应用启动时初始化自定义小应用
-    initializeDefaultMinApps().catch(console.error)
+    initializeDefaultMinApps().catch((error) =>
+      loggerService.error('Failed to initialize default mini apps:', error as Error)
+    )
     // 重置侧边栏图标以确保新图标可见
     dispatch(resetSidebarIcons())
     // 初始化内置MCP服务器

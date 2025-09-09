@@ -5,6 +5,7 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 
 import { Package } from '../../../renderer/src/types/package'
+import { loggerService } from '../../services/LoggerService'
 import { extractMetadataFromTGZ } from '../../utils/packageUtils'
 
 /**
@@ -47,7 +48,7 @@ export class PackageScanner {
               const packageInfo = await extractMetadataFromTGZ(filePath)
               packages.push(packageInfo)
             } catch (error) {
-              console.error(`Error processing package ${file}:`, error)
+              loggerService.error(`Error processing package ${file}:`, error as Error)
             }
           }
         }
@@ -105,7 +106,7 @@ export class PackageScanner {
               }
             }
           } catch (error) {
-            console.error(`Error processing new package ${fileName}:`, error)
+            loggerService.error(`Error processing new package ${fileName}:`, error as Error)
           }
         }
       })

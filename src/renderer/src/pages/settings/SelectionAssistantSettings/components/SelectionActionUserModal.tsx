@@ -1,12 +1,12 @@
+import { useAssistants } from '@renderer/hooks/useAssistant'
+import { loggerService } from '@renderer/services/LoggerService'
+import type { ActionItem } from '@renderer/types/selectionTypes'
 import { Form, Input, Modal, Select, Switch } from 'antd'
-import { DynamicIcon } from 'lucide-react/dynamic'
 import { MessageSquareHeart } from 'lucide-react'
+import { DynamicIcon } from 'lucide-react/dynamic'
 import { FC, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { v4 as uuidv4 } from 'uuid'
-
-import { useAssistants } from '@renderer/hooks/useAssistant'
-import type { ActionItem } from '@renderer/types/selectionTypes'
 
 const { TextArea } = Input
 const { Option } = Select
@@ -90,7 +90,7 @@ const SelectionActionUserModal: FC<SelectionActionUserModalProps> = ({
       }
       onOk(actionItem)
     } catch (error) {
-      console.error('Validation failed:', error)
+      loggerService.error('Validation failed:', error as Error)
     }
   }
 

@@ -1,10 +1,13 @@
 // src/main/services/FTPService.ts
 
+import { loggerService } from '@logger'
 import { Client as FTPClient } from 'basic-ftp'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 
 import { FTPConfig } from '../../renderer/src/types/package'
+
+const logger = loggerService.withContext('FTPService')
 
 /**
  * Interface for FTP upload progress callback
@@ -110,17 +113,17 @@ export class FTPService implements IFTPService {
         try {
           await client.ensureDir(remoteDir)
         } catch (error) {
-          console.warn(`Could not create remote directory ${remoteDir}:`, error)
+          logger.warn(`Could not create remote directory ${remoteDir}:`, error as Error)
         }
       }
 
       // Upload the file
       await client.uploadFrom(filePath, ftpConfig.remotePath)
 
-      console.log(`Successfully uploaded ${path.basename(filePath)} to ${ftpConfig.host}:${ftpConfig.remotePath}`)
+      logger.info(`Successfully uploaded ${path.basename(filePath)} to ${ftpConfig.host}:${ftpConfig.remotePath}`)
       return true
     } catch (error) {
-      console.error('FTP upload failed:', error)
+      logger.error('FTP upload failed:', error as Error)
       throw error
     } finally {
       // Always close the connection
@@ -147,10 +150,10 @@ export class FTPService implements IFTPService {
       // Test by listing current directory
       await client.list()
 
-      console.log(`FTP connection test successful for ${ftpConfig.host}:${ftpConfig.port}`)
+      logger.info(`FTP connection test successful for ${ftpConfig.host}:${ftpConfig.port}`)
       return true
     } catch (error) {
-      console.error('FTP connection test failed:', error)
+      logger.error('FTP connection test failed:', error as Error)
       return false
     } finally {
       // Always close the connection

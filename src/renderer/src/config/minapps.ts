@@ -487,7 +487,7 @@ async function initializeDefaultMinApps() {
     const customApps = await loadCustomMiniApp()
     DEFAULT_MIN_APPS = [...ORIGIN_DEFAULT_MIN_APPS, ...customApps]
   } catch (error) {
-    console.error('Failed to initialize custom mini apps:', error)
+    logger.error('Failed to initialize custom mini apps:', error as Error)
     // 如果加载失败，至少保持默认应用可用
     DEFAULT_MIN_APPS = [...ORIGIN_DEFAULT_MIN_APPS]
   }

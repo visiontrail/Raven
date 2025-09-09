@@ -11,9 +11,9 @@ import {
   OpenAISummaryText,
   PaintingProvider,
   S3Config,
+  SidebarIcon,
   ThemeMode,
-  TranslateLanguageCode,
-  SidebarIcon
+  TranslateLanguageCode
 } from '@renderer/types'
 import { uuid } from '@renderer/utils'
 import { UpgradeChannel } from '@shared/config/constant'

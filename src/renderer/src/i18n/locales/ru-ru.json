@@ -855,10 +855,13 @@
     "all_types": "Все типы",
     "count": "файлов",
     "created_at": "Время создания",
-    "delete": "Удалить",
-    "delete.content": "Удаление файла удалит все ссылки на него во всех сообщениях. Вы уверены, что хотите удалить этот файл?",
-    "delete.paintings.warning": "Изображение используется в рисунках, пока нельзя удалить",
-    "delete.title": "Удалить файл",
+    "delete": {
+      "content": "[to be translated]:删除文件会删除文件在所有消息中的引用，确定要删除此文件吗？",
+      "paintings": {
+        "warning": "[to be translated]:绘图中包含该图片，暂时无法删除"
+      },
+      "title": "[to be translated]:删除文件"
+    },
     "document": "Документ",
     "edit": "Редактировать",
     "error_loading_packages": "Ошибка при загрузке пакетов",
@@ -883,6 +886,7 @@
       "no_components": "Компоненты не указаны",
       "no_description": "Описание не предоставлено",
       "no_tags": "Теги не указаны",
+      "prompt_hint": "Вы можете использовать этот промпт в окне чата",
       "tags": "Теги",
       "tags_placeholder": "Введите теги",
       "upload_device_todo": "Функция загрузки на устройство будет реализована",
@@ -1407,13 +1411,17 @@
     },
     "notification": {
       "assistant": "Ответ ассистента",
-      "knowledge.error": "{{error}}",
-      "knowledge.success": "Успешно добавлено {{type}} в базу знаний"
+      "knowledge": {
+        "error": "[to be translated]:{{error}}",
+        "success": "[to be translated]:成功添加 {{type}} 到知识库"
+      }
     },
     "ollama": {
-      "keep_alive_time.description": "Время в минутах, в течение которого модель остается активной, по умолчанию 5 минут.",
-      "keep_alive_time.placeholder": "Минуты",
-      "keep_alive_time.title": "Время жизни модели",
+      "keep_alive_time": {
+        "description": "[to be translated]:对话后模型在内存中保持的时间（默认：5 分钟）",
+        "placeholder": "[to be translated]:分钟",
+        "title": "[to be translated]:保持活跃时间"
+      },
       "title": "Ollama"
     },
     "paintings": {
@@ -1431,9 +1439,15 @@
         "opaque": "Непрозрачный",
         "transparent": "Прозрачный"
       },
-      "button.delete.image": "Удалить изображение",
-      "button.delete.image.confirm": "Вы уверены, что хотите удалить это изображение?",
-      "button.new.image": "Новое изображение",
+      "button": {
+        "delete": {
+          "confirm": "[to be translated]:确定要删除此图片吗？",
+          "image": "[to be translated]:删除图片"
+        },
+        "new": {
+          "image": "[to be translated]:新建图片"
+        }
+      },
       "edit": {
         "image_file": "Изображение для редактирования",
         "magic_prompt_option_tip": "Интеллектуально оптимизирует подсказки для улучшения эффекта редактирования",
@@ -1458,7 +1472,9 @@
       "go_to_settings": "Перейти в настройки",
       "guidance_scale": "Масштаб руководства",
       "guidance_scale_tip": "Без классификатора руководства. Насколько близко вы хотите, чтобы модель придерживалась вашего промпта при поиске связанного изображения для показа вам",
-      "image.size": "Размер изображения",
+      "image": {
+        "size": "[to be translated]:图片尺寸"
+      },
       "image_file_required": "Пожалуйста, сначала загрузите изображение",
       "image_file_retry": "Пожалуйста, сначала загрузите изображение",
       "image_handle_required": "Пожалуйста, сначала загрузите изображение.",
@@ -1513,7 +1529,9 @@
         "low": "Низкое",
         "medium": "Среднее"
       },
-      "regenerate.confirm": "Это заменит ваши существующие сгенерированные изображения. Хотите продолжить?",
+      "regenerate": {
+        "confirm": "[to be translated]:这将覆盖已生成的图片，是否继续？"
+      },
       "remix": {
         "image_file": "Референсное изображение",
         "image_weight": "Вес референсного изображения",

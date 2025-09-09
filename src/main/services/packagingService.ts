@@ -1,5 +1,6 @@
 // src/main/services/PackagingService.ts
 
+import { loggerService } from '@logger'
 import { app, IpcMainInvokeEvent } from 'electron'
 import * as fs from 'fs-extra'
 import * as path from 'path'
@@ -10,6 +11,8 @@ import { packageService } from './PackageService'
 import { FileProcessor } from './packaging/FileProcessor'
 import { PackageScanner } from './packaging/PackageScanner'
 import { VersionParser } from './packaging/VersionParser'
+
+const logger = loggerService.withContext('PackagingService')
 
 // This is a TypeScript version of the COMPONENT_CONFIGS from the Python script.
 const COMPONENT_CONFIGS = {
@@ -268,18 +271,18 @@ class PackagingService {
    */
   async indexExistingPackages(): Promise<void> {
     try {
-      console.log('Scanning for existing packages...')
+      logger.info('Scanning for existing packages...')
       const packages = await this.packageScanner.scanForPackages()
-      console.log(`Found ${packages.length} packages`)
+      logger.info(`Found ${packages.length} packages`)
 
       // Add each package to the in-memory storage
       for (const pkg of packages) {
         await this.addOrUpdatePackage(pkg)
       }
 
-      console.log('Package indexing complete')
+      logger.info('Package indexing complete')
     } catch (error) {
-      console.error('Error indexing packages:', error)
+      logger.error('Error indexing packages:', error as Error)
     }
   }
 
@@ -294,7 +297,7 @@ class PackagingService {
 
     // Start a new watcher
     this.packageWatcherStop = this.packageScanner.watchForNewPackages(async (packageInfo) => {
-      console.log('New package detected:', packageInfo.name)
+      logger.info(`New package detected: ${packageInfo.name}`)
       await this.addOrUpdatePackage(packageInfo)
     })
   }
@@ -329,14 +332,14 @@ class PackagingService {
           version: packageInfo.version,
           metadata: packageInfo.metadata
         })
-        console.log(`Updated package in memory: ${packageInfo.name}`)
+        logger.debug(`Updated package in memory: ${packageInfo.name}`)
       } else {
         // Add the new package
         this.packages.set(packageInfo.id, packageInfo)
-        console.log(`Added package to memory: ${packageInfo.name}`)
+        logger.debug(`Added package to memory: ${packageInfo.name}`)
       }
     } catch (error) {
-      console.error(`Error adding/updating package ${packageInfo.name}:`, error)
+      logger.error(`Error adding/updating package ${packageInfo.name}:`, error as Error)
     }
   }
 

@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import { usePackages } from '../../hooks/usePackages'
+import { loggerService } from '../../services/LoggerService'
 import { HTTPConfig, Package, PackageMetadata, PackageType } from '../../types/package'
 import { formatFileSize } from '../../utils'
 
@@ -71,7 +72,7 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
         message.error(t('files.package.metadata_update_failed'))
       }
     } catch (error) {
-      console.error('Error saving metadata:', error)
+      loggerService.error('Error saving metadata:', error as Error)
       message.error(t('files.package.metadata_update_failed'))
     } finally {
       setLoading(false)
@@ -90,7 +91,7 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
         message.error(t('files.package.delete_failed'))
       }
     } catch (error) {
-      console.error('Error deleting package:', error)
+      loggerService.error('Error deleting package:', error as Error)
       message.error(t('files.package.delete_failed'))
     } finally {
       setLoading(false)
@@ -108,7 +109,7 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
       await navigator.clipboard.writeText(promptText)
       message.success(t('common.copied'))
     } catch (error) {
-      console.error('Error copying to clipboard:', error)
+      loggerService.error('Error copying to clipboard:', error as Error)
       message.error(t('common.copy_failed'))
     }
   }
@@ -137,14 +138,14 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
       const success = await uploadToFTP(pkg.id, ftpConfig)
       if (success) {
         message.success(t('files.package.upload_success'))
-        console.log('Package uploaded successfully to FTP:', pkg.name)
+        loggerService.info(`Package uploaded successfully to FTP: ${pkg.name}`)
       } else {
         message.error(t('files.package.upload_failed'))
-        console.error('Failed to upload package to FTP:', pkg.name)
+        loggerService.error(`Failed to upload package to FTP: ${pkg.name}`)
       }
     } catch (error) {
       message.error(t('files.package.upload_failed'))
-      console.error('Error uploading package to FTP:', error)
+      loggerService.error('Error uploading package to FTP:', error as Error)
     } finally {
       setLoading(false)
     }
@@ -167,14 +168,14 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
       const success = await uploadToHTTP(pkg.id, defaultHttpConfig)
       if (success) {
         message.success(t('files.package.upload_success'))
-        console.log('Package uploaded successfully to HTTP server:', pkg.name)
+        loggerService.info(`Package uploaded successfully to HTTP server: ${pkg.name}`)
       } else {
         message.error(t('files.package.upload_failed'))
-        console.error('Failed to upload package to HTTP server:', pkg.name)
+        loggerService.error(`Failed to upload package to HTTP server: ${pkg.name}`)
       }
     } catch (error) {
       message.error(t('files.package.upload_failed'))
-      console.error('Error uploading package to HTTP server:', error)
+      loggerService.error('Error uploading package to HTTP server:', error as Error)
     } finally {
       setLoading(false)
     }

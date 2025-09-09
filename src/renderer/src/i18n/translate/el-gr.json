@@ -857,16 +857,11 @@
     "created_at": "Ημερομηνία δημιουργίας",
     "delete": {
       "content": "Η διαγραφή του αρχείου θα διαγράψει την αναφορά του σε όλα τα μηνύματα. Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το αρχείο;",
-      "db_error": "Αποτυχία διαγραφής",
-      "label": "Διαγραφή",
       "paintings": {
         "warning": "Το σχεδίο περιλαμβάνει αυτή την εικόνα και δεν είναι παρόλως δυνατή η διαγραφή."
       },
       "title": "Διαγραφή αρχείου"
     },
-    "delete.content": "Η διαγραφή του αρχείου θα διαγράψει όλες τις αναφορές του στα μηνύματα. Είστε βέβαιοι ότι θέλετε να διαγράψετε αυτό το αρχείο;",
-    "delete.paintings.warning": "Η εικόνα χρησιμοποιείται σε σχέδια και δεν μπορεί να διαγραφεί προς το παρόν",
-    "delete.title": "Διαγραφή αρχείου",
     "document": "Έγγραφο",
     "edit": "Επεξεργασία",
     "error_loading_packages": "Σφάλμα κατά τη φόρτωση των πακέτων",
@@ -891,11 +886,13 @@
       "no_components": "Δεν έχουν καθοριστεί στοιχεία",
       "no_description": "Δεν παρέχεται περιγραφή",
       "no_tags": "Δεν έχουν καθοριστεί ετικέτες",
+      "prompt_hint": "Μπορείτε να χρησιμοποιήσετε αυτήν τη λέξη-κλειδί στο παράθυρο συνομιλίας",
       "tags": "Ετικέτες",
       "tags_placeholder": "Εισαγάγετε ετικέτες",
       "upload_device_todo": "Η λειτουργία μεταφόρτωσης στη συσκευή θα υλοποιηθεί",
       "upload_failed": "Αποτυχία μεταφόρτωσης",
       "upload_server_todo": "Η λειτουργία μεταφόρτωσης στον διακομιστή θα υλοποιηθεί",
+      "upload_success": "Επιτυχής μεταφόρτωση",
       "upload_to_device": "Μεταφόρτωση στη συσκευή",
       "upload_to_server": "Μεταφόρτωση στον διακομιστή",
       "view_details": "Προβολή λεπτομερειών"
@@ -1414,13 +1411,17 @@
     },
     "notification": {
       "assistant": "Απάντηση βοηθού",
-      "knowledge.error": "{{error}}",
-      "knowledge.success": "Επιτυχής προσθήκη {{type}} στη βάση γνώσεων"
+      "knowledge": {
+        "error": "[to be translated]:{{error}}",
+        "success": "[to be translated]:成功添加 {{type}} 到知识库"
+      }
     },
     "ollama": {
-      "keep_alive_time.description": "Χρόνος διατήρησης του μοντέλου στη μνήμη μετά τη συνομιλία (προεπιλογή: 5 λεπτά)",
-      "keep_alive_time.placeholder": "λεπτά",
-      "keep_alive_time.title": "Χρόνος διατήρησης",
+      "keep_alive_time": {
+        "description": "[to be translated]:对话后模型在内存中保持的时间（默认：5 分钟）",
+        "placeholder": "[to be translated]:分钟",
+        "title": "[to be translated]:保持活跃时间"
+      },
       "title": "Ollama"
     },
     "paintings": {
@@ -1438,9 +1439,15 @@
         "opaque": "Αδιαφανές",
         "transparent": "Διαφανές"
       },
-      "button.delete.image": "Διαγραφή εικόνας",
-      "button.delete.image.confirm": "Είστε βέβαιοι ότι θέλετε να διαγράψετε αυτήν την εικόνα;",
-      "button.new.image": "Νέα εικόνα",
+      "button": {
+        "delete": {
+          "confirm": "[to be translated]:确定要删除此图片吗？",
+          "image": "[to be translated]:删除图片"
+        },
+        "new": {
+          "image": "[to be translated]:新建图片"
+        }
+      },
       "edit": {
         "image_file": "Εικόνα προς επεξεργασία",
         "magic_prompt_option_tip": "Έξυπνη βελτιστοποίηση προτροπών επεξεργασίας",
@@ -1465,7 +1472,9 @@
       "go_to_settings": "Μετάβαση στις ρυθμίσεις",
       "guidance_scale": "Κλίμακα καθοδήγησης",
       "guidance_scale_tip": "Καθοδήγηση χωρίς ταξινομητή. Ελέγχει το βαθμό στον οποίο το μοντέλο ακολουθεί τις προτροπές κατά την αναζήτηση σχετικών εικόνων",
-      "image.size": "Μέγεθος εικόνας",
+      "image": {
+        "size": "[to be translated]:图片尺寸"
+      },
       "image_file_required": "Παρακαλώ ανεβάστε πρώτα μια εικόνα",
       "image_file_retry": "Παρακαλώ ανεβάστε ξανά την εικόνα",
       "image_handle_required": "Παρακαλώ ανεβάστε πρώτα μια εικόνα",
@@ -1520,7 +1529,9 @@
         "low": "Χαμηλή",
         "medium": "Μεσαία"
       },
-      "regenerate.confirm": "Αυτό θα αντικαταστήσει τις ήδη δημιουργημένες εικόνες, θέλετε να συνεχίσετε;",
+      "regenerate": {
+        "confirm": "[to be translated]:这将覆盖已生成的图片，是否继续？"
+      },
       "remix": {
         "image_file": "Εικόνα αναφοράς",
         "image_weight": "Βάρος εικόνας αναφοράς",

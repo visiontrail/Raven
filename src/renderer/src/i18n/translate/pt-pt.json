@@ -857,16 +857,11 @@
     "created_at": "Data de Criação",
     "delete": {
       "content": "Excluir o arquivo removerá todas as referências ao arquivo em todas as mensagens. Tem certeza de que deseja excluir este arquivo?",
-      "db_error": "Falha ao eliminar",
-      "label": "Excluir",
       "paintings": {
         "warning": "Esta imagem está incluída em um desenho e não pode ser excluída temporariamente"
       },
       "title": "Excluir Arquivo"
     },
-    "delete.content": "Excluir o arquivo removerá todas as referências ao arquivo em todas as mensagens. Tem certeza de que deseja excluir este arquivo?",
-    "delete.paintings.warning": "Esta imagem está incluída em um desenho e não pode ser excluída temporariamente",
-    "delete.title": "Excluir Arquivo",
     "document": "Documento",
     "edit": "Editar",
     "error_loading_packages": "Erro ao carregar pacotes",
@@ -891,11 +886,13 @@
       "no_components": "Nenhum componente especificado",
       "no_description": "Nenhuma descrição fornecida",
       "no_tags": "Nenhuma etiqueta especificada",
+      "prompt_hint": "Pode usar esta palavra-chave na janela de chat",
       "tags": "Etiquetas",
       "tags_placeholder": "Digite as etiquetas",
       "upload_device_todo": "A função de upload para dispositivo será implementada",
       "upload_failed": "Falha no upload",
       "upload_server_todo": "A função de upload para servidor será implementada",
+      "upload_success": "Carregamento bem-sucedido",
       "upload_to_device": "Upload para dispositivo",
       "upload_to_server": "Upload para servidor",
       "view_details": "Ver detalhes"
@@ -1414,13 +1411,17 @@
     },
     "notification": {
       "assistant": "助手响应",
-      "knowledge.error": "{{error}}",
-      "knowledge.success": "成功添加 {{type}} 到知识库"
+      "knowledge": {
+        "error": "[to be translated]:{{error}}",
+        "success": "[to be translated]:成功添加 {{type}} 到知识库"
+      }
     },
     "ollama": {
-      "keep_alive_time.description": "对话后模型在内存中保持的时间（默认：5 分钟）",
-      "keep_alive_time.placeholder": "分钟",
-      "keep_alive_time.title": "保持活跃时间",
+      "keep_alive_time": {
+        "description": "[to be translated]:对话后模型在内存中保持的时间（默认：5 分钟）",
+        "placeholder": "[to be translated]:分钟",
+        "title": "[to be translated]:保持活跃时间"
+      },
       "title": "Ollama"
     },
     "paintings": {
@@ -1438,9 +1439,15 @@
         "opaque": "不透明",
         "transparent": "透明"
       },
-      "button.delete.image": "删除图片",
-      "button.delete.image.confirm": "确定要删除此图片吗？",
-      "button.new.image": "新建图片",
+      "button": {
+        "delete": {
+          "confirm": "[to be translated]:确定要删除此图片吗？",
+          "image": "[to be translated]:删除图片"
+        },
+        "new": {
+          "image": "[to be translated]:新建图片"
+        }
+      },
       "edit": {
         "image_file": "编辑的图像",
         "magic_prompt_option_tip": "智能优化编辑提示词",
@@ -1465,7 +1472,9 @@
       "go_to_settings": "去设置",
       "guidance_scale": "引导比例",
       "guidance_scale_tip": "无分类器指导。控制模型在寻找相关图像时对提示词的遵循程度",
-      "image.size": "图片尺寸",
+      "image": {
+        "size": "[to be translated]:图片尺寸"
+      },
       "image_file_required": "请先上传图片",
       "image_file_retry": "请重新上传图片",
       "image_handle_required": "请先上传图片",
@@ -1520,7 +1529,9 @@
         "low": "低",
         "medium": "中"
       },
-      "regenerate.confirm": "这将覆盖已生成的图片，是否继续？",
+      "regenerate": {
+        "confirm": "[to be translated]:这将覆盖已生成的图片，是否继续？"
+      },
       "remix": {
         "image_file": "参考图",
         "image_weight": "参考图权重",

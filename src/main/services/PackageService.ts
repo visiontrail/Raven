@@ -1,5 +1,6 @@
 // src/main/services/PackageService.ts
 
+import { loggerService } from '@logger'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 
@@ -7,6 +8,8 @@ import { FTPConfig, HTTPConfig, Package, PackageMetadata } from '../../renderer/
 import { extractMetadataFromTGZ } from '../utils/packageUtils'
 import { ftpService, FTPUploadProgress } from './FTPService'
 import { httpService, HTTPUploadProgress } from './HTTPService'
+
+const logger = loggerService.withContext('PackageService')
 
 /**
  * Interface for the Package Service
@@ -126,7 +129,7 @@ export class PackageService implements IPackageService {
         }
       }
     } catch (error) {
-      console.error('Error loading package metadata:', error)
+      logger.error('Error loading package metadata:', error as Error)
     }
   }
 
@@ -138,7 +141,7 @@ export class PackageService implements IPackageService {
       const packagesArray = Array.from(this.packages.values())
       await fs.writeJSON(this.metadataFilePath, packagesArray, { spaces: 2 })
     } catch (error) {
-      console.error('Error saving package metadata:', error)
+      logger.error('Error saving package metadata:', error as Error)
     }
   }
 

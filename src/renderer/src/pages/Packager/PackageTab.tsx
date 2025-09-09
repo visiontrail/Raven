@@ -4,6 +4,8 @@ import React, { useEffect, useReducer, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 
+import { loggerService } from '../../services/LoggerService'
+
 const { TextArea } = Input
 const { Title, Text } = Typography
 
@@ -136,15 +138,15 @@ const PackageTab: React.FC = () => {
           version: c.version
         }))
       }
-      console.log('[Renderer] Generating si.ini preview with config:', JSON.stringify(config, null, 2))
+      loggerService.debug(`[Renderer] Generating si.ini preview with config: ${JSON.stringify(config, null, 2)}`)
       try {
         const preview = await window.api.packager.generateSiIni(config)
         setSiIniPreview(preview)
-        console.log('[Renderer] si.ini preview updated.')
+        loggerService.debug('[Renderer] si.ini preview updated.')
       } catch (error: any) {
         const errorMessage = `预览生成失败: ${error.message}`
         setSiIniPreview(errorMessage)
-        console.error('[Renderer] Error generating si.ini preview:', error)
+        loggerService.error('[Renderer] Error generating si.ini preview:', error as Error)
       }
     }
     updatePreview()
@@ -161,20 +163,20 @@ const PackageTab: React.FC = () => {
     try {
       const filePath = await window.api.packager.selectFile()
       if (!filePath) {
-        console.log('[Renderer] No file selected.')
+        loggerService.debug('[Renderer] No file selected.')
         return
       }
 
       const fileName = window.api.path.basename(filePath)
-      console.log(`[Renderer] File selected for ${componentName}: ${fileName} at path: ${filePath}`)
+      loggerService.debug(`[Renderer] File selected for ${componentName}: ${fileName} at path: ${filePath}`)
 
       let detectedVersion: string | undefined
       try {
-        console.log(`[Renderer] Calling getAutoVersionFromFilename with name: ${fileName}`)
+        loggerService.debug(`[Renderer] Calling getAutoVersionFromFilename with name: ${fileName}`)
         detectedVersion = (await window.api.packager.getAutoVersionFromFilename(fileName)) || undefined
-        console.log(`[Renderer] Detected version for ${componentName}: ${detectedVersion}`)
+        loggerService.debug(`[Renderer] Detected version for ${componentName}: ${detectedVersion}`)
       } catch (error) {
-        console.error('[Renderer] Failed to get auto version', error)
+        loggerService.error('[Renderer] Failed to get auto version', error as Error)
         message.error(t('packager.error.autoVersion'))
       }
 
@@ -184,7 +186,7 @@ const PackageTab: React.FC = () => {
       })
     } catch (error: any) {
       message.error(`${t('packager.error.selectFile')}: ${error.message}`)
-      console.error('[Renderer] Error selecting file:', error)
+      loggerService.error('[Renderer] Error selecting file:', error as Error)
     }
   }
 
@@ -253,7 +255,7 @@ const PackageTab: React.FC = () => {
       const errorMessage = `${t('packager.log.errorUnknown')}: ${error.message}`
       message.error(errorMessage)
       handleLog(errorMessage)
-      console.error('[Renderer] Packaging error:', error)
+      loggerService.error('[Renderer] Packaging error:', error as Error)
     } finally {
       setPackaging(false)
     }

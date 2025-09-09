@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
+import { loggerService } from '../services/LoggerService'
 import { Package, PackageMetadata } from '../types/package'
 
 /**
@@ -21,7 +22,7 @@ export const usePackages = () => {
       setPackages(result || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch packages')
-      console.error('Error fetching packages:', err)
+      loggerService.error('Error fetching packages:', err as Error)
     } finally {
       setLoading(false)
     }
@@ -34,7 +35,7 @@ export const usePackages = () => {
     try {
       return await window.api.package.getById(id)
     } catch (err) {
-      console.error('Error fetching package by ID:', err)
+      loggerService.error('Error fetching package by ID:', err as Error)
       return null
     }
   }, [])
@@ -52,7 +53,7 @@ export const usePackages = () => {
         }
         return success
       } catch (err) {
-        console.error('Error updating package metadata:', err)
+        loggerService.error('Error updating package metadata:', err as Error)
         return false
       }
     },
@@ -72,7 +73,7 @@ export const usePackages = () => {
         }
         return success
       } catch (err) {
-        console.error('Error deleting package:', err)
+        loggerService.error('Error deleting package:', err as Error)
         return false
       }
     },
@@ -91,7 +92,7 @@ export const usePackages = () => {
       await fetchPackages()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to scan for packages')
-      console.error('Error scanning for packages:', err)
+      loggerService.error('Error scanning for packages:', err as Error)
     } finally {
       setLoading(false)
     }
@@ -104,7 +105,7 @@ export const usePackages = () => {
     try {
       return await window.api.package.uploadToFTP(id, ftpConfig)
     } catch (err) {
-      console.error('Error uploading to FTP:', err)
+      loggerService.error('Error uploading to FTP:', err as Error)
       return false
     }
   }, [])
@@ -116,7 +117,7 @@ export const usePackages = () => {
     try {
       return await window.api.package.uploadToHTTP(id, httpConfig)
     } catch (err) {
-      console.error('Error uploading to HTTP:', err)
+      loggerService.error('Error uploading to HTTP:', err as Error)
       return false
     }
   }, [])
@@ -128,7 +129,7 @@ export const usePackages = () => {
     try {
       await window.api.file.openPath(path)
     } catch (err) {
-      console.error('Error opening package location:', err)
+      loggerService.error('Error opening package location:', err as Error)
     }
   }, [])
 
