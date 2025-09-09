@@ -199,7 +199,7 @@ const PackageListView: FC<PackageListViewProps> = () => {
         <Flex align="center" gap={8}>
           <PackageIcon size={16} />
           <Tooltip title={record.path}>
-            <span style={{ cursor: 'pointer' }} onClick={() => handleOpenLocation(record)}>
+            <span style={{ cursor: 'pointer' }} onClick={() => handleViewDetails(record)}>
               {name}
             </span>
           </Tooltip>
