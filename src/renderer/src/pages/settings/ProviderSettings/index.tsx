@@ -91,6 +91,13 @@ const ProvidersList: FC = () => {
       type?: ProviderType
       name?: string
     }) => {
+      // 当禁用主机编辑时，阻止通过 URL 方式新增/修改 API Key
+      if (isFeatureDisabled('DISABLE_API_HOST_EDITING')) {
+        window.message.warning('当前为锁定模式，API Key 查看与修改已被禁用')
+        window.navigate('/settings/provider')
+        return
+      }
+
       const { id, apiKey: newApiKey, baseUrl, type, name } = data
 
       // 查找匹配的 provider
@@ -162,7 +169,9 @@ const ProvidersList: FC = () => {
                   <ProviderInfoLabel>{t('settings.models.api_key')}:</ProviderInfoLabel>
                   <ApiKeyContainer>
                     <ApiKeyValue>{showApiKey ? newApiKey : '*********'}</ApiKeyValue>
-                    <EyeButton onClick={toggleApiKey}>
+                    <EyeButton
+                      onClick={isFeatureDisabled('DISABLE_API_HOST_EDITING') ? undefined : toggleApiKey}
+                      disabled={isFeatureDisabled('DISABLE_API_HOST_EDITING')}>
                       {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
                     </EyeButton>
                   </ApiKeyContainer>
@@ -203,7 +212,9 @@ const ProvidersList: FC = () => {
                   <ProviderInfoLabel>{t('settings.models.api_key')}:</ProviderInfoLabel>
                   <ApiKeyContainer>
                     <ApiKeyValue>{showApiKey ? newApiKey : '*********'}</ApiKeyValue>
-                    <EyeButton onClick={toggleApiKey}>
+                    <EyeButton
+                      onClick={isFeatureDisabled('DISABLE_API_HOST_EDITING') ? undefined : toggleApiKey}
+                      disabled={isFeatureDisabled('DISABLE_API_HOST_EDITING')}>
                       {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
                     </EyeButton>
                   </ApiKeyContainer>

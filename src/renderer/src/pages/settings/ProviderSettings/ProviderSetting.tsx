@@ -2,7 +2,13 @@ import OpenAIAlert from '@renderer/components/Alert/OpenAIAlert'
 import { LoadingIcon } from '@renderer/components/Icons'
 import { HStack } from '@renderer/components/Layout'
 import { ApiKeyListPopup } from '@renderer/components/Popups/ApiKeyListPopup'
-import { isFeatureDisabled, isLockedModeEnabled, getLockedApiKey, getLockedApiHost, getLockedApiVersion } from '@renderer/config/locked-settings'
+import {
+  getLockedApiHost,
+  getLockedApiKey,
+  getLockedApiVersion,
+  isFeatureDisabled,
+  isLockedModeEnabled
+} from '@renderer/config/locked-settings'
 import { isEmbeddingModel, isRerankModel } from '@renderer/config/models'
 import { PROVIDER_URLS } from '@renderer/config/providers'
 import { useTheme } from '@renderer/context/ThemeProvider'
@@ -307,7 +313,12 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
             {t('settings.provider.api_key.label')}
             {provider.id !== 'copilot' && (
               <Tooltip title={t('settings.provider.api.key.list.open')} mouseEnterDelay={0.5}>
-                <Button type="text" onClick={openApiKeyList} icon={<Settings2 size={16} />} />
+                <Button
+                  type="text"
+                  onClick={openApiKeyList}
+                  icon={<Settings2 size={16} />}
+                  disabled={isFeatureDisabled('DISABLE_API_HOST_EDITING')}
+                />
               </Tooltip>
             )}
           </SettingSubtitle>
@@ -318,16 +329,15 @@ const ProviderSetting: FC<Props> = ({ providerId }) => {
               onChange={(e) => setLocalApiKey(e.target.value)}
               spellCheck={false}
               autoFocus={provider.enabled && provider.apiKey === '' && !isProviderSupportAuth(provider)}
-              disabled={provider.id === 'copilot'}
+              disabled={provider.id === 'copilot' || isFeatureDisabled('DISABLE_API_HOST_EDITING')}
+              visibilityToggle={!isFeatureDisabled('DISABLE_API_HOST_EDITING')}
               suffix={renderStatusIndicator()}
             />
             <Button
               type={isApiKeyConnectable ? 'primary' : 'default'}
               ghost={isApiKeyConnectable}
               onClick={onCheckApi}
-              disabled={
-                !apiHost || apiKeyConnectivity.checking || (isLocked && isFeatureDisabled('DISABLE_API_KEY_EDITING'))
-              }>
+              disabled={!apiHost || apiKeyConnectivity.checking}>
               {apiKeyConnectivity.checking ? (
                 <LoadingIcon />
               ) : apiKeyConnectivity.status === 'success' ? (
