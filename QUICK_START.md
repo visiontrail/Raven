@@ -84,8 +84,10 @@ yarn install
 # 启动开发模式
 yarn dev
 
-# 清除本地存储
+# 清除本地存储(mac)
 rm -rf ~/Library/Application\ Support/RavenDev/Local\ Storage
+# 清除本地存储(win)
+# 删除C:\Users\[用户]\AppData\Roaming\RavenDev\Local Storage文件夹即可
 ```
 
 这将启动 Electron 应用，并开启热重载功能。任何代码修改都会自动重新加载。
