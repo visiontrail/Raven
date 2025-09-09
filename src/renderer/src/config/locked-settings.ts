@@ -12,7 +12,8 @@ export const LOCKED_API_KEYS = {
   // 主要使用的三个Provider
   deepseek: 'sk-2b0270e6881340a7ba2c10757d070d78', // 深度求索
   dashscope: 'sk-f580e7deed644abd961ca8d1f8a63115', // 通义千问（bailian）
-  gemini: 'AIzaSyA5I8ugEa7PYCSQVqkEsINCYqYVPgDisn0' // 谷歌Gemini
+  gemini: 'AIzaSyA5I8ugEa7PYCSQVqkEsINCYqYVPgDisn0', // 谷歌Gemini
+  silicon: 'sk-tsnjapnqmlnyotnpahmisnytahgmmwqskterkxndrkqgxwaq' // 硅基流动
 } as const
 
 // 预定义的API Host（按Provider ID分组）

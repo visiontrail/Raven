@@ -1,4 +1,4 @@
-# 🍒 Cherry Studio - 快速开始指南
+# GalaxySpace Raven - 快速开始指南
 
 ## 📋 系统要求
 
@@ -61,10 +61,10 @@ yarn --version
 
 ```bash
 # 克隆项目到本地
-git clone https://github.com/CherryHQ/cherry-studio.git
+git clone https://github.com/visiontrail/Raven.git
 
 # 进入项目目录
-cd cherry-studio
+cd Raven
 ```
 
 ### 2. 安装依赖
@@ -83,6 +83,9 @@ yarn install
 ```bash
 # 启动开发模式
 yarn dev
+
+# 清除本地存储
+rm -rf ~/Library/Application\ Support/RavenDev/Local\ Storage
 ```
 
 这将启动 Electron 应用，并开启热重载功能。任何代码修改都会自动重新加载。
@@ -147,9 +150,6 @@ yarn build:win:x64
 
 # 构建 Windows ARM64 版本
 yarn build:win:arm64
-
-# 构建 Windows 通用版本 (x64 + ARM64)
-yarn build:win
 ```
 
 #### macOS
