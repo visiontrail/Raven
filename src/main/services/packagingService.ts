@@ -489,7 +489,10 @@ class PackagingService {
 
     // Auto-detect version if not manually provided
     if (!component.version) {
-      const autoVersion = VersionParser.parseVersionFromFilename(path.basename(sourceFile))
+      const autoVersion = VersionParser.parseVersionFromFilename(
+        path.basename(sourceFile),
+        component.name
+      )
       if (autoVersion) {
         component.auto_version = VersionParser.formatVersion(autoVersion)
       }
@@ -554,7 +557,7 @@ class PackagingService {
       const componentConfig = allComponentsConfig[component.name]
       if (!componentConfig) return
 
-      const fileVersion = component.version || 'V0.0.0.0'
+      const fileVersion = component.version || component.auto_version || 'V0.0.0.0'
 
       content += `FileName_${index + 1}=${componentConfig.file_name};\n`
       content += `FileAttr_${index + 1}=${componentConfig.file_attr};\n`
