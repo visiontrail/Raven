@@ -9,7 +9,6 @@ interface ActionsListDividerProps {
 }
 
 const ActionsListDivider: FC<ActionsListDividerProps> = ({ direction = 'horizontal' }) => {
-
   if (direction === 'vertical') {
     return (
       <VerticalContainer>

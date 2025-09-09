@@ -97,11 +97,7 @@ const SelectionActionUserModal: FC<SelectionActionUserModalProps> = ({
   const renderIconOption = (icon: string) => (
     <Option key={icon} value={icon}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <DynamicIcon
-          name={icon as any}
-          size={16}
-          fallback={() => <MessageSquareHeart size={16} />}
-        />
+        <DynamicIcon name={icon as any} size={16} fallback={() => <MessageSquareHeart size={16} />} />
         <span>{icon}</span>
       </div>
     </Option>
@@ -114,30 +110,24 @@ const SelectionActionUserModal: FC<SelectionActionUserModalProps> = ({
       onOk={handleOk}
       onCancel={onCancel}
       width={500}
-      destroyOnClose
-    >
+      destroyOnClose>
       <Form
         form={form}
         layout="vertical"
         initialValues={{
           enabled: true
-        }}
-      >
+        }}>
         <Form.Item
           name="name"
           label={t('selection.settings.actions.name')}
           rules={[
             { required: true, message: t('selection.settings.actions.name_required') },
             { max: 50, message: t('selection.settings.actions.name_max_length') }
-          ]}
-        >
+          ]}>
           <Input placeholder={t('selection.settings.actions.name_placeholder')} />
         </Form.Item>
 
-        <Form.Item
-          name="icon"
-          label={t('selection.settings.actions.icon')}
-        >
+        <Form.Item name="icon" label={t('selection.settings.actions.icon')}>
           <Select
             value={selectedIcon}
             onChange={setSelectedIcon}
@@ -148,8 +138,7 @@ const SelectionActionUserModal: FC<SelectionActionUserModalProps> = ({
               (option?.children as any)?.props?.children?.[1]?.props?.children
                 ?.toLowerCase()
                 ?.includes(input.toLowerCase())
-            }
-          >
+            }>
             {COMMON_ICONS.map(renderIconOption)}
           </Select>
         </Form.Item>
@@ -157,8 +146,7 @@ const SelectionActionUserModal: FC<SelectionActionUserModalProps> = ({
         <Form.Item
           name="prompt"
           label={t('selection.settings.actions.prompt')}
-          extra={t('selection.settings.actions.prompt_help')}
-        >
+          extra={t('selection.settings.actions.prompt_help')}>
           <TextArea
             rows={4}
             placeholder={t('selection.settings.actions.prompt_placeholder')}
@@ -170,12 +158,8 @@ const SelectionActionUserModal: FC<SelectionActionUserModalProps> = ({
         <Form.Item
           name="assistantId"
           label={t('selection.settings.actions.assistant')}
-          extra={t('selection.settings.actions.assistant_help')}
-        >
-          <Select
-            placeholder={t('selection.settings.actions.assistant_placeholder')}
-            allowClear
-          >
+          extra={t('selection.settings.actions.assistant_help')}>
+          <Select placeholder={t('selection.settings.actions.assistant_placeholder')} allowClear>
             {assistants.map((assistant) => (
               <Option key={assistant.id} value={assistant.id}>
                 {assistant.name}
@@ -184,11 +168,7 @@ const SelectionActionUserModal: FC<SelectionActionUserModalProps> = ({
           </Select>
         </Form.Item>
 
-        <Form.Item
-          name="enabled"
-          label={t('selection.settings.actions.enabled')}
-          valuePropName="checked"
-        >
+        <Form.Item name="enabled" label={t('selection.settings.actions.enabled')} valuePropName="checked">
           <Switch />
         </Form.Item>
       </Form>

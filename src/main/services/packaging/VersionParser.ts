@@ -78,6 +78,4 @@ export class VersionParser {
 
     return null
   }
-
-
 }

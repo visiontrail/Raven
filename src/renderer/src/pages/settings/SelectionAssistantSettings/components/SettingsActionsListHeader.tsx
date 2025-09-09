@@ -32,32 +32,21 @@ const SettingsActionsListHeader: FC<SettingsActionsListHeaderProps> = ({
           <Title level={4} style={{ margin: 0 }}>
             {t('selection.settings.actions.title')}
           </Title>
-          <Description>
-            {t('selection.settings.actions.description')}
-          </Description>
+          <Description>{t('selection.settings.actions.description')}</Description>
         </TitleSection>
-        
+
         <ButtonSection>
           <Space>
-            <Button
-              type="default"
-              icon={<PlusOutlined />}
-              onClick={onAdd || onAddAction}
-              disabled={!canAddMore}
-            >
+            <Button type="default" icon={<PlusOutlined />} onClick={onAdd || onAddAction} disabled={!canAddMore}>
               {t('selection.settings.actions.add')}
             </Button>
-            <Button
-              type="default"
-              icon={<ReloadOutlined />}
-              onClick={onReset}
-            >
+            <Button type="default" icon={<ReloadOutlined />} onClick={onReset}>
               {t('selection.settings.actions.reset.button')}
             </Button>
           </Space>
         </ButtonSection>
       </HeaderContent>
-      
+
       <InfoSection>
         <InfoItem>
           <InfoLabel>{t('selection.settings.actions.custom_count')}:</InfoLabel>
@@ -65,12 +54,8 @@ const SettingsActionsListHeader: FC<SettingsActionsListHeaderProps> = ({
             {customItemsCount}/{maxCustomItems}
           </InfoValue>
         </InfoItem>
-        
-        {!canAddMore && (
-          <WarningText>
-            {t('selection.settings.actions.max_custom_reached')}
-          </WarningText>
-        )}
+
+        {!canAddMore && <WarningText>{t('selection.settings.actions.max_custom_reached')}</WarningText>}
       </InfoSection>
     </Container>
   )
@@ -85,7 +70,7 @@ const HeaderContent = styled.div`
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 16px;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 16px;

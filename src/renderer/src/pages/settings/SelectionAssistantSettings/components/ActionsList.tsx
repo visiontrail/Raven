@@ -44,14 +44,8 @@ const ActionsList: FC<ActionsListProps> = ({
         return searchInfo.icon
       }
     }
-    
-    return (
-      <DynamicIcon
-        name={item.icon as any}
-        size={16}
-        fallback={() => <MessageSquareHeart size={16} />}
-      />
-    )
+
+    return <DynamicIcon name={item.icon as any} size={16} fallback={() => <MessageSquareHeart size={16} />} />
   }
 
   const renderActionName = (item: ActionItem) => {
@@ -74,20 +68,13 @@ const ActionsList: FC<ActionsListProps> = ({
           </Count>
         )}
       </Header>
-      
+
       <Droppable droppableId={droppableId}>
         {(provided, snapshot) => (
-          <ListContainer
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            $isDraggingOver={snapshot.isDraggingOver}
-          >
+          <ListContainer ref={provided.innerRef} {...provided.droppableProps} $isDraggingOver={snapshot.isDraggingOver}>
             {items.length === 0 ? (
               <EmptyContainer>
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={t('selection.settings.actions.empty')}
-                />
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('selection.settings.actions.empty')} />
               </EmptyContainer>
             ) : (
               items.map((item, index) => (
@@ -97,27 +84,17 @@ const ActionsList: FC<ActionsListProps> = ({
                       ref={provided.innerRef}
                       {...provided.draggableProps}
                       {...provided.dragHandleProps}
-                      $isDragging={snapshot.isDragging}
-                    >
+                      $isDragging={snapshot.isDragging}>
                       <ActionContent>
-                        <ActionIcon>
-                          {renderActionIcon(item)}
-                        </ActionIcon>
+                        <ActionIcon>{renderActionIcon(item)}</ActionIcon>
                         <ActionInfo>
                           <ActionName>{renderActionName(item)}</ActionName>
-                          {item.prompt && (
-                            <ActionPrompt>{item.prompt}</ActionPrompt>
-                          )}
+                          {item.prompt && <ActionPrompt>{item.prompt}</ActionPrompt>}
                         </ActionInfo>
                       </ActionContent>
-                      
+
                       <ActionButtons>
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EditOutlined />}
-                          onClick={() => onEdit(item)}
-                        />
+                        <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)} />
                         {!item.isBuiltIn && (
                           <Button
                             type="text"
@@ -134,7 +111,7 @@ const ActionsList: FC<ActionsListProps> = ({
               ))
             )}
             {provided.placeholder}
-            
+
             {showAddButton && onAdd && (
               <AddButton onClick={onAdd}>
                 <PlusOutlined />
@@ -177,7 +154,7 @@ const ListContainer = styled.div<{ $isDraggingOver: boolean }>`
   padding: 8px;
   border: 2px dashed var(--color-border);
   border-radius: 8px;
-  background-color: ${props => props.$isDraggingOver ? 'var(--color-fill-2)' : 'transparent'};
+  background-color: ${(props) => (props.$isDraggingOver ? 'var(--color-fill-2)' : 'transparent')};
   transition: all 0.2s ease;
 `
 
@@ -191,14 +168,14 @@ const EmptyContainer = styled.div`
 const ActionCard = styled(Card)<{ $isDragging: boolean }>`
   margin-bottom: 8px;
   cursor: grab;
-  transform: ${props => props.$isDragging ? 'rotate(5deg)' : 'none'};
-  box-shadow: ${props => props.$isDragging ? '0 8px 16px rgba(0,0,0,0.15)' : 'none'};
+  transform: ${(props) => (props.$isDragging ? 'rotate(5deg)' : 'none')};
+  box-shadow: ${(props) => (props.$isDragging ? '0 8px 16px rgba(0,0,0,0.15)' : 'none')};
   transition: all 0.2s ease;
-  
+
   &:active {
     cursor: grabbing;
   }
-  
+
   .ant-card-body {
     padding: 12px;
   }
@@ -258,7 +235,7 @@ const AddButton = styled.div`
   color: var(--color-text-3);
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     border-color: var(--color-primary);
     color: var(--color-primary);

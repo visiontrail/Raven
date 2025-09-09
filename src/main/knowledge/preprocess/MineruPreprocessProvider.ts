@@ -277,7 +277,10 @@ export default class MineruPreprocessProvider extends BasePreprocessProvider {
 
       const response = await net.fetch(uploadUrl, {
         method: 'PUT',
-        body: fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength) as ArrayBuffer,
+        body: fileBuffer.buffer.slice(
+          fileBuffer.byteOffset,
+          fileBuffer.byteOffset + fileBuffer.byteLength
+        ) as ArrayBuffer,
         headers: {
           'Content-Type': 'application/pdf'
         }

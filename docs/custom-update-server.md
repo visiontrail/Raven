@@ -15,20 +15,20 @@
   "latestVersion": "1.0.0",
   "versions": {
     "1.0.0": {
-      "version": "1.0.0",
-      "publishedAt": "2024-01-01T00:00:00Z",
       "changelog": "版本更新说明",
       "files": [
         {
+          "arch": "x64",
           "name": "Raven-1.0.0-x64-setup.exe",
-          "url": "https://your-server.com/releases/Raven-1.0.0-x64-setup.exe",
-          "size": 123456789,
           "platform": "win32",
-          "arch": "x64"
+          "size": 123456789,
+          "url": "https://your-server.com/releases/Raven-1.0.0-x64-setup.exe"
         }
       ],
+      "minVersion": "0.9.0",
+      "publishedAt": "2024-01-01T00:00:00Z",
       "required": false,
-      "minVersion": "0.9.0"
+      "version": "1.0.0"
     }
   }
 }
