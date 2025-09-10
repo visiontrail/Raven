@@ -404,7 +404,7 @@ function renderPackageList() {
                           return `<div class="mt-2 text-muted small" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapedDesc}">${desc}</div>`
                         })()}
                     </div>
-                    <div class="col-auto">
+                    <div class="col-auto me-3">
                         <small class="text-muted d-block">
                             <i class="bi bi-calendar3 me-1"></i>
                             ${formatDate(pkg.createdAt)}
