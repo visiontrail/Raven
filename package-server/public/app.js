@@ -381,7 +381,7 @@ function renderPackageList() {
                               const components = getComponentsArray(pkg.metadata?.components)
                               return components && components.length > 0
                                 ? components
-                                    .map((c) => `<span class="badge bg-success text-white package-type-badge">${c.name}${c.version ? ' v' + c.version : ''}</span>`)
+                                    .map((c) => `<span class="badge bg-success text-white package-type-badge">${c.name}</span>`)
                                     .join(' ')
                                 : ''
                             })()}
