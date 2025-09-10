@@ -364,7 +364,7 @@ function renderPackageList() {
         <div class="package-item card mb-3" onclick="showPackageDetail('${escapedId}')" style="cursor: pointer;">
             <div class="card-body">
                 <div class="row align-items-center">
-                    <div class="col-md-6">
+                    <div class="col">
                         <h6 class="mb-1">
                             <i class="bi bi-box-seam me-2 text-primary"></i>
                             ${escapedName}
@@ -399,10 +399,12 @@ function renderPackageList() {
                         </div>
                         ${(() => {
                           const desc = pkg.metadata?.description
-                          return desc ? `<div class="mt-2 text-muted small" style="white-space: pre-wrap;">${desc}</div>` : ''
+                          if (!desc) return ''
+                          const escapedDesc = desc.replace(/"/g, '&quot;')
+                          return `<div class="mt-2 text-muted small" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapedDesc}">${desc}</div>`
                         })()}
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-auto">
                         <small class="text-muted d-block">
                             <i class="bi bi-calendar3 me-1"></i>
                             ${formatDate(pkg.createdAt)}
@@ -412,7 +414,7 @@ function renderPackageList() {
                             ${formatFileSize(pkg.size)}
                         </small>
                     </div>
-                    <div class="col-md-3 text-end">
+                    <div class="col-auto text-end">
                         <div class="btn-group" role="group">
                             <button class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation(); downloadPackage('${escapedId}')">
                                 <i class="bi bi-download"></i>
