@@ -38,7 +38,8 @@ export async function extractMetadataFromTGZ(filePath: string): Promise<Package>
     version,
     metadata: {
       isPatch,
-      components,
+      // Attach version info to each component while keeping backward compatibility with union type
+      components: components.map((name) => ({ name, version })),
       description: '',
       tags: [],
       customFields: {}

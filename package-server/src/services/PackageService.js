@@ -205,18 +205,15 @@ class PackageService {
 
   // Extract metadata from a TGZ file
   async extractPackageMetadata(filePath) {
-    console.log(`🔍 开始提取包元数据: ${filePath}`)
-    const stats = await fs.stat(filePath)
     const fileName = path.basename(filePath)
+    const stats = await fs.stat(filePath)
 
-    // Extract package type from filename
     const packageType = this.determinePackageType(fileName)
-
-    // Extract version from filename
     const version = this.parseVersionFromFilename(fileName) || '0.0.0'
+    const componentsRaw = this.extractComponentsFromFilename(fileName)
 
-    // Extract components from filename
-    const components = this.extractComponentsFromFilename(fileName)
+    // Map components to include name and version when available
+    const components = (componentsRaw || []).map((name) => ({ name, version }))
 
     // Determine if it's a patch
     const isPatch = fileName.toLowerCase().includes('patch')
@@ -242,7 +239,6 @@ class PackageService {
       }
     }
 
-    console.log(`✅ 成功提取包元数据: ${fileName}, 类型: ${packageType}, 版本: ${version}, SHA-256: ${sha256}`)
     return packageInfo
   }
 

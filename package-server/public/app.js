@@ -381,10 +381,7 @@ function renderPackageList() {
                               const components = getComponentsArray(pkg.metadata?.components)
                               return components && components.length > 0
                                 ? components
-                                    .map(
-                                      (comp) =>
-                                        `<span class="badge bg-success text-white package-type-badge">${comp}</span>`
-                                    )
+                                    .map((c) => `<span class="badge bg-success text-white package-type-badge">${c.name}${c.version ? ' v' + c.version : ''}</span>`)
                                     .join(' ')
                                 : ''
                             })()}
@@ -400,6 +397,10 @@ function renderPackageList() {
                                 : ''
                             })()}
                         </div>
+                        ${(() => {
+                          const desc = pkg.metadata?.description
+                          return desc ? `<div class="mt-2 text-muted small" style="white-space: pre-wrap;">${desc}</div>` : ''
+                        })()}
                     </div>
                     <div class="col-md-3">
                         <small class="text-muted d-block">
@@ -1130,16 +1131,31 @@ function formatTime(seconds) {
 // 辅助函数：将字符串或数组转换为数组
 function getComponentsArray(components) {
   if (!components) return []
-  if (Array.isArray(components)) return components
-  if (typeof components === 'string') {
+  let arr = []
+  if (Array.isArray(components)) {
+    arr = components
+  } else if (typeof components === 'string') {
     try {
       const parsed = JSON.parse(components)
-      return Array.isArray(parsed) ? parsed : []
+      arr = Array.isArray(parsed) ? parsed : []
     } catch {
-      return []
+      arr = []
     }
+  } else {
+    return []
   }
-  return []
+  return arr
+    .map((item) => {
+      if (typeof item === 'string') return { name: item }
+      if (item && typeof item === 'object') {
+        const name = item.name || ''
+        const version = item.version || ''
+        if (!name) return null
+        return version ? { name, version } : { name }
+      }
+      return null
+    })
+    .filter(Boolean)
 }
 
 // 辅助函数：将字符串或数组转换为数组
@@ -1189,7 +1205,6 @@ async function showPackageDetail(packageId) {
           <table class="table table-sm">
              <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">是否补丁:</td><td>${pkg.metadata?.isPatch === 'true' || pkg.metadata?.isPatch === true ? '是' : '否'}</td></tr>
              <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">组件数量:</td><td>${getComponentsArray(pkg.metadata?.components)?.length || 0}</td></tr>
-             <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">描述:</td><td>${pkg.metadata?.description || '无描述'}</td></tr>
            </table>
           
           ${(() => {
@@ -1197,9 +1212,14 @@ async function showPackageDetail(packageId) {
             return components && components.length > 0
               ? `<h6 class="mt-3">包含组件</h6>
               <div class="d-flex flex-wrap gap-1">
-                  ${components.map((comp) => `<span class="badge bg-success text-white">${comp}</span>`).join('')}
+                  ${components.map((c) => `<span class="badge bg-success text-white package-type-badge">${c.name}${c.version ? ' v' + c.version : ''}</span>`).join('')}
               </div>`
               : ''
+          })()}
+          
+          ${(() => {
+            const desc = pkg.metadata?.description
+            return desc ? `<h6 class=\"mt-3\">描述</h6><div class=\"text-muted\" style=\"white-space: pre-wrap;\">${desc}</div>` : ''
           })()}
           
           ${(() => {

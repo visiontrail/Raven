@@ -464,7 +464,19 @@ class PackagingService {
         metadata: {
           ...packageInfo.metadata,
           isPatch: config.is_patch,
-          components: selectedComponentNames
+          components: (() => {
+            // Map selected component name -> version (prefer manual version, fallback to auto_version)
+            const versionMap: Record<string, string | undefined> = {}
+            for (const c of config.selected_components) {
+              if (!c.selected_file) continue
+              versionMap[c.name] = c.version || c.auto_version
+            }
+            // Build detailed components using names parsed from si.ini (fallback handled above)
+            return selectedComponentNames.map((name) => {
+              const ver = versionMap[name]
+              return ver ? { name, version: ver } : name
+            })
+          })()
         }
       }
       await this.addOrUpdatePackage(patchedPackageInfo)

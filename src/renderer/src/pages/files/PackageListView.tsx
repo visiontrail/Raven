@@ -55,7 +55,17 @@ const PackageListView: FC<PackageListViewProps> = () => {
         const matchesDescription = pkg.metadata?.description?.toLowerCase().includes(searchLower) || false
         const matchesTags = pkg.metadata?.tags?.some((tag) => tag.toLowerCase().includes(searchLower)) || false
         const matchesComponents =
-          pkg.metadata?.components?.some((component) => component.toLowerCase().includes(searchLower)) || false
+          pkg.metadata?.components?.some((component: any) => {
+            if (typeof component === 'string') {
+              return component.toLowerCase().includes(searchLower)
+            }
+            if (component && typeof component === 'object') {
+              const nameMatch = component.name?.toLowerCase().includes(searchLower)
+              const versionMatch = component.version?.toLowerCase?.().includes(searchLower)
+              return !!nameMatch || !!versionMatch
+            }
+            return false
+          }) || false
 
         if (!matchesName && !matchesDescription && !matchesTags && !matchesComponents) {
           return false

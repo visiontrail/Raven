@@ -24,7 +24,7 @@ export interface PackageMetadata {
   /**
    * Included components
    */
-  components: string[]
+  components: (string | { name: string; version?: string })[]
 
   /**
    * User-provided description

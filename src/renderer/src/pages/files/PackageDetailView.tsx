@@ -34,9 +34,13 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
 
   // Initialize form with current metadata
   const initializeForm = () => {
+    const normalizedComponents: string[] = (pkg.metadata.components || []).map((c: any) =>
+      typeof c === 'string' ? c : c?.name ? (c.version ? `${c.name}@${c.version}` : c.name) : ''
+    ).filter(Boolean)
+
     form.setFieldsValue({
       isPatch: pkg.metadata.isPatch,
-      components: pkg.metadata.components,
+      components: normalizedComponents,
       description: pkg.metadata.description,
       tags: pkg.metadata.tags,
       customFields: pkg.metadata.customFields
@@ -55,10 +59,24 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
       const values = form.getFieldsValue(true)
       setLoading(true)
 
+      // denormalize components back to union type: string | { name, version? }
+      const denormalizedComponents = (values.components || []).map((item: any) => {
+        if (typeof item === 'string') {
+          // allow syntax "name@version" to capture version
+          const [namePart, versionPart] = item.split('@')
+          if (versionPart) {
+            return { name: namePart, version: versionPart }
+          }
+          return namePart
+        }
+        if (item && typeof item === 'object') return item
+        return null
+      }).filter(Boolean)
+
       const updatedMetadata: PackageMetadata = {
         ...pkg.metadata,
         isPatch: !!values.isPatch,
-        components: values.components || [],
+        components: denormalizedComponents as any,
         description: values.description || '',
         tags: values.tags || []
       }
