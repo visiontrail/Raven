@@ -1212,14 +1212,9 @@ async function showPackageDetail(packageId) {
             return components && components.length > 0
               ? `<h6 class="mt-3">包含组件</h6>
               <div class="d-flex flex-wrap gap-1">
-                  ${components.map((c) => `<span class="badge bg-success text-white package-type-badge">${c.name}${c.version ? ' v' + c.version : ''}</span>`).join('')}
+                  ${components.map((c) => `<span class="badge bg-success text-white package-type-badge">${c.name}${c.version ? ' ' + c.version : ''}</span>`).join('')}
               </div>`
               : ''
-          })()}
-          
-          ${(() => {
-            const desc = pkg.metadata?.description
-            return desc ? `<h6 class=\"mt-3\">描述</h6><div class=\"text-muted\" style=\"white-space: pre-wrap;\">${desc}</div>` : ''
           })()}
           
           ${(() => {
@@ -1231,8 +1226,31 @@ async function showPackageDetail(packageId) {
               </div>`
               : ''
           })()}
+
+          ${(() => {
+            const desc = pkg.metadata?.description
+            return desc ? `<div class="row mt-3">
+                 <div class="col-12">
+                   <h6 class="text-muted mb-2">描述</h6>
+                   <div class="text-muted" style="white-space: pre-wrap;">${desc}</div>
+                 </div>
+               </div>`
+            : ''
+          })()}
         </div>
       </div>
+
+      ${(() => {
+        const desc = pkg.metadata?.description
+        return desc
+          ? `<div class="row mt-3">
+               <div class="col-12">
+                 <h6 class="text-muted mb-2">描述</h6>
+                 <div class="text-muted" style="white-space: pre-wrap;">${desc}</div>
+               </div>
+             </div>`
+          : ''
+      })()}
     `
 
     // 设置下载和删除按钮事件
