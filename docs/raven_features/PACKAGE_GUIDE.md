@@ -129,3 +129,43 @@
    - `packagingService.ts` 中的 `indexExistingPackages`/`startWatchingForPackages` 会把扫描到的包放进 PackagingService 的内存 Map
    - 而 PackageListView 使用的接口是 `packageService.getPackages()`（持久化来源）
    - 如果你想让"扫描"也把历史包持久化到 JSON，需在 packagingService 的扫描回调中同步调用 `packageService.addPackage(...)`
+
+## 七、压缩包组件的解压与解析流程（何时解压、如何解压、如何定位目标文件）
+
+以下内容解释当用户在 Packager 中选择的组件文件是压缩包（如 .zip/.tgz/.tar.gz）时，主进程如何处理：
+
+1. 触发时机（何时解压）
+   - 入口在主进程 `packagingService.ts` 的 `handleCreatePackage()` 中，针对每个被选择的组件调用私有方法 `_processComponent(component, workDir, packageType)`。
+   - `_processComponent` 内部判断：如果该组件的 `selected_file` 是压缩包，且该组件配置 `direct_include` 为 false，则会先解压再在解压目录中定位真实目标文件。
+
+2. 是否需要解压的判定
+   - 通过 `FileProcessor.isArchiveFile(filePath)` 判断是否为压缩文件。当前判定基于扩展名集合：`.zip`、`.tgz`、`.tar.gz`。
+   - 同时参考组件配置 `COMPONENT_CONFIGS[packageType].components[componentName].direct_include`：
+     - `direct_include: true`（如 `galaxy_core_network`、`satellite_app_server`）表示直接把所选压缩包原封不动复制进工作区并重命名，不做解压与二次查找。
+     - `direct_include: false`（例如 `oam`、`sct_fpga`、`cucp`、`cuup`、`du` 等）表示需要从压缩包内提取出真正的目标文件再参与打包。
+
+3. 解压如何执行
+   - 由 `FileProcessor.extractArchive(sourcePath)` 完成，内部使用 `decompress` 库将压缩包解压到应用临时目录下的一个唯一目录，例如：`<Temp>/cherry-studio-packager/extract_<timestamp>`。
+   - 解压完成后返回该解压目录路径，供后续文件定位使用。
+
+4. 如何在解压目录中定位目标文件（解析内容）
+   - 通过 `FileProcessor.findFilesByType(dir, types, nameHint)` 在解压目录递归地查找：
+     - 若文件扩展名在 `types` 列表中（如 `.bin`、`.deb`），则认为匹配；
+     - 或者文件路径包含 `nameHint`（通常是组件在配置中的目标文件名，如 `gnb-oam-lx10`），也视为匹配；
+   - 若未找到任何匹配项，会抛出错误：`在压缩包中未找到组件 <description> 的文件`，从而中断此次打包。
+   - 如果找到多个，仅取第一个匹配项作为目标文件（可根据需要后续增强为更精确的匹配规则）。
+
+5. 版本号自动识别
+   - 一旦确定了真实的 `sourceFile`（可能来自解压目录），若前端未手动填写版本号，`_processComponent` 会调用 `VersionParser.parseVersionFromFilename(path.basename(sourceFile), component.name)` 自动从文件名中识别版本，并经 `VersionParser.formatVersion(...)` 规范化，填入 `component.auto_version`。
+   - si.ini 生成时，会优先采用用户手填的 `version`，否则采用 `auto_version`，都没有则回退为 `V0.0.0.0`。
+
+6. 目标文件入包（复制与重命名）
+   - 最终通过 `FileProcessor.copyAndRenameFile(sourceFile, workDir, componentConfig.file_name)` 将目标文件复制到工作区，并重命名为组件在配置里定义的标准文件名（如 `cucp.deb`、`du.deb`、`sct.bin`、`gnb-oam-lx10` 等）。
+
+7. 打成最终包
+   - 所有组件处理完成后，`FileProcessor.createTgzPackage(workDir, outputPath)` 会使用 `archiver` 以 tar+gzip 方式打出最终 `.tgz` 包，并输出到系统 Downloads 目录。
+
+8. 注意事项与小结
+   - `direct_include` 组件（如某些 `.tgz` 应用包）不会解压，直接被复制并以配置名重命名后进入最终包。
+   - 解压目录位于系统临时目录下，生命周期由 `PackagingService.cleanup()` 统一清理（在应用退出或手动调用清理时）。
+   - 若压缩包内部没有找到匹配的目标文件，将以明确报错终止，避免生成缺失组件的包。

@@ -12,12 +12,12 @@ export class VersionParser {
   }
 
   /**
-   * 针对组件（CUCP/CUUP/DU）验证版本字符串
-   * 允许形如: d.d.d.d 或 d.d.d.d-YYYYMMDDHHMM
+   * 针对组件（CUCP/CUUP/DU/S-GNB）验证版本字符串
+   * 允许形如: d.d.d.d 或 d.d.d.d-YYYYMMDDHHMM / d.d.d.d.YYYYMMDDHHMM
    */
   static validateComponentVersion(version: string, componentType?: string): boolean {
     const isCU = componentType
-      ? ['cucp', 'cuup', 'du'].includes(componentType.toLowerCase())
+      ? ['cucp', 'cuup', 'du', 's-gnb', 'sgnb'].includes(componentType.toLowerCase())
       : false
 
     const clean = version.replace(/^V/i, '')
@@ -25,10 +25,13 @@ export class VersionParser {
     // 基础四段
     if (/^\d+\.\d+\.\d+\.\d+$/.test(clean)) return true
 
-    // 仅对 CU 组件校验带时间戳格式
-    if (isCU && /^\d+\.\d+\.\d+\.\d+-\d{12}$/.test(clean)) {
-      const ts = clean.split('-')[1]
-      return this.validateTimestamp(ts)
+    // 仅对 CU 类组件校验带时间戳格式（兼容 - 或 . 分隔符）
+    if (isCU) {
+      const m = clean.match(/^(\d+\.\d+\.\d+\.\d+)(?:[.-](\d{12}))$/)
+      if (m) {
+        const ts = m[2]
+        return this.validateTimestamp(ts)
+      }
     }
 
     return false
@@ -48,8 +51,14 @@ export class VersionParser {
    * 将版本号转换为数字格式，用于文件名（仅处理四段版本，不处理时间戳）
    */
   static versionToNumeric(version: string): string {
-    // 移除V前缀与可能的时间戳后缀
-    const cleanVersion = version.replace(/^V/i, '').split('-')[0].replace(/\./g, '')
+    // 移除V前缀与可能的时间戳后缀（兼容 - 或 . 分隔的时间戳）
+    const clean = version.replace(/^V/i, '')
+    const m = clean.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)/)
+    if (m) {
+      return `${m[1]}${m[2]}${m[3]}${m[4]}`
+    }
+    // 回退：去除连字符时间戳再移除点
+    const cleanVersion = clean.split('-')[0].replace(/\./g, '')
     return cleanVersion
   }
 
@@ -78,23 +87,27 @@ export class VersionParser {
   }
 
   /**
-   * 从文件名解析版本号（支持 CUCP/CUUP/DU 的时间戳后缀）
-   * 返回值不带 V 前缀，可能包含 -YYYYMMDDHHMM 后缀
+   * 从文件名解析版本号（支持 CUCP/CUUP/DU/S-GNB 的时间戳后缀）
+   * 返回值不带 V 前缀，可能包含 .YYYYMMDDHHMM 后缀（统一点分格式）
    */
   static parseVersionFromFilename(filename: string, componentType?: string): string | null {
-    const isCUComponent = ((): boolean => {
-      if (componentType && ['cucp', 'cuup', 'du'].includes(componentType.toLowerCase())) return true
+    const isCUComponent = (() => {
+      if (componentType && ['cucp', 'cuup', 'du', 's-gnb', 'sgnb'].includes(componentType.toLowerCase())) return true
       const detected = this.detectComponentType(filename)
-      return detected !== null
+      if (detected !== null) return true
+      // 额外支持包含 S-GNB 关键字的文件，按 CU 组件规则解析时间戳
+      if (/(^|[_.\-])s-?gnb(?=[_.\-]|\b)/i.test(filename)) return true
+      return false
     })()
 
-    // 优先匹配 CU 组件的时间戳格式: v1.2.3.4-YYYYMMDDHHMM / V1.2.3.4-YYYYMMDDHHMM
+    // 优先匹配 CU 类组件的时间戳格式: v1.2.3.4-YYYYMMDDHHMM / V1.2.3.4-YYYYMMDDHHMM / v1.2.3.4.YYYYMMDDHHMM
     if (isCUComponent) {
-      const cuMatch = filename.match(/[vV]?(\d+)\.(\d+)\.(\d+)\.(\d+)-(\d{12})/)
+      const cuMatch = filename.match(/[vV]?(\d+)\.(\d+)\.(\d+)\.(\d+)[.-](\d{12})/)
       if (cuMatch) {
         const [_, a, b, c, d, ts] = cuMatch
         if (this.validateTimestamp(ts)) {
-          return `${a}.${b}.${c}.${d}-${ts}`
+          // 统一输出为点分格式
+          return `${a}.${b}.${c}.${d}.${ts}`
         }
       }
     }
@@ -152,7 +165,8 @@ export class VersionParser {
     timestamp?: string
   } | null {
     const clean = version.replace(/^V/i, '')
-    const m = clean.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)(?:-(\d{12}))?$/)
+    // 兼容 - 或 . 分隔的时间戳
+    const m = clean.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)(?:[.-](\d{12}))?$/)
     if (!m) return null
     const major = parseInt(m[1])
     const minor = parseInt(m[2])
