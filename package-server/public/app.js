@@ -23,16 +23,16 @@ function initializeApp() {
   const packageListSection = document.getElementById('packageListSection')
   const packageList = document.getElementById('packageList')
   const searchSection = document.getElementById('searchSection')
-  const statsSection = document.getElementById('statsSection')
 
   console.log('📋 DOM元素检查:')
   console.log('- packageListSection:', packageListSection ? '存在' : '不存在')
   console.log('- packageList:', packageList ? '存在' : '不存在')
   console.log('- searchSection:', searchSection ? '存在' : '不存在')
-  console.log('- statsSection:', statsSection ? '存在' : '不存在')
 
-  loadStats()
+  // loadPackageTypes()
   loadPackages()
+  // loadStats()
+  setupEventListeners()
   showPackages()
 
   console.log('✅ 初始化应用完成')
@@ -241,7 +241,7 @@ function getPackageTypeColor(type) {
 }
 
 // 加载统计信息
-async function loadStats() {
+/* async function loadStats() {
   try {
     const response = await fetch(`${PACKAGES_API}/stats/overview`)
     if (!response.ok) throw new Error('获取统计信息失败')
@@ -261,7 +261,7 @@ async function loadStats() {
     console.error('加载统计信息失败:', error)
     showAlert('加载统计信息失败', 'warning')
   }
-}
+} */
 
 // 加载包列表
 async function loadPackages(page = 1) {
@@ -526,7 +526,6 @@ function showPackages() {
   const packageListSection = document.getElementById('packageListSection')
   const uploadSection = document.getElementById('uploadSection')
   const searchSection = document.getElementById('searchSection')
-  const statsSection = document.getElementById('statsSection')
 
   if (packageListSection) {
     packageListSection.style.display = 'block'
@@ -544,11 +543,6 @@ function showPackages() {
     console.log('✅ searchSection 设置为显示')
   }
 
-  if (statsSection) {
-    statsSection.style.display = 'flex'
-    console.log('✅ statsSection 设置为显示')
-  }
-
   console.log('📦 包列表页面显示完成')
 }
 
@@ -558,7 +552,6 @@ function showUpload() {
   document.getElementById('packageListSection').style.display = 'none'
   document.getElementById('uploadSection').style.display = 'block'
   document.getElementById('searchSection').style.display = 'none'
-  document.getElementById('statsSection').style.display = 'none'
 }
 
 // 显示统计页面 - 暂时注释掉未使用的函数
