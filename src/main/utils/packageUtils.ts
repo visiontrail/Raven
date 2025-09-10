@@ -20,7 +20,7 @@ export async function extractMetadataFromTGZ(filePath: string): Promise<Package>
   const packageType = determinePackageType(fileName)
 
   // Extract version from filename
-  const version = VersionParser.parseVersionFromFilename(fileName) || '0.0.0'
+  const version = VersionParser.parseVersionFromFilename(fileName) || '0.0.0.0'
 
   // Extract components from filename
   const components = extractComponentsFromFilename(fileName)

@@ -435,12 +435,42 @@ class PackagingService {
       // Create final package
       await this.fileProcessor.createTgzPackage(workDir, outputPath)
 
+      // Derive component names from si.ini FileAttr_ values
+      const allComponentsConfig = (COMPONENT_CONFIGS as any)[config.package_type]?.components || {}
+      const attrRegex = /^FileAttr_\d+=(\d+);/gm
+      const foundAttrIds: string[] = []
+      let match
+      while ((match = attrRegex.exec(siIniContent)) !== null) {
+        foundAttrIds.push(match[1])
+      }
+      const fileAttrToNameMap: Record<string, string> = {}
+      for (const [name, details] of Object.entries(allComponentsConfig)) {
+        fileAttrToNameMap[(details as any).file_attr] = name
+      }
+      let selectedComponentNames = foundAttrIds
+        .map((id) => fileAttrToNameMap[id])
+        .filter(Boolean) as string[]
+      if (selectedComponentNames.length === 0) {
+        // Fallback to selected component names from config when si.ini parsing yields nothing
+        selectedComponentNames = config.selected_components
+          .filter((c) => c.selected_file)
+          .map((c) => c.name)
+      }
+
       // Index the newly created package
       const packageInfo = await extractMetadataFromTGZ(outputPath)
-      await this.addOrUpdatePackage(packageInfo)
+      const patchedPackageInfo: Package = {
+        ...packageInfo,
+        metadata: {
+          ...packageInfo.metadata,
+          isPatch: config.is_patch,
+          components: selectedComponentNames
+        }
+      }
+      await this.addOrUpdatePackage(patchedPackageInfo)
 
       // Also add to the new PackageService
-      await packageService.addPackage(packageInfo)
+      await packageService.addPackage(patchedPackageInfo)
 
       return { success: true, message: `打包成功: ${outputFilename}`, outputPath }
     } catch (error: any) {
