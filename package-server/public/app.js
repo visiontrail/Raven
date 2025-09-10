@@ -1228,17 +1228,6 @@ async function showPackageDetail(packageId) {
               </div>`
               : ''
           })()}
-
-          ${(() => {
-            const desc = pkg.metadata?.description
-            return desc ? `<div class="row mt-3">
-                 <div class="col-12">
-                   <h6 class="text-muted mb-2">描述</h6>
-                   <div class="text-muted" style="white-space: pre-wrap;">${desc}</div>
-                 </div>
-               </div>`
-            : ''
-          })()}
         </div>
       </div>
 
