@@ -240,7 +240,7 @@ describe('PackageService', () => {
   describe('uploadPackageToFTP', () => {
     it('should return false when package does not exist', async () => {
       const ftpConfig = {
-        host: '172.16.9.224',
+        host: '172.77.245.1',
         port: 10002,
         username: 'anonymous',
         password: 'anonymous',

@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import FileList from './FileList'
+import LogListView from './LogListView'
 import PackageListView from './PackageListView'
 
 type SortField = 'created_at' | 'size' | 'name'
@@ -73,6 +74,7 @@ const FilesPage: FC = () => {
     { key: FileTypes.DOCUMENT, label: t('files.document'), icon: <FileIcon size={16} /> },
     { key: FileTypes.TEXT, label: t('files.text'), icon: <FileTypeIcon size={16} /> },
     { key: FileTypes.PACKAGE, label: t('files.packages'), icon: <Package size={16} /> },
+    { key: 'logs', label: t('files.logs'), icon: <FileText size={16} /> },
     { key: 'all', label: t('files.all'), icon: <FileText size={16} /> }
   ]
 
@@ -96,6 +98,8 @@ const FilesPage: FC = () => {
         <MainContent>
           {fileType === FileTypes.PACKAGE ? (
             <PackageListView />
+          ) : fileType === 'logs' ? (
+            <LogListView />
           ) : (
             <>
               <SortContainer>
