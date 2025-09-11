@@ -153,7 +153,7 @@ const PackageListView: FC<PackageListViewProps> = () => {
   const handleUploadToFTP = async (pkg: Package) => {
     // Hardcoded FTP configuration
     const ftpConfig = {
-      host: '172.16.9.224',
+      host: '172.77.245.1',
       port: 10002,
       username: 'anonymous',
       password: 'anonymous',

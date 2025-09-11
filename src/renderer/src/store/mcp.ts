@@ -154,7 +154,7 @@ export const builtinMCPServers: MCPServer[] = [
     name: 'Satellite gNB OAM MCP Server(Debug)',
     type: 'streamableHttp',
     description: 'Satellite gNB OAM MCP Server for debugging purposes',
-    baseUrl: 'http://172.16.9.224:8090/mcp',
+    baseUrl: 'http://172.77.245.1:8090/mcp',
     isActive: true,
     provider: 'GalaxySpace'
   }

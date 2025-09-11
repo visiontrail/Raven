@@ -71,7 +71,10 @@ describe('Package Filtering Logic', () => {
         const matchesDescription = pkg.metadata?.description?.toLowerCase().includes(searchLower) || false
         const matchesTags = pkg.metadata?.tags?.some((tag) => tag.toLowerCase().includes(searchLower)) || false
         const matchesComponents =
-          pkg.metadata?.components?.some((component) => component.toLowerCase().includes(searchLower)) || false
+          pkg.metadata?.components?.some((component) => {
+            const componentName = typeof component === 'string' ? component : component.name
+            return componentName.toLowerCase().includes(searchLower)
+          }) || false
 
         if (!matchesName && !matchesDescription && !matchesTags && !matchesComponents) {
           return false
