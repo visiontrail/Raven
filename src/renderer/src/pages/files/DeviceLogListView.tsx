@@ -111,7 +111,7 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
       message.success(`设备日志列表刷新成功，共 ${deviceLogFiles.length} 个文件`)
     } catch (error) {
       console.error('[DeviceLogListView] 获取设备日志列表失败:', error)
-      message.error(`获取设备日志列表失败: ${error.message || error}`)
+      message.error(`获取设备日志列表失败: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setLoading(false)
     }
