@@ -47,7 +47,7 @@ class FtpService {
       return filteredFiles
     } catch (error) {
       console.error('[FtpService] FTP列表文件失败:', error)
-      throw new Error(`获取FTP文件列表失败: ${error.message || error}`)
+      throw new Error(`获取FTP文件列表失败: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 

@@ -214,7 +214,7 @@ export class FTPService implements IFTPService {
           isDirectory: file.isDirectory,
           path: path.posix.join(ftpConfig.remotePath || '/', file.name)
         }
-        logger.info(`[FTPService] 转换文件:`, file, '->', ftpFile)
+        logger.info('[FTPService] Converting file:', { source: file, target: ftpFile })
         return ftpFile
       })
 

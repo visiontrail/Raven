@@ -61,10 +61,12 @@
 **是，被持久化到 JSON 文件。**
 
 ### 存储位置
+
 - 应用的 userData 目录下的 `package-metadata.json`
 - 具体见 `PackageService.ts` 构造函数：它通过 Electron `app.getPath('userData')` 拼出 metadataFilePath，并在 load/save 时读写该 JSON
 
 ### 存储时间点
+
 1. **打包完成后**
    - `handleCreatePackage` 会调用 `packageService.addPackage(packageInfo)`
    - 而 `addPackage` 在成功后会立即 `savePackageMetadata()` 写入磁盘
@@ -77,6 +79,7 @@
    - `deletePackage()` 会删除磁盘文件并更新 JSON
 
 ### 包基础信息的来源
+
 - `packageUtils.ts` 的 `extractMetadataFromTGZ(filePath)` 会从文件路径和文件名推断 packageType、version、components、isPatch，并结合文件 stats（size、createdAt）生成 Package 对象
 - metadata 初始值包含 isPatch、components、description、tags、customFields
 - 类型定义见 `package.ts`
