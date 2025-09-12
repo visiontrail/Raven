@@ -181,8 +181,8 @@ export class FTPService implements IFTPService {
     const client = new FTPClient()
 
     try {
-      logger.info(`[FTPService] 开始连接FTP服务器: ${ftpConfig.host}:${ftpConfig.port}`)
-      logger.info(`[FTPService] FTP配置:`, ftpConfig)
+      logger.info(`[FTPService] Starting FTP server connection: ${ftpConfig.host}:${ftpConfig.port}`)
+      logger.info(`[FTPService] FTP configuration:`, ftpConfig)
 
       // Connect to FTP server
       await client.access({
@@ -192,18 +192,18 @@ export class FTPService implements IFTPService {
         password: ftpConfig.password,
         secure: false
       })
-      logger.info(`[FTPService] FTP连接成功`)
+      logger.info(`[FTPService] FTP connection successful`)
 
       // Change to the specified directory
       if (ftpConfig.remotePath && ftpConfig.remotePath !== '/') {
-        logger.info(`[FTPService] 切换到目录: ${ftpConfig.remotePath}`)
+        logger.info(`[FTPService] Switching to directory: ${ftpConfig.remotePath}`)
         await client.cd(ftpConfig.remotePath)
       }
 
       // List files in the directory
-      logger.info(`[FTPService] 开始列出文件...`)
+      logger.info(`[FTPService] Starting to list files...`)
       const fileList = await client.list()
-      logger.info(`[FTPService] 原始文件列表:`, fileList)
+      logger.info(`[FTPService] Raw file list:`, fileList)
 
       // Convert to our FTPFileInfo format
       const files: FTPFileInfo[] = fileList.map((file) => {
@@ -221,7 +221,7 @@ export class FTPService implements IFTPService {
       logger.info(
         `[FTPService] Successfully listed ${files.length} files from ${ftpConfig.host}:${ftpConfig.remotePath}`
       )
-      logger.info(`[FTPService] 最终文件列表:`, files)
+      logger.info(`[FTPService] Final file list:`, files)
       return files
     } catch (error) {
       logger.error('[FTPService] FTP list files failed:', error as Error)

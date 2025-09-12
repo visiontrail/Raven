@@ -32,22 +32,22 @@ class FtpService {
    */
   async listFiles(): Promise<FtpFileInfo[]> {
     try {
-      console.log('[FtpService] 开始调用主进程FTP服务，配置:', this.config)
+      console.log('[FtpService] Starting to call main process FTP service, config:', this.config)
       // 调用主进程的FTP服务
       const files = await window.api.ftp.listFiles(this.config)
-      console.log('[FtpService] 主进程返回的原始文件列表:', files)
+      console.log('[FtpService] Raw file list returned from main process:', files)
 
       // 过滤只显示.tar.gz和.tgz文件
       const filteredFiles = files.filter((file) => {
         const lowerName = file.name.toLowerCase()
         return !file.isDirectory && (lowerName.endsWith('.tar.gz') || lowerName.endsWith('.tgz'))
       })
-      console.log('[FtpService] 过滤后的文件列表:', filteredFiles)
+      console.log('[FtpService] Filtered file list:', filteredFiles)
 
       return filteredFiles
     } catch (error) {
-      console.error('[FtpService] FTP列表文件失败:', error)
-      throw new Error(`获取FTP文件列表失败: ${error instanceof Error ? error.message : String(error)}`)
+      console.error('[FtpService] FTP list files failed:', error)
+      throw new Error(`Failed to get FTP file list: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -61,8 +61,8 @@ class FtpService {
     try {
       await window.api.ftp.downloadFile(this.config, remotePath, localPath)
     } catch (error) {
-      console.error('FTP下载文件失败:', error)
-      throw new Error(`下载文件失败: ${remotePath}`)
+      console.error('FTP download file failed:', error)
+      throw new Error(`Failed to download file: ${remotePath}`)
     }
   }
 
@@ -75,8 +75,8 @@ class FtpService {
     try {
       await window.api.ftp.deleteFile(this.config, remotePath)
     } catch (error) {
-      console.error('FTP删除文件失败:', error)
-      throw new Error(`删除文件失败: ${remotePath}`)
+      console.error('FTP delete file failed:', error)
+      throw new Error(`Failed to delete file: ${remotePath}`)
     }
   }
 
@@ -89,8 +89,8 @@ class FtpService {
     try {
       await window.api.ftp.deleteFiles(this.config, remotePaths)
     } catch (error) {
-      console.error('FTP批量删除文件失败:', error)
-      throw new Error('批量删除文件失败')
+      console.error('FTP batch delete files failed:', error)
+      throw new Error('Failed to batch delete files')
     }
   }
 
@@ -102,7 +102,7 @@ class FtpService {
     try {
       return await window.api.ftp.testConnection(this.config)
     } catch (error) {
-      console.error('FTP连接测试失败:', error)
+      console.error('FTP connection test failed:', error)
       return false
     }
   }

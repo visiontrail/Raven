@@ -106,7 +106,8 @@ class LoggerService {
         filename: path.join(this.logsDir, 'app.%DATE%.log'),
         datePattern: 'YYYY-MM-DD',
         maxSize: '10m',
-        maxFiles: '30d'
+        maxFiles: '30d',
+        options: { encoding: 'utf8' }
       })
     )
 
@@ -117,7 +118,8 @@ class LoggerService {
         filename: path.join(this.logsDir, 'app-error.%DATE%.log'),
         datePattern: 'YYYY-MM-DD',
         maxSize: '10m',
-        maxFiles: '60d'
+        maxFiles: '60d',
+        options: { encoding: 'utf8' }
       })
     )
 
