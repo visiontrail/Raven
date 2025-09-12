@@ -201,10 +201,19 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
 
   // 直接下载文件
   const handleDirectDownload = async (file: DeviceLogFile) => {
+    console.log('[DeviceLogListView] Starting direct download:', {
+      fileId: file.id,
+      fileName: file.name,
+      filePath: file.path,
+      fileSize: file.size,
+      ftpConfig: FTP_CONFIG
+    })
+    
     setDownloadingFileIds((prev) => new Set(prev).add(file.id))
 
     try {
       // 弹出文件选择器
+      console.log('[DeviceLogListView] Opening file save dialog...')
       const result = await window.api.file.save('', '', {
         defaultPath: file.name,
         filters: [
@@ -213,25 +222,51 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
         ]
       })
 
-      if (result.canceled || !result.filePath) {
+      console.log('[DeviceLogListView] File save dialog result:', result)
+
+      if (!result) {
+        console.log('[DeviceLogListView] Download canceled by user')
         return
       }
 
+      const savePath = result // result is already the file path string
+
       // 从FTP下载文件
+      console.log('[DeviceLogListView] Starting FTP download...', {
+        remotePath: file.path,
+        localPath: savePath
+      })
+      
       message.info(`正在下载 ${file.name}...`)
       const ftpService = new FtpService(FTP_CONFIG)
-      await ftpService.downloadFile(file.path, result.filePath)
+      await ftpService.downloadFile(file.path, savePath)
 
+      console.log('[DeviceLogListView] Download completed successfully')
       message.success(`${file.name} 下载完成`)
     } catch (error) {
-      console.error('下载文件失败:', error)
-      message.error('下载文件失败')
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('[DeviceLogListView] 下载文件失败:', {
+        error: errorMessage,
+        fileId: file.id,
+        fileName: file.name,
+        filePath: file.path,
+        ftpConfig: FTP_CONFIG,
+        originalError: error
+      })
+      
+      // 显示更详细的错误信息
+      const userMessage = errorMessage.includes('FTP download failed') 
+        ? `下载失败: ${errorMessage}`
+        : `下载文件失败: ${errorMessage}`
+      
+      message.error(userMessage)
     } finally {
       setDownloadingFileIds((prev) => {
         const newSet = new Set(prev)
         newSet.delete(file.id)
         return newSet
       })
+      console.log('[DeviceLogListView] Download process finished for file:', file.id)
     }
   }
 

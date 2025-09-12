@@ -58,11 +58,23 @@ class FtpService {
    * @returns Promise<void>
    */
   async downloadFile(remotePath: string, localPath: string): Promise<void> {
+    console.log('[FtpService] Starting download:', { remotePath, localPath, config: this.config })
+    
     try {
       await window.api.ftp.downloadFile(this.config, remotePath, localPath)
+      console.log('[FtpService] Download completed successfully:', remotePath)
     } catch (error) {
-      console.error('FTP download file failed:', error)
-      throw new Error(`Failed to download file: ${remotePath}`)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('[FtpService] FTP download file failed:', {
+        error: errorMessage,
+        remotePath,
+        localPath,
+        config: this.config,
+        originalError: error
+      })
+      
+      // 保留原始错误信息
+      throw error instanceof Error ? error : new Error(`Failed to download file: ${remotePath} - ${errorMessage}`)
     }
   }
 

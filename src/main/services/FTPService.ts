@@ -236,9 +236,13 @@ export class FTPService implements IFTPService {
    */
   async downloadFile(ftpConfig: FTPConfig, remotePath: string, localPath: string): Promise<void> {
     const client = new FTPClient()
+    
+    logger.info(`Starting FTP download: ${remotePath} -> ${localPath}`)
+    logger.info(`FTP Config: host=${ftpConfig.host}, port=${ftpConfig.port}, user=${ftpConfig.username}`)
 
     try {
       // Connect to FTP server
+      logger.info('Connecting to FTP server...')
       await client.access({
         host: ftpConfig.host,
         port: ftpConfig.port,
@@ -246,20 +250,64 @@ export class FTPService implements IFTPService {
         password: ftpConfig.password,
         secure: false
       })
+      logger.info('FTP connection established successfully')
 
       // Ensure local directory exists
       const localDir = path.dirname(localPath)
+      logger.info(`Ensuring local directory exists: ${localDir}`)
       await fs.ensureDir(localDir)
 
+      // Check if remote file exists
+      logger.info(`Checking if remote file exists: ${remotePath}`)
+      try {
+        const fileInfo = await client.size(remotePath)
+        logger.info(`Remote file size: ${fileInfo} bytes`)
+      } catch (sizeError) {
+        logger.warn(`Could not get remote file size: ${sizeError}`)
+      }
+
       // Download the file
+      logger.info(`Starting file download: ${remotePath}`)
       await client.downloadTo(localPath, remotePath)
+      
+      // Verify downloaded file
+      const stats = await fs.stat(localPath)
+      logger.info(`Download completed. Local file size: ${stats.size} bytes`)
+      
+      if (stats.size === 0) {
+        throw new Error(`Downloaded file is empty (0 bytes). This may indicate the remote file doesn't exist or there was a transfer error.`)
+      }
 
       logger.info(`Successfully downloaded ${remotePath} to ${localPath}`)
     } catch (error) {
-      logger.error('FTP download failed:', error as Error)
-      throw error
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      logger.error(`FTP download failed for ${remotePath}:`, {
+        error: errorMessage,
+        remotePath,
+        localPath,
+        ftpHost: ftpConfig.host,
+        ftpPort: ftpConfig.port
+      })
+      
+      // Clean up empty file if it was created
+      try {
+        const stats = await fs.stat(localPath)
+        if (stats.size === 0) {
+          await fs.unlink(localPath)
+          logger.info(`Removed empty file: ${localPath}`)
+        }
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
+      
+      throw new Error(`FTP download failed: ${errorMessage}. Remote path: ${remotePath}, Local path: ${localPath}`)
     } finally {
-      client.close()
+      try {
+        client.close()
+        logger.info('FTP connection closed')
+      } catch (closeError) {
+        logger.warn('Error closing FTP connection:', closeError as Error)
+      }
     }
   }
 
