@@ -19,6 +19,12 @@ export interface FtpFileInfo {
   path: string
 }
 
+export interface FtpDownloadProgress {
+  bytesTransferred: number
+  totalBytes: number
+  percentage: number
+}
+
 class FtpService {
   private config: FtpConfig
 
@@ -55,14 +61,41 @@ class FtpService {
    * 从FTP服务器下载文件
    * @param remotePath 远程文件路径
    * @param localPath 本地保存路径
+   * @param onProgress 进度回调函数
    * @returns Promise<void>
    */
-  async downloadFile(remotePath: string, localPath: string): Promise<void> {
+  async downloadFile(
+    remotePath: string,
+    localPath: string,
+    onProgress?: (progress: FtpDownloadProgress) => void
+  ): Promise<void> {
     console.log('[FtpService] Starting download:', { remotePath, localPath, config: this.config })
     
     try {
-      await window.api.ftp.downloadFile(this.config, remotePath, localPath)
-      console.log('[FtpService] Download completed successfully:', remotePath)
+      // 如果有进度回调，设置事件监听器
+      let progressListener: ((event: any, data: any) => void) | null = null
+      
+      if (onProgress) {
+        progressListener = (_event: any, data: any) => {
+          if (data.remotePath === remotePath && data.localPath === localPath) {
+            onProgress(data.progress)
+          }
+        }
+        
+        // 监听进度事件
+        window.electron.ipcRenderer.on('ftp-download-progress', progressListener)
+      }
+      
+      try {
+        // 调用主进程下载，启用进度回调
+        await window.api.ftp.downloadFile(this.config, remotePath, localPath, !!onProgress)
+        console.log('[FtpService] Download completed successfully:', remotePath)
+      } finally {
+        // 清理事件监听器
+        if (progressListener) {
+          window.electron.ipcRenderer.removeListener('ftp-download-progress', progressListener)
+        }
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error('[FtpService] FTP download file failed:', {

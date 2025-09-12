@@ -785,9 +785,22 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
 
   // FTP Service
   ipcMain.handle(IpcChannel.FTP_ListFiles, (_, ftpConfig) => ftpService.listFiles(ftpConfig))
-  ipcMain.handle(IpcChannel.FTP_DownloadFile, (_, ftpConfig, remotePath, localPath) =>
-    ftpService.downloadFile(ftpConfig, remotePath, localPath)
-  )
+  ipcMain.handle(IpcChannel.FTP_DownloadFile, (event, ftpConfig, remotePath, localPath, enableProgress = false) => {
+    if (enableProgress) {
+      // 使用进度回调
+      return ftpService.downloadFile(ftpConfig, remotePath, localPath, (progress) => {
+        // 发送进度事件到渲染进程
+        event.sender.send('ftp-download-progress', {
+          remotePath,
+          localPath,
+          progress
+        })
+      })
+    } else {
+      // 不使用进度回调
+      return ftpService.downloadFile(ftpConfig, remotePath, localPath)
+    }
+  })
   ipcMain.handle(IpcChannel.FTP_DeleteFile, (_, ftpConfig, remotePath) => ftpService.deleteFile(ftpConfig, remotePath))
   ipcMain.handle(IpcChannel.FTP_DeleteFiles, (_, ftpConfig, remotePaths) =>
     ftpService.deleteFiles(ftpConfig, remotePaths)

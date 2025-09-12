@@ -13,6 +13,7 @@ import { FC, useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
+import DownloadProgressDialog from '../../components/DownloadProgressDialog'
 import FtpService from '../../services/FtpService'
 import { formatFileSize } from '../../utils'
 
@@ -47,6 +48,15 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [uploadingFileIds, setUploadingFileIds] = useState<Set<string>>(new Set())
   const [downloadingFileIds, setDownloadingFileIds] = useState<Set<string>>(new Set())
+  const [downloadProgress, setDownloadProgress] = useState<{
+    visible: boolean
+    fileName: string
+    progress: {
+      bytesTransferred: number
+      totalBytes: number
+      percentage: number
+    }
+  }>({ visible: false, fileName: '', progress: { bytesTransferred: 0, totalBytes: 0, percentage: 0 } })
 
   // 根据文件名判断日志类型
   const getLogType = useCallback((fileName: string): 'protocol' | 'oam_antenna' => {
@@ -231,18 +241,36 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
 
       const savePath = result // result is already the file path string
 
+      // 显示下载进度对话框
+      setDownloadProgress({
+        visible: true,
+        fileName: file.name,
+        progress: { bytesTransferred: 0, totalBytes: file.size, percentage: 0 }
+      })
+
       // 从FTP下载文件
       console.log('[DeviceLogListView] Starting FTP download...', {
         remotePath: file.path,
         localPath: savePath
       })
       
-      message.info(`正在下载 ${file.name}...`)
       const ftpService = new FtpService(FTP_CONFIG)
-      await ftpService.downloadFile(file.path, savePath)
+      await ftpService.downloadFile(file.path, savePath, (progress) => {
+        setDownloadProgress((prev) => ({
+          ...prev,
+          progress: {
+            bytesTransferred: progress.bytesTransferred,
+            totalBytes: progress.totalBytes,
+            percentage: progress.percentage
+          }
+        }))
+      })
 
       console.log('[DeviceLogListView] Download completed successfully')
       message.success(`${file.name} 下载完成`)
+      
+      // 隐藏进度对话框
+      setDownloadProgress((prev) => ({ ...prev, visible: false }))
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error('[DeviceLogListView] 下载文件失败:', {
@@ -260,6 +288,8 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
         : `下载文件失败: ${errorMessage}`
       
       message.error(userMessage)
+      // 隐藏进度对话框
+      setDownloadProgress((prev) => ({ ...prev, visible: false }))
     } finally {
       setDownloadingFileIds((prev) => {
         const newSet = new Set(prev)
@@ -442,6 +472,13 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
           </Button>
         </Empty>
       )}
+      
+      <DownloadProgressDialog
+        visible={downloadProgress.visible}
+        fileName={downloadProgress.fileName}
+        progress={downloadProgress.progress}
+        onCancel={() => setDownloadProgress((prev) => ({ ...prev, visible: false }))}
+      />
     </Container>
   )
 }

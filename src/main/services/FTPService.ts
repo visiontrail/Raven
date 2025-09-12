@@ -69,9 +69,15 @@ export interface IFTPService {
    * @param ftpConfig FTP configuration
    * @param remotePath Remote file path
    * @param localPath Local file path
+   * @param onProgress Progress callback
    * @returns Promise<void>
    */
-  downloadFile(ftpConfig: FTPConfig, remotePath: string, localPath: string): Promise<void>
+  downloadFile(
+    ftpConfig: FTPConfig,
+    remotePath: string,
+    localPath: string,
+    onProgress?: (progress: FTPUploadProgress) => void
+  ): Promise<void>
 
   /**
    * Delete a file from FTP server
@@ -234,7 +240,12 @@ export class FTPService implements IFTPService {
   /**
    * Download a file from FTP server
    */
-  async downloadFile(ftpConfig: FTPConfig, remotePath: string, localPath: string): Promise<void> {
+  async downloadFile(
+    ftpConfig: FTPConfig,
+    remotePath: string,
+    localPath: string,
+    onProgress?: (progress: FTPUploadProgress) => void
+  ): Promise<void> {
     const client = new FTPClient()
     
     logger.info(`Starting FTP download: ${remotePath} -> ${localPath}`)
@@ -257,13 +268,30 @@ export class FTPService implements IFTPService {
       logger.info(`Ensuring local directory exists: ${localDir}`)
       await fs.ensureDir(localDir)
 
-      // Check if remote file exists
+      // Get remote file size for progress tracking
+      let totalBytes = 0
       logger.info(`Checking if remote file exists: ${remotePath}`)
       try {
-        const fileInfo = await client.size(remotePath)
-        logger.info(`Remote file size: ${fileInfo} bytes`)
+        totalBytes = await client.size(remotePath)
+        logger.info(`Remote file size: ${totalBytes} bytes`)
       } catch (sizeError) {
         logger.warn(`Could not get remote file size: ${sizeError}`)
+      }
+
+      // Set up progress tracking if callback provided
+      if (onProgress && totalBytes > 0) {
+        client.trackProgress((info) => {
+          if (info) {
+            const bytesTransferred = info.bytes || 0
+            const percentage = Math.round((bytesTransferred / totalBytes) * 100)
+
+            onProgress({
+              bytesTransferred,
+              totalBytes,
+              percentage
+            })
+          }
+        })
       }
 
       // Download the file

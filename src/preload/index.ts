@@ -437,8 +437,8 @@ const api = {
   },
   ftp: {
     listFiles: (ftpConfig: any) => ipcRenderer.invoke(IpcChannel.FTP_ListFiles, ftpConfig),
-    downloadFile: (ftpConfig: any, remotePath: string, localPath: string) =>
-      ipcRenderer.invoke(IpcChannel.FTP_DownloadFile, ftpConfig, remotePath, localPath),
+    downloadFile: (ftpConfig: any, remotePath: string, localPath: string, enableProgress?: boolean) =>
+      ipcRenderer.invoke(IpcChannel.FTP_DownloadFile, ftpConfig, remotePath, localPath, enableProgress),
     deleteFile: (ftpConfig: any, remotePath: string) =>
       ipcRenderer.invoke(IpcChannel.FTP_DeleteFile, ftpConfig, remotePath),
     deleteFiles: (ftpConfig: any, remotePaths: string[]) =>
