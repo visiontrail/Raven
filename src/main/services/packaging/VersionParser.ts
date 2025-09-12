@@ -16,9 +16,7 @@ export class VersionParser {
    * 允许形如: d.d.d.d 或 d.d.d.d-YYYYMMDDHHMM / d.d.d.d.YYYYMMDDHHMM
    */
   static validateComponentVersion(version: string, componentType?: string): boolean {
-    const isCU = componentType
-      ? ['cucp', 'cuup', 'du', 's-gnb', 'sgnb'].includes(componentType.toLowerCase())
-      : false
+    const isCU = componentType ? ['cucp', 'cuup', 'du', 's-gnb', 'sgnb'].includes(componentType.toLowerCase()) : false
 
     const clean = version.replace(/^V/i, '')
 
@@ -82,7 +80,7 @@ export class VersionParser {
    * 猜测文件名中的组件类型
    */
   static detectComponentType(filename: string): 'cucp' | 'cuup' | 'du' | null {
-    const m = filename.toLowerCase().match(/(^|[_.\-])(cucp|cuup|du)(?=[_.\-]|\b)/)
+    const m = filename.toLowerCase().match(/(^|[_.-])(cucp|cuup|du)(?=[_.-]|\b)/)
     return (m?.[2] as 'cucp' | 'cuup' | 'du') || null
   }
 
@@ -96,7 +94,7 @@ export class VersionParser {
       const detected = this.detectComponentType(filename)
       if (detected !== null) return true
       // 额外支持包含 S-GNB 关键字的文件，按 CU 组件规则解析时间戳
-      if (/(^|[_.\-])s-?gnb(?=[_.\-]|\b)/i.test(filename)) return true
+      if (/(^|[_.-])s-?gnb(?=[_.-]|\b)/i.test(filename)) return true
       return false
     })()
 
@@ -104,7 +102,7 @@ export class VersionParser {
     if (isCUComponent) {
       const cuMatch = filename.match(/[vV]?(\d+)\.(\d+)\.(\d+)\.(\d+)[.-](\d{12})/)
       if (cuMatch) {
-        const [_, a, b, c, d, ts] = cuMatch
+        const [, a, b, c, d, ts] = cuMatch
         if (this.validateTimestamp(ts)) {
           // 统一输出为点分格式
           return `${a}.${b}.${c}.${d}.${ts}`

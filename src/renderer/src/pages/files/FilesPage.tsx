@@ -15,6 +15,7 @@ import { FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
+import DeviceLogListView from './DeviceLogListView'
 import FileList from './FileList'
 import LogListView from './LogListView'
 import PackageListView from './PackageListView'
@@ -75,6 +76,7 @@ const FilesPage: FC = () => {
     { key: FileTypes.TEXT, label: t('files.text'), icon: <FileTypeIcon size={16} /> },
     { key: FileTypes.PACKAGE, label: t('files.packages'), icon: <Package size={16} /> },
     { key: 'logs', label: t('files.logs'), icon: <FileText size={16} /> },
+    { key: 'device-logs', label: '设备日志', icon: <FileText size={16} /> },
     { key: 'all', label: t('files.all'), icon: <FileText size={16} /> }
   ]
 
@@ -100,6 +102,8 @@ const FilesPage: FC = () => {
             <PackageListView />
           ) : fileType === 'logs' ? (
             <LogListView />
+          ) : fileType === 'device-logs' ? (
+            <DeviceLogListView />
           ) : (
             <>
               <SortContainer>

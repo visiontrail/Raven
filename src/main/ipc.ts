@@ -23,6 +23,7 @@ import DxtService from './services/DxtService'
 import { ExportService } from './services/ExportService'
 import { fileStorage as fileManager } from './services/FileStorage'
 import FileService from './services/FileSystemService'
+import { ftpService } from './services/FTPService'
 import KnowledgeService from './services/KnowledgeService'
 import mcpService from './services/MCPService'
 import MemoryService from './services/memory/MemoryService'
@@ -781,4 +782,15 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
 
   // CodeTools
   ipcMain.handle(IpcChannel.CodeTools_Run, codeToolsService.run)
+
+  // FTP Service
+  ipcMain.handle(IpcChannel.FTP_ListFiles, (_, ftpConfig) => ftpService.listFiles(ftpConfig))
+  ipcMain.handle(IpcChannel.FTP_DownloadFile, (_, ftpConfig, remotePath, localPath) =>
+    ftpService.downloadFile(ftpConfig, remotePath, localPath)
+  )
+  ipcMain.handle(IpcChannel.FTP_DeleteFile, (_, ftpConfig, remotePath) => ftpService.deleteFile(ftpConfig, remotePath))
+  ipcMain.handle(IpcChannel.FTP_DeleteFiles, (_, ftpConfig, remotePaths) =>
+    ftpService.deleteFiles(ftpConfig, remotePaths)
+  )
+  ipcMain.handle(IpcChannel.FTP_TestConnection, (_, ftpConfig) => ftpService.testConnection(ftpConfig))
 }

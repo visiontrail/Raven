@@ -241,7 +241,7 @@ function getPackageTypeColor(type) {
 }
 
 // 加载统计信息
-/* async function loadStats() {
+async function loadStats() {
   try {
     const response = await fetch(`${PACKAGES_API}/stats/overview`)
     if (!response.ok) throw new Error('获取统计信息失败')
@@ -261,7 +261,7 @@ function getPackageTypeColor(type) {
     console.error('加载统计信息失败:', error)
     showAlert('加载统计信息失败', 'warning')
   }
-} */
+}
 
 // 加载包列表
 async function loadPackages(page = 1) {
@@ -381,7 +381,10 @@ function renderPackageList() {
                               const components = getComponentsArray(pkg.metadata?.components)
                               return components && components.length > 0
                                 ? components
-                                    .map((c) => `<span class="badge bg-success text-white package-type-badge">${c.name}</span>`)
+                                    .map(
+                                      (c) =>
+                                        `<span class="badge bg-success text-white package-type-badge">${c.name}</span>`
+                                    )
                                     .join(' ')
                                 : ''
                             })()}

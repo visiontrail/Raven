@@ -434,6 +434,16 @@ const api = {
       env: Record<string, string>,
       options?: { autoUpdateToLatest?: boolean }
     ) => ipcRenderer.invoke(IpcChannel.CodeTools_Run, cliTool, model, directory, env, options)
+  },
+  ftp: {
+    listFiles: (ftpConfig: any) => ipcRenderer.invoke(IpcChannel.FTP_ListFiles, ftpConfig),
+    downloadFile: (ftpConfig: any, remotePath: string, localPath: string) =>
+      ipcRenderer.invoke(IpcChannel.FTP_DownloadFile, ftpConfig, remotePath, localPath),
+    deleteFile: (ftpConfig: any, remotePath: string) =>
+      ipcRenderer.invoke(IpcChannel.FTP_DeleteFile, ftpConfig, remotePath),
+    deleteFiles: (ftpConfig: any, remotePaths: string[]) =>
+      ipcRenderer.invoke(IpcChannel.FTP_DeleteFiles, ftpConfig, remotePaths),
+    testConnection: (ftpConfig: any) => ipcRenderer.invoke(IpcChannel.FTP_TestConnection, ftpConfig)
   }
 }
 

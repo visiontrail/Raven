@@ -11,7 +11,7 @@ const LogListView: FC<LogListViewProps> = () => {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  
+
   const logUrl = 'http://172.16.9.224:8085/'
 
   const handleReload = () => {
@@ -20,7 +20,8 @@ const LogListView: FC<LogListViewProps> = () => {
     // Force iframe reload by updating the key
     const iframe = document.getElementById('log-iframe') as HTMLIFrameElement
     if (iframe) {
-      iframe.src = iframe.src
+      const currentSrc = iframe.src
+      iframe.src = currentSrc
     }
   }
 

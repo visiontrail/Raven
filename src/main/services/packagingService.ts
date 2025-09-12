@@ -447,14 +447,10 @@ class PackagingService {
       for (const [name, details] of Object.entries(allComponentsConfig)) {
         fileAttrToNameMap[(details as any).file_attr] = name
       }
-      let selectedComponentNames = foundAttrIds
-        .map((id) => fileAttrToNameMap[id])
-        .filter(Boolean) as string[]
+      let selectedComponentNames = foundAttrIds.map((id) => fileAttrToNameMap[id]).filter(Boolean) as string[]
       if (selectedComponentNames.length === 0) {
         // Fallback to selected component names from config when si.ini parsing yields nothing
-        selectedComponentNames = config.selected_components
-          .filter((c) => c.selected_file)
-          .map((c) => c.name)
+        selectedComponentNames = config.selected_components.filter((c) => c.selected_file).map((c) => c.name)
       }
 
       // Index the newly created package
@@ -531,10 +527,7 @@ class PackagingService {
 
     // Auto-detect version if not manually provided
     if (!component.version) {
-      const autoVersion = VersionParser.parseVersionFromFilename(
-        path.basename(sourceFile),
-        component.name
-      )
+      const autoVersion = VersionParser.parseVersionFromFilename(path.basename(sourceFile), component.name)
       if (autoVersion) {
         component.auto_version = VersionParser.formatVersion(autoVersion)
       }

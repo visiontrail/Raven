@@ -107,6 +107,13 @@ export enum IpcChannel {
   Package_ScanDirectory = 'package:scan-directory',
   Package_ExtractMetadata = 'package:extract-metadata',
 
+  // FTP
+  FTP_ListFiles = 'ftp:list-files',
+  FTP_DownloadFile = 'ftp:download-file',
+  FTP_DeleteFile = 'ftp:delete-file',
+  FTP_DeleteFiles = 'ftp:delete-files',
+  FTP_TestConnection = 'ftp:test-connection',
+
   //copilot
   Copilot_GetAuthMessage = 'copilot:get-auth-message',
   Copilot_GetCopilotToken = 'copilot:get-copilot-token',

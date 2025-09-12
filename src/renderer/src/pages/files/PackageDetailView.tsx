@@ -34,9 +34,9 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
 
   // Initialize form with current metadata
   const initializeForm = () => {
-    const normalizedComponents: string[] = (pkg.metadata.components || []).map((c: any) =>
-      typeof c === 'string' ? c : c?.name ? (c.version ? `${c.name}@${c.version}` : c.name) : ''
-    ).filter(Boolean)
+    const normalizedComponents: string[] = (pkg.metadata.components || [])
+      .map((c: any) => (typeof c === 'string' ? c : c?.name ? (c.version ? `${c.name}@${c.version}` : c.name) : ''))
+      .filter(Boolean)
 
     form.setFieldsValue({
       isPatch: pkg.metadata.isPatch,
@@ -60,18 +60,20 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
       setLoading(true)
 
       // denormalize components back to union type: string | { name, version? }
-      const denormalizedComponents = (values.components || []).map((item: any) => {
-        if (typeof item === 'string') {
-          // allow syntax "name@version" to capture version
-          const [namePart, versionPart] = item.split('@')
-          if (versionPart) {
-            return { name: namePart, version: versionPart }
+      const denormalizedComponents = (values.components || [])
+        .map((item: any) => {
+          if (typeof item === 'string') {
+            // allow syntax "name@version" to capture version
+            const [namePart, versionPart] = item.split('@')
+            if (versionPart) {
+              return { name: namePart, version: versionPart }
+            }
+            return namePart
           }
-          return namePart
-        }
-        if (item && typeof item === 'object') return item
-        return null
-      }).filter(Boolean)
+          if (item && typeof item === 'object') return item
+          return null
+        })
+        .filter(Boolean)
 
       const updatedMetadata: PackageMetadata = {
         ...pkg.metadata,
