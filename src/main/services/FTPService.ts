@@ -247,7 +247,7 @@ export class FTPService implements IFTPService {
     onProgress?: (progress: FTPUploadProgress) => void
   ): Promise<void> {
     const client = new FTPClient()
-    
+
     logger.info(`Starting FTP download: ${remotePath} -> ${localPath}`)
     logger.info(`FTP Config: host=${ftpConfig.host}, port=${ftpConfig.port}, user=${ftpConfig.username}`)
 
@@ -297,13 +297,15 @@ export class FTPService implements IFTPService {
       // Download the file
       logger.info(`Starting file download: ${remotePath}`)
       await client.downloadTo(localPath, remotePath)
-      
+
       // Verify downloaded file
       const stats = await fs.stat(localPath)
       logger.info(`Download completed. Local file size: ${stats.size} bytes`)
-      
+
       if (stats.size === 0) {
-        throw new Error(`Downloaded file is empty (0 bytes). This may indicate the remote file doesn't exist or there was a transfer error.`)
+        throw new Error(
+          `Downloaded file is empty (0 bytes). This may indicate the remote file doesn't exist or there was a transfer error.`
+        )
       }
 
       logger.info(`Successfully downloaded ${remotePath} to ${localPath}`)
@@ -316,7 +318,7 @@ export class FTPService implements IFTPService {
         ftpHost: ftpConfig.host,
         ftpPort: ftpConfig.port
       })
-      
+
       // Clean up empty file if it was created
       try {
         const stats = await fs.stat(localPath)
@@ -327,7 +329,7 @@ export class FTPService implements IFTPService {
       } catch (cleanupError) {
         // Ignore cleanup errors
       }
-      
+
       throw new Error(`FTP download failed: ${errorMessage}. Remote path: ${remotePath}, Local path: ${localPath}`)
     } finally {
       try {

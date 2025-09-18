@@ -17,12 +17,7 @@ export interface DownloadProgressDialogProps {
   onCancel?: () => void
 }
 
-const DownloadProgressDialog: FC<DownloadProgressDialogProps> = ({
-  visible,
-  fileName,
-  progress,
-  onCancel
-}) => {
+const DownloadProgressDialog: FC<DownloadProgressDialogProps> = ({ visible, fileName, progress, onCancel }) => {
   return (
     <Modal
       title="文件下载进度"
@@ -32,13 +27,12 @@ const DownloadProgressDialog: FC<DownloadProgressDialogProps> = ({
       closable={false}
       maskClosable={false}
       width={400}
-      centered
-    >
+      centered>
       <ProgressContainer>
         <FileNameContainer>
           <Text strong>{fileName}</Text>
         </FileNameContainer>
-        
+
         <Progress
           percent={progress.percentage}
           status="active"
@@ -48,7 +42,7 @@ const DownloadProgressDialog: FC<DownloadProgressDialogProps> = ({
           }}
           format={(percent) => `${percent}%`}
         />
-        
+
         <ProgressInfo>
           <Text type="secondary">
             {formatFileSize(progress.bytesTransferred)} / {formatFileSize(progress.totalBytes)}

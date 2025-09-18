@@ -161,6 +161,54 @@ export const builtinMCPServers: MCPServer[] = [
 ]
 
 /**
+ * 从MCP服务器配置中提取IP地址
+ * @param servers MCP服务器列表
+ * @param serverNamePattern 服务器名称匹配模式（支持部分匹配）
+ * @returns 提取到的IP地址，如果未找到则返回null
+ */
+export const extractIPFromMCPServer = (servers: MCPServer[], serverNamePattern: string): string | null => {
+  try {
+    // 查找匹配的服务器（支持部分匹配）
+    const targetServer = servers.find(
+      (server) => server.name && server.name.toLowerCase().includes(serverNamePattern.toLowerCase())
+    )
+
+    if (!targetServer || !targetServer.baseUrl) {
+      logger.warn(`未找到匹配的MCP服务器: ${serverNamePattern}`)
+      return null
+    }
+
+    // 从baseUrl中提取IP地址
+    const url = new URL(targetServer.baseUrl)
+    const hostname = url.hostname
+
+    // 验证是否为有效的IP地址格式
+    const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+    if (ipRegex.test(hostname)) {
+      logger.info(`从MCP服务器 "${targetServer.name}" 提取到IP地址: ${hostname}`)
+      return hostname
+    } else {
+      logger.warn(`MCP服务器 "${targetServer.name}" 的baseUrl不包含有效的IP地址: ${hostname}`)
+      return null
+    }
+  } catch (error) {
+    logger.error('提取IP地址时发生错误:', error as Error)
+    return null
+  }
+}
+
+/**
+ * 获取Satellite gNB OAM MCP Server的IP地址
+ * @param servers MCP服务器列表
+ * @param defaultIP 默认IP地址
+ * @returns IP地址
+ */
+export const getSatelliteGnbOamIP = (servers: MCPServer[], defaultIP: string = '172.77.245.1'): string => {
+  const extractedIP = extractIPFromMCPServer(servers, 'Satellite gNB OAM')
+  return extractedIP || defaultIP
+}
+
+/**
  * Utility function to add servers to the MCP store during app initialization
  * @param servers Array of MCP servers to add
  * @param dispatch Redux dispatch function

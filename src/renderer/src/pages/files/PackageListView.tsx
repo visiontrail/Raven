@@ -10,11 +10,12 @@ import { Button, Empty, Flex, Popconfirm, Table, Tag, Tooltip } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { Package as PackageIcon } from 'lucide-react'
-import { FC, useMemo, useState } from 'react'
+import { FC, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import { usePackages } from '../../hooks/usePackages'
+import { ipAddressService } from '../../services/IPAddressService'
 import { loggerService } from '../../services/LoggerService'
 import { Package, PackageType } from '../../types/package'
 import { formatFileSize } from '../../utils'
@@ -41,6 +42,11 @@ const PackageListView: FC<PackageListViewProps> = () => {
     field: 'created_at',
     order: 'desc'
   })
+
+  // Initialize IP address service
+  useEffect(() => {
+    ipAddressService.initialize()
+  }, [])
 
   // Filter and sort packages based on current filters and sorting
   const filteredAndSortedPackages = useMemo(() => {
@@ -151,14 +157,20 @@ const PackageListView: FC<PackageListViewProps> = () => {
 
   // Handle FTP upload
   const handleUploadToFTP = async (pkg: Package) => {
-    // Hardcoded FTP configuration
+    // 使用动态IP地址服务获取FTP配置
+    const dynamicFTPConfig = ipAddressService.getFTPConfig()
     const ftpConfig = {
-      host: '172.77.245.1',
+      host: dynamicFTPConfig.host, // 使用动态获取的IP地址
       port: 10002,
       username: 'anonymous',
       password: 'anonymous',
       remotePath: '/firmware'
     }
+
+    loggerService.info('使用动态IP地址进行FTP上传', {
+      host: ftpConfig.host,
+      packageName: pkg.name
+    })
 
     try {
       setUploadingPackageId(pkg.id)

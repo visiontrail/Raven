@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import { usePackages } from '../../hooks/usePackages'
+import { ipAddressService } from '../../services/IPAddressService'
 import { loggerService } from '../../services/LoggerService'
 import { HTTPConfig, Package, PackageMetadata, PackageType } from '../../types/package'
 import { formatFileSize } from '../../utils'
@@ -49,6 +50,8 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
 
   useEffect(() => {
     initializeForm()
+    // Initialize IP address service
+    ipAddressService.initialize()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pkg.id])
 
@@ -136,14 +139,20 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
 
   // Handle upload to device (FTP)
   const handleUploadToDevice = async () => {
-    // Hardcoded FTP configuration
+    // 使用动态IP地址服务获取FTP配置
+    const dynamicFTPConfig = ipAddressService.getFTPConfig()
     const ftpConfig = {
-      host: '172.77.245.1',
+      host: dynamicFTPConfig.host, // 使用动态获取的IP地址
       port: 10002,
       username: 'anonymous',
       password: 'anonymous',
       remotePath: '/firmware'
     }
+
+    loggerService.info('使用动态IP地址进行FTP上传', {
+      host: ftpConfig.host,
+      packageName: pkg.name
+    })
 
     // 创建提示词并设置状态
     const text = `将${pkg.name}对星载基带载荷进行重构任务`

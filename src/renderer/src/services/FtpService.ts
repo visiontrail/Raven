@@ -70,22 +70,22 @@ class FtpService {
     onProgress?: (progress: FtpDownloadProgress) => void
   ): Promise<void> {
     console.log('[FtpService] Starting download:', { remotePath, localPath, config: this.config })
-    
+
     try {
       // 如果有进度回调，设置事件监听器
       let progressListener: ((event: any, data: any) => void) | null = null
-      
+
       if (onProgress) {
         progressListener = (_event: any, data: any) => {
           if (data.remotePath === remotePath && data.localPath === localPath) {
             onProgress(data.progress)
           }
         }
-        
+
         // 监听进度事件
         window.electron.ipcRenderer.on('ftp-download-progress', progressListener)
       }
-      
+
       try {
         // 调用主进程下载，启用进度回调
         await window.api.ftp.downloadFile(this.config, remotePath, localPath, !!onProgress)
@@ -105,7 +105,7 @@ class FtpService {
         config: this.config,
         originalError: error
       })
-      
+
       // 保留原始错误信息
       throw error instanceof Error ? error : new Error(`Failed to download file: ${remotePath} - ${errorMessage}`)
     }

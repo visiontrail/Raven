@@ -218,7 +218,7 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
       fileSize: file.size,
       ftpConfig: FTP_CONFIG
     })
-    
+
     setDownloadingFileIds((prev) => new Set(prev).add(file.id))
 
     try {
@@ -253,7 +253,7 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
         remotePath: file.path,
         localPath: savePath
       })
-      
+
       const ftpService = new FtpService(FTP_CONFIG)
       await ftpService.downloadFile(file.path, savePath, (progress) => {
         setDownloadProgress((prev) => ({
@@ -268,7 +268,7 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
 
       console.log('[DeviceLogListView] Download completed successfully')
       message.success(`${file.name} 下载完成`)
-      
+
       // 隐藏进度对话框
       setDownloadProgress((prev) => ({ ...prev, visible: false }))
     } catch (error) {
@@ -281,12 +281,12 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
         ftpConfig: FTP_CONFIG,
         originalError: error
       })
-      
+
       // 显示更详细的错误信息
-      const userMessage = errorMessage.includes('FTP download failed') 
+      const userMessage = errorMessage.includes('FTP download failed')
         ? `下载失败: ${errorMessage}`
         : `下载文件失败: ${errorMessage}`
-      
+
       message.error(userMessage)
       // 隐藏进度对话框
       setDownloadProgress((prev) => ({ ...prev, visible: false }))
@@ -472,7 +472,7 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
           </Button>
         </Empty>
       )}
-      
+
       <DownloadProgressDialog
         visible={downloadProgress.visible}
         fileName={downloadProgress.fileName}

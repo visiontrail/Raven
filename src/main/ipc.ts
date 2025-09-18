@@ -608,6 +608,15 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
   ipcMain.handle(IpcChannel.Mcp_CheckConnectivity, mcpService.checkMcpConnectivity)
   ipcMain.handle(IpcChannel.Mcp_AbortTool, mcpService.abortTool)
   ipcMain.handle(IpcChannel.Mcp_GetServerVersion, mcpService.getServerVersion)
+  ipcMain.handle(IpcChannel.Mcp_GetSatelliteIP, async () => {
+    // 通过IPC向renderer进程请求MCP配置
+    return new Promise((resolve) => {
+      mainWindow.webContents.send('mcp:request-satellite-ip')
+      ipcMain.once('mcp:satellite-ip-response', (_, ip: string) => {
+        resolve(ip)
+      })
+    })
+  })
 
   // DXT upload handler
   ipcMain.handle(IpcChannel.Mcp_UploadDxt, async (event, fileBuffer: ArrayBuffer, fileName: string) => {

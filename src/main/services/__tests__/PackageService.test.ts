@@ -34,11 +34,27 @@ vi.mock('../FTPService', () => ({
   FTPUploadProgress: {}
 }))
 
+// Mock IPAddressService
+vi.mock('../IPAddressService', () => ({
+  mainIPAddressService: {
+    getCurrentIP: vi.fn().mockReturnValue('172.77.245.1'),
+    getFTPConfig: vi.fn().mockReturnValue({
+      host: '172.77.245.1',
+      port: 21,
+      user: 'anonymous',
+      password: 'anonymous@example.com'
+    }),
+    initialize: vi.fn().mockResolvedValue(undefined),
+    updateIPAddress: vi.fn().mockResolvedValue('172.77.245.1')
+  }
+}))
+
 // Import after mocking
 const { PackageService } = await import('../PackageService')
 const mockedFs = vi.mocked(await import('fs-extra'))
 const { extractMetadataFromTGZ: mockExtractMetadata } = vi.mocked(await import('../../utils/packageUtils'))
 const { ftpService: mockFtpService } = vi.mocked(await import('../FTPService'))
+const { mainIPAddressService } = vi.mocked(await import('../IPAddressService'))
 
 describe('PackageService', () => {
   // Use a more specific type
@@ -239,8 +255,10 @@ describe('PackageService', () => {
 
   describe('uploadPackageToFTP', () => {
     it('should return false when package does not exist', async () => {
+      // 使用动态IP地址服务获取FTP配置
+      const dynamicFTPConfig = mainIPAddressService.getFTPConfig()
       const ftpConfig = {
-        host: '172.77.245.1',
+        ...dynamicFTPConfig,
         port: 10002,
         username: 'anonymous',
         password: 'anonymous',
@@ -249,6 +267,9 @@ describe('PackageService', () => {
 
       const result = await packageService.uploadPackageToFTP('non-existent-id', ftpConfig)
       expect(result).toBe(false)
+
+      // 验证IP地址服务被调用
+      expect(mainIPAddressService.getFTPConfig).toHaveBeenCalled()
     })
 
     it('should handle FTP upload successfully', async () => {

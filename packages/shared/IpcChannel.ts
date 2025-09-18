@@ -84,6 +84,7 @@ export enum IpcChannel {
   Mcp_UploadDxt = 'mcp:upload-dxt',
   Mcp_AbortTool = 'mcp:abort-tool',
   Mcp_GetServerVersion = 'mcp:get-server-version',
+  Mcp_GetSatelliteIP = 'mcp:get-satellite-ip',
 
   // Python
   Python_Execute = 'python:execute',
