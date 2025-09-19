@@ -15,6 +15,7 @@ import styled from 'styled-components'
 
 import DownloadProgressDialog from '../../components/DownloadProgressDialog'
 import FtpService from '../../services/FtpService'
+import { ipAddressService } from '../../services/IPAddressService'
 import { formatFileSize } from '../../utils'
 
 // 设备日志文件接口
@@ -28,12 +29,16 @@ interface DeviceLogFile {
 }
 
 // FTP配置
-const FTP_CONFIG = {
-  host: '172.16.9.224',
-  port: 10002,
-  username: 'anonymous',
-  password: 'anonymous',
-  remotePath: '/logs'
+const getFTPConfig = () => {
+  // 使用动态IP地址服务获取FTP配置
+  const dynamicFTPConfig = ipAddressService.getFTPConfig()
+  return {
+    host: dynamicFTPConfig.host, // 使用动态获取的IP地址
+    port: 10002,
+    username: 'anonymous',
+    password: 'anonymous',
+    remotePath: '/logs'
+  }
 }
 
 // 日志服务器配置
@@ -57,6 +62,11 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
       percentage: number
     }
   }>({ visible: false, fileName: '', progress: { bytesTransferred: 0, totalBytes: 0, percentage: 0 } })
+
+  // 确保初始化动态IP服务
+  useEffect(() => {
+    ipAddressService.initialize()
+  }, [])
 
   // 根据文件名判断日志类型
   const getLogType = useCallback((fileName: string): 'protocol' | 'oam_antenna' => {
@@ -96,8 +106,9 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
     console.log('[DeviceLogListView] 开始获取文件列表...')
     setLoading(true)
     try {
-      console.log('[DeviceLogListView] FTP配置:', FTP_CONFIG)
-      const ftpService = new FtpService(FTP_CONFIG)
+      const ftpConfig = getFTPConfig()
+      console.log('[DeviceLogListView] FTP配置:', ftpConfig)
+      const ftpService = new FtpService(ftpConfig)
       console.log('[DeviceLogListView] 调用FTP服务listFiles...')
       const ftpFiles = await ftpService.listFiles()
       console.log('[DeviceLogListView] FTP返回的文件列表:', ftpFiles)
@@ -130,7 +141,7 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
   // 删除日志文件
   const handleDelete = async (file: DeviceLogFile) => {
     try {
-      const ftpService = new FtpService(FTP_CONFIG)
+      const ftpService = new FtpService(getFTPConfig())
       await ftpService.deleteFile(file.path)
 
       setFiles((prev) => prev.filter((f) => f.id !== file.id))
@@ -152,7 +163,7 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
       const selectedFiles = files.filter((f) => selectedRowKeys.includes(f.id))
       const remotePaths = selectedFiles.map((f) => f.path)
 
-      const ftpService = new FtpService(FTP_CONFIG)
+      const ftpService = new FtpService(getFTPConfig())
       await ftpService.deleteFiles(remotePaths)
 
       setFiles((prev) => prev.filter((f) => !selectedRowKeys.includes(f.id)))
@@ -169,7 +180,7 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
     setUploadingFileIds((prev) => new Set(prev).add(file.id))
 
     try {
-      const ftpService = new FtpService(FTP_CONFIG)
+      const ftpService = new FtpService(getFTPConfig())
 
       // 1. 从FTP下载文件到本地临时目录
       message.info(`正在从FTP下载 ${file.name}...`)
@@ -211,12 +222,13 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
 
   // 直接下载文件
   const handleDirectDownload = async (file: DeviceLogFile) => {
+    const ftpConfig = getFTPConfig()
     console.log('[DeviceLogListView] Starting direct download:', {
       fileId: file.id,
       fileName: file.name,
       filePath: file.path,
       fileSize: file.size,
-      ftpConfig: FTP_CONFIG
+      ftpConfig
     })
 
     setDownloadingFileIds((prev) => new Set(prev).add(file.id))
@@ -254,7 +266,7 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
         localPath: savePath
       })
 
-      const ftpService = new FtpService(FTP_CONFIG)
+      const ftpService = new FtpService(ftpConfig)
       await ftpService.downloadFile(file.path, savePath, (progress) => {
         setDownloadProgress((prev) => ({
           ...prev,
@@ -278,7 +290,7 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
         fileId: file.id,
         fileName: file.name,
         filePath: file.path,
-        ftpConfig: FTP_CONFIG,
+        ftpConfig,
         originalError: error
       })
 
