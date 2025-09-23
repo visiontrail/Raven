@@ -32,8 +32,8 @@ RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
     echo 'su-exec node npm start' >> /app/entrypoint.sh && \
     chmod +x /app/entrypoint.sh
 
-# 安装su-exec
-RUN apk add --no-cache su-exec
+# 安装su-exec和curl（用于健康检查）
+RUN apk add --no-cache su-exec curl
 
 # 暴露端口
 EXPOSE 8083
