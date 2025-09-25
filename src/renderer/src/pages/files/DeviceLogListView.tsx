@@ -5,7 +5,7 @@ import {
   ReloadOutlined,
   UploadOutlined
 } from '@ant-design/icons'
-import { Button, Empty, Flex, message, Popconfirm, Table, Tag, Tooltip } from 'antd'
+import { Button, Empty, Flex, message, Popconfirm, Progress, Table, Tag, Tooltip } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { FileText } from 'lucide-react'
@@ -26,6 +26,7 @@ interface DeviceLogFile {
   modifiedTime: Date
   type: 'protocol' | 'oam_antenna' // 协议栈日志 | OAM与天线日志
   path: string
+  uploadProgress?: number // 上传进度 0-100，undefined表示未上传
 }
 
 // FTP配置
@@ -321,6 +322,9 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
   const handleUploadAndProcess = async (file: DeviceLogFile) => {
     setUploadingFileIds((prev) => new Set(prev).add(file.id))
 
+    // 初始化进度为0
+    setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, uploadProgress: 0 } : f)))
+
     try {
       const ftpService = new FtpService(getFTPConfig())
 
@@ -346,11 +350,9 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
 
       console.log(`[DeviceLogUpload] 开始HTTP上传: ${file.name}`)
       const response = await uploadToLogServer(fileBlob, file.name, (progress) => {
-        if (progress % 10 === 0 || progress === 100) {
-          // 每10%显示一次进度
-          message.info(`上传进度: ${progress}%`)
-          console.log(`[DeviceLogUpload] 用户界面进度更新: ${progress}%`)
-        }
+        // 更新文件列表中的进度
+        setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, uploadProgress: progress } : f)))
+        console.log(`[DeviceLogUpload] 进度更新: ${progress}%`)
       })
 
       // 4. 检查响应
@@ -372,12 +374,18 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
       await window.api.file.delete(localPath)
       console.log(`[DeviceLogUpload] 临时文件删除成功`)
 
+      // 标记上传完成
+      setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, uploadProgress: 100 } : f)))
+
       console.log(`[DeviceLogUpload] 整个上传流程完成: ${file.name}`)
       message.success(`${file.name} 上传完成`)
     } catch (error) {
       console.error('上传并处理日志文件失败:', error)
       const errorMessage = error instanceof Error ? error.message : '未知错误'
       message.error(`上传失败: ${errorMessage}`)
+
+      // 清除进度
+      setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, uploadProgress: undefined } : f)))
     } finally {
       setUploadingFileIds((prev) => {
         const newSet = new Set(prev)
@@ -548,6 +556,28 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
       dataIndex: 'modifiedTime',
       key: 'modifiedTime',
       render: (modifiedTime: Date) => dayjs(modifiedTime).format('MM-DD HH:mm')
+    },
+    {
+      title: '上传进度',
+      dataIndex: 'uploadProgress',
+      key: 'uploadProgress',
+      width: 120,
+      render: (progress: number | undefined, record: DeviceLogFile) => {
+        if (uploadingFileIds.has(record.id)) {
+          return (
+            <Progress
+              percent={progress || 0}
+              size="small"
+              status={progress === 100 ? 'success' : 'active'}
+              showInfo={true}
+            />
+          )
+        }
+        if (progress === 100) {
+          return <Tag color="success">已上传</Tag>
+        }
+        return <span style={{ color: '#999' }}>-</span>
+      }
     },
     {
       title: t('files.actions'),
