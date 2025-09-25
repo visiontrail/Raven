@@ -42,7 +42,7 @@ const getFTPConfig = () => {
 }
 
 // 日志服务器配置
-const LOG_SERVER_URL = 'http://172.16.9.224:8085/upload'
+const LOG_SERVER_URL = 'http://172.16.9.224:8085/api/v1/logs/upload-simple'
 
 interface DeviceLogListViewProps {}
 
@@ -175,6 +175,148 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
     }
   }
 
+  // 文件验证函数
+  const validateLogFile = (fileName: string, fileSize: number) => {
+    // 检查文件扩展名
+    const allowedExtensions = ['.tgz', '.tar.gz']
+    const fileExtension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'))
+    if (!allowedExtensions.includes(fileExtension)) {
+      throw new Error(`不支持的文件格式: ${fileExtension}。支持的格式: ${allowedExtensions.join(', ')}`)
+    }
+
+    // 检查文件大小 (1GB = 1024 * 1024 * 1024 bytes)
+    const maxSize = 1024 * 1024 * 1024
+    if (fileSize > maxSize) {
+      throw new Error(`文件大小超过限制。最大支持 1GB，当前文件大小: ${(fileSize / 1024 / 1024).toFixed(2)} MB`)
+    }
+
+    // 检查文件名是否包含路径分隔符
+    if (fileName.includes('/') || fileName.includes('\\')) {
+      throw new Error('文件名不能包含路径分隔符')
+    }
+  }
+
+  // 上传文件到日志服务器
+  const uploadToLogServer = async (fileBlob: Blob, fileName: string, onProgress?: (progress: number) => void) => {
+    console.log(`[DeviceLogUpload] 开始上传到日志服务器: ${fileName}`)
+    console.log(`[DeviceLogUpload] 目标URL: ${LOG_SERVER_URL}`)
+    console.log(`[DeviceLogUpload] 文件大小: ${fileBlob.size} bytes (${(fileBlob.size / 1024 / 1024).toFixed(2)} MB)`)
+    console.log(`[DeviceLogUpload] 文件类型: ${fileBlob.type || 'unknown'}`)
+
+    return new Promise<Response>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      const startTime = Date.now()
+
+      // 监听上传进度
+      if (onProgress) {
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const progress = Math.round((event.loaded / event.total) * 100)
+            const elapsed = Date.now() - startTime
+            const speed = event.loaded / (elapsed / 1000) // bytes per second
+            const speedMB = (speed / 1024 / 1024).toFixed(2) // MB/s
+            console.log(
+              `[DeviceLogUpload] 上传进度: ${progress}% (${event.loaded}/${event.total} bytes) 速度: ${speedMB} MB/s`
+            )
+            onProgress(progress)
+          }
+        })
+      }
+
+      // 监听请求完成
+      xhr.addEventListener('load', () => {
+        const elapsed = Date.now() - startTime
+        console.log(`[DeviceLogUpload] HTTP响应状态: ${xhr.status} ${xhr.statusText}`)
+        console.log(`[DeviceLogUpload] 上传耗时: ${(elapsed / 1000).toFixed(2)} 秒`)
+        console.log(`[DeviceLogUpload] 响应头 Content-Type: ${xhr.getResponseHeader('Content-Type')}`)
+        console.log(`[DeviceLogUpload] 响应内容: ${xhr.responseText}`)
+
+        // 根据新接口规范，成功状态码应该是201
+        if (xhr.status === 201) {
+          try {
+            // 解析JSON响应
+            const response = JSON.parse(xhr.responseText)
+            console.log(`[DeviceLogUpload] 解析后的响应数据:`, response)
+
+            if (response.success === true) {
+              console.log(`[DeviceLogUpload] 上传成功: ${fileName}`)
+              console.log(`[DeviceLogUpload] 服务器返回消息: ${response.message}`)
+              if (response.data) {
+                console.log(`[DeviceLogUpload] 文件ID: ${response.data.id}`)
+                console.log(`[DeviceLogUpload] 存储文件名: ${response.data.filename}`)
+                console.log(`[DeviceLogUpload] 文件状态: ${response.data.status}`)
+                console.log(`[DeviceLogUpload] 下载URL: ${response.data.download_url}`)
+              }
+              resolve(
+                new Response(xhr.responseText, {
+                  status: xhr.status,
+                  statusText: xhr.statusText
+                })
+              )
+            } else {
+              console.error(`[DeviceLogUpload] 服务器返回失败状态: success=${response.success}`)
+              console.error(`[DeviceLogUpload] 错误消息: ${response.message || '未知错误'}`)
+              reject(new Error(`上传失败: ${response.message || '服务器返回失败状态'}`))
+            }
+          } catch (parseError) {
+            console.error(`[DeviceLogUpload] 解析响应JSON失败:`, parseError)
+            console.error(`[DeviceLogUpload] 原始响应内容: ${xhr.responseText}`)
+            reject(
+              new Error(`解析服务器响应失败: ${parseError instanceof Error ? parseError.message : String(parseError)}`)
+            )
+          }
+        } else {
+          console.error(`[DeviceLogUpload] 上传失败，HTTP状态码: ${xhr.status} ${xhr.statusText}`)
+          console.error(`[DeviceLogUpload] 期望状态码: 201，实际状态码: ${xhr.status}`)
+
+          // 尝试解析错误响应
+          try {
+            const errorResponse = JSON.parse(xhr.responseText)
+            console.error(`[DeviceLogUpload] 错误响应详情:`, errorResponse)
+            reject(new Error(`上传失败 (${xhr.status}): ${errorResponse.message || xhr.statusText}`))
+          } catch {
+            reject(new Error(`上传失败: ${xhr.status} ${xhr.statusText}`))
+          }
+        }
+      })
+
+      // 监听请求错误
+      xhr.addEventListener('error', () => {
+        console.error(`[DeviceLogUpload] 网络错误，上传失败`)
+        console.error(`[DeviceLogUpload] 可能的原因: 网络连接中断、服务器不可达、CORS问题等`)
+        reject(new Error('网络错误，上传失败'))
+      })
+
+      // 监听请求超时
+      xhr.addEventListener('timeout', () => {
+        console.error(`[DeviceLogUpload] 上传超时 (${xhr.timeout}ms)`)
+        console.error(`[DeviceLogUpload] 建议: 检查网络连接或增加超时时间`)
+        reject(new Error('上传超时'))
+      })
+
+      // 设置超时时间 (5分钟)
+      xhr.timeout = 5 * 60 * 1000
+
+      // 准备表单数据
+      const formData = new FormData()
+      formData.append('file', fileBlob, fileName)
+
+      console.log(`[DeviceLogUpload] 准备发送请求:`)
+      console.log(`[DeviceLogUpload] - 方法: POST`)
+      console.log(`[DeviceLogUpload] - URL: ${LOG_SERVER_URL}`)
+      console.log(`[DeviceLogUpload] - Content-Type: multipart/form-data (自动设置)`)
+      console.log(`[DeviceLogUpload] - 文件参数名: file`)
+      console.log(`[DeviceLogUpload] - 文件名: ${fileName}`)
+      console.log(`[DeviceLogUpload] - 超时时间: ${xhr.timeout}ms`)
+
+      // 发送请求
+      xhr.open('POST', LOG_SERVER_URL)
+      xhr.send(formData)
+
+      console.log(`[DeviceLogUpload] HTTP请求已发送，等待服务器响应...`)
+    })
+  }
+
   // 上传并处理日志文件
   const handleUploadAndProcess = async (file: DeviceLogFile) => {
     setUploadingFileIds((prev) => new Set(prev).add(file.id))
@@ -188,29 +330,54 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
       const localPath = `${tempDir}/${file.name}`
       await ftpService.downloadFile(file.path, localPath)
 
-      // 2. 上传到日志服务器
-      message.info(`正在上传 ${file.name} 到日志服务器...`)
-      const formData = new FormData()
-      const fileBlob = await fetch(`file://${localPath}`).then((r) => r.blob())
-      formData.append('file', fileBlob, file.name)
+      // 2. 读取文件并准备上传
+      message.info(`正在准备上传 ${file.name} 到日志服务器...`)
+      console.log(`[DeviceLogUpload] 开始读取本地文件: ${localPath}`)
 
-      const response = await fetch(LOG_SERVER_URL, {
-        method: 'POST',
-        body: formData
+      // 使用Electron API读取文件
+      const fileBuffer = await window.api.fs.read(localPath)
+      const fileBlob = new Blob([fileBuffer])
+
+      console.log(`[DeviceLogUpload] 文件读取成功，大小: ${fileBlob.size} bytes`)
+
+      // 验证文件
+      validateLogFile(file.name, fileBlob.size)
+      console.log(`[DeviceLogUpload] 文件验证通过: ${file.name}`)
+
+      console.log(`[DeviceLogUpload] 开始HTTP上传: ${file.name}`)
+      const response = await uploadToLogServer(fileBlob, file.name, (progress) => {
+        if (progress % 10 === 0 || progress === 100) {
+          // 每10%显示一次进度
+          message.info(`上传进度: ${progress}%`)
+          console.log(`[DeviceLogUpload] 用户界面进度更新: ${progress}%`)
+        }
       })
 
+      // 4. 检查响应
+      console.log(`[DeviceLogUpload] 检查HTTP响应状态`)
       if (!response.ok) {
-        throw new Error(`上传失败: ${response.statusText}`)
+        const errorText = await response.text()
+        console.error(`[DeviceLogUpload] HTTP响应错误: ${response.status} ${response.statusText} - ${errorText}`)
+        throw new Error(`上传失败: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`)
       }
 
-      // 3. 删除本地临时文件
+      // 5. 解析响应结果
+      console.log(`[DeviceLogUpload] 解析服务器响应`)
+      const result = await response.json().catch(() => ({}))
+      console.log(`[DeviceLogUpload] 服务器响应解析成功:`, result)
+
+      // 6. 删除本地临时文件
+      console.log(`[DeviceLogUpload] 清理本地临时文件: ${localPath}`)
       message.info(`正在清理本地临时文件...`)
       await window.api.file.delete(localPath)
+      console.log(`[DeviceLogUpload] 临时文件删除成功`)
 
-      message.success(`${file.name} 处理完成`)
+      console.log(`[DeviceLogUpload] 整个上传流程完成: ${file.name}`)
+      message.success(`${file.name} 上传完成`)
     } catch (error) {
       console.error('上传并处理日志文件失败:', error)
-      message.error('上传并处理日志文件失败')
+      const errorMessage = error instanceof Error ? error.message : '未知错误'
+      message.error(`上传失败: ${errorMessage}`)
     } finally {
       setUploadingFileIds((prev) => {
         const newSet = new Set(prev)
