@@ -27,8 +27,8 @@ export type SSHCredentials = {
 class TimeSyncService {
   private syncedHosts: Set<string> = new Set()
 
-  /** one-shot sync with basic de-duplication per run */
-  public async syncHostTime(credentials: SSHCredentials): Promise<void> {
+  /** one-shot sync with basic de-duplication per run. returns true on success */
+  public async syncHostTime(credentials: SSHCredentials): Promise<boolean> {
     const logData = {
       host: credentials.host,
       port: credentials.port || 22,
@@ -43,7 +43,7 @@ class TimeSyncService {
     if (this.syncedHosts.has(hostKey)) {
       logger.debug(`Skip time sync, already synced in this session: ${hostKey}`)
       console.log(`[TimeSync] Skip time sync, already synced in this session: ${hostKey}`)
-      return
+      return true
     }
 
     try {
@@ -114,7 +114,7 @@ class TimeSyncService {
               console.warn(
                 '[TimeSync] plink.exe not found on Windows. Please install PuTTY and ensure plink is in PATH, or switch to key-based auth.'
               )
-              return
+              return false
             }
 
             // Write remote script to a temp file to avoid complex cmd quoting
@@ -139,7 +139,7 @@ class TimeSyncService {
             } catch {
               logger.warn('[TimeSync] sshpass not found. Install sshpass or use key-based auth.')
               console.warn('[TimeSync] sshpass not found. Install sshpass or use key-based auth.')
-              return
+              return false
             }
             command = `sshpass -p '${credentials.password.replace(/'/g, "'\\''")}' ssh ${sshArgs.join(' ')} ${targetUser} '${remoteScript.replace(/'/g, "'\\''")}'`
           }
@@ -178,9 +178,11 @@ class TimeSyncService {
       this.syncedHosts.add(hostKey)
       logger.info(`Time sync success for ${targetUser}`)
       console.log(`[TimeSync] Time sync success for ${targetUser}`)
+      return true
     } catch (error) {
       logger.warn('Time sync failed:', error as Error)
       console.error('[TimeSync] Time sync failed:', error)
+      return false
     }
   }
 
@@ -229,7 +231,64 @@ class TimeSyncService {
       logger.info('[TimeSync] Resolved SSH credentials (sanitized)', credentialsData)
       console.log('[TimeSync] Resolved SSH credentials (sanitized)', credentialsData)
 
-      await this.syncHostTime({ host, port, username, password, privateKeyPath, useSudo })
+      const sshSuccess = await this.syncHostTime({ host, port, username, password, privateKeyPath, useSudo })
+      if (!sshSuccess) {
+        // Fallback: POST /sync_time to MCP HTTP server if available
+        if (!server.baseUrl) {
+          logger.warn('[TimeSync] SSH failed and no baseUrl available for HTTP fallback; skip')
+          console.warn('[TimeSync] SSH failed and no baseUrl available for HTTP fallback; skip')
+          return
+        }
+        const base = server.baseUrl.replace(/\/$/, '')
+        const endpoint = `${base}/sync_time`
+        const now = new Date()
+        const epochSeconds = Math.floor(now.getTime() / 1000)
+        const payload = {
+          timestamp: epochSeconds,
+          format: 'unix',
+          timezone: 'UTC'
+        }
+        logger.info('[TimeSync] Attempt HTTP fallback to /sync_time', { endpoint, payload })
+        console.log('[TimeSync] Attempt HTTP fallback to /sync_time', { endpoint, payload })
+
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json'
+        }
+        if ((server as any).headers) {
+          Object.assign(headers, (server as any).headers)
+        }
+
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), 10_000)
+        try {
+          const resp = await fetch(endpoint, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          })
+          clearTimeout(timer)
+          const text = await resp.text()
+          let json: any = null
+          try {
+            json = JSON.parse(text)
+          } catch {
+            // response not JSON; keep raw text
+          }
+          if (resp.ok) {
+            logger.info('[TimeSync] HTTP fallback success', { status: resp.status, body: json ?? text })
+            console.log('[TimeSync] HTTP fallback success', { status: resp.status, body: json ?? text })
+            const hostKey = `${username}@${host}:${port}`
+            this.syncedHosts.add(hostKey)
+          } else {
+            logger.warn('[TimeSync] HTTP fallback failed', { status: resp.status, body: json ?? text })
+            console.warn('[TimeSync] HTTP fallback failed', { status: resp.status, body: json ?? text })
+          }
+        } catch (err) {
+          logger.warn('[TimeSync] HTTP fallback error', err as Error)
+          console.warn('[TimeSync] HTTP fallback error', err)
+        }
+      }
     } catch (e) {
       logger.warn('syncIfTarget error:', e as Error)
       console.error('[TimeSync] syncIfTarget error:', e)
