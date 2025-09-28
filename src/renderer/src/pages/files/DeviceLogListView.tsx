@@ -24,7 +24,7 @@ interface DeviceLogFile {
   name: string
   size: number
   modifiedTime: Date
-  type: 'protocol' | 'oam_antenna' // 协议栈日志 | OAM与天线日志
+  type: 'protocol' | 'oam_antenna' | 'full' // 协议栈日志 | OAM与天线日志 | 完整日志
   path: string
   uploadProgress?: number // 上传进度 0-100，undefined表示未上传
 }
@@ -43,7 +43,7 @@ const getFTPConfig = () => {
 }
 
 // 日志服务器配置
-const LOG_SERVER_URL = 'http://172.16.9.224:8085/api/v1/logs/upload-simple'
+const LOG_SERVER_URL = 'http://172.16.9.224:8085/api/v1/logs/upload'
 
 interface DeviceLogListViewProps {}
 
@@ -70,8 +70,25 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
   }, [])
 
   // 根据文件名判断日志类型
-  const getLogType = useCallback((fileName: string): 'protocol' | 'oam_antenna' => {
+  const getLogType = useCallback((fileName: string): 'protocol' | 'oam_antenna' | 'full' => {
     const lowerName = fileName.toLowerCase()
+
+    // 检查是否包含stack关键字
+    const hasStack = lowerName.includes('stack')
+
+    // 检查是否包含om或oam关键字
+    const hasOam = lowerName.includes('om') || lowerName.includes('oam')
+
+    // 根据包含的关键字判断类型
+    if (hasStack && hasOam) {
+      return 'full' // 既包含stack又包含om/oam
+    } else if (hasStack) {
+      return 'protocol' // 只包含stack，映射为protocol类型
+    } else if (hasOam) {
+      return 'oam_antenna' // 只包含om/oam
+    }
+
+    // 默认情况：如果都不包含，则根据原有逻辑判断
     if (lowerName.includes('protocol') || lowerName.includes('协议栈')) {
       return 'protocol'
     }
@@ -79,24 +96,28 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
   }, [])
 
   // 获取日志类型标签颜色
-  const getLogTypeColor = (type: 'protocol' | 'oam_antenna'): string => {
+  const getLogTypeColor = (type: 'protocol' | 'oam_antenna' | 'full'): string => {
     switch (type) {
       case 'protocol':
         return 'blue'
       case 'oam_antenna':
         return 'green'
+      case 'full':
+        return 'purple'
       default:
         return 'default'
     }
   }
 
   // 获取日志类型标签文本
-  const getLogTypeText = (type: 'protocol' | 'oam_antenna'): string => {
+  const getLogTypeText = (type: 'protocol' | 'oam_antenna' | 'full'): string => {
     switch (type) {
       case 'protocol':
         return '协议栈日志'
       case 'oam_antenna':
         return 'OAM与天线日志'
+      case 'full':
+        return '完整日志'
       default:
         return '未知类型'
     }
@@ -198,7 +219,12 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
   }
 
   // 上传文件到日志服务器
-  const uploadToLogServer = async (fileBlob: Blob, fileName: string, onProgress?: (progress: number) => void) => {
+  const uploadToLogServer = async (
+    fileBlob: Blob,
+    fileName: string,
+    logType: 'protocol' | 'oam_antenna' | 'full' = 'protocol',
+    onProgress?: (progress: number) => void
+  ) => {
     console.log(`[DeviceLogUpload] 开始上传到日志服务器: ${fileName}`)
     console.log(`[DeviceLogUpload] 目标URL: ${LOG_SERVER_URL}`)
     console.log(`[DeviceLogUpload] 文件大小: ${fileBlob.size} bytes (${(fileBlob.size / 1024 / 1024).toFixed(2)} MB)`)
@@ -302,12 +328,38 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
       const formData = new FormData()
       formData.append('file', fileBlob, fileName)
 
+      // 根据文件类型设置log_type参数
+      let apiLogType: string
+      switch (logType) {
+        case 'protocol':
+          apiLogType = 'stack'
+          break
+        case 'oam_antenna':
+          apiLogType = 'oam_antenna'
+          break
+        case 'full':
+          apiLogType = 'full'
+          break
+        default:
+          apiLogType = 'stack'
+      }
+      formData.append('log_type', apiLogType)
+
+      // 设置默认的log_level
+      formData.append('log_level', 'info')
+
+      // 添加问题描述字段（可为空）
+      formData.append('issue_description', '')
+
       console.log(`[DeviceLogUpload] 准备发送请求:`)
       console.log(`[DeviceLogUpload] - 方法: POST`)
       console.log(`[DeviceLogUpload] - URL: ${LOG_SERVER_URL}`)
       console.log(`[DeviceLogUpload] - Content-Type: multipart/form-data (自动设置)`)
       console.log(`[DeviceLogUpload] - 文件参数名: file`)
       console.log(`[DeviceLogUpload] - 文件名: ${fileName}`)
+      console.log(`[DeviceLogUpload] - 日志类型: ${apiLogType}`)
+      console.log(`[DeviceLogUpload] - 日志级别: info`)
+      console.log(`[DeviceLogUpload] - 问题描述: (空)`)
       console.log(`[DeviceLogUpload] - 超时时间: ${xhr.timeout}ms`)
 
       // 发送请求
@@ -349,7 +401,10 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
       console.log(`[DeviceLogUpload] 文件验证通过: ${file.name}`)
 
       console.log(`[DeviceLogUpload] 开始HTTP上传: ${file.name}`)
-      const response = await uploadToLogServer(fileBlob, file.name, (progress) => {
+      // 根据文件名自动判断日志类型
+      const autoDetectedLogType = getLogType(file.name)
+      console.log(`[DeviceLogUpload] 自动检测的日志类型: ${autoDetectedLogType}`)
+      const response = await uploadToLogServer(fileBlob, file.name, autoDetectedLogType, (progress) => {
         // 更新文件列表中的进度
         setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, uploadProgress: progress } : f)))
         console.log(`[DeviceLogUpload] 进度更新: ${progress}%`)
@@ -543,7 +598,9 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
       title: '日志类型',
       dataIndex: 'type',
       key: 'type',
-      render: (type: 'protocol' | 'oam_antenna') => <Tag color={getLogTypeColor(type)}>{getLogTypeText(type)}</Tag>
+      render: (type: 'protocol' | 'oam_antenna' | 'full') => (
+        <Tag color={getLogTypeColor(type)}>{getLogTypeText(type)}</Tag>
+      )
     },
     {
       title: t('files.size'),
