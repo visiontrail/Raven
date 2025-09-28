@@ -441,6 +441,17 @@ export async function fetchChatCompletion({
     assistant.prompt = await replacePromptVariables(assistant.prompt, assistant.model?.name)
   }
 
+  // 在对话上下文中追加当前系统时间（精确到毫秒），帮助模型感知当前时间
+  try {
+    const now = new Date()
+    const pad = (n: number, w = 2) => n.toString().padStart(w, '0')
+    const formatted = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}.${pad(now.getMilliseconds(), 3)}`
+    const timeLine = `Current system time: ${formatted}`
+    assistant.prompt = assistant.prompt ? `${assistant.prompt}\n${timeLine}` : timeLine
+  } catch (e) {
+    logger.warn('Failed to append time context to system prompt', e as Error)
+  }
+
   const provider = getAssistantProvider(assistant)
   const AI = new AiProvider(provider)
 
