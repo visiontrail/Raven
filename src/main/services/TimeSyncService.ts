@@ -26,17 +26,20 @@ class TimeSyncService {
 
   /** one-shot sync with basic de-duplication per run */
   public async syncHostTime(credentials: SSHCredentials): Promise<void> {
-    logger.info('[TimeSync] Enter syncHostTime', {
+    const logData = {
       host: credentials.host,
       port: credentials.port || 22,
       username: credentials.username || 'root',
       hasPassword: !!credentials.password,
       hasPrivateKey: !!credentials.privateKeyPath,
       useSudo: credentials.useSudo !== false
-    })
+    }
+    logger.info('[TimeSync] Enter syncHostTime', logData)
+    console.log('[TimeSync] Enter syncHostTime', logData)
     const hostKey = `${credentials.username || 'auto'}@${credentials.host}:${credentials.port || 22}`
     if (this.syncedHosts.has(hostKey)) {
       logger.debug(`Skip time sync, already synced in this session: ${hostKey}`)
+      console.log(`[TimeSync] Skip time sync, already synced in this session: ${hostKey}`)
       return
     }
 
@@ -52,10 +55,12 @@ class TimeSyncService {
       const dateString = `${yyyy}-${mm}-${dd} ${HH}:${MM}:${SS}`
 
       const useSudo = credentials.useSudo !== false // default true
-      logger.debug('[TimeSync] Computed local time string', {
+      const timeData = {
         dateString,
         epochSeconds: Math.floor(local.getTime() / 1000)
-      })
+      }
+      logger.debug('[TimeSync] Computed local time string', timeData)
+      console.log('[TimeSync] Computed local time string', timeData)
 
       // Remote command tries:
       // 1) timedatectl set-ntp false; timedatectl set-time 'YYYY-MM-DD HH:MM:SS'
@@ -82,11 +87,13 @@ class TimeSyncService {
         sshArgs.push('-i', credentials.privateKeyPath)
       }
       const targetUser = credentials.username ? `${credentials.username}@${credentials.host}` : credentials.host
-      logger.debug('[TimeSync] SSH invocation prepared', {
+      const sshData = {
         targetUser,
         sshArgs,
         transport: credentials.password ? 'sshpass+ssh' : 'ssh'
-      })
+      }
+      logger.debug('[TimeSync] SSH invocation prepared', sshData)
+      console.log('[TimeSync] SSH invocation prepared', sshData)
 
       let command = ''
       if (credentials.password) {
@@ -97,32 +104,46 @@ class TimeSyncService {
       }
 
       logger.info(`Sync time via SSH to ${targetUser}`)
+      console.log(`[TimeSync] Sync time via SSH to ${targetUser}`)
       const { stdout, stderr } = await execAsync(command, { timeout: 20_000, maxBuffer: 10 * 1024 * 1024 })
-      if (stdout) logger.debug(`[SSH][stdout] ${stdout}`)
-      if (stderr) logger.debug(`[SSH][stderr] ${stderr}`)
+      if (stdout) {
+        logger.debug(`[SSH][stdout] ${stdout}`)
+        console.log(`[TimeSync][SSH][stdout] ${stdout}`)
+      }
+      if (stderr) {
+        logger.debug(`[SSH][stderr] ${stderr}`)
+        console.log(`[TimeSync][SSH][stderr] ${stderr}`)
+      }
       this.syncedHosts.add(hostKey)
       logger.info(`Time sync success for ${targetUser}`)
+      console.log(`[TimeSync] Time sync success for ${targetUser}`)
     } catch (error) {
       logger.warn('Time sync failed:', error as Error)
+      console.error('[TimeSync] Time sync failed:', error)
     }
   }
 
   /** Pull credentials from MCPServer.env/process.env and perform sync when baseUrl host matches */
   public async syncIfTarget(server: MCPServer, targetHost: string) {
     try {
-      logger.info('[TimeSync] Enter syncIfTarget', {
+      const syncData = {
         serverName: server.name,
         baseUrl: server.baseUrl,
         targetHost
-      })
+      }
+      logger.info('[TimeSync] Enter syncIfTarget', syncData)
+      console.log('[TimeSync] Enter syncIfTarget', syncData)
       const host = this.extractHost(server)
       logger.debug('[TimeSync] Extracted host', { host })
+      console.log('[TimeSync] Extracted host', { host })
       if (!host) {
         logger.info('[TimeSync] No host extracted; skip time sync')
+        console.log('[TimeSync] No host extracted; skip time sync')
         return
       }
       if (host !== targetHost) {
         logger.info('[TimeSync] Host does not match target; skip time sync', { host, targetHost })
+        console.log('[TimeSync] Host does not match target; skip time sync', { host, targetHost })
         return
       }
 
@@ -136,18 +157,21 @@ class TimeSyncService {
         : process.env.SSH_USE_SUDO
           ? process.env.SSH_USE_SUDO === 'true'
           : true
-      logger.info('[TimeSync] Resolved SSH credentials (sanitized)', {
+      const credentialsData = {
         host,
         port,
         username,
         hasPassword: !!password,
         hasPrivateKey: !!privateKeyPath,
         useSudo
-      })
+      }
+      logger.info('[TimeSync] Resolved SSH credentials (sanitized)', credentialsData)
+      console.log('[TimeSync] Resolved SSH credentials (sanitized)', credentialsData)
 
       await this.syncHostTime({ host, port, username, password, privateKeyPath, useSudo })
     } catch (e) {
       logger.warn('syncIfTarget error:', e as Error)
+      console.error('[TimeSync] syncIfTarget error:', e)
     }
   }
 
