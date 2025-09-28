@@ -1,4 +1,7 @@
 import { exec } from 'node:child_process'
+import { promises as fs } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 
 import { loggerService } from '@logger'
@@ -96,23 +99,81 @@ class TimeSyncService {
       console.log('[TimeSync] SSH invocation prepared', sshData)
 
       let command = ''
-      if (credentials.password) {
-        // Requires sshpass installed on host running this app
-        command = `sshpass -p '${credentials.password.replace(/'/g, "'\\''")}' ssh ${sshArgs.join(' ')} ${targetUser} '${remoteScript.replace(/'/g, "'\\''")}'`
-      } else {
-        command = `ssh ${sshArgs.join(' ')} ${targetUser} '${remoteScript.replace(/'/g, "'\\''")}'`
-      }
+      let tempScriptPath: string | null = null
 
-      logger.info(`Sync time via SSH to ${targetUser}`)
-      console.log(`[TimeSync] Sync time via SSH to ${targetUser}`)
-      const { stdout, stderr } = await execAsync(command, { timeout: 20_000, maxBuffer: 10 * 1024 * 1024 })
-      if (stdout) {
-        logger.debug(`[SSH][stdout] ${stdout}`)
-        console.log(`[TimeSync][SSH][stdout] ${stdout}`)
-      }
-      if (stderr) {
-        logger.debug(`[SSH][stderr] ${stderr}`)
-        console.log(`[TimeSync][SSH][stderr] ${stderr}`)
+      try {
+        if (credentials.password) {
+          if (process.platform === 'win32') {
+            // On Windows, prefer PuTTY plink with -pw to support password auth
+            try {
+              await execAsync('plink -V', { timeout: 5_000 })
+            } catch {
+              logger.warn(
+                '[TimeSync] plink.exe not found on Windows. Please install PuTTY and ensure plink is in PATH, or switch to key-based auth.'
+              )
+              console.warn(
+                '[TimeSync] plink.exe not found on Windows. Please install PuTTY and ensure plink is in PATH, or switch to key-based auth.'
+              )
+              return
+            }
+
+            // Write remote script to a temp file to avoid complex cmd quoting
+            tempScriptPath = join(tmpdir(), `raven-timesync-${Date.now()}.sh`)
+            await fs.writeFile(tempScriptPath, `${remoteScript}\n`, { encoding: 'utf8' })
+
+            const port = credentials.port || 22
+            const username = credentials.username || 'root'
+            const host = credentials.host
+            const password = credentials.password
+
+            // Accept unknown host key automatically (similar to StrictHostKeyChecking=no)
+            // Pipe a single 'y' to plink if host key not cached; -batch keeps it non-interactive otherwise
+            command = `echo y | plink -ssh -batch -P ${port} -l ${username} -pw "${password.replace(/"/g, '\\"')}" ${host} -m "${tempScriptPath}"`
+
+            // Ensure UTF-8 code page to avoid garbled Chinese output
+            command = `chcp 65001>nul & ${command}`
+          } else {
+            // Non-Windows: use sshpass if available
+            try {
+              await execAsync('sshpass -V', { timeout: 5_000 })
+            } catch {
+              logger.warn('[TimeSync] sshpass not found. Install sshpass or use key-based auth.')
+              console.warn('[TimeSync] sshpass not found. Install sshpass or use key-based auth.')
+              return
+            }
+            command = `sshpass -p '${credentials.password.replace(/'/g, "'\\''")}' ssh ${sshArgs.join(' ')} ${targetUser} '${remoteScript.replace(/'/g, "'\\''")}'`
+          }
+        } else {
+          // Key/agent based auth
+          command = `ssh ${sshArgs.join(' ')} ${targetUser} '${remoteScript.replace(/'/g, "'\\''")}'`
+          if (process.platform === 'win32') {
+            command = `chcp 65001>nul & ${command}`
+          }
+        }
+
+        logger.info(`Sync time via SSH to ${targetUser}`)
+        console.log(`[TimeSync] Sync time via SSH to ${targetUser}`)
+
+        const { stdout, stderr } = await execAsync(command, {
+          timeout: 20_000,
+          maxBuffer: 10 * 1024 * 1024
+        })
+        if (stdout) {
+          logger.debug(`[SSH][stdout] ${stdout}`)
+          console.log(`[TimeSync][SSH][stdout] ${stdout}`)
+        }
+        if (stderr) {
+          logger.debug(`[SSH][stderr] ${stderr}`)
+          console.log(`[TimeSync][SSH][stderr] ${stderr}`)
+        }
+      } finally {
+        if (tempScriptPath) {
+          try {
+            await fs.unlink(tempScriptPath)
+          } catch {
+            // ignore
+          }
+        }
       }
       this.syncedHosts.add(hostKey)
       logger.info(`Time sync success for ${targetUser}`)
