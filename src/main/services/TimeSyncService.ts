@@ -239,8 +239,18 @@ class TimeSyncService {
           console.warn('[TimeSync] SSH failed and no baseUrl available for HTTP fallback; skip')
           return
         }
-        const base = server.baseUrl.replace(/\/$/, '')
-        const endpoint = `${base}/sync_time`
+        const baseUrlString = server.baseUrl
+        let endpoint = ''
+        try {
+          const urlObj = new URL(baseUrlString)
+          urlObj.protocol = 'http:'
+          urlObj.port = '8090'
+          urlObj.pathname = '/sync_time'
+          urlObj.search = ''
+          endpoint = urlObj.toString()
+        } catch {
+          endpoint = `http://${host}:8090/sync_time`
+        }
         const now = new Date()
         const epochSeconds = Math.floor(now.getTime() / 1000)
         const payload = {
