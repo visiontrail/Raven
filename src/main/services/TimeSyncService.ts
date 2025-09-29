@@ -47,20 +47,20 @@ class TimeSyncService {
     }
 
     try {
-      const local = new Date()
-      // Format as YYYY-MM-DD HH:MM:SS (24h)
-      const yyyy = local.getFullYear()
-      const mm = `${local.getMonth() + 1}`.padStart(2, '0')
-      const dd = `${local.getDate()}`.padStart(2, '0')
-      const HH = `${local.getHours()}`.padStart(2, '0')
-      const MM = `${local.getMinutes()}`.padStart(2, '0')
-      const SS = `${local.getSeconds()}`.padStart(2, '0')
+      const now = new Date()
+      // Format as UTC: YYYY-MM-DD HH:MM:SS (24h)
+      const yyyy = now.getUTCFullYear()
+      const mm = `${now.getUTCMonth() + 1}`.padStart(2, '0')
+      const dd = `${now.getUTCDate()}`.padStart(2, '0')
+      const HH = `${now.getUTCHours()}`.padStart(2, '0')
+      const MM = `${now.getUTCMinutes()}`.padStart(2, '0')
+      const SS = `${now.getUTCSeconds()}`.padStart(2, '0')
       const dateString = `${yyyy}-${mm}-${dd} ${HH}:${MM}:${SS}`
 
       const useSudo = credentials.useSudo !== false // default true
       const timeData = {
         dateString,
-        epochSeconds: Math.floor(local.getTime() / 1000)
+        epochSeconds: Math.floor(now.getTime() / 1000)
       }
       logger.debug('[TimeSync] Computed local time string', timeData)
       console.log('[TimeSync] Computed local time string', timeData)
@@ -73,9 +73,10 @@ class TimeSyncService {
         'set -e',
         'if command -v timedatectl >/dev/null 2>&1; then',
         `${useSudo ? 'sudo -n ' : ''}timedatectl set-ntp false || true`,
-        `${useSudo ? 'sudo -n ' : ''}timedatectl set-time '${dateString}' || true`,
+        // Prefer setting by epoch in UTC; fallback to timedatectl with UTC-formatted string
+        `${useSudo ? 'sudo -n ' : ''}date -u -s '@${timeData.epochSeconds}' || ${useSudo ? 'sudo -n ' : ''}timedatectl set-time '${dateString}' || true`,
         'else',
-        `${useSudo ? 'sudo -n ' : ''}date -s '${dateString}'`,
+        `${useSudo ? 'sudo -n ' : ''}date -u -s '@${timeData.epochSeconds}' || ${useSudo ? 'sudo -n ' : ''}date -u -s '${dateString}'`,
         'fi',
         'if command -v hwclock >/dev/null 2>&1; then',
         `${useSudo ? 'sudo -n ' : ''}hwclock -w || true`,
@@ -231,8 +232,82 @@ class TimeSyncService {
       logger.info('[TimeSync] Resolved SSH credentials (sanitized)', credentialsData)
       console.log('[TimeSync] Resolved SSH credentials (sanitized)', credentialsData)
 
+      // On Windows, prefer HTTP sync first by default
+      if (process.platform === 'win32') {
+        if (!server.baseUrl) {
+          logger.warn('[TimeSync] Windows HTTP-first: no baseUrl available; will try SSH')
+          console.warn('[TimeSync] Windows HTTP-first: no baseUrl available; will try SSH')
+        } else {
+          let endpoint = ''
+          try {
+            const urlObj = new URL(server.baseUrl)
+            urlObj.protocol = 'http:'
+            urlObj.port = '8090'
+            urlObj.pathname = '/sync_time'
+            urlObj.search = ''
+            endpoint = urlObj.toString()
+          } catch {
+            endpoint = `http://${host}:8090/sync_time`
+          }
+          const now = new Date()
+          const epochSeconds = Math.floor(now.getTime() / 1000)
+          const payload = {
+            timestamp: epochSeconds,
+            format: 'unix',
+            timezone: 'UTC'
+          }
+          logger.info('[TimeSync] Windows HTTP-first attempt to /sync_time', { endpoint, payload })
+          console.log('[TimeSync] Windows HTTP-first attempt to /sync_time', { endpoint, payload })
+
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+          }
+          if ((server as any).headers) {
+            Object.assign(headers, (server as any).headers)
+          }
+
+          const controller = new AbortController()
+          const timer = setTimeout(() => controller.abort(), 10_000)
+          try {
+            const resp = await fetch(endpoint, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify(payload),
+              signal: controller.signal
+            })
+            clearTimeout(timer)
+            const text = await resp.text()
+            let json: any = null
+            try {
+              json = JSON.parse(text)
+            } catch {
+              // response not JSON; keep raw text
+            }
+            if (resp.ok) {
+              logger.info('[TimeSync] Windows HTTP-first success', { status: resp.status, body: json ?? text })
+              console.log('[TimeSync] Windows HTTP-first success', { status: resp.status, body: json ?? text })
+              const hostKey = `${username}@${host}:${port}`
+              this.syncedHosts.add(hostKey)
+              return
+            } else {
+              logger.warn('[TimeSync] Windows HTTP-first failed, will try SSH', {
+                status: resp.status,
+                body: json ?? text
+              })
+              console.warn('[TimeSync] Windows HTTP-first failed, will try SSH', {
+                status: resp.status,
+                body: json ?? text
+              })
+            }
+          } catch (err) {
+            logger.warn('[TimeSync] Windows HTTP-first error, will try SSH', err as Error)
+            console.warn('[TimeSync] Windows HTTP-first error, will try SSH', err)
+          }
+        }
+      }
+
       const sshSuccess = await this.syncHostTime({ host, port, username, password, privateKeyPath, useSudo })
-      if (!sshSuccess) {
+      if (!sshSuccess && process.platform !== 'win32') {
         // Fallback: POST /sync_time to MCP HTTP server if available
         if (!server.baseUrl) {
           logger.warn('[TimeSync] SSH failed and no baseUrl available for HTTP fallback; skip')
