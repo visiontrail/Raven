@@ -856,18 +856,21 @@
     "count": "файлов",
     "created_at": "Время создания",
     "delete": {
-      "content": "[to be translated]:删除文件会删除文件在所有消息中的引用，确定要删除此文件吗？",
-      "paintings": {
-        "warning": "[to be translated]:绘图中包含该图片，暂时无法删除"
+        "content": "Удаление файла также удалит ссылки на файл во всех сообщениях. Вы уверены, что хотите удалить этот файл?",
+        "paintings": {
+          "warning": "Изображение содержится в рисунке, удаление временно невозможно"
+        },
+        "title": "Удалить файл"
       },
-      "title": "[to be translated]:删除文件"
-    },
     "document": "Документ",
     "edit": "Редактировать",
+    "error_loading_logs": "Ошибка загрузки логов",
     "error_loading_packages": "Ошибка при загрузке пакетов",
     "file": "Файл",
     "full": "Полная версия",
     "image": "Изображение",
+    "loading_logs": "Загрузка логов...",
+    "logs": "Сервер логов",
     "name": "Имя файла",
     "no_packages": "Пакеты не найдены",
     "open": "Открыть",
@@ -1412,15 +1415,15 @@
     "notification": {
       "assistant": "Ответ ассистента",
       "knowledge": {
-        "error": "[to be translated]:{{error}}",
-        "success": "[to be translated]:成功添加 {{type}} 到知识库"
+        "error": "{{error}}",
+        "success": "Успешно добавлено {{type}} в базу знаний"
       }
     },
     "ollama": {
       "keep_alive_time": {
-        "description": "[to be translated]:对话后模型在内存中保持的时间（默认：5 分钟）",
-        "placeholder": "[to be translated]:分钟",
-        "title": "[to be translated]:保持活跃时间"
+        "description": "Время, в течение которого модель остается в памяти после диалога (по умолчанию: 5 минут)",
+        "placeholder": "Минуты",
+        "title": "Время активности"
       },
       "title": "Ollama"
     },
@@ -1441,11 +1444,11 @@
       },
       "button": {
         "delete": {
-          "confirm": "[to be translated]:确定要删除此图片吗？",
-          "image": "[to be translated]:删除图片"
+          "confirm": "Вы уверены, что хотите удалить это изображение?",
+          "image": "Удалить изображение"
         },
         "new": {
-          "image": "[to be translated]:新建图片"
+          "image": "Новое изображение"
         }
       },
       "edit": {
@@ -1473,7 +1476,7 @@
       "guidance_scale": "Масштаб руководства",
       "guidance_scale_tip": "Без классификатора руководства. Насколько близко вы хотите, чтобы модель придерживалась вашего промпта при поиске связанного изображения для показа вам",
       "image": {
-        "size": "[to be translated]:图片尺寸"
+        "size": "Размер изображения"
       },
       "image_file_required": "Пожалуйста, сначала загрузите изображение",
       "image_file_retry": "Пожалуйста, сначала загрузите изображение",
@@ -1530,7 +1533,7 @@
         "medium": "Среднее"
       },
       "regenerate": {
-        "confirm": "[to be translated]:这将覆盖已生成的图片，是否继续？"
+        "confirm": "Это перезапишет сгенерированное изображение. Продолжить?"
       },
       "remix": {
         "image_file": "Референсное изображение",

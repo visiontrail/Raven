@@ -856,18 +856,21 @@
     "count": "個檔案",
     "created_at": "建立時間",
     "delete": {
-      "content": "[to be translated]:删除文件会删除文件在所有消息中的引用，确定要删除此文件吗？",
+      "content": "刪除文件會刪除文件在所有訊息中的引用，確定要刪除此文件嗎？",
       "paintings": {
-        "warning": "[to be translated]:绘图中包含该图片，暂时无法删除"
+        "warning": "繪圖中包含該圖片，暫時無法刪除"
       },
-      "title": "[to be translated]:删除文件"
+      "title": "刪除文件"
     },
     "document": "文件",
     "edit": "編輯",
+    "error_loading_logs": "載入日誌時出錯",
     "error_loading_packages": "載入套件時出錯",
     "file": "檔案",
     "full": "完整版",
     "image": "圖片",
+    "loading_logs": "正在載入日誌...",
+    "logs": "日誌伺服器",
     "name": "檔案名稱",
     "no_packages": "未找到套件",
     "open": "開啟",

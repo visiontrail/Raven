@@ -159,16 +159,16 @@ function convertToString(args: any | any[]): string | boolean | number {
   if (typeof args === 'string' || typeof args === 'boolean' || typeof args === 'number') {
     return args
   }
-  
+
   // Handle Buffer objects to prevent RangeError: Invalid array length
   if (Buffer.isBuffer(args)) {
     const sizeInMB = (args.length / (1024 * 1024)).toFixed(2)
     return `[Buffer ${args.length} bytes (${sizeInMB}MB)]`
   }
-  
+
   // Handle arrays that might contain Buffers
   if (Array.isArray(args)) {
-    const processedArgs = args.map(arg => {
+    const processedArgs = args.map((arg) => {
       if (Buffer.isBuffer(arg)) {
         const sizeInMB = (arg.length / (1024 * 1024)).toFixed(2)
         return `[Buffer ${arg.length} bytes (${sizeInMB}MB)]`
@@ -177,7 +177,7 @@ function convertToString(args: any | any[]): string | boolean | number {
     })
     return JSON.stringify(processedArgs)
   }
-  
+
   // Handle objects that might contain Buffers
   if (typeof args === 'object' && args !== null) {
     try {
@@ -195,6 +195,6 @@ function convertToString(args: any | any[]): string | boolean | number {
       return '[Object - could not serialize]'
     }
   }
-  
+
   return JSON.stringify(args)
 }
