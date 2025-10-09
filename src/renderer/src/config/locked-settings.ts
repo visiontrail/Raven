@@ -13,6 +13,7 @@ export const LOCKED_API_KEYS = {
   deepseek: 'sk-2b0270e6881340a7ba2c10757d070d78', // 深度求索
   dashscope: 'sk-f580e7deed644abd961ca8d1f8a63115', // 通义千问（bailian）
   gemini: 'AIzaSyA5I8ugEa7PYCSQVqkEsINCYqYVPgDisn0', // 谷歌Gemini
+  doubao: '7fb48e37-a364-4e3f-9e6a-aae3e71b0751', // 豆包
   silicon: 'sk-tsnjapnqmlnyotnpahmisnytahgmmwqskterkxndrkqgxwaq' // 硅基流动
 } as const
 
@@ -20,7 +21,8 @@ export const LOCKED_API_KEYS = {
 export const LOCKED_API_HOSTS = {
   deepseek: 'https://api.deepseek.com/',
   dashscope: 'https://dashscope.aliyuncs.com/compatible-mode/v1/', // 通义千问（bailian）
-  gemini: 'https://generativelanguage.googleapis.com/'
+  gemini: 'https://generativelanguage.googleapis.com/',
+  doubao: 'https://ark.cn-beijing.volces.com/api/v3' // 豆包（字节跳动）
 } as const
 
 // 预定义的API版本（如有需要）

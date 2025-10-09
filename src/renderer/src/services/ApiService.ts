@@ -446,7 +446,16 @@ export async function fetchChatCompletion({
     const now = new Date()
     const pad = (n: number, w = 2) => n.toString().padStart(w, '0')
     const formatted = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}.${pad(now.getMilliseconds(), 3)}`
-    const timeLine = `Current system time: ${formatted}`
+
+    // 获取时区信息
+    const offset = -now.getTimezoneOffset() // getTimezoneOffset返回的是UTC与当地时间的分钟差，需要取反
+    const offsetHours = Math.floor(Math.abs(offset) / 60)
+    const offsetMinutes = Math.abs(offset) % 60
+    const offsetSign = offset >= 0 ? '+' : '-'
+    const timezoneOffset = `UTC${offsetSign}${pad(offsetHours)}:${pad(offsetMinutes)}`
+    const timezoneName = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+    const timeLine = `Current system time: ${formatted} (${timezoneOffset}, ${timezoneName})`
     assistant.prompt = assistant.prompt ? `${assistant.prompt}\n${timeLine}` : timeLine
   } catch (e) {
     logger.warn('Failed to append time context to system prompt', e as Error)
