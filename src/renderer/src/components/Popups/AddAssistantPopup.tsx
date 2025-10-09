@@ -1,6 +1,6 @@
 import { TopView } from '@renderer/components/TopView'
 import { useAgents } from '@renderer/hooks/useAgents'
-import { useAssistants, useDefaultAssistant } from '@renderer/hooks/useAssistant'
+import { useAssistants } from '@renderer/hooks/useAssistant'
 import { useTimer } from '@renderer/hooks/useTimer'
 import { useSystemAgents } from '@renderer/pages/agents'
 import { createAssistantFromAgent } from '@renderer/services/AssistantService'
@@ -27,7 +27,6 @@ const PopupContainer: React.FC<Props> = ({ resolve }) => {
   const { t } = useTranslation()
   const { agents: userAgents } = useAgents()
   const [searchText, setSearchText] = useState('')
-  const { defaultAssistant } = useDefaultAssistant()
   const { assistants, addAssistant } = useAssistants()
   const inputRef = useRef<InputRef>(null)
   const systemAgents = useSystemAgents()
@@ -38,7 +37,8 @@ const PopupContainer: React.FC<Props> = ({ resolve }) => {
 
   const agents = useMemo(() => {
     const allAgents = [...userAgents, ...systemAgents] as Agent[]
-    const list = [defaultAssistant, ...allAgents.filter((agent) => !assistants.map((a) => a.id).includes(agent.id))]
+    // Remove defaultAssistant from the list - only show user and system agents
+    const list = allAgents.filter((agent) => !assistants.map((a) => a.id).includes(agent.id))
     const filtered = searchText
       ? list.filter(
           (agent) =>
@@ -59,7 +59,7 @@ const PopupContainer: React.FC<Props> = ({ resolve }) => {
       return [newAgent, ...filtered]
     }
     return filtered
-  }, [assistants, defaultAssistant, searchText, systemAgents, userAgents])
+  }, [assistants, searchText, systemAgents, userAgents])
 
   // 重置选中索引当搜索或列表内容变更时
   useEffect(() => {
