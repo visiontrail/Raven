@@ -477,19 +477,19 @@ const ProvidersList: FC = () => {
         <AddButtonWrapper>
           <Input
             type="text"
-            placeholder={isLocked ? t('settings.provider.locked_search') : t('settings.provider.search')}
+            placeholder={t('settings.provider.search')}
             value={searchText}
             style={{ borderRadius: 'var(--list-item-border-radius)', height: 35 }}
             suffix={<Search size={14} />}
-            onChange={(e) => !isLocked && setSearchText(e.target.value)}
+            onChange={(e) => setSearchText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
                 e.stopPropagation()
                 setSearchText('')
               }
             }}
-            allowClear={!isLocked}
-            disabled={dragging || isLocked}
+            allowClear
+            disabled={dragging}
           />
         </AddButtonWrapper>
         <DraggableVirtualList
