@@ -2,10 +2,13 @@ import {
   DeleteOutlined,
   DownloadOutlined,
   ExclamationCircleOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
   ReloadOutlined,
+  SettingOutlined,
   UploadOutlined
 } from '@ant-design/icons'
-import { Button, Empty, Flex, message, Popconfirm, Progress, Table, Tag, Tooltip } from 'antd'
+import { Button, Empty, Flex, InputNumber, message, Popconfirm, Progress, Switch, Table, Tag, Tooltip } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { FileText } from 'lucide-react'
@@ -14,6 +17,7 @@ import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import DownloadProgressDialog from '../../components/DownloadProgressDialog'
+import { deviceLogMonitorService } from '../../services/DeviceLogMonitorService'
 import FtpService from '../../services/FtpService'
 import { ipAddressService } from '../../services/IPAddressService'
 import { formatFileSize } from '../../utils'
@@ -63,6 +67,10 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
       percentage: number
     }
   }>({ visible: false, fileName: '', progress: { bytesTransferred: 0, totalBytes: 0, percentage: 0 } })
+
+  // 自动监控相关状态 - 使用全局服务
+  const [monitorConfig, setMonitorConfig] = useState(() => deviceLogMonitorService.getConfig())
+  const [isMonitoring, setIsMonitoring] = useState(() => deviceLogMonitorService.isRunning())
 
   // 确保初始化动态IP服务
   useEffect(() => {
@@ -124,41 +132,56 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
   }
 
   // FTP连接和获取文件列表
-  const fetchFileList = useCallback(async () => {
-    console.log('[DeviceLogListView] 开始获取文件列表...')
-    setLoading(true)
-    try {
-      const ftpConfig = getFTPConfig()
-      console.log('[DeviceLogListView] FTP配置:', ftpConfig)
-      const ftpService = new FtpService(ftpConfig)
-      console.log('[DeviceLogListView] 调用FTP服务listFiles...')
-      const ftpFiles = await ftpService.listFiles()
-      console.log('[DeviceLogListView] FTP返回的文件列表:', ftpFiles)
+  const fetchFileList = useCallback(
+    async (silent = false) => {
+      console.log('[DeviceLogListView] 开始获取文件列表...')
+      if (!silent) {
+        setLoading(true)
+      }
+      try {
+        const ftpConfig = getFTPConfig()
+        console.log('[DeviceLogListView] FTP配置:', ftpConfig)
+        const ftpService = new FtpService(ftpConfig)
+        console.log('[DeviceLogListView] 调用FTP服务listFiles...')
+        const ftpFiles = await ftpService.listFiles()
+        console.log('[DeviceLogListView] FTP返回的文件列表:', ftpFiles)
 
-      // 转换为DeviceLogFile格式
-      const deviceLogFiles: DeviceLogFile[] = ftpFiles.map((file, index) => {
-        const deviceFile = {
-          id: `${index + 1}`,
-          name: file.name,
-          size: file.size,
-          modifiedTime: file.modifiedTime,
-          type: getLogType(file.name),
-          path: file.path
+        // 转换为DeviceLogFile格式
+        const deviceLogFiles: DeviceLogFile[] = ftpFiles.map((file, index) => {
+          const deviceFile = {
+            id: `${index + 1}`,
+            name: file.name,
+            size: file.size,
+            modifiedTime: file.modifiedTime,
+            type: getLogType(file.name),
+            path: file.path
+          }
+          console.log('[DeviceLogListView] 转换文件:', file, '->', deviceFile)
+          return deviceFile
+        })
+
+        console.log('[DeviceLogListView] 最终设备日志文件列表:', deviceLogFiles)
+        setFiles(deviceLogFiles)
+        if (!silent) {
+          message.success(`设备日志列表刷新成功，共 ${deviceLogFiles.length} 个文件`)
         }
-        console.log('[DeviceLogListView] 转换文件:', file, '->', deviceFile)
-        return deviceFile
-      })
 
-      console.log('[DeviceLogListView] 最终设备日志文件列表:', deviceLogFiles)
-      setFiles(deviceLogFiles)
-      message.success(`设备日志列表刷新成功，共 ${deviceLogFiles.length} 个文件`)
-    } catch (error) {
-      console.error('[DeviceLogListView] 获取设备日志列表失败:', error)
-      message.error(`获取设备日志列表失败: ${error instanceof Error ? error.message : String(error)}`)
-    } finally {
-      setLoading(false)
-    }
-  }, [getLogType])
+        // 返回新文件列表供监控使用
+        return deviceLogFiles
+      } catch (error) {
+        console.error('[DeviceLogListView] 获取设备日志列表失败:', error)
+        if (!silent) {
+          message.error(`获取设备日志列表失败: ${error instanceof Error ? error.message : String(error)}`)
+        }
+        return []
+      } finally {
+        if (!silent) {
+          setLoading(false)
+        }
+      }
+    },
+    [getLogType]
+  )
 
   // 删除日志文件
   const handleDelete = async (file: DeviceLogFile) => {
@@ -574,9 +597,37 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
     setSelectedRowKeys([])
   }
 
-  // 组件挂载时获取文件列表
+  // 更新监控配置
+  const updateMonitorConfig = useCallback((updates: Partial<typeof monitorConfig>) => {
+    deviceLogMonitorService.updateConfig(updates)
+    setMonitorConfig(deviceLogMonitorService.getConfig())
+    setIsMonitoring(deviceLogMonitorService.isRunning())
+  }, [])
+
+  // 切换监控启用状态
+  const toggleMonitoring = useCallback(() => {
+    updateMonitorConfig({ enabled: !monitorConfig.enabled })
+  }, [monitorConfig.enabled, updateMonitorConfig])
+
+  // 同步监控状态（用于页面显示）
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const running = deviceLogMonitorService.isRunning()
+      if (running !== isMonitoring) {
+        setIsMonitoring(running)
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [isMonitoring])
+
+  // 组件挂载时获取文件列表和配置
   useEffect(() => {
     fetchFileList()
+    // 同步最新配置
+    setMonitorConfig(deviceLogMonitorService.getConfig())
+    setIsMonitoring(deviceLogMonitorService.isRunning())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // 表格列配置
@@ -705,12 +756,64 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
                 </Popconfirm>
               </>
             )}
-            <Button type="text" icon={<ReloadOutlined />} onClick={fetchFileList} loading={loading}>
+            <Button type="text" icon={<ReloadOutlined />} onClick={() => fetchFileList()} loading={loading}>
               {t('common.refresh')}
             </Button>
           </Flex>
         </Flex>
       </HeaderContainer>
+
+      {/* 自动监控控制面板 */}
+      <MonitoringPanel>
+        <Flex justify="space-between" align="center">
+          <Flex align="center" gap={16}>
+            <Flex align="center" gap={8}>
+              <SettingOutlined />
+              <span style={{ fontWeight: 500 }}>全局自动监控</span>
+            </Flex>
+            <Tooltip title={monitorConfig.enabled ? '点击禁用监控' : '点击启用监控'}>
+              <Button
+                type={monitorConfig.enabled ? 'primary' : 'default'}
+                size="small"
+                icon={monitorConfig.enabled ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+                onClick={toggleMonitoring}
+                danger={monitorConfig.enabled}>
+                {monitorConfig.enabled ? '禁用监控' : '启用监控'}
+              </Button>
+            </Tooltip>
+            {isMonitoring && (
+              <Tag color="processing" icon={<PlayCircleOutlined />}>
+                后台监控中
+              </Tag>
+            )}
+            {!isMonitoring && monitorConfig.enabled && <Tag color="warning">正在启动...</Tag>}
+          </Flex>
+          <Flex align="center" gap={16}>
+            <Flex align="center" gap={8}>
+              <span style={{ fontSize: '12px', color: '#666' }}>检查间隔(秒):</span>
+              <InputNumber
+                size="small"
+                min={5}
+                max={300}
+                value={monitorConfig.interval}
+                onChange={(value) => updateMonitorConfig({ interval: value || 30 })}
+                style={{ width: 80 }}
+              />
+            </Flex>
+            <Flex align="center" gap={8}>
+              <span style={{ fontSize: '12px', color: '#666' }}>自动上传:</span>
+              <Switch
+                checked={monitorConfig.autoUpload}
+                onChange={(checked) => updateMonitorConfig({ autoUpload: checked })}
+                size="small"
+              />
+            </Flex>
+          </Flex>
+        </Flex>
+        <Flex style={{ marginTop: 8, fontSize: '12px', color: '#999' }}>
+          <span>💡 提示：监控服务在后台全局运行，不受页面切换影响。配置更改会立即保存并应用。</span>
+        </Flex>
+      </MonitoringPanel>
 
       {files.length > 0 ? (
         <Table
@@ -733,7 +836,7 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
         />
       ) : (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无设备日志文件" style={{ marginTop: 40 }}>
-          <Button onClick={fetchFileList} icon={<ReloadOutlined />}>
+          <Button onClick={() => fetchFileList()} icon={<ReloadOutlined />}>
             刷新列表
           </Button>
         </Empty>
@@ -759,6 +862,12 @@ const HeaderContainer = styled.div`
   padding: 12px 16px;
   border-bottom: 0.5px solid var(--color-border);
   background-color: var(--color-background);
+`
+
+const MonitoringPanel = styled.div`
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--color-border);
+  background-color: var(--color-background-soft);
 `
 
 export default DeviceLogListView
