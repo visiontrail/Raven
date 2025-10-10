@@ -185,7 +185,23 @@ python代码将在一个沙箱环境中运行，权限范围如下：
     topics: [getDefaultTopic('default')],
     messages: [],
     type: 'assistant',
-    regularPhrases: [], // Added regularPhrases
+    regularPhrases: [
+      {
+        content:
+          '请提取${组件或板卡}日志\n问题简述： ${问题描述}\n环境信息： ${测试环境描述}\n研发定位人员姓名： ${研发人员姓名}',
+        title: '日志提取',
+        id: 'preset-log-collection',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      },
+      {
+        content: '请模拟星务软件即SMU开启连续TOD发送',
+        title: '开启连续TOD发送',
+        id: 'preset-tod-send',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }
+    ], // Added regularPhrases
     settings: DEFAULT_ASSISTANT_SETTINGS,
     mcpServers: [
       {
