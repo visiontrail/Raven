@@ -291,6 +291,7 @@ export const SystemProviderIds = {
   gpustack: 'gpustack',
   voyageai: 'voyageai',
   'aws-bedrock': 'aws-bedrock',
+  galaxyspace: 'galaxyspace',
   poe: 'poe'
 } as const
 

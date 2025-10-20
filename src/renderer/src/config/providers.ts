@@ -72,7 +72,7 @@ export const SYSTEM_PROVIDERS_CONFIG: Record<SystemProviderId, SystemProvider> =
     apiHost: 'https://api.siliconflow.cn',
     models: SYSTEM_MODELS.silicon,
     isSystem: true,
-    enabled: true
+    enabled: false
   },
   aihubmix: {
     id: 'aihubmix',
@@ -363,11 +363,11 @@ export const SYSTEM_PROVIDERS_CONFIG: Record<SystemProviderId, SystemProvider> =
     id: 'dashscope',
     name: 'Bailian',
     type: 'openai',
-    apiKey: '',
+    apiKey: 'sk-f580e7deed644abd961ca8d1f8a63115',
     apiHost: 'https://dashscope.aliyuncs.com/compatible-mode/v1/',
     models: SYSTEM_MODELS.dashscope,
     isSystem: true,
-    enabled: false
+    enabled: true
   },
   stepfun: {
     id: 'stepfun',
@@ -579,6 +579,16 @@ export const SYSTEM_PROVIDERS_CONFIG: Record<SystemProviderId, SystemProvider> =
     isSystem: true,
     enabled: false
   },
+  galaxyspace: {
+    id: 'galaxyspace',
+    name: 'GalaxySpace',
+    type: 'openai',
+    apiKey: 'sk-rebTXHBiV7Nr1PRzaODQOZKztKqpv7bPoQE10dNItF9yIyBh',
+    apiHost: 'http://oneapi.yhroot.com/v1/',
+    models: SYSTEM_MODELS.galaxyspace,
+    isSystem: true,
+    enabled: true
+  },
   poe: {
     id: 'poe',
     name: 'Poe',
@@ -647,6 +657,7 @@ const PROVIDER_LOGO_MAP: AtLeast<SystemProviderId, string> = {
   vertexai: VertexAIProviderLogo,
   'new-api': NewAPIProviderLogo,
   'aws-bedrock': AwsProviderLogo,
+  galaxyspace: NewAPIProviderLogo,
   poe: PoeProviderLogo
 } as const
 
@@ -1220,6 +1231,15 @@ export const PROVIDER_URLS: Record<SystemProviderId, ProviderUrls> = {
       apiKey: 'https://docs.aws.amazon.com/bedrock/latest/userguide/security-iam.html',
       docs: 'https://docs.aws.amazon.com/bedrock/',
       models: 'https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html'
+    }
+  },
+  galaxyspace: {
+    api: {
+      url: 'http://oneapi.yhroot.com/v1/'
+    },
+    websites: {
+      official: 'http://oneapi.yhroot.com/v1/',
+      docs: 'http://oneapi.yhroot.com/v1/'
     }
   },
   poe: {

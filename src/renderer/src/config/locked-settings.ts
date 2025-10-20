@@ -5,7 +5,7 @@
  */
 
 // 是否启用锁定模式（设为true时禁用所有用户输入）
-export const LOCKED_MODE_ENABLED = true
+export const LOCKED_MODE_ENABLED = false
 
 // 预定义的API密钥（按Provider ID分组）
 export const LOCKED_API_KEYS = {
@@ -14,7 +14,8 @@ export const LOCKED_API_KEYS = {
   dashscope: 'sk-f580e7deed644abd961ca8d1f8a63115', // 通义千问（bailian）
   gemini: 'AIzaSyA5I8ugEa7PYCSQVqkEsINCYqYVPgDisn0', // 谷歌Gemini
   doubao: '7fb48e37-a364-4e3f-9e6a-aae3e71b0751', // 豆包
-  silicon: 'sk-tsnjapnqmlnyotnpahmisnytahgmmwqskterkxndrkqgxwaq' // 硅基流动
+  silicon: 'sk-tsnjapnqmlnyotnpahmisnytahgmmwqskterkxndrkqgxwaq', // 硅基流动
+  galaxyspace: 'sk-rebTXHBiV7Nr1PRzaODQOZKztKqpv7bPoQE10dNItF9yIyBh' // GalaxySpace
 } as const
 
 // 预定义的API Host（按Provider ID分组）
@@ -22,7 +23,8 @@ export const LOCKED_API_HOSTS = {
   deepseek: 'https://api.deepseek.com/',
   dashscope: 'https://dashscope.aliyuncs.com/compatible-mode/v1/', // 通义千问（bailian）
   gemini: 'https://generativelanguage.googleapis.com/',
-  doubao: 'https://ark.cn-beijing.volces.com/api/v3' // 豆包（字节跳动）
+  doubao: 'https://ark.cn-beijing.volces.com/api/v3', // 豆包（字节跳动）
+  galaxyspace: 'http://oneapi.yhroot.com/v1/' // GalaxySpace
 } as const
 
 // 预定义的API版本（如有需要）
@@ -33,12 +35,12 @@ export const LOCKED_API_VERSIONS = {
 // 其他锁定设置
 export const LOCKED_SETTINGS = {
   // 功能禁用控制
-  DISABLE_PROVIDER_ADDITION: true,
-  DISABLE_MODEL_ADDITION: true,
-  DISABLE_API_KEY_EDITING: true,
-  DISABLE_API_HOST_EDITING: true,
-  DISABLE_PROVIDER_DELETION: true,
-  DISABLE_MODEL_DELETION: true,
+  DISABLE_PROVIDER_ADDITION: false,
+  DISABLE_MODEL_ADDITION: false,
+  DISABLE_API_KEY_EDITING: false,
+  DISABLE_API_HOST_EDITING: false,
+  DISABLE_PROVIDER_DELETION: false,
+  DISABLE_MODEL_DELETION: false,
   // 添加缺失的属性
   LMSTUDIO_KEEP_ALIVE: 0,
   VERTEX_AI_SERVICE_ACCOUNT: {
@@ -76,5 +78,6 @@ export function isLockedModeEnabled(): boolean {
 // 检查特定功能是否被禁用
 export function isFeatureDisabled(feature: keyof typeof LOCKED_SETTINGS): boolean {
   if (!LOCKED_MODE_ENABLED) return false
-  return LOCKED_SETTINGS[feature] === true
+  const value = LOCKED_SETTINGS[feature]
+  return typeof value === 'boolean' ? value : false
 }
