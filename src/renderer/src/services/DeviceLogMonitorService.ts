@@ -4,6 +4,7 @@
  */
 
 import { message } from 'antd'
+
 import FtpService, { FtpConfig } from './FtpService'
 import { ipAddressService } from './IPAddressService'
 
@@ -33,6 +34,7 @@ const DEFAULT_CONFIG: MonitorConfig = {
 
 // 配置存储键
 const CONFIG_STORAGE_KEY = 'device_log_monitor_config'
+const FILES_STATE_STORAGE_KEY = 'device_log_monitor_files_state'
 
 class DeviceLogMonitorService {
   private static instance: DeviceLogMonitorService | null = null
@@ -41,10 +43,13 @@ class DeviceLogMonitorService {
   private config: MonitorConfig
   private isMonitoring = false
   private uploadingFiles: Set<string> = new Set() // 正在上传的文件集合
+  private isFirstScan = true // 首次扫描标识
 
   private constructor() {
     // 从 localStorage 加载配置
     this.config = this.loadConfig()
+    // 加载文件状态
+    this.loadFilesState()
     console.log('[DeviceLogMonitorService] 初始化服务，配置:', this.config)
   }
 
@@ -80,6 +85,55 @@ class DeviceLogMonitorService {
       console.log('[DeviceLogMonitorService] 配置已保存:', this.config)
     } catch (error) {
       console.error('[DeviceLogMonitorService] 保存配置失败:', error)
+    }
+  }
+
+  /**
+   * 从 localStorage 加载文件状态
+   */
+  private loadFilesState(): void {
+    try {
+      const saved = localStorage.getItem(FILES_STATE_STORAGE_KEY)
+      if (saved) {
+        const filesData = JSON.parse(saved)
+        this.previousFiles.clear()
+
+        // 重建文件映射，注意日期对象的反序列化
+        Object.entries(filesData).forEach(([key, fileData]: [string, any]) => {
+          const file: DeviceLogFile = {
+            ...fileData,
+            modifiedTime: new Date(fileData.modifiedTime)
+          }
+          this.previousFiles.set(key, file)
+        })
+
+        console.log(`[DeviceLogMonitorService] 已加载 ${this.previousFiles.size} 个文件状态记录`)
+        this.isFirstScan = false // 如果有历史记录，则不是首次扫描
+      } else {
+        console.log('[DeviceLogMonitorService] 没有找到历史文件状态记录，将进行首次扫描')
+        this.isFirstScan = true
+      }
+    } catch (error) {
+      console.error('[DeviceLogMonitorService] 加载文件状态失败:', error)
+      this.isFirstScan = true
+    }
+  }
+
+  /**
+   * 保存文件状态到 localStorage
+   */
+  private saveFilesState(): void {
+    try {
+      // 将Map转换为普通对象进行序列化
+      const filesData: Record<string, DeviceLogFile> = {}
+      this.previousFiles.forEach((file, key) => {
+        filesData[key] = file
+      })
+
+      localStorage.setItem(FILES_STATE_STORAGE_KEY, JSON.stringify(filesData))
+      console.log(`[DeviceLogMonitorService] 已保存 ${this.previousFiles.size} 个文件状态记录`)
+    } catch (error) {
+      console.error('[DeviceLogMonitorService] 保存文件状态失败:', error)
     }
   }
 
@@ -344,7 +398,12 @@ class DeviceLogMonitorService {
           newFiles.map((f) => f.name)
         )
 
-        if (this.config.autoUpload) {
+        // 如果是首次扫描，只记录文件状态，不上传
+        if (this.isFirstScan) {
+          console.log('[DeviceLogMonitorService] 首次扫描，仅记录文件状态，不进行上传')
+          message.info(`首次扫描发现 ${newFiles.length} 个文件，已记录状态`)
+          this.isFirstScan = false
+        } else if (this.config.autoUpload) {
           message.info(`检测到 ${newFiles.length} 个新文件，开始自动上传...`)
 
           // 串行上传所有新文件
@@ -354,10 +413,17 @@ class DeviceLogMonitorService {
         } else {
           console.log('[DeviceLogMonitorService] 自动上传已关闭，跳过上传')
         }
+      } else if (this.isFirstScan) {
+        // 首次扫描但没有新文件的情况
+        console.log('[DeviceLogMonitorService] 首次扫描完成，没有发现新文件')
+        this.isFirstScan = false
       }
 
       // 更新文件记录
       this.previousFiles = currentFileMap
+
+      // 保存文件状态到本地存储
+      this.saveFilesState()
     } catch (error) {
       console.error('[DeviceLogMonitorService] 检查失败:', error)
     }
@@ -383,17 +449,8 @@ class DeviceLogMonitorService {
     // 初始化 IP 地址服务
     ipAddressService.initialize()
 
-    // 立即执行一次，初始化文件列表
-    try {
-      const files = await this.fetchFileList()
-      files.forEach((file) => {
-        const fileKey = `${file.path}_${file.size}_${file.modifiedTime.getTime()}`
-        this.previousFiles.set(fileKey, file)
-      })
-      console.log(`[DeviceLogMonitorService] 初始化文件列表，共 ${files.length} 个文件`)
-    } catch (error) {
-      console.error('[DeviceLogMonitorService] 初始化文件列表失败:', error)
-    }
+    // 立即执行一次检查（包含首次扫描逻辑）
+    await this.detectAndHandleNewFiles()
 
     // 设置定时器
     this.monitorTimer = setInterval(() => {
@@ -420,7 +477,8 @@ class DeviceLogMonitorService {
       this.monitorTimer = null
     }
 
-    this.previousFiles.clear()
+    // 保存当前文件状态，但不清除内存中的记录
+    this.saveFilesState()
     message.info('设备日志自动监控已停止')
   }
 
