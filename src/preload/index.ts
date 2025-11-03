@@ -327,7 +327,8 @@ const api = {
     uploadToFTP: (id: string, ftpConfig: any) => ipcRenderer.invoke(IpcChannel.Package_UploadToFTP, id, ftpConfig),
     uploadToHTTP: (id: string, httpConfig: any) => ipcRenderer.invoke(IpcChannel.Package_UploadToHTTP, id, httpConfig),
     scanDirectory: (directoryPath: string) => ipcRenderer.invoke(IpcChannel.Package_ScanDirectory, directoryPath),
-    extractMetadata: (filePath: string) => ipcRenderer.invoke(IpcChannel.Package_ExtractMetadata, filePath)
+    extractMetadata: (filePath: string) => ipcRenderer.invoke(IpcChannel.Package_ExtractMetadata, filePath),
+    parseReleaseNote: (packagePath: string) => ipcRenderer.invoke(IpcChannel.Package_ParseReleaseNote, packagePath)
   },
   path: {
     basename: (filePath: string) => path.basename(filePath)

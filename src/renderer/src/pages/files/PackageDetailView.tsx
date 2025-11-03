@@ -48,8 +48,27 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
     })
   }
 
+  // Load Release Note content from si.ini file
+  const loadReleaseNoteContent = async () => {
+    try {
+      const releaseNote = await window.api.package.parseReleaseNote(pkg.path)
+      if (releaseNote && releaseNote.trim()) {
+        // Update the description field with Release Note content if description is empty
+        const currentDescription = form.getFieldValue('description')
+        if (!currentDescription || currentDescription.trim() === '') {
+          form.setFieldValue('description', releaseNote)
+          // Auto save the updated description
+          handleAutoSave()
+        }
+      }
+    } catch (error) {
+      loggerService.error('Error loading release note content:', error as Error)
+    }
+  }
+
   useEffect(() => {
     initializeForm()
+    loadReleaseNoteContent()
     // Initialize IP address service
     ipAddressService.initialize()
     // eslint-disable-next-line react-hooks/exhaustive-deps

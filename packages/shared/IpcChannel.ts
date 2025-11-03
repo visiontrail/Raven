@@ -107,6 +107,7 @@ export enum IpcChannel {
   Package_UploadToHTTP = 'package:upload-to-http',
   Package_ScanDirectory = 'package:scan-directory',
   Package_ExtractMetadata = 'package:extract-metadata',
+  Package_ParseReleaseNote = 'package:parse-release-note',
 
   // FTP
   FTP_ListFiles = 'ftp:list-files',

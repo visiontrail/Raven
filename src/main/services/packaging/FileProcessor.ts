@@ -128,6 +128,86 @@ export class FileProcessor {
   }
 
   /**
+   * 从si.ini文件中解析Release Note内容
+   * 查找 ---Release Note Starts--- 和 ---Release Note Ends--- 之间的内容
+   */
+  async parseReleaseNoteFromSiIni(siIniPath: string): Promise<string | null> {
+    try {
+      console.log(`[FileProcessor] 开始解析si.ini文件中的Release Note: ${siIniPath}`)
+
+      // 检查文件是否存在
+      if (!(await fs.pathExists(siIniPath))) {
+        console.log(`[FileProcessor] si.ini文件不存在: ${siIniPath}`)
+        return null
+      }
+
+      const content = await fs.readFile(siIniPath, 'utf-8')
+      console.log(`[FileProcessor] 读取到si.ini文件内容，长度: ${content.length}`)
+
+      // 查找Release Note标记
+      const startMarker = '---Release Note Starts---'
+      const endMarker = '---Release Note Ends---'
+
+      const startIndex = content.indexOf(startMarker)
+      const endIndex = content.indexOf(endMarker)
+
+      if (startIndex === -1 || endIndex === -1) {
+        console.log(`[FileProcessor] 未找到Release Note标记`)
+        return null
+      }
+
+      if (startIndex >= endIndex) {
+        console.log(`[FileProcessor] Release Note标记位置异常`)
+        return null
+      }
+
+      // 提取Release Note内容
+      const releaseNoteContent = content.substring(startIndex + startMarker.length, endIndex).trim()
+
+      console.log(`[FileProcessor] ✅ 成功解析Release Note内容，长度: ${releaseNoteContent.length}`)
+
+      return releaseNoteContent || null
+    } catch (error) {
+      console.error('[FileProcessor] 解析si.ini文件中的Release Note时出错:', error)
+      return null
+    }
+  }
+
+  /**
+   * 在包目录中查找si.ini文件
+   */
+  async findSiIniFile(packageDir: string): Promise<string | null> {
+    try {
+      console.log(`[FileProcessor] 在包目录中查找si.ini文件: ${packageDir}`)
+
+      // 直接检查包目录下的si.ini文件
+      const siIniPath = path.join(packageDir, 'si.ini')
+      if (await fs.pathExists(siIniPath)) {
+        console.log(`[FileProcessor] ✅ 找到si.ini文件: ${siIniPath}`)
+        return siIniPath
+      }
+
+      // 如果包目录是压缩文件，需要先解压
+      if (this.isArchiveFile(packageDir)) {
+        console.log(`[FileProcessor] 包是压缩文件，需要解压查找si.ini`)
+        const extractedDir = await this.extractArchive(packageDir)
+        const extractedSiIniPath = path.join(extractedDir, 'si.ini')
+
+        if (await fs.pathExists(extractedSiIniPath)) {
+          console.log(`[FileProcessor] ✅ 在解压目录中找到si.ini文件: ${extractedSiIniPath}`)
+          return extractedSiIniPath
+        }
+      }
+
+      console.log(`[FileProcessor] ❌ 未找到si.ini文件`)
+      return null
+    } catch (error) {
+      console.error('[FileProcessor] 查找si.ini文件时出错:', error)
+      return null
+    }
+  }
+
+  /**
    * 递归获取目录下的所有文件
    */
   private async getAllFilesRecursively(dir: string): Promise<string[]> {

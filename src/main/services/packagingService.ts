@@ -489,6 +489,28 @@ class PackagingService {
     }
   }
 
+  /**
+   * 解析包中si.ini文件的Release Note内容
+   */
+  async handleParseReleaseNote(_event: IpcMainInvokeEvent, packagePath: string): Promise<string | null> {
+    try {
+      logger.info(`开始解析包的Release Note: ${packagePath}`)
+
+      // 首先查找si.ini文件
+      const siIniPath = await this.fileProcessor.findSiIniFile(packagePath)
+      if (!siIniPath) {
+        logger.warn(`未找到si.ini文件: ${packagePath}`)
+        return null
+      }
+
+      // 解析si.ini文件中的Release Note内容
+      return await this.fileProcessor.parseReleaseNoteFromSiIni(siIniPath)
+    } catch (error: any) {
+      logger.error(`解析Release Note失败: ${error.message}`)
+      return null
+    }
+  }
+
   async getAutoVersion(filePath: string): Promise<string | null> {
     console.log(`[Main] getAutoVersion called with filePath: ${filePath}`)
     const version = VersionParser.parseVersionFromFilename(path.basename(filePath))

@@ -698,6 +698,9 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
   ipcMain.handle(IpcChannel.Package_ExtractMetadata, (_, filePath: string) => {
     return packageService.extractPackageMetadata(filePath)
   })
+  ipcMain.handle(IpcChannel.Package_ParseReleaseNote, (event, packagePath: string) => {
+    return packagingService.handleParseReleaseNote(event, packagePath)
+  })
 
   ipcMain.handle(IpcChannel.App_IsBinaryExist, (_, name: string) => isBinaryExists(name))
   ipcMain.handle(IpcChannel.App_GetBinaryPath, (_, name: string) => getBinaryPath(name))
