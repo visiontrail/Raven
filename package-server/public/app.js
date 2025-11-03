@@ -204,6 +204,28 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+// 安全地渲染 Markdown 内容
+function renderMarkdown(text) {
+  if (!text) return ''
+
+  try {
+    // 配置 marked 选项
+    window.marked.setOptions({
+      breaks: true, // 支持换行
+      gfm: true, // 支持 GitHub Flavored Markdown
+      sanitize: false, // 不进行 HTML 清理（如果需要更安全，可以设置为 true）
+      smartLists: true,
+      smartypants: true
+    })
+
+    return window.marked.parse(text)
+  } catch (error) {
+    console.error('Markdown 渲染失败:', error)
+    // 如果 Markdown 渲染失败，回退到纯文本显示
+    return `<div style="white-space: pre-wrap;">${text}</div>`
+  }
+}
+
 // 格式化日期
 function formatDate(dateString) {
   const date = new Date(dateString)
@@ -401,11 +423,11 @@ function renderPackageList() {
                             })()}
                         </div>
                         ${(() => {
-                          const desc = pkg.metadata?.description
-                          if (!desc) return ''
-                          const escapedDesc = desc.replace(/"/g, '&quot;')
-                          return `<div class="mt-2 text-muted small" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapedDesc}">${desc}</div>`
-                        })()}
+                           const desc = pkg.metadata?.description
+                           if (!desc) return ''
+                           const escapedDesc = desc.replace(/"/g, '&quot;')
+                           return `<div class="mt-2 text-muted small" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapedDesc}">${desc}</div>`
+                         })()}
                     </div>
                     <div class="col-auto me-3">
                         <small class="text-muted d-block">
@@ -1233,7 +1255,7 @@ async function showPackageDetail(packageId) {
           ? `<div class="row mt-3">
                <div class="col-12">
                  <h6 class="text-muted mb-2">描述</h6>
-                 <div class="text-muted" style="white-space: pre-wrap;">${desc}</div>
+                 <div class="text-muted">${renderMarkdown(desc)}</div>
                </div>
              </div>`
           : ''
