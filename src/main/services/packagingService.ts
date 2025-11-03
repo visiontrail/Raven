@@ -233,6 +233,7 @@ export interface Component {
   selected_file?: string
   version?: string
   auto_version?: string
+  release_note?: string // 新增：存储release note内容
 }
 
 export interface PackageConfig {
@@ -511,18 +512,49 @@ class PackagingService {
     }
 
     let sourceFile = component.selected_file
+    logger.info(`开始处理组件 ${component.name}, 文件: ${sourceFile}`)
 
-    if (this.fileProcessor.isArchiveFile(sourceFile) && !componentConfig.direct_include) {
+    // 处理压缩包文件的release note提取
+    const isArchive = this.fileProcessor.isArchiveFile(sourceFile)
+    logger.info(`文件 ${sourceFile} 是否为压缩包: ${isArchive}`)
+    
+    if (isArchive) {
+      logger.info(`开始解压文件: ${sourceFile}`)
       const extractDir = await this.fileProcessor.extractArchive(sourceFile)
-      const foundFiles = await this.fileProcessor.findFilesByType(
-        extractDir,
-        componentConfig.file_types,
-        componentConfig.file_name
-      )
-      if (foundFiles.length === 0) {
-        throw new Error(`在压缩包中未找到组件 ${component.description} 的文件`)
+      logger.info(`文件解压到: ${extractDir}`)
+
+      // 查找release note文件（对所有压缩包都进行查找）
+      logger.info(`开始查找 release note 文件...`)
+      const releaseNoteFile = await this.fileProcessor.findReleaseNoteFile(extractDir)
+      logger.info(`查找 release note 文件结果: ${releaseNoteFile || '未找到'}`)
+      
+      if (releaseNoteFile) {
+        logger.info(`开始读取 release note 内容: ${releaseNoteFile}`)
+        const releaseNoteContent = await this.fileProcessor.readReleaseNoteContent(releaseNoteFile)
+        if (releaseNoteContent) {
+          component.release_note = releaseNoteContent
+          logger.info(`找到组件 ${component.name} 的release note文件: ${releaseNoteFile}`)
+          logger.info(`Release note 内容长度: ${releaseNoteContent.length} 字符`)
+        } else {
+          logger.warn(`读取 release note 文件失败: ${releaseNoteFile}`)
+        }
+      } else {
+        logger.info(`组件 ${component.name} 的压缩包中未找到 release note 文件`)
       }
-      sourceFile = foundFiles[0]
+
+      // 如果不是直接包含，需要查找特定文件
+      if (!componentConfig.direct_include) {
+        const foundFiles = await this.fileProcessor.findFilesByType(
+          extractDir,
+          componentConfig.file_types,
+          componentConfig.file_name
+        )
+        if (foundFiles.length === 0) {
+          throw new Error(`在压缩包中未找到组件 ${component.description} 的文件`)
+        }
+        sourceFile = foundFiles[0]
+      }
+      // 如果是直接包含，使用原始压缩包文件
     }
 
     // Auto-detect version if not manually provided
@@ -598,6 +630,17 @@ class PackagingService {
       content += `FileAttr_${index + 1}=${componentConfig.file_attr};\n`
       content += `FileVer_${index + 1}=${fileVersion};\n\n`
     })
+
+    // 添加release note内容
+    const releaseNotes = selectedComponents
+      .filter((component) => component.release_note)
+      .map((component) => `[${component.name}]\n${component.release_note}`)
+
+    if (releaseNotes.length > 0) {
+      content += '---Release Note Starts---\n'
+      content += releaseNotes.join('\n\n')
+      content += '\n---Release Note Ends---\n'
+    }
 
     console.log('[Main] Generated si.ini content:\n', content)
     return content

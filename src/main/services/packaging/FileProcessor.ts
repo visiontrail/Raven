@@ -59,6 +59,96 @@ export class FileProcessor {
     return supportedArchives.includes(path.extname(filePath).toLowerCase())
   }
 
+  /**
+   * 在指定目录中查找release note文件
+   * 支持大小写不敏感和模糊匹配
+   */
+  async findReleaseNoteFile(dir: string): Promise<string | null> {
+    try {
+      console.log(`[FileProcessor] 开始在目录中查找 release note 文件: ${dir}`)
+      const allFiles = await this.getAllFilesRecursively(dir)
+      console.log(`[FileProcessor] 找到 ${allFiles.length} 个文件`)
+
+      if (allFiles.length > 0) {
+        console.log(`[FileProcessor] 文件列表:`)
+        allFiles.forEach((file, index) => {
+          console.log(`  ${index + 1}. ${file}`)
+        })
+      }
+
+      // 查找包含 "releasenote" 关键字的文件（大小写不敏感）
+      const releaseNoteFile = allFiles.find((file) => {
+        const fileName = path.basename(file).toLowerCase()
+        console.log(`[FileProcessor] 检查文件: ${fileName}`)
+
+        // 过滤掉 macOS 元数据文件（以 ._ 开头的文件）
+        if (fileName.startsWith('._')) {
+          console.log(`[FileProcessor] ⚠️ 跳过 macOS 元数据文件: ${fileName}`)
+          return false
+        }
+
+        // 支持各种可能的命名方式
+        const isMatch =
+          fileName.includes('releasenote') ||
+          fileName.includes('release-note') ||
+          fileName.includes('release_note') ||
+          fileName.includes('releasenotes') ||
+          fileName.includes('release-notes') ||
+          fileName.includes('release_notes')
+
+        if (isMatch) {
+          console.log(`[FileProcessor] ✅ 找到匹配的 release note 文件: ${file}`)
+        }
+
+        return isMatch
+      })
+
+      if (!releaseNoteFile) {
+        console.log(`[FileProcessor] ❌ 未找到 release note 文件`)
+      }
+
+      return releaseNoteFile || null
+    } catch (error) {
+      console.error('[FileProcessor] 查找release note文件时出错:', error)
+      return null
+    }
+  }
+
+  /**
+   * 读取release note文件的内容
+   */
+  async readReleaseNoteContent(filePath: string): Promise<string | null> {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8')
+      return content.trim()
+    } catch (error) {
+      console.error('读取release note文件时出错:', error)
+      return null
+    }
+  }
+
+  /**
+   * 递归获取目录下的所有文件
+   */
+  private async getAllFilesRecursively(dir: string): Promise<string[]> {
+    const files: string[] = []
+
+    const items = await fs.readdir(dir, { withFileTypes: true })
+
+    for (const item of items) {
+      const fullPath = path.join(dir, item.name)
+
+      if (item.isDirectory()) {
+        const subFiles = await this.getAllFilesRecursively(fullPath)
+        files.push(...subFiles)
+      } else {
+        files.push(fullPath)
+      }
+    }
+
+    return files
+  }
+
   cleanupTempFiles() {
     fs.removeSync(this.tempDir)
   }
