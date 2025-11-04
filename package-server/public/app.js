@@ -403,9 +403,20 @@ function getPackageTypeColor(type) {
   return colorMap[type] || 'secondary'
 }
 
-// 加载统计信息
+// 加载统计信息（在统计DOM缺失时安全跳过）
 async function loadStats() {
   try {
+    // 若统计信息区域未渲染（例如在 index.html 中被注释），则直接跳过
+    const totalEl = document.getElementById('totalPackages')
+    const sizeEl = document.getElementById('totalSize')
+    const recentEl = document.getElementById('recentUploads')
+    const typesEl = document.getElementById('packageTypes')
+
+    if (!totalEl || !sizeEl || !recentEl || !typesEl) {
+      console.log('统计信息区域不存在，跳过加载统计信息')
+      return
+    }
+
     const response = await fetch(`${PACKAGES_API}/stats/overview`)
     if (!response.ok) throw new Error('获取统计信息失败')
 
@@ -413,10 +424,10 @@ async function loadStats() {
 
     if (result.success && result.data) {
       const stats = result.data
-      document.getElementById('totalPackages').textContent = stats.totalPackages || 0
-      document.getElementById('totalSize').textContent = formatFileSize(stats.totalSize || 0)
-      document.getElementById('recentUploads').textContent = stats.recentPackages ? stats.recentPackages.length : 0
-      document.getElementById('packageTypes').textContent = Object.keys(stats.packagesByType || {}).length
+      totalEl.textContent = stats.totalPackages || 0
+      sizeEl.textContent = formatFileSize(stats.totalSize || 0)
+      recentEl.textContent = stats.recentPackages ? stats.recentPackages.length : 0
+      typesEl.textContent = Object.keys(stats.packagesByType || {}).length
     } else {
       throw new Error(result.message || '获取统计信息失败')
     }
