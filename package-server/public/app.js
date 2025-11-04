@@ -1396,7 +1396,7 @@ async function showPackageDetail(packageId) {
           ? `<div class="row mt-3">
                <div class="col-12">
                  <h6 class="text-muted mb-2">描述</h6>
-                 <div class="text-muted">${renderMarkdown(desc)}</div>
+                 <div class="text-muted markdown-content">${renderMarkdown(desc)}</div>
                </div>
              </div>`
           : ''
