@@ -204,26 +204,167 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-// 安全地渲染 Markdown 内容
+// 将文本中的特殊字符进行 HTML 转义，避免 XSS
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+// 简易 Markdown 解析器（在 marked 不可用时的回退实现）
+function basicMarkdownToHtml(md) {
+  if (!md) return ''
+
+  const lines = String(md).split(/\r?\n/)
+  let html = ''
+  let inUl = false
+  let inOl = false
+  let inCode = false
+  let codeBuffer = []
+
+  const flushLists = () => {
+    if (inUl) {
+      html += '</ul>'
+      inUl = false
+    }
+    if (inOl) {
+      html += '</ol>'
+      inOl = false
+    }
+  }
+
+  const flushCode = () => {
+    if (inCode) {
+      html += `<pre><code>${codeBuffer.join('\n')}</code></pre>`
+      inCode = false
+      codeBuffer = []
+    }
+  }
+
+  for (let rawLine of lines) {
+    const line = rawLine
+
+    // 代码块切换
+    if (/^```/.test(line)) {
+      if (!inCode) {
+        flushLists()
+        inCode = true
+        codeBuffer = []
+      } else {
+        // 结束代码块
+        html += `<pre><code>${codeBuffer.join('\n')}</code></pre>`
+        inCode = false
+        codeBuffer = []
+      }
+      continue
+    }
+
+    if (inCode) {
+      codeBuffer.push(escapeHtml(line))
+      continue
+    }
+
+    // 水平分割线
+    if (/^---+$/.test(line.trim())) {
+      flushLists()
+      html += '<hr>'
+      continue
+    }
+
+    // 标题（#、##、###）
+    if (/^###\s+/.test(line)) {
+      flushLists()
+      html += `<h6>${escapeHtml(line.replace(/^###\s+/, ''))}</h6>`
+      continue
+    }
+    if (/^##\s+/.test(line)) {
+      flushLists()
+      html += `<h5>${escapeHtml(line.replace(/^##\s+/, ''))}</h5>`
+      continue
+    }
+    if (/^#\s+/.test(line)) {
+      flushLists()
+      html += `<h4>${escapeHtml(line.replace(/^#\s+/, ''))}</h4>`
+      continue
+    }
+
+    // 无序列表项
+    if (/^\s*[-*+]\s+/.test(line)) {
+      if (!inUl) {
+        flushCode()
+        html += '<ul>'
+        inUl = true
+      }
+      const content = line.replace(/^\s*[-*+]\s+/, '')
+      html += `<li>${escapeHtml(content)}</li>`
+      continue
+    }
+
+    // 有序列表项
+    if (/^\s*\d+\.\s+/.test(line)) {
+      if (!inOl) {
+        flushCode()
+        html += '<ol>'
+        inOl = true
+      }
+      const content = line.replace(/^\s*\d+\.\s+/, '')
+      html += `<li>${escapeHtml(content)}</li>`
+      continue
+    }
+
+    // 普通段落或空行
+    if (line.trim() === '') {
+      flushLists()
+      html += '<br>'
+    } else {
+      flushLists()
+      let text = escapeHtml(line)
+      // 加粗 **text**
+      text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // 斜体 *text*
+      text = text.replace(/(^|\s)\*(.+?)\*(?=\s|$)/g, '$1<em>$2</em>')
+      // 行内代码 `code`
+      text = text.replace(/`([^`]+)`/g, '<code>$1</code>')
+      // 链接 [text](url)
+      text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+      html += `<p>${text}</p>`
+    }
+  }
+
+  // 收尾
+  flushLists()
+  flushCode()
+  return html
+}
+
+// 安全地渲染 Markdown 内容（优先使用 marked，失败则使用回退解析器）
 function renderMarkdown(text) {
   if (!text) return ''
 
-  try {
-    // 配置 marked 选项
-    window.marked.setOptions({
-      breaks: true, // 支持换行
-      gfm: true, // 支持 GitHub Flavored Markdown
-      sanitize: false, // 不进行 HTML 清理（如果需要更安全，可以设置为 true）
-      smartLists: true,
-      smartypants: true
-    })
-
-    return window.marked.parse(text)
-  } catch (error) {
-    console.error('Markdown 渲染失败:', error)
-    // 如果 Markdown 渲染失败，回退到纯文本显示
-    return `<div style="white-space: pre-wrap;">${text}</div>`
+  // 优先使用 marked（若可用）
+  if (typeof window !== 'undefined' && window.marked) {
+    try {
+      window.marked.setOptions({
+        breaks: true,
+        gfm: true,
+        // 新版 marked 移除了 sanitize；关闭 headerIds/mangle 以避免不必要的处理
+        headerIds: false,
+        mangle: false,
+        smartLists: true,
+        smartypants: true
+      })
+      return window.marked.parse(text)
+    } catch (error) {
+      console.error('Marked 渲染失败，使用回退解析器:', error)
+      return basicMarkdownToHtml(text)
+    }
   }
+
+  // 当 CDN 不可达或未加载 marked 时，使用本地回退解析器
+  return basicMarkdownToHtml(text)
 }
 
 // 格式化日期
@@ -423,11 +564,11 @@ function renderPackageList() {
                             })()}
                         </div>
                         ${(() => {
-                           const desc = pkg.metadata?.description
-                           if (!desc) return ''
-                           const escapedDesc = desc.replace(/"/g, '&quot;')
-                           return `<div class="mt-2 text-muted small" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapedDesc}">${desc}</div>`
-                         })()}
+                          const desc = pkg.metadata?.description
+                          if (!desc) return ''
+                          const escapedDesc = desc.replace(/"/g, '&quot;')
+                          return `<div class="mt-2 text-muted small" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapedDesc}">${desc}</div>`
+                        })()}
                     </div>
                     <div class="col-auto me-3">
                         <small class="text-muted d-block">
