@@ -539,7 +539,7 @@ class PackagingService {
     // 处理压缩包文件的release note提取
     const isArchive = this.fileProcessor.isArchiveFile(sourceFile)
     logger.info(`文件 ${sourceFile} 是否为压缩包: ${isArchive}`)
-    
+
     if (isArchive) {
       logger.info(`开始解压文件: ${sourceFile}`)
       const extractDir = await this.fileProcessor.extractArchive(sourceFile)
@@ -549,7 +549,7 @@ class PackagingService {
       logger.info(`开始查找 release note 文件...`)
       const releaseNoteFile = await this.fileProcessor.findReleaseNoteFile(extractDir)
       logger.info(`查找 release note 文件结果: ${releaseNoteFile || '未找到'}`)
-      
+
       if (releaseNoteFile) {
         logger.info(`开始读取 release note 内容: ${releaseNoteFile}`)
         const releaseNoteContent = await this.fileProcessor.readReleaseNoteContent(releaseNoteFile)
@@ -656,7 +656,7 @@ class PackagingService {
     // 添加release note内容
     const releaseNotes = selectedComponents
       .filter((component) => component.release_note)
-      .map((component) => `[${component.name}]\n${component.release_note}`)
+      .map((component) => `# 组件名称-${component.name}\n${component.release_note}`)
 
     if (releaseNotes.length > 0) {
       content += '---Release Note Starts---\n'
