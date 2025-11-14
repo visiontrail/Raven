@@ -18,7 +18,7 @@
 - ✅ **基础镜像**: `node:18-alpine` → `node:18` (完整版)
 - ✅ **新增系统依赖**: python3, make, g++, cmake（用于编译 faiss-node）
 - ✅ **健康检查**: 启动等待时间增加到 60-90 秒
-- ✅ **镜像大小**: ~150MB → ~1.2GB（包含 AI 模型）
+- ✅ **镜像大小**: ~150MB → ~1.2GB（包含本地嵌入模型，LLM 通过 API 调用）
 
 ### docker-compose.yml 变更
 - ✅ **健康检查**: start_period 增加到 90 秒
