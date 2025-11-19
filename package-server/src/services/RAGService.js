@@ -410,7 +410,14 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
       return []
     }
 
-    const normalizedAnswer = answer.toLowerCase()
+    const recommendedSection = this.extractSectionByHeading(answer, ['推荐', '建议'])
+    const keywordLines = recommendedSection || this.extractLinesWithKeywords(answer, ['推荐', '建议'])
+
+    if (!keywordLines) {
+      return []
+    }
+
+    const normalizedText = keywordLines.toLowerCase()
     const recommended = []
 
     relevantPackages.forEach((pkg, index) => {
@@ -426,7 +433,7 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
 
       const hit = tokens.some((token) => {
         if (!token) return false
-        return normalizedAnswer.includes(token.toLowerCase())
+        return normalizedText.includes(token.toLowerCase())
       })
 
       if (hit) {
@@ -435,6 +442,45 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
     })
 
     return Array.from(new Set(recommended))
+  }
+
+  extractSectionByHeading(answer, keywords) {
+    if (!answer) return null
+    const headingRegex = /^#{1,6}\s.*$/gm
+    const matches = []
+    let match
+
+    while ((match = headingRegex.exec(answer)) !== null) {
+      matches.push({
+        title: match[0],
+        start: match.index
+      })
+    }
+
+    if (matches.length === 0) {
+      return null
+    }
+
+    for (let i = 0; i < matches.length; i++) {
+      const titleLower = matches[i].title.toLowerCase()
+      const hasKeyword = keywords.some((keyword) => titleLower.includes(keyword.toLowerCase()))
+      if (hasKeyword) {
+        const start = matches[i].start
+        const end = i + 1 < matches.length ? matches[i + 1].start : answer.length
+        return answer.slice(start, end)
+      }
+    }
+
+    return null
+  }
+
+  extractLinesWithKeywords(answer, keywords) {
+    if (!answer) return null
+    const lines = answer.split('\n')
+    const filtered = lines.filter((line) =>
+      keywords.some((keyword) => line.toLowerCase().includes(keyword.toLowerCase()))
+    )
+    return filtered.length > 0 ? filtered.join('\n') : null
   }
 
   /**
