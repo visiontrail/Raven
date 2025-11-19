@@ -192,7 +192,7 @@ curl -X POST http://your-server:8083/api/search/intelligent \
 ```bash
 #!/bin/bash
 
-echo "🚀 开始部署 Galaxy Space 包管理系统（含 RAG 功能）"
+echo "🚀 开始部署 Raven 包管理系统（含 RAG 功能）"
 
 # 1. 拉取最新代码
 cd /path/to/package-server

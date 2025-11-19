@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-已成功在 Galaxy Space 包管理系统中实现基于 RAG (Retrieval-Augmented Generation) 的智能搜索功能。
+已成功在 Raven 包管理系统中实现基于 RAG (Retrieval-Augmented Generation) 的智能搜索功能。
 
 ## 完成时间
 
