@@ -344,6 +344,9 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
       console.log(`⏱️ LLM 调用耗时 ${Date.now() - llmStart} ms`)
       console.log('🤖 LLM 原始回答:\n' + answer)
 
+      const recommendedPackageIds = this.extractRecommendedPackageIds(answer, relevantPackages)
+      console.log('⭐️ AI 推荐包:', recommendedPackageIds.length > 0 ? recommendedPackageIds.join(', ') : '无')
+
       console.log('✅ 智能搜索完成')
 
       console.log(`⏱️ 智能搜索流程耗时 ${Date.now() - totalStart} ms`)
@@ -352,7 +355,8 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
         answer: answer,
         relevantPackages: relevantPackages,
         query: query,
-        searchResultsCount: searchResults.length
+        searchResultsCount: searchResults.length,
+        recommendedPackageIds
       }
     } catch (error) {
       console.error('❌ 智能搜索失败:', error)
@@ -399,6 +403,38 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
       console.error('❌ 获取搜索建议失败:', error)
       return []
     }
+  }
+
+  extractRecommendedPackageIds(answer, relevantPackages) {
+    if (!answer || !Array.isArray(relevantPackages) || relevantPackages.length === 0) {
+      return []
+    }
+
+    const normalizedAnswer = answer.toLowerCase()
+    const recommended = []
+
+    relevantPackages.forEach((pkg, index) => {
+      const tokens = [
+        pkg.name,
+        pkg.version,
+        `包${index + 1}`,
+        `包 ${index + 1}`,
+        `[包${index + 1}]`,
+        `package ${index + 1}`,
+        `pkg${index + 1}`
+      ]
+
+      const hit = tokens.some((token) => {
+        if (!token) return false
+        return normalizedAnswer.includes(token.toLowerCase())
+      })
+
+      if (hit) {
+        recommended.push(pkg.id)
+      }
+    })
+
+    return Array.from(new Set(recommended))
   }
 
   /**
