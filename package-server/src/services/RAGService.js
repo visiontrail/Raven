@@ -278,14 +278,26 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
 
       // 1. 执行向量搜索获取相关包
       const searchResults = await this.similaritySearch(query, k)
+      console.log('🧭 相似度搜索命中ID:', searchResults.map((r) => r.id).join(', ') || '无')
 
       // 2. 根据ID获取完整的包信息
+      const missingPackageIds = []
       const relevantPackages = searchResults
         .map((result) => {
           const pkg = packages.find((p) => p.id === result.id)
-          return pkg ? { ...pkg, relevanceScore: result.score } : null
+          if (!pkg) {
+            missingPackageIds.push(result.id)
+            return null
+          }
+          return { ...pkg, relevanceScore: result.score }
         })
         .filter((pkg) => pkg !== null)
+
+      console.log(`📦 成功匹配到 ${relevantPackages.length} 个包（请求期望 ${searchResults.length} 个）`)
+
+      if (missingPackageIds.length > 0) {
+        console.warn('⚠️ 向量存储命中但在包元数据中未找到的ID:', missingPackageIds.join(', '))
+      }
 
       // 3. 构建上下文
       const context = searchResults.map((result, index) => `[包${index + 1}]\n${result.content}`).join('\n\n')
