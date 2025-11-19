@@ -38,6 +38,12 @@ echo "6️⃣ 检查挂载目录..."
 if [ -d "uploads" ]; then
     echo "✅ uploads 目录存在"
     ls -ld uploads
+    # 检查权限
+    if [ -w "uploads" ]; then
+        echo "   ✅ uploads 目录可写"
+    else
+        echo "   ❌ uploads 目录不可写（可能是权限问题）"
+    fi
 else
     echo "❌ uploads 目录不存在"
 fi
@@ -45,8 +51,29 @@ fi
 if [ -d "data" ]; then
     echo "✅ data 目录存在"
     ls -ld data
+    # 检查权限
+    if [ -w "data" ]; then
+        echo "   ✅ data 目录可写"
+    else
+        echo "   ❌ data 目录不可写（可能是权限问题）"
+    fi
 else
     echo "❌ data 目录不存在"
+fi
+echo ""
+
+echo "6.5️⃣ 检查容器内用户和目录权限..."
+if docker ps | grep -q $CONTAINER_NAME; then
+    echo "容器内用户信息:"
+    docker exec $CONTAINER_NAME id 2>/dev/null || echo "   ❌ 无法获取用户信息"
+    echo ""
+    echo "容器内目录权限:"
+    docker exec $CONTAINER_NAME ls -ld /app/uploads /app/data 2>/dev/null || echo "   ❌ 无法查看目录权限"
+    echo ""
+    echo "💡 如果容器内用户 UID 与宿主机目录所有者不匹配，会导致权限错误"
+    echo "   修复方法: sudo ./scripts/fix-permissions.sh"
+else
+    echo "⚠️  容器未运行，无法检查容器内权限"
 fi
 echo ""
 

@@ -304,6 +304,80 @@ docker run -d \
   ...
 ```
 
+### 问题 5: 权限错误 EACCES: permission denied
+
+**错误信息**:
+```
+Error: EACCES: permission denied, open '/app/uploads/xxx.tgz'
+```
+
+**原因**: 
+- Docker 容器以 `node` 用户（UID 1000）运行
+- 宿主机挂载的 `uploads` 或 `data` 目录权限不匹配
+- 卷挂载时，容器内的权限设置会被宿主机目录权限覆盖
+
+**解决方案**:
+
+**方法 1: 使用修复脚本（推荐）**
+```bash
+# 进入项目目录
+cd /path/to/package-server
+
+# 运行权限修复脚本
+sudo ./scripts/fix-permissions.sh
+
+# 如果容器内用户 UID 不是 1000，可以指定
+sudo ./scripts/fix-permissions.sh 1001 1001
+```
+
+**方法 2: 手动修复权限**
+```bash
+# 1. 检查容器内用户 UID
+docker exec galaxy-package-server id
+# 输出示例: uid=1000(node) gid=1000(node) groups=1000(node)
+
+# 2. 修复宿主机目录权限（使用容器内的 UID/GID）
+sudo chown -R 1000:1000 uploads data
+sudo chmod -R 755 uploads data
+
+# 3. 验证权限
+ls -ld uploads data
+```
+
+**方法 3: 使用宽松权限（不推荐，安全性较低）**
+```bash
+# 如果无法修改所有者，可以使用宽松权限
+chmod -R 777 uploads data
+```
+
+**方法 4: 在 docker-compose.yml 中添加用户映射（高级）**
+```yaml
+services:
+  package-server:
+    # ... 其他配置 ...
+    user: "${UID:-1000}:${GID:-1000}"  # 使用环境变量或默认值
+```
+
+然后设置环境变量：
+```bash
+export UID=$(id -u)
+export GID=$(id -g)
+docker-compose up -d
+```
+
+**验证修复**:
+```bash
+# 1. 重启容器
+docker-compose restart
+
+# 2. 检查日志，确认没有权限错误
+docker logs galaxy-package-server --tail=50
+
+# 3. 测试上传功能
+curl -X POST http://localhost:8083/api/upload \
+  -F "file=@test.tgz"
+```
+
 ## 📊 监控建议
 
 ### 日志监控
