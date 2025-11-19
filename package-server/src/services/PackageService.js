@@ -69,6 +69,7 @@ class PackageService {
 
   // Get all packages
   async getAllPackages() {
+    const startTime = Date.now()
     console.log(`🔍 开始获取所有包，当前内存中有 ${this.packages.size} 个包`)
     // Filter out packages that no longer exist on the file system
     const existingPackages = []
@@ -93,6 +94,7 @@ class PackageService {
     }
 
     console.log(`📊 返回 ${existingPackages.length} 个有效包`)
+    console.log(`⏱️ 获取所有包耗时 ${Date.now() - startTime} ms`)
     return existingPackages
   }
 

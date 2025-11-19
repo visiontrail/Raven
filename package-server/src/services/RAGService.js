@@ -114,6 +114,7 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
    * 初始化或加载向量存储
    */
   async initializeVectorStore(packages) {
+    const initStart = Date.now()
     try {
       console.log('🔄 初始化向量存储...')
 
@@ -122,7 +123,7 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
         console.log('📂 发现已存在的向量存储，正在加载...')
         try {
           this.vectorStore = await FaissStore.load(this.vectorStorePath, this.embeddings)
-          console.log('✅ 向量存储加载成功')
+          console.log(`✅ 向量存储加载成功（耗时 ${Date.now() - initStart} ms）`)
           this.isInitialized = true
           return true
         } catch (error) {
@@ -135,6 +136,7 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
       // 创建新的向量存储
       if (packages.length === 0) {
         console.log('⚠️ 没有包数据，跳过向量存储创建')
+        console.log(`⏱️ 向量存储初始化耗时 ${Date.now() - initStart} ms`)
         return false
       }
 
@@ -164,7 +166,7 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
       await fs.ensureDir(path.dirname(this.vectorStorePath))
       await this.vectorStore.save(this.vectorStorePath)
 
-      console.log('✅ 向量存储创建并保存成功')
+      console.log(`✅ 向量存储创建并保存成功（耗时 ${Date.now() - initStart} ms）`)
       this.isInitialized = true
       return true
     } catch (error) {
@@ -177,6 +179,7 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
    * 重建向量存储（当包数据更新时）
    */
   async rebuildVectorStore(packages) {
+    const rebuildStart = Date.now()
     try {
       console.log('🔄 重建向量存储...')
 
@@ -188,7 +191,7 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
       // 重新初始化
       await this.initializeVectorStore(packages)
 
-      console.log('✅ 向量存储重建完成')
+      console.log(`✅ 向量存储重建完成（耗时 ${Date.now() - rebuildStart} ms）`)
       return true
     } catch (error) {
       console.error('❌ 重建向量存储失败:', error)
@@ -235,6 +238,7 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
    * 执行相似度搜索
    */
   async similaritySearch(query, k = 5) {
+    const searchStart = Date.now()
     try {
       if (!this.isInitialized || !this.vectorStore) {
         throw new Error('向量存储未初始化')
@@ -244,7 +248,7 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
 
       const results = await this.vectorStore.similaritySearchWithScore(query, k)
 
-      console.log(`✅ 找到 ${results.length} 个相关结果`)
+      console.log(`✅ 找到 ${results.length} 个相关结果（耗时 ${Date.now() - searchStart} ms）`)
 
       return results.map(([doc, score]) => ({
         id: doc.metadata.id,
@@ -264,11 +268,13 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
    * 使用 RAG 进行智能搜索
    */
   async intelligentSearch(query, packages, k = 5) {
+    const totalStart = Date.now()
     try {
       console.log(`🤖 执行智能搜索: "${query}"`)
 
       if (!this.isInitialized || !this.vectorStore) {
         console.log('⚠️ 向量存储未初始化，返回空结果')
+        console.log(`⏱️ 智能搜索流程耗时 ${Date.now() - totalStart} ms`)
         return {
           answer: '向量存储未初始化，请先重建索引。',
           relevantPackages: [],
@@ -319,17 +325,28 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
 回答：
 `)
 
+      const formattedPrompt = await promptTemplate.format({
+        context,
+        query
+      })
+      console.log('📝 发送给 LLM 的 Prompt:\n' + formattedPrompt)
+
       // 5. 创建 RAG 链
       const chain = RunnableSequence.from([promptTemplate, this.llm, new StringOutputParser()])
 
       // 6. 执行查询
       console.log('🤖 正在调用 LLM 生成回答...')
+      const llmStart = Date.now()
       const answer = await chain.invoke({
         context: context,
         query: query
       })
+      console.log(`⏱️ LLM 调用耗时 ${Date.now() - llmStart} ms`)
+      console.log('🤖 LLM 原始回答:\n' + answer)
 
       console.log('✅ 智能搜索完成')
+
+      console.log(`⏱️ 智能搜索流程耗时 ${Date.now() - totalStart} ms`)
 
       return {
         answer: answer,
