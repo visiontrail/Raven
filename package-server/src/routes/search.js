@@ -1,11 +1,11 @@
 const express = require('express')
-const RAGService = require('../services/RAGService')
+const getRAGServiceInstance = require('../services/RAGServiceSingleton')
 const PackageServiceSingleton = require('../services/PackageServiceSingleton')
 
 const router = express.Router()
 
 // 创建服务实例
-const ragService = new RAGService()
+const ragService = getRAGServiceInstance()
 const packageService = new PackageServiceSingleton()
 
 /**
@@ -178,4 +178,3 @@ router.post('/similarity', async (req, res) => {
 })
 
 module.exports = router
-

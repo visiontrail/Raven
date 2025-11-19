@@ -3,9 +3,11 @@ const multer = require('multer')
 const path = require('path')
 const fs = require('fs-extra')
 const PackageServiceSingleton = require('../services/PackageServiceSingleton')
+const getRAGServiceInstance = require('../services/RAGServiceSingleton')
 
 const router = express.Router()
 const packageService = new PackageServiceSingleton()
+const ragService = getRAGServiceInstance()
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -100,6 +102,15 @@ router.post('/', upload.single('file'), async (req, res) => {
     const result = await packageService.addPackage(finalPackageInfo)
     console.log('添加包结果:', result)
 
+    if (result) {
+      console.log('🔄 上传完成，开始重建向量索引...')
+      const packages = await packageService.getAllPackages()
+      await ragService.rebuildVectorStore(packages)
+      console.log('✅ 向量索引重建完成（上传触发）')
+    } else {
+      console.warn('⚠️ 包添加失败，跳过索引重建')
+    }
+
     res.json({
       success: true,
       message: '包上传成功',
@@ -167,6 +178,13 @@ router.post('/batch', upload.array('files', 10), async (req, res) => {
           console.error('Failed to cleanup file:', cleanupError)
         }
       }
+    }
+
+    if (results.length > 0) {
+      console.log('🔄 批量上传完成，开始重建向量索引...')
+      const packages = await packageService.getAllPackages()
+      await ragService.rebuildVectorStore(packages)
+      console.log('✅ 批量上传触发的向量索引重建完成')
     }
 
     res.json({
