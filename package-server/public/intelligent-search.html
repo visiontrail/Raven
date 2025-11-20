@@ -478,7 +478,7 @@
 
         sortedPackages.forEach((pkg) => {
           const isRecommended = recommendedIds.has(pkg.id)
-          const relevancePercent = formatRelevancePercent(pkg.relevanceScore)
+          const relevancePercent = formatRelevancePercent(pkg.relevanceScore, isRecommended)
           html += `
             <div class="card package-card mb-3">
               <div class="card-body">
@@ -699,12 +699,15 @@
         })
       }
 
-      function formatRelevancePercent(score) {
+      function formatRelevancePercent(score, isRecommended = false) {
         if (typeof score !== 'number' || Number.isNaN(score)) {
           return null
         }
         const safeScore = Math.max(0, score)
-        const percent = (1 / (1 + safeScore)) * 100
+        let percent = (1 / (1 + safeScore)) * 100
+        if (isRecommended) {
+          percent = Math.min(100, percent + 10)
+        }
         return percent.toFixed(1)
       }
 
