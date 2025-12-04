@@ -19,6 +19,7 @@ import DeviceLogListView from './DeviceLogListView'
 import FileList from './FileList'
 import LogListView from './LogListView'
 import PackageListView from './PackageListView'
+import RefactorPackageServerView from './RefactorPackageServerView'
 
 type SortField = 'created_at' | 'size' | 'name'
 type SortOrder = 'asc' | 'desc'
@@ -76,6 +77,7 @@ const FilesPage: FC = () => {
     { key: FileTypes.TEXT, label: t('files.text'), icon: <FileTypeIcon size={16} /> },
     { key: FileTypes.PACKAGE, label: t('files.packages'), icon: <Package size={16} /> },
     { key: 'logs', label: t('files.logs'), icon: <FileText size={16} /> },
+    { key: 'refactor-packages', label: '重构包服务器', icon: <Package size={16} /> },
     { key: 'device-logs', label: '设备日志', icon: <FileText size={16} /> },
     { key: 'all', label: t('files.all'), icon: <FileText size={16} /> }
   ]
@@ -102,6 +104,8 @@ const FilesPage: FC = () => {
             <PackageListView />
           ) : fileType === 'logs' ? (
             <LogListView />
+          ) : fileType === 'refactor-packages' ? (
+            <RefactorPackageServerView />
           ) : fileType === 'device-logs' ? (
             <DeviceLogListView />
           ) : (
