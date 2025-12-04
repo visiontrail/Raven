@@ -355,11 +355,15 @@ class DeviceLogMonitorService {
       // 4. 上传到日志服务器
       await this.uploadToLogServer(fileBlob, file.name, file.type)
 
-      // 5. 清理临时文件
       await window.api.file.delete(localPath)
-
-      console.log(`[DeviceLogMonitorService] 文件处理完成: ${file.name}`)
-      message.success(`${file.name} 自动上传完成`)
+      try {
+        await ftpService.deleteFile(file.path)
+        console.log(`[DeviceLogMonitorService] 已删除FTP源文件: ${file.name}`)
+        message.success(`${file.name} 自动上传并删除源文件完成`)
+      } catch (delErr) {
+        console.error(`[DeviceLogMonitorService] 删除FTP源文件失败: ${file.name}`, delErr)
+        message.warning(`${file.name} 上传成功但删除FTP源文件失败`)
+      }
     } catch (error) {
       console.error(`[DeviceLogMonitorService] 上传失败: ${file.name}`, error)
       message.error(`${file.name} 自动上传失败: ${error instanceof Error ? error.message : '未知错误'}`)
