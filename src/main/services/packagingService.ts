@@ -638,7 +638,15 @@ class PackagingService {
     }
 
     const version = VersionParser.versionToNumeric(packageConfig.package_version)
-    return `${baseName}-${dateStr}-V${version}${suffix}.tgz`
+    let subSuffix = ''
+    if (packageConfig.package_type === 'ka-tx' || packageConfig.package_type === 'ka-rx') {
+      if (packageConfig.ka_sub_file_type === 1) {
+        subSuffix = '-Master'
+      } else if (packageConfig.ka_sub_file_type === 2) {
+        subSuffix = '-Backup'
+      }
+    }
+    return `${baseName}-${dateStr}-V${version}${subSuffix}${suffix}.tgz`
   }
 
   getComponentTemplate(packageType: string): Component[] {
