@@ -1904,6 +1904,12 @@
         "du_gnb": "Configuração DU GNB",
         "du_stack": "Configuração DU Stack"
       },
+      "ka-tx": {
+        "firmware": "Firmware"
+      },
+      "ka-rx": {
+        "firmware": "Firmware"
+      },
       "lingxi-07a": {
         "bpoqv_fpga": "BPOQV FPGA",
         "bposc_fpga": "BPOSC FPGA",
@@ -1936,6 +1942,9 @@
     },
     "infoPreview": "Pré-visualização de informações",
     "isPatch": "É um pacote PATCH?",
+    "subFileType": "Tipo de cópia",
+    "subFileType.master": "Principal",
+    "subFileType.backup": "Cópia de segurança",
     "log": {
       "cleared": "Todas as seleções foram limpas",
       "errorUnknown": "Ocorreu um erro desconhecido durante o empacotamento",
@@ -1951,6 +1960,8 @@
     "title": "Empacotador",
     "types": {
       "config": "Pacote de configuração",
+      "ka-tx": "Antena KA Tx",
+      "ka-rx": "Antena KA Rx",
       "lingxi-06-thrid": "Lingxi 06 Fase 3",
       "lingxi-07a": "Lingxi 07A",
       "lingxi-10": "Lingxi 10"

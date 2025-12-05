@@ -1904,6 +1904,12 @@
         "du_gnb": "DU GNB配置",
         "du_stack": "DU Stack配置"
       },
+      "ka-tx": {
+        "firmware": "Firmware"
+      },
+      "ka-rx": {
+        "firmware": "Firmware"
+      },
       "lingxi-07a": {
         "bpoqv_fpga": "QV基带FPGA",
         "bposc_fpga": "基带板FPGA",
@@ -1936,6 +1942,9 @@
     },
     "infoPreview": "信息预览",
     "isPatch": "是否为PATCH包",
+    "subFileType": "Τύπος αντιγράφου",
+    "subFileType.master": "Κύριο",
+    "subFileType.backup": "Αντίγραφο",
     "log": {
       "cleared": "已清空所有选择",
       "errorUnknown": "打包过程中发生未知错误",
@@ -1951,6 +1960,8 @@
     "title": "打包工具",
     "types": {
       "config": "配置文件包",
+      "ka-tx": "KA Tx Κεραία",
+      "ka-rx": "KA Rx Κεραία",
       "lingxi-06-thrid": "灵犀 06 三标段",
       "lingxi-07a": "灵犀 07A",
       "lingxi-10": "灵犀 10"

@@ -8,6 +8,8 @@
 export enum PackageType {
   LINGXI_10 = 'lingxi-10',
   LINGXI_07A = 'lingxi-07a',
+  KA_TX = 'ka-tx',
+  KA_RX = 'ka-rx',
   CONFIG = 'config',
   LINGXI_06TRD = 'lingxi-06-thrid'
 }

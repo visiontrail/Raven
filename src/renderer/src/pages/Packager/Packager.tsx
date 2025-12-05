@@ -14,6 +14,8 @@ const Packager: React.FC = () => {
   const menuItems = [
     { key: 'lingxi-10', label: t('packager.types.lingxi-10') },
     { key: 'lingxi-07a', label: t('packager.types.lingxi-07a') },
+    { key: 'ka-tx', label: t('packager.types.ka-tx') },
+    { key: 'ka-rx', label: t('packager.types.ka-rx') },
     { key: 'config', label: t('packager.types.config') },
     { key: 'lingxi-06-thrid', label: t('packager.types.lingxi-06-thrid') }
   ]

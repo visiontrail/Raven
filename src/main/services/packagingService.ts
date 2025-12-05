@@ -144,6 +144,34 @@ const COMPONENT_CONFIGS = {
       }
     }
   },
+  'ka-tx': {
+    name: 'KA发送天线升级包',
+    packet_attr: 1100,
+    prefix: 'GalaxySpace-KaTx',
+    components: {
+      firmware: {
+        file_name: 'katx.bin',
+        file_attr: '280',
+        file_types: ['.bin'],
+        description: 'packager.components.ka-tx.firmware',
+        direct_include: false
+      }
+    }
+  },
+  'ka-rx': {
+    name: 'KA接收天线升级包',
+    packet_attr: 1200,
+    prefix: 'GalaxySpace-KaRx',
+    components: {
+      firmware: {
+        file_name: 'karx.bin',
+        file_attr: '280',
+        file_types: ['.bin'],
+        description: 'packager.components.ka-rx.firmware',
+        direct_include: false
+      }
+    }
+  },
   config: {
     name: '配置文件包',
     packet_attr: 1300,
@@ -241,6 +269,7 @@ export interface PackageConfig {
   package_version: string
   is_patch: boolean
   selected_components: Component[]
+  ka_sub_file_type?: number
 }
 
 class PackagingService {
@@ -633,7 +662,7 @@ class PackagingService {
     }
 
     const { packet_attr, patch_packet_attr, components: allComponentsConfig } = packageTypeConfig
-    const final_packet_attr = config.is_patch ? patch_packet_attr : packet_attr
+    const final_packet_attr = config.is_patch && patch_packet_attr ? patch_packet_attr : packet_attr
     const selectedComponents = config.selected_components.filter((c) => c.selected_file)
 
     let content = ''
@@ -641,6 +670,13 @@ class PackagingService {
     content += `PacketAttr=${final_packet_attr};\n`
     content += `Publisher=yinhe;\n`
     content += `FileNumInPacket=${selectedComponents.length};\n\n`
+
+    if (config.package_type === 'ka-tx' && typeof config.ka_sub_file_type === 'number') {
+      content += `KaTxSubFileType=${config.ka_sub_file_type};\n`
+    }
+    if (config.package_type === 'ka-rx' && typeof config.ka_sub_file_type === 'number') {
+      content += `KaRxSubFileType=${config.ka_sub_file_type};\n`
+    }
 
     selectedComponents.forEach((component, index) => {
       const componentConfig = allComponentsConfig[component.name]

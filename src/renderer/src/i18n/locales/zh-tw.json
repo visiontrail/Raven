@@ -1904,6 +1904,12 @@
         "du_gnb": "DU GNB 配置",
         "du_stack": "DU Stack 配置"
       },
+      "ka-tx": {
+        "firmware": "韌體"
+      },
+      "ka-rx": {
+        "firmware": "韌體"
+      },
       "lingxi-07a": {
         "bpoqv_fpga": "QV 基頻 FPGA",
         "bposc_fpga": "基頻板 FPGA",
@@ -1936,6 +1942,9 @@
     },
     "infoPreview": "資訊預覽",
     "isPatch": "是否為 PATCH 包",
+    "subFileType": "主備選擇",
+    "subFileType.master": "主份",
+    "subFileType.backup": "備份",
     "log": {
       "cleared": "已清空所有選擇",
       "errorUnknown": "打包過程中發生未知錯誤",
@@ -1951,6 +1960,8 @@
     "title": "打包工具",
     "types": {
       "config": "配置檔案包",
+      "ka-tx": "KA 發送天線",
+      "ka-rx": "KA 接收天線",
       "lingxi-06-thrid": "靈犀 06 三標段",
       "lingxi-07a": "靈犀 07A",
       "lingxi-10": "靈犀 10"

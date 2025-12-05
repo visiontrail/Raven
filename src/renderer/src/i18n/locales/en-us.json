@@ -1904,6 +1904,12 @@
         "du_gnb": "DU GNB Configuration",
         "du_stack": "DU Stack Configuration"
       },
+      "ka-tx": {
+        "firmware": "Firmware"
+      },
+      "ka-rx": {
+        "firmware": "Firmware"
+      },
       "lingxi-07a": {
         "bpoqv_fpga": "QV Baseband FPGA",
         "bposc_fpga": "Baseband Board FPGA",
@@ -1936,6 +1942,9 @@
     },
     "infoPreview": "Information Preview",
     "isPatch": "Is Patch Package",
+    "subFileType": "Copy Type",
+    "subFileType.master": "Master",
+    "subFileType.backup": "Backup",
     "log": {
       "cleared": "All selections cleared",
       "errorUnknown": "Unknown error occurred during packaging",
@@ -1951,6 +1960,8 @@
     "title": "Packaging Tool",
     "types": {
       "config": "Configuration Package",
+      "ka-tx": "KA Tx Antenna",
+      "ka-rx": "KA Rx Antenna",
       "lingxi-06-thrid": "Lingxi 06 Phase 3",
       "lingxi-07a": "Lingxi 07A",
       "lingxi-10": "Lingxi 10"

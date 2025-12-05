@@ -1,5 +1,5 @@
 import { DeleteOutlined, UploadOutlined } from '@ant-design/icons'
-import { Button, Card, Checkbox, Col, Form, Input, message, Progress, Row, Space, Typography } from 'antd'
+import { Button, Card, Checkbox, Col, Form, Input, message, Progress, Radio, Row, Space, Typography } from 'antd'
 import React, { useEffect, useReducer, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
@@ -27,12 +27,14 @@ interface PackagerState {
   packageVersion: string
   isPatch: boolean
   components: ComponentState[]
+  kaSubFileType?: 1 | 2
 }
 
 type PackagerAction =
   | { type: 'SET_COMPONENTS'; payload: Component[] }
   | { type: 'SET_PACKAGE_VERSION'; payload: string }
   | { type: 'SET_IS_PATCH'; payload: boolean }
+  | { type: 'SET_KA_SUB_FILE_TYPE'; payload: 1 | 2 }
   | {
       type: 'SET_FILE'
       payload: {
@@ -48,7 +50,8 @@ type PackagerAction =
 const initialState: PackagerState = {
   packageVersion: '',
   isPatch: false,
-  components: []
+  components: [],
+  kaSubFileType: undefined
 }
 
 function packagerReducer(state: PackagerState, action: PackagerAction): PackagerState {
@@ -59,6 +62,8 @@ function packagerReducer(state: PackagerState, action: PackagerAction): Packager
       return { ...state, packageVersion: action.payload }
     case 'SET_IS_PATCH':
       return { ...state, isPatch: action.payload }
+    case 'SET_KA_SUB_FILE_TYPE':
+      return { ...state, kaSubFileType: action.payload }
     case 'SET_FILE':
       return {
         ...state,
@@ -101,7 +106,7 @@ const PackageTab: React.FC = () => {
   const { packageType } = useParams<{ packageType: string }>()
   const { t } = useTranslation()
   const [state, dispatch] = useReducer(packagerReducer, initialState)
-  const { packageVersion, isPatch, components } = state
+  const { packageVersion, isPatch, components, kaSubFileType } = state
 
   const [siIniPreview, setSiIniPreview] = useState('')
   const [log, setLog] = useState('')
@@ -116,6 +121,9 @@ const PackageTab: React.FC = () => {
       try {
         const componentDefs = await window.api.packager.getInfo(packageType)
         dispatch({ type: 'SET_COMPONENTS', payload: componentDefs })
+        if (['ka-tx', 'ka-rx'].includes(packageType)) {
+          dispatch({ type: 'SET_KA_SUB_FILE_TYPE', payload: 1 })
+        }
       } catch (error: any) {
         message.error(`获取组件信息失败: ${error.message}`)
       }
@@ -136,7 +144,8 @@ const PackageTab: React.FC = () => {
           description: c.component.description,
           selected_file: c.selectedFilePath,
           version: c.version
-        }))
+        })),
+        ka_sub_file_type: kaSubFileType
       }
       loggerService.debug(`[Renderer] Generating si.ini preview with config: ${JSON.stringify(config, null, 2)}`)
       try {
@@ -150,7 +159,7 @@ const PackageTab: React.FC = () => {
       }
     }
     updatePreview()
-  }, [packageVersion, isPatch, components, packageType])
+  }, [packageVersion, isPatch, components, packageType, kaSubFileType])
 
   const handleLog = (msg: string) => {
     setLog(
@@ -231,7 +240,8 @@ const PackageTab: React.FC = () => {
         description: t(c.component.description),
         selected_file: c.selectedFilePath,
         version: c.version
-      }))
+      })),
+      ka_sub_file_type: kaSubFileType
     }
 
     try {
@@ -330,13 +340,26 @@ const PackageTab: React.FC = () => {
                 </Form.Item>
               ))}
             </Card>
-            <Form.Item style={{ marginTop: 16 }}>
-              <Checkbox
-                checked={isPatch}
-                onChange={(e) => dispatch({ type: 'SET_IS_PATCH', payload: e.target.checked })}>
-                {t('packager.isPatch')}
-              </Checkbox>
-            </Form.Item>
+            {(['ka-tx', 'ka-rx'].includes(packageType || '') && (
+              <Form.Item style={{ marginTop: 16 }} label={t('packager.subFileType')}>
+                <Radio.Group
+                  value={kaSubFileType}
+                  onChange={(e) =>
+                    dispatch({ type: 'SET_KA_SUB_FILE_TYPE', payload: Number(e.target.value) as 1 | 2 })
+                  }>
+                  <Radio value={1}>{t('packager.subFileType.master')}</Radio>
+                  <Radio value={2}>{t('packager.subFileType.backup')}</Radio>
+                </Radio.Group>
+              </Form.Item>
+            )) || (
+              <Form.Item style={{ marginTop: 16 }}>
+                <Checkbox
+                  checked={isPatch}
+                  onChange={(e) => dispatch({ type: 'SET_IS_PATCH', payload: e.target.checked })}>
+                  {t('packager.isPatch')}
+                </Checkbox>
+              </Form.Item>
+            )}
             <Form.Item>
               <Space>
                 <Button type="primary" onClick={handleStartPackaging} loading={packaging}>

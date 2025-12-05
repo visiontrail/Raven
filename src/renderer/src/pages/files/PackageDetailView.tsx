@@ -236,6 +236,10 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
         return 'blue'
       case PackageType.LINGXI_07A:
         return 'green'
+      case PackageType.KA_TX:
+        return 'red'
+      case PackageType.KA_RX:
+        return 'magenta'
       case PackageType.CONFIG:
         return 'orange'
       case PackageType.LINGXI_06TRD:
