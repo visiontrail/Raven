@@ -38,7 +38,6 @@ import DxtService from './DxtService'
 import { CallBackServer } from './mcp/oauth/callback'
 import { McpOAuthClientProvider } from './mcp/oauth/provider'
 import getLoginShellEnvironment from './mcp/shell-env'
-import timeSyncService from './TimeSyncService'
 import { windowService } from './WindowService'
 
 // Generic type for caching wrapped functions
@@ -146,9 +145,6 @@ class McpService {
     // Create a promise for the initialization process
     const initPromise = (async () => {
       try {
-        // Time sync for specific target host before establishing connection
-        await timeSyncService.syncIfTarget(server, '172.77.245.1')
-
         // Create new client instance for each connection
         const client = new Client({ name: 'Cherry Studio', version: app.getVersion() }, { capabilities: {} })
 
