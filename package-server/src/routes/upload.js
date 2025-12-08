@@ -102,20 +102,34 @@ router.post('/', upload.single('file'), async (req, res) => {
     const result = await packageService.addPackage(finalPackageInfo)
     console.log('添加包结果:', result)
 
+    let vectorIndexRebuild = 'skipped'
     if (result) {
       console.log('🔄 上传完成，开始重建向量索引...')
-      const packages = await packageService.getAllPackages()
-      await ragService.rebuildVectorStore(packages)
-      console.log('✅ 向量索引重建完成（上传触发）')
+      try {
+        const packages = await packageService.getAllPackages()
+        await ragService.rebuildVectorStore(packages)
+        vectorIndexRebuild = 'success'
+        console.log('✅ 向量索引重建完成（上传触发）')
+      } catch (err) {
+        vectorIndexRebuild = `failed: ${err.message || err}`
+        console.error('⚠️ 向量索引重建失败（已忽略，上传继续）:', err)
+      }
     } else {
       console.warn('⚠️ 包添加失败，跳过索引重建')
     }
 
-    res.json({
+    const response = {
       success: true,
       message: '包上传成功',
       package: finalPackageInfo
-    })
+    }
+
+    if (vectorIndexRebuild !== 'success') {
+      response.vectorIndexRebuild = vectorIndexRebuild
+      response.warning = '包已上传，但向量索引未完成，请稍后重试重建索引'
+    }
+
+    res.json(response)
   } catch (error) {
     console.error('Upload error:', error)
 
@@ -180,18 +194,29 @@ router.post('/batch', upload.array('files', 10), async (req, res) => {
       }
     }
 
+    let vectorIndexRebuild = 'skipped'
     if (results.length > 0) {
       console.log('🔄 批量上传完成，开始重建向量索引...')
-      const packages = await packageService.getAllPackages()
-      await ragService.rebuildVectorStore(packages)
-      console.log('✅ 批量上传触发的向量索引重建完成')
+      try {
+        const packages = await packageService.getAllPackages()
+        await ragService.rebuildVectorStore(packages)
+        vectorIndexRebuild = 'success'
+        console.log('✅ 批量上传触发的向量索引重建完成')
+      } catch (err) {
+        vectorIndexRebuild = `failed: ${err.message || err}`
+        console.error('⚠️ 批量上传后向量索引重建失败（已忽略）:', err)
+      }
     }
 
     res.json({
       success: true,
       message: `成功上传 ${results.length} 个包`,
       packages: results,
-      errors: errors.length > 0 ? errors : undefined
+      errors: errors.length > 0 ? errors : undefined,
+      ...(vectorIndexRebuild !== 'success' && {
+        vectorIndexRebuild,
+        warning: '部分包已上传，但向量索引未完成，请稍后重试重建索引'
+      })
     })
   } catch (error) {
     console.error('Batch upload error:', error)
