@@ -158,6 +158,11 @@
         color: #065f46;
       }
 
+      .status-warning {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
       .status-offline {
         background: #fee2e2;
         color: #991b1b;
@@ -355,11 +360,26 @@
             const status = result.data
             const indicator = document.getElementById('statusIndicator')
             const isOnline = status.initialized && status.vectorStoreExists
+            const isRebuilding = status.rebuilding
+
+            let stateClass = 'status-offline'
+            let icon = 'exclamation-triangle-fill'
+            let label = '索引未就绪'
+
+            if (isRebuilding) {
+              stateClass = 'status-warning'
+              icon = 'arrow-repeat'
+              label = '正在重建索引'
+            } else if (isOnline) {
+              stateClass = 'status-online'
+              icon = 'check-circle-fill'
+              label = '服务在线'
+            }
 
             indicator.innerHTML = `
-              <span class="status-indicator ${isOnline ? 'status-online' : 'status-offline'}">
-                <i class="bi bi-${isOnline ? 'check-circle-fill' : 'exclamation-triangle-fill'}"></i>
-                ${isOnline ? '服务在线' : '服务离线'} | 已索引 ${status.totalPackages} 个包
+              <span class="status-indicator ${stateClass}">
+                <i class="bi bi-${icon}"></i>
+                ${label} | 已索引 ${status.totalPackages} 个包
               </span>
             `
           }

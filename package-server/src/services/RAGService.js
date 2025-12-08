@@ -83,6 +83,7 @@ class RAGService {
     this.vectorStore = null
     this.vectorStorePath = path.join(__dirname, '../../data/vector-store')
     this.isInitialized = false
+    this.isRebuilding = false
 
     console.log('✅ RAG 服务初始化完成')
   }
@@ -115,6 +116,8 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
    */
   async initializeVectorStore(packages) {
     const initStart = Date.now()
+    this.isRebuilding = true
+    this.isInitialized = false
     try {
       console.log('🔄 初始化向量存储...')
 
@@ -171,7 +174,10 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
       return true
     } catch (error) {
       console.error('❌ 初始化向量存储失败:', error)
+      this.isInitialized = false
       throw error
+    } finally {
+      this.isRebuilding = false
     }
   }
 
@@ -180,6 +186,8 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
    */
   async rebuildVectorStore(packages) {
     const rebuildStart = Date.now()
+    this.isRebuilding = true
+    this.isInitialized = false
     try {
       console.log('🔄 重建向量存储...')
 
@@ -196,6 +204,8 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
     } catch (error) {
       console.error('❌ 重建向量存储失败:', error)
       throw error
+    } finally {
+      this.isRebuilding = false
     }
   }
 
@@ -490,6 +500,7 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
     return {
       initialized: this.isInitialized,
       vectorStoreExists: this.vectorStore !== null,
+      rebuilding: this.isRebuilding,
       embeddingType: 'local',
       config: {
         baseURL: this.config.baseURL,
