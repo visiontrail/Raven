@@ -76,6 +76,48 @@
         background-color: #f0f9ff;
       }
 
+      .package-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .package-main {
+        min-width: 0;
+      }
+
+      .package-hash {
+        word-break: break-all;
+      }
+
+      .package-meta,
+      .package-actions {
+        white-space: nowrap;
+        justify-self: end;
+      }
+
+      .package-actions .btn {
+        min-width: 36px;
+      }
+
+      @media (max-width: 768px) {
+        .package-row {
+          grid-template-columns: 1fr;
+          align-items: flex-start;
+        }
+
+        .package-meta,
+        .package-actions {
+          justify-self: end;
+        }
+
+        .package-actions {
+          width: 100%;
+          text-align: right;
+        }
+      }
+
       .badge {
         font-size: 0.75rem;
         padding: 0.5rem 0.75rem;
