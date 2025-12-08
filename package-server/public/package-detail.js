@@ -114,18 +114,25 @@ function renderComponents(components) {
   const container = document.getElementById('componentsContainer')
   if (!container) return
 
+  const formatVersionLabel = (version) => {
+    if (version === undefined || version === null) return ''
+    const versionStr = String(version).trim()
+    if (!versionStr) return ''
+    return /^[vV]/.test(versionStr) ? versionStr : `v${versionStr}`
+  }
+
   if (!components || components.length === 0) {
     container.innerHTML = '<span class="empty-hint">暂无组件信息</span>'
     return
   }
 
   container.innerHTML = components
-    .map(
-      (c) =>
-        `<span class="pill"><i class="bi bi-cpu"></i>${escapeHtml(c.name)}${
-          c.version ? `<span class="version">v${escapeHtml(c.version)}</span>` : ''
-        }</span>`
-    )
+    .map((c) => {
+      const versionLabel = formatVersionLabel(c.version)
+      return `<span class="pill"><i class="bi bi-cpu"></i>${escapeHtml(c.name)}${
+        versionLabel ? `<span class="version">${escapeHtml(versionLabel)}</span>` : ''
+      }</span>`
+    })
     .join('')
 }
 
