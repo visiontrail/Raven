@@ -205,13 +205,47 @@ async function deletePackage(packageId) {
 
 function copyCurrentLink() {
   const link = window.location.href
+  console.info('[copy-link] start copy', { link })
+
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard
       .writeText(link)
-      .then(() => showAlert('链接已复制，可分享给其他用户', 'success'))
-      .catch(() => showAlert('复制链接失败，请手动复制地址栏', 'warning'))
-  } else {
-    showAlert('当前浏览器不支持快速复制，请手动复制地址栏', 'warning')
+      .then(() => {
+        console.info('[copy-link] clipboard.writeText success')
+        showAlert('链接已复制，可分享给其他用户', 'success')
+      })
+      .catch((err) => {
+        console.warn('[copy-link] clipboard.writeText failed, fallback to execCommand', err)
+        fallbackCopy(link)
+      })
+    return
+  }
+
+  console.warn('[copy-link] navigator.clipboard unavailable, fallback to execCommand')
+  fallbackCopy(link)
+}
+
+function fallbackCopy(text) {
+  try {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    const succeeded = document.execCommand('copy')
+    document.body.removeChild(textarea)
+
+    if (succeeded) {
+      console.info('[copy-link] execCommand copy success')
+      showAlert('链接已复制，可分享给其他用户', 'success')
+    } else {
+      console.warn('[copy-link] execCommand copy returned false')
+      showAlert('复制链接失败，请手动复制地址栏', 'warning')
+    }
+  } catch (error) {
+    console.error('[copy-link] execCommand copy threw error', error)
+    showAlert('复制链接失败，请手动复制地址栏', 'warning')
   }
 }
 
