@@ -28,6 +28,9 @@ function setupStaticActions() {
   const copyLinkBtn = document.getElementById('copyLinkBtn')
   copyLinkBtn?.addEventListener('click', copyCurrentLink)
 
+  const copyDownloadLinkBtn = document.getElementById('copyDownloadLinkBtn')
+  copyDownloadLinkBtn?.addEventListener('click', () => copyDownloadLink(packageId))
+
   const downloadBtn = document.getElementById('downloadPackageBtn')
   downloadBtn?.addEventListener('click', () => downloadPackage(packageId))
 
@@ -225,7 +228,48 @@ function copyCurrentLink() {
   fallbackCopy(link)
 }
 
-function fallbackCopy(text) {
+function copyDownloadLink(packageId) {
+  if (!packageId) {
+    showAlert('缺少包 ID，无法生成下载链接', 'warning')
+    console.warn('[copy-download-link] missing packageId')
+    return
+  }
+  const downloadLink = `${window.location.origin}${DOWNLOAD_API}/${encodeURIComponent(packageId)}`
+  console.info('[copy-download-link] start copy', { downloadLink })
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard
+      .writeText(downloadLink)
+      .then(() => {
+        console.info('[copy-download-link] clipboard.writeText success')
+        showAlert('下载链接已复制，可直接分享', 'success')
+      })
+      .catch((err) => {
+        console.warn('[copy-download-link] clipboard.writeText failed, fallback to execCommand', err)
+        fallbackCopy(downloadLink, {
+          successMessage: '下载链接已复制，可直接分享',
+          warnMessage: '复制下载链接失败，请手动复制地址栏',
+          logPrefix: 'copy-download-link'
+        })
+      })
+    return
+  }
+
+  console.warn('[copy-download-link] navigator.clipboard unavailable, fallback to execCommand')
+  fallbackCopy(downloadLink, {
+    successMessage: '下载链接已复制，可直接分享',
+    warnMessage: '复制下载链接失败，请手动复制地址栏',
+    logPrefix: 'copy-download-link'
+  })
+}
+
+function fallbackCopy(text, options = {}) {
+  const {
+    successMessage = '链接已复制，可分享给其他用户',
+    warnMessage = '复制链接失败，请手动复制地址栏',
+    logPrefix = 'copy-link'
+  } = options
+
   try {
     const textarea = document.createElement('textarea')
     textarea.value = text
@@ -237,15 +281,15 @@ function fallbackCopy(text) {
     document.body.removeChild(textarea)
 
     if (succeeded) {
-      console.info('[copy-link] execCommand copy success')
-      showAlert('链接已复制，可分享给其他用户', 'success')
+      console.info(`[${logPrefix}] execCommand copy success`)
+      showAlert(successMessage, 'success')
     } else {
-      console.warn('[copy-link] execCommand copy returned false')
-      showAlert('复制链接失败，请手动复制地址栏', 'warning')
+      console.warn(`[${logPrefix}] execCommand copy returned false`)
+      showAlert(warnMessage, 'warning')
     }
   } catch (error) {
-    console.error('[copy-link] execCommand copy threw error', error)
-    showAlert('复制链接失败，请手动复制地址栏', 'warning')
+    console.error(`[${logPrefix}] execCommand copy threw error`, error)
+    showAlert(warnMessage, 'warning')
   }
 }
 
