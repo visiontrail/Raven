@@ -384,6 +384,8 @@ function getPackageTypeDisplay(type) {
   const typeMap = {
     'lingxi-10': 'LingXi-10',
     'lingxi-07a': 'LingXi-07A',
+    'ka-tx': 'KaTx',
+    'ka-rx': 'KaRx',
     config: '配置包',
     'lingxi-06-thrid': 'LingXi-06-TRD',
     unknown: '未知类型'
@@ -396,6 +398,8 @@ function getPackageTypeColor(type) {
   const colorMap = {
     'lingxi-10': 'primary',
     'lingxi-07a': 'success',
+    'ka-tx': 'danger',
+    'ka-rx': 'dark',
     config: 'warning',
     'lingxi-06-thrid': 'info',
     unknown: 'secondary'

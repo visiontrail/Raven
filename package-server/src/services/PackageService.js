@@ -7,6 +7,8 @@ const { v4: uuidv4 } = require('uuid')
 const PackageType = {
   LINGXI_10: 'lingxi-10',
   LINGXI_07A: 'lingxi-07a',
+  KA_TX: 'ka-tx',
+  KA_RX: 'ka-rx',
   CONFIG: 'config',
   LINGXI_06TRD: 'lingxi-06-thrid'
 }
@@ -276,6 +278,10 @@ class PackageService {
       return PackageType.LINGXI_10
     } else if (lowerFileName.includes('lingxi-07a') || lowerFileName.includes('lx07a')) {
       return PackageType.LINGXI_07A
+    } else if (lowerFileName.includes('ka-tx') || lowerFileName.includes('katx')) {
+      return PackageType.KA_TX
+    } else if (lowerFileName.includes('ka-rx') || lowerFileName.includes('karx')) {
+      return PackageType.KA_RX
     } else if (lowerFileName.includes('config')) {
       return PackageType.CONFIG
     } else if (lowerFileName.includes('lingxi-06-thrid') || lowerFileName.includes('trd')) {
