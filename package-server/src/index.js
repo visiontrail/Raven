@@ -32,6 +32,11 @@ app.use((req, res, next) => {
 // 静态文件服务
 app.use(express.static(path.join(__dirname, '../public')))
 
+// 包详情独立页面路由（支持可分享的 URL）
+app.get('/package/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/package-detail.html'))
+})
+
 // API 路由
 app.use('/api/packages', packagesRouter)
 app.use('/api/upload', uploadRouter)

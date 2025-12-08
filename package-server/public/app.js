@@ -1349,86 +1349,15 @@ function getTagsArray(tags) {
   return []
 }
 
-// 显示包详情
+// 显示包详情（跳转到可分享的新页面）
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function showPackageDetail(packageId) {
-  try {
-    const response = await fetch(`${PACKAGES_API}/${packageId}`)
-    if (!response.ok) throw new Error('获取包详情失败')
-
-    const result = await response.json()
-    if (!result.success || !result.data) {
-      throw new Error(result.message || '获取包详情失败')
-    }
-
-    const pkg = result.data
-    const detailContent = document.getElementById('packageDetailContent')
-    detailContent.innerHTML = `
-      <div class="row">
-        <div class="col-md-6">
-          <h6 class="text-muted mb-2">基本信息</h6>
-          <table class="table table-sm">
-            <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">包名称:</td><td>${pkg.name}</td></tr>
-            <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">版本:</td><td>v${pkg.version}</td></tr>
-            <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">类型:</td><td><span class="badge bg-${getPackageTypeColor(pkg.packageType)}">${getPackageTypeDisplay(pkg.packageType)}</span></td></tr>
-            <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">大小:</td><td>${formatFileSize(pkg.size)}</td></tr>
-            <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">创建时间:</td><td>${formatDate(pkg.createdAt)}</td></tr>
-            <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">SHA-256:</td><td><code style="font-size: 0.8em; word-break: break-all;">${pkg.metadata?.sha256 || pkg.sha256 || '未知'}</code></td></tr>
-          </table>
-        </div>
-        <div class="col-md-6">
-          <h6 class="text-muted mb-2">元数据</h6>
-          <table class="table table-sm">
-             <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">是否补丁:</td><td>${pkg.metadata?.isPatch === 'true' || pkg.metadata?.isPatch === true ? '是' : '否'}</td></tr>
-             <tr><td class="fw-bold" style="min-width: 80px; white-space: nowrap;">组件数量:</td><td>${getComponentsArray(pkg.metadata?.components)?.length || 0}</td></tr>
-           </table>
-          
-          ${(() => {
-            const components = getComponentsArray(pkg.metadata?.components)
-            return components && components.length > 0
-              ? `<h6 class="mt-3">包含组件</h6>
-              <div class="d-flex flex-wrap gap-1">
-                  ${components.map((c) => `<span class="badge bg-success text-white package-type-badge">${c.name}${c.version ? ' ' + c.version : ''}</span>`).join('')}
-              </div>`
-              : ''
-          })()}
-          
-          ${(() => {
-            const tags = getTagsArray(pkg.metadata?.tags)
-            return tags && tags.length > 0
-              ? `<h6 class="mt-3">标签</h6>
-              <div class="d-flex flex-wrap gap-1">
-                  ${tags.map((tag) => `<span class="badge" style="background-color: #b794f6; color: white;">${tag}</span>`).join('')}
-              </div>`
-              : ''
-          })()}
-        </div>
-      </div>
-
-      ${(() => {
-        const desc = pkg.metadata?.description
-        return desc
-          ? `<div class="row mt-3">
-               <div class="col-12">
-                 <h6 class="text-muted mb-2">描述</h6>
-                 <div class="text-muted markdown-content">${renderMarkdown(desc)}</div>
-               </div>
-             </div>`
-          : ''
-      })()}
-    `
-
-    // 设置下载和删除按钮事件
-    document.getElementById('downloadPackageBtn').onclick = () => downloadPackage(packageId)
-    document.getElementById('deletePackageBtn').onclick = () => confirmDeletePackage(packageId, pkg.name)
-
-    // 显示模态框
-    const modal = new window.bootstrap.Modal(document.getElementById('packageDetailModal'))
-    modal.show()
-  } catch (error) {
-    console.error('获取包详情失败:', error)
-    showAlert('获取包详情失败', 'danger')
+function showPackageDetail(packageId) {
+  if (!packageId) {
+    showAlert('未找到包 ID', 'warning')
+    return
   }
+  const encodedId = encodeURIComponent(packageId)
+  window.location.href = `/package/${encodedId}`
 }
 
 // 下载包
@@ -1482,12 +1411,6 @@ async function deletePackage(packageId) {
     if (!response.ok) throw new Error('删除失败')
 
     showAlert('包删除成功', 'success')
-
-    // 关闭模态框
-    const modal = window.bootstrap.Modal.getInstance(document.getElementById('packageDetailModal'))
-    if (modal) {
-      modal.hide()
-    }
 
     // 刷新列表
     refreshPackages()
