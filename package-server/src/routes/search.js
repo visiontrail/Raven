@@ -25,14 +25,9 @@ router.post('/intelligent', async (req, res) => {
 
     console.log(`🔍 收到智能搜索请求: "${query}"`)
 
-    // 确保向量存储已初始化
-    if (!ragService.isInitialized) {
-      const packages = await packageService.getAllPackages()
-      await ragService.initializeVectorStore(packages)
-    }
-
-    // 获取所有包用于详细信息检索
+    // 获取所有包用于初始化和详细信息检索
     const packages = await packageService.getAllPackages()
+    await ragService.ensureInitialized(packages)
 
     // 执行智能搜索
     const result = await ragService.intelligentSearch(query, packages, parseInt(limit))
@@ -112,8 +107,9 @@ router.post('/rebuild-index', async (req, res) => {
  */
 router.get('/status', async (req, res) => {
   try {
-    const status = ragService.getStatus()
     const packages = await packageService.getAllPackages()
+    await ragService.ensureInitialized(packages)
+    const status = ragService.getStatus()
 
     res.json({
       success: true,
@@ -149,16 +145,13 @@ router.post('/similarity', async (req, res) => {
     console.log(`🔍 收到相似度搜索请求: "${query}"`)
 
     // 确保向量存储已初始化
-    if (!ragService.isInitialized) {
-      const packages = await packageService.getAllPackages()
-      await ragService.initializeVectorStore(packages)
-    }
+    const packages = await packageService.getAllPackages()
+    await ragService.ensureInitialized(packages)
 
     // 执行相似度搜索
     const results = await ragService.similaritySearch(query, parseInt(limit))
 
     // 获取完整的包信息
-    const packages = await packageService.getAllPackages()
     const enrichedResults = results.map(result => {
       const pkg = packages.find(p => p.id === result.id)
       return pkg ? { ...pkg, relevanceScore: result.score } : null

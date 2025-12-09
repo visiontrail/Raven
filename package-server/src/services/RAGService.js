@@ -84,6 +84,7 @@ class RAGService {
     this.vectorStorePath = path.join(__dirname, '../../data/vector-store')
     this.isInitialized = false
     this.isRebuilding = false
+    this.initializationPromise = null
 
     console.log('✅ RAG 服务初始化完成')
   }
@@ -114,7 +115,7 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
   /**
    * 初始化或加载向量存储
    */
-  async initializeVectorStore(packages) {
+  async initializeVectorStore(packages = []) {
     const initStart = Date.now()
     this.isRebuilding = true
     this.isInitialized = false
@@ -178,6 +179,49 @@ SHA256: ${pkg.metadata?.sha256 || '无'}
       throw error
     } finally {
       this.isRebuilding = false
+    }
+  }
+
+  /**
+   * 确保向量存储已初始化，避免重复初始化
+   */
+  async ensureInitialized(packagesOrLoader = []) {
+    if (this.isInitialized && this.vectorStore) {
+      return true
+    }
+
+    if (this.isRebuilding && !this.initializationPromise) {
+      return false
+    }
+
+    if (this.initializationPromise) {
+      await this.initializationPromise
+      return this.isInitialized && this.vectorStore !== null
+    }
+
+    const loadPackages = async () => {
+      if (typeof packagesOrLoader === 'function') {
+        return packagesOrLoader()
+      }
+      if (Array.isArray(packagesOrLoader)) {
+        return packagesOrLoader
+      }
+      return []
+    }
+
+    this.initializationPromise = (async () => {
+      const packages = (await loadPackages()) || []
+      await this.initializeVectorStore(packages)
+    })()
+
+    try {
+      await this.initializationPromise
+      return this.isInitialized && this.vectorStore !== null
+    } catch (error) {
+      console.error('❌ 确保向量存储初始化失败:', error)
+      return false
+    } finally {
+      this.initializationPromise = null
     }
   }
 

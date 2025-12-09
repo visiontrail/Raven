@@ -2,6 +2,8 @@ const express = require('express')
 const path = require('path')
 const cors = require('cors')
 const fs = require('fs')
+const PackageServiceSingleton = require('./services/PackageServiceSingleton')
+const getRAGServiceInstance = require('./services/RAGServiceSingleton')
 
 // 导入路由
 const packagesRouter = require('./routes/packages')
@@ -12,6 +14,8 @@ const searchRouter = require('./routes/search')
 const app = express()
 const PORT = process.env.PORT || 8083
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads')
+const packageService = new PackageServiceSingleton()
+const ragService = getRAGServiceInstance()
 
 // 确保上传目录存在
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -51,6 +55,27 @@ app.get('/health', (req, res) => {
     uptime: process.uptime()
   })
 })
+
+// 启动时检查并初始化智能搜索向量索引
+async function initializeRagIndexOnStartup() {
+  try {
+    console.log('🧠 启动检查: 正在验证智能搜索向量索引状态...')
+    const packages = await packageService.getAllPackages()
+    const ready = await ragService.ensureInitialized(packages)
+
+    if (ready) {
+      console.log('✅ 智能搜索服务在线，向量索引已就绪')
+    } else if (packages.length === 0) {
+      console.log('ℹ️ 暂无包数据，跳过向量索引初始化')
+    } else {
+      console.warn('⚠️ 向量索引未初始化完成，请稍后尝试手动重建')
+    }
+  } catch (error) {
+    console.error('❌ 启动时检查智能搜索索引失败:', error)
+  }
+}
+
+initializeRagIndexOnStartup()
 
 // 404 处理
 app.use('*', (req, res) => {
