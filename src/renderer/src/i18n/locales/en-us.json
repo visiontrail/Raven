@@ -862,6 +862,7 @@
       },
       "title": "[to be translated]:删除文件"
     },
+    "device_logs": "Device Logs",
     "document": "Document",
     "edit": "Edit",
     "error_loading_logs": "Error loading logs",
@@ -904,6 +905,7 @@
     "packages": "Packages",
     "packages_count": "{{count}} packages",
     "patch": "Patch",
+    "refactor_packages": "Refactor Package Server",
     "path": "Path",
     "scan_packages": "Scan Packages",
     "search_packages": "Search packages...",

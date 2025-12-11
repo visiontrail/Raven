@@ -862,6 +862,7 @@
       },
       "title": "删除文件"
     },
+    "device_logs": "设备本地日志",
     "document": "文档",
     "edit": "编辑",
     "error_loading_logs": "加载日志时出错",
@@ -901,10 +902,11 @@
       "view_details": "查看详情"
     },
     "package_type": "包类型",
-    "packages": "升级包",
+    "packages": "本地重构包",
     "packages_count": "{{count}} 个包",
     "patch": "补丁",
     "path": "路径",
+    "refactor_packages": "重构包服务器",
     "scan_packages": "扫描包",
     "search_packages": "搜索包...",
     "size": "大小",
@@ -1904,10 +1906,10 @@
         "du_gnb": "DU GNB配置",
         "du_stack": "DU Stack配置"
       },
-      "ka-tx": {
+      "ka-rx": {
         "firmware": "固件"
       },
-      "ka-rx": {
+      "ka-tx": {
         "firmware": "固件"
       },
       "lingxi-07a": {
@@ -1942,9 +1944,6 @@
     },
     "infoPreview": "信息预览",
     "isPatch": "是否为PATCH包",
-    "subFileType": "主备选择",
-    "subFileType.master": "主份",
-    "subFileType.backup": "备份",
     "log": {
       "cleared": "已清空所有选择",
       "errorUnknown": "打包过程中发生未知错误",
@@ -1957,11 +1956,14 @@
     "selectFile": "选择文件",
     "siIniPreview": "si.ini 预览",
     "startPackaging": "开始打包",
+    "subFileType": "主备选择",
+    "subFileType.backup": "备份",
+    "subFileType.master": "主份",
     "title": "打包工具",
     "types": {
       "config": "配置文件包",
-      "ka-tx": "KA发送天线",
       "ka-rx": "KA接收天线",
+      "ka-tx": "KA发送天线",
       "lingxi-06-thrid": "灵犀 06 三标段",
       "lingxi-07a": "灵犀 07A",
       "lingxi-10": "灵犀 10"

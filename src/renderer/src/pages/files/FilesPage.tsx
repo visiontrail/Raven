@@ -76,10 +76,9 @@ const FilesPage: FC = () => {
     { key: FileTypes.DOCUMENT, label: t('files.document'), icon: <FileIcon size={16} /> },
     { key: FileTypes.TEXT, label: t('files.text'), icon: <FileTypeIcon size={16} /> },
     { key: FileTypes.PACKAGE, label: t('files.packages'), icon: <Package size={16} /> },
-    { key: 'logs', label: t('files.logs'), icon: <FileText size={16} /> },
-    { key: 'refactor-packages', label: '重构包服务器', icon: <Package size={16} /> },
-    { key: 'device-logs', label: '设备日志', icon: <FileText size={16} /> },
-    { key: 'all', label: t('files.all'), icon: <FileText size={16} /> }
+    { key: 'refactor-packages', label: t('files.refactor_packages'), icon: <Package size={16} /> },
+    { key: 'logs', label: t('files.logs'), icon: <FileText size={16} /> }
+    // { key: 'device-logs', label: t('files.device_logs'), icon: <FileText size={16} /> }
   ]
 
   return (
