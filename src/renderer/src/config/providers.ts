@@ -367,7 +367,7 @@ export const SYSTEM_PROVIDERS_CONFIG: Record<SystemProviderId, SystemProvider> =
     apiHost: 'https://dashscope.aliyuncs.com/compatible-mode/v1/',
     models: SYSTEM_MODELS.dashscope,
     isSystem: true,
-    enabled: true
+    enabled: false
   },
   stepfun: {
     id: 'stepfun',

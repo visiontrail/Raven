@@ -522,31 +522,31 @@ export const SYSTEM_MODELS: Record<SystemProviderId | 'defaultModel', Model[]> =
   defaultModel: [
     {
       // 默认助手模型
-      id: 'qwen-plus',
-      name: 'qwen-plus',
-      provider: 'dashscope',
-      group: 'qwen-plus'
+      id: 'glm-4.6',
+      name: 'glm-4.6',
+      provider: 'galaxyspace',
+      group: 'kimi-k2'
     },
     {
       // 默认话题命名模型
-      id: 'qwen-plus',
-      name: 'qwen-plus',
-      provider: 'dashscope',
-      group: 'qwen-plus'
+      id: 'glm-4.6-chat',
+      name: 'glm-4.6-chat',
+      provider: 'galaxyspace',
+      group: 'kimi-k2'
     },
     {
       // 默认翻译模型
-      id: 'qwen-plus',
-      name: 'qwen-plus',
-      provider: 'dashscope',
-      group: 'qwen-plus'
+      id: 'deepseek-v3.1-chat',
+      name: 'deepseek-v3.1-chat',
+      provider: 'galaxyspace',
+      group: 'kimi-k2'
     },
     {
       // 默认快捷助手模型
-      id: 'qwen-plus',
-      name: 'qwen-plus',
-      provider: 'dashscope',
-      group: 'qwen-plus'
+      id: 'deepseek-v3.1-chat',
+      name: 'deepseek-v3.1-chat',
+      provider: 'galaxyspace',
+      group: 'kimi-k2'
     }
   ],
   vertexai: [],
@@ -2348,15 +2348,21 @@ export const SYSTEM_MODELS: Record<SystemProviderId | 'defaultModel', Model[]> =
   galaxyspace: [
     {
       id: 'deepseek-v3.1',
-      name: 'deepseek-v3.1',
+      name: 'kimi-k2',
       provider: 'galaxyspace',
-      group: 'DeepSeek'
+      group: 'kimi-k2'
     },
     {
-      id: 'deepseek-v3.1-chat',
-      name: 'deepseek-v3.1-chat',
+      id: 'glm-4.6',
+      name: 'glm-4.6',
       provider: 'galaxyspace',
-      group: 'DeepSeek'
+      group: 'kimi-k2'
+    },
+    {
+      id: 'glm-4.6-chat',
+      name: 'glm-4.6-chat',
+      provider: 'galaxyspace',
+      group: 'kimi-k2'
     }
   ],
   poe: [

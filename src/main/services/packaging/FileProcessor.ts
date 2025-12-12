@@ -47,8 +47,25 @@ export class FileProcessor {
     const allFiles = await fs.readdir(dir, { recursive: true })
     const matchingFiles = allFiles
       .filter((file) => {
-        const ext = path.extname(file.toString())
-        return types.includes(ext) || (nameHint && file.toString().includes(nameHint))
+        const fileName = file.toString()
+        const ext = path.extname(fileName)
+
+        // 必须满足扩展名匹配
+        if (!types.includes(ext)) {
+          return false
+        }
+
+        // 如果没有提供nameHint，只要扩展名匹配就返回
+        if (!nameHint) {
+          return true
+        }
+
+        // 从nameHint中提取基础名称（去掉扩展名）
+        // 例如：'cucp.deb' -> 'cucp', 'gnb-oam-lx10' -> 'gnb-oam-lx10'
+        const nameHintBase = path.basename(nameHint, path.extname(nameHint))
+
+        // 文件名必须包含nameHint的基础名称
+        return fileName.includes(nameHintBase)
       })
       .map((f) => path.join(dir, f.toString()))
     return matchingFiles
