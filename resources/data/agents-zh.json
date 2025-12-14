@@ -6,6 +6,14 @@
     "id": "1",
     "mcpServers": [
       {
+        "description": "文件传输服务：支持通过 HTTP GET 下载文件到本地，以及通过 FTP 上传文件到远程服务器（如升级包部署）。",
+        "id": "raven-file-transfer",
+        "isActive": true,
+        "name": "@raven/file-transfer",
+        "provider": "GalaxySpace",
+        "type": "inMemory"
+      },
+      {
         "baseUrl": "http://172.77.245.1:8090/mcp",
         "description": "Satellite gNB OAM MCP Server for debugging purposes",
         "id": "satellite-gnb-oam-debug",

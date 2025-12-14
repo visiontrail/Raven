@@ -150,6 +150,14 @@ export const builtinMCPServers: MCPServer[] = [
   //   provider: 'CherryAI'
   // },
   {
+    id: 'raven-file-transfer',
+    name: '@raven/file-transfer',
+    type: 'inMemory',
+    description: '文件传输服务：支持通过 HTTP GET 下载文件到本地，以及通过 FTP 上传文件到远程服务器（如升级包部署）。',
+    isActive: true,
+    provider: 'GalaxySpace'
+  },
+  {
     id: 'satellite-gnb-oam-debug',
     name: 'Satellite gNB OAM MCP Server(Debug)',
     type: 'streamableHttp',
