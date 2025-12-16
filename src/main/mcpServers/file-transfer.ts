@@ -67,14 +67,49 @@ function extractFileNameFromUrl(url: string): string {
 }
 
 /**
+ * 从 Content-Disposition header 中提取文件名
+ */
+function extractFileNameFromContentDisposition(contentDisposition: string): string | null {
+  try {
+    // 匹配 filename="xxx" 或 filename='xxx' 或 filename=xxx
+    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i
+    const matches = filenameRegex.exec(contentDisposition)
+    
+    if (matches && matches[1]) {
+      let filename = matches[1].trim()
+      // 移除引号
+      filename = filename.replace(/^["']|["']$/g, '')
+      // 处理 filename*=UTF-8''encoded_filename 格式
+      if (filename.startsWith('UTF-8\'\'')) {
+        filename = decodeURIComponent(filename.substring(7))
+      } else {
+        // 尝试解码 URL 编码
+        filename = decodeURIComponent(filename)
+      }
+      return filename
+    }
+
+    // 尝试匹配 filename*=UTF-8''xxx 格式
+    const filenameStarRegex = /filename\*=UTF-8''([^;\n]*)/i
+    const starMatches = filenameStarRegex.exec(contentDisposition)
+    if (starMatches && starMatches[1]) {
+      return decodeURIComponent(starMatches[1].trim())
+    }
+
+    return null
+  } catch (error) {
+    logger.warn(`解析 Content-Disposition 失败: ${error}`)
+    return null
+  }
+}
+
+/**
  * HTTP 下载文件
  */
 async function httpDownloadFile(url: string, customFileName?: string): Promise<{ filePath: string; fileName: string }> {
   const downloadDir = getDownloadDirectory()
-  const fileName = customFileName || extractFileNameFromUrl(url)
-  const filePath = path.join(downloadDir, fileName)
 
-  logger.info(`开始从 ${url} 下载文件到 ${filePath}`)
+  logger.info(`开始从 ${url} 下载文件`)
 
   try {
     const response = await net.fetch(url, {
@@ -88,6 +123,26 @@ async function httpDownloadFile(url: string, customFileName?: string): Promise<{
     if (!response.ok) {
       throw new Error(`HTTP 下载失败，状态码: ${response.status} ${response.statusText}`)
     }
+
+    // 确定文件名优先级：自定义文件名 > Content-Disposition > URL 提取
+    let fileName = customFileName
+    if (!fileName) {
+      const contentDisposition = response.headers.get('content-disposition')
+      if (contentDisposition) {
+        const extractedFileName = extractFileNameFromContentDisposition(contentDisposition)
+        if (extractedFileName) {
+          fileName = extractedFileName
+          logger.info(`从 Content-Disposition 提取文件名: ${fileName}`)
+        }
+      }
+    }
+    if (!fileName) {
+      fileName = extractFileNameFromUrl(url)
+      logger.info(`从 URL 提取文件名: ${fileName}`)
+    }
+
+    const filePath = path.join(downloadDir, fileName)
+    logger.info(`保存文件到: ${filePath}`)
 
     const arrayBuffer = await response.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
