@@ -28,6 +28,8 @@ class DeviceLinkClient {
   private heartbeatMs = DEFAULT_HEARTBEAT_MS
   private shouldReconnect = false
   private ipcRegistered = false
+  private connectAttempts = 0
+  private promptTimers: Map<string, number> = new Map()
 
   private readonly logger = loggerService.withContext('DeviceLinkClient')
 
@@ -56,6 +58,8 @@ class DeviceLinkClient {
   stop() {
     this.shouldReconnect = false
     this.clearHeartbeat()
+    this.promptTimers.clear()
+    this.connectAttempts = 0
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = undefined
@@ -75,7 +79,8 @@ class DeviceLinkClient {
     const port = configManager.getRavenAIServicePort()
     const url = `ws://${host}:${port}${DEVICE_LINK_WS_PATH}`
 
-    this.logger.info('Connecting to device link server', { url })
+    const attempt = ++this.connectAttempts
+    this.logger.info('Connecting to device link server', { url, attempt })
 
     try {
       this.ws = new WebSocket(url)
@@ -92,7 +97,8 @@ class DeviceLinkClient {
   }
 
   private handleOpen() {
-    this.logger.info('Device link connected')
+    this.logger.info('Device link connected', { attempts: this.connectAttempts })
+    this.connectAttempts = 0
     this.reconnectDelay = RECONNECT_BASE_MS
     this.sendRegister()
   }
@@ -100,6 +106,7 @@ class DeviceLinkClient {
   private handleClose(event: any) {
     this.logger.warn('Device link closed', { code: event?.code, reason: event?.reason })
     this.clearHeartbeat()
+    this.promptTimers.clear()
     this.ws = undefined
 
     if (this.shouldReconnect) {
@@ -163,8 +170,15 @@ class DeviceLinkClient {
 
   private handlePrompt(message: PromptMessage) {
     const mainWindow = this.mainWindow && !this.mainWindow.isDestroyed() ? this.mainWindow : windowService.getMainWindow()
+    this.promptTimers.set(message.request_id, Date.now())
+    this.logger.info('Prompt received from server', {
+      requestId: message.request_id,
+      sessionId: message.session_id,
+      targetDeviceId: message.target_device_id
+    })
     if (!mainWindow) {
       this.logger.warn('Cannot forward prompt, main window not available')
+      this.promptTimers.delete(message.request_id)
       return
     }
 
@@ -192,7 +206,7 @@ class DeviceLinkClient {
     if (this.reconnectTimer || !this.shouldReconnect) return
 
     const delay = Math.min(this.reconnectDelay, RECONNECT_MAX_MS)
-    this.logger.info('Scheduling device link reconnect', { delay })
+    this.logger.info('Scheduling device link reconnect', { delay, nextAttempt: this.connectAttempts + 1 })
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = undefined
@@ -215,10 +229,17 @@ class DeviceLinkClient {
   }
 
   private async sendPromptResult(payload: PromptResultMessage) {
+    const startedAt = this.promptTimers.get(payload.request_id)
+    const durationMs = startedAt ? Date.now() - startedAt : undefined
+    if (!startedAt) {
+      this.logger.warn('Prompt result sent without timing start', { requestId: payload.request_id })
+    }
+    this.promptTimers.delete(payload.request_id)
     this.logger.info('Forwarding prompt result to server', {
       requestId: payload.request_id,
       sessionId: payload.session_id,
-      topicId: payload.topic_id
+      topicId: payload.topic_id,
+      durationMs
     })
     this.sendMessage(payload)
   }
