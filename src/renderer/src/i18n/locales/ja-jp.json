@@ -3077,12 +3077,22 @@
         "button": "バックアップ",
         "title": "データのバックアップと復元"
       },
-      "custom_update_server": {
-        "title": "カスタム更新サーバーを使用"
-      },
-      "display": {
-        "title": "表示設定"
-      },
+  "custom_update_server": {
+    "title": "カスタム更新サーバーを使用"
+  },
+  "device_link": {
+    "device_id": "Device ID",
+    "device_name": "Device Name",
+    "load_failed": "Failed to load device identity",
+    "name_placeholder": "Enter a name to display in RavenAIService",
+    "name_required": "Device name cannot be empty",
+    "rename_failed": "Failed to update device name",
+    "rename_success": "Device name updated and re-registered",
+    "title": "Device Link"
+  },
+  "display": {
+    "title": "表示設定"
+  },
       "emoji_picker": "絵文字ピッカー",
       "image_upload": "画像アップロード",
       "label": "一般設定",

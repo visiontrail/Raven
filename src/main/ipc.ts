@@ -225,6 +225,41 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
     return configManager.get(key)
   })
 
+  ipcMain.handle(IpcChannel.DeviceLink_GetIdentity, () => ({
+    deviceId: configManager.getDeviceLinkDeviceId(),
+    deviceName: configManager.getDeviceLinkDeviceName()
+  }))
+
+  ipcMain.handle(
+    IpcChannel.DeviceLink_UpdateIdentity,
+    (_event, payload: { deviceId?: string; deviceName?: string }) => {
+      const deviceId = payload?.deviceId?.trim()
+      const deviceName = payload?.deviceName?.trim()
+
+      if (payload?.deviceId !== undefined && !deviceId) {
+        throw new Error('Device ID cannot be empty')
+      }
+      if (payload?.deviceName !== undefined && !deviceName) {
+        throw new Error('Device name cannot be empty')
+      }
+
+      if (deviceId) {
+        configManager.setDeviceLinkDeviceId(deviceId)
+      }
+      if (deviceName) {
+        configManager.setDeviceLinkDeviceName(deviceName)
+      }
+
+      logger.info('Device link identity updated', { deviceId, deviceName })
+      deviceLinkClient.restart()
+
+      return {
+        deviceId: configManager.getDeviceLinkDeviceId(),
+        deviceName: configManager.getDeviceLinkDeviceName()
+      }
+    }
+  )
+
   // theme
   ipcMain.handle(IpcChannel.App_SetTheme, (_, theme: ThemeMode) => {
     themeService.setTheme(theme)

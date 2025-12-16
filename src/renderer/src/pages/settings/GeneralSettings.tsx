@@ -21,8 +21,8 @@ import { LanguageVarious } from '@renderer/types'
 import { NotificationSource } from '@renderer/types/notification'
 import { isValidProxyUrl } from '@renderer/utils'
 import { defaultByPassRules, defaultLanguage } from '@shared/config/constant'
-import { Flex, Input, Switch, Tooltip } from 'antd'
-import { FC, useState } from 'react'
+import { Button, Flex, Input, Switch, Tooltip } from 'antd'
+import { FC, useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 
@@ -47,6 +47,10 @@ const GeneralSettings: FC = () => {
   } = useSettings()
   const [proxyUrl, setProxyUrl] = useState<string | undefined>(storeProxyUrl)
   const [proxyBypassRules, setProxyBypassRules] = useState<string | undefined>(storeProxyBypassRules)
+  const [deviceLinkName, setDeviceLinkName] = useState<string>('')
+  const [deviceLinkId, setDeviceLinkId] = useState<string>('')
+  const [savingDeviceLinkName, setSavingDeviceLinkName] = useState(false)
+  const [loadingDeviceLinkIdentity, setLoadingDeviceLinkIdentity] = useState(false)
   const { theme } = useTheme()
   const { enableDeveloperMode, setEnableDeveloperMode } = useEnableDeveloperMode()
   const { setTimeoutTimer } = useTimer()
@@ -184,6 +188,67 @@ const GeneralSettings: FC = () => {
     })
   }
 
+  const fetchDeviceLinkIdentity = useCallback(async () => {
+    if (!window?.api?.deviceLink?.getIdentity) return
+    setLoadingDeviceLinkIdentity(true)
+    try {
+      const identity = await window.api.deviceLink.getIdentity()
+      setDeviceLinkName(identity?.deviceName || '')
+      setDeviceLinkId(identity?.deviceId || '')
+    } catch (error) {
+      window.message.error({
+        content:
+          error instanceof Error ? error.message : t('settings.general.device_link.load_failed'),
+        key: 'device-link-load-error'
+      })
+    } finally {
+      setLoadingDeviceLinkIdentity(false)
+    }
+  }, [t])
+
+  const handleSaveDeviceLinkName = async () => {
+    const nextName = deviceLinkName.trim()
+    if (!nextName) {
+      window.message.error({
+        content: t('settings.general.device_link.name_required'),
+        key: 'device-link-empty-name'
+      })
+      setDeviceLinkName('')
+      return
+    }
+
+    if (!window?.api?.deviceLink?.updateIdentity) {
+      window.message.error({
+        content: t('settings.general.device_link.load_failed'),
+        key: 'device-link-api-missing'
+      })
+      return
+    }
+
+    setSavingDeviceLinkName(true)
+    try {
+      const updated = await window.api.deviceLink.updateIdentity({ deviceName: nextName })
+      setDeviceLinkName(updated?.deviceName || nextName)
+      setDeviceLinkId(updated?.deviceId || deviceLinkId)
+      window.message.success({
+        content: t('settings.general.device_link.rename_success'),
+        key: 'device-link-rename-success'
+      })
+    } catch (error) {
+      window.message.error({
+        content: error instanceof Error ? error.message : t('settings.general.device_link.rename_failed'),
+        key: 'device-link-rename-error'
+      })
+      await fetchDeviceLinkIdentity()
+    } finally {
+      setSavingDeviceLinkName(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDeviceLinkIdentity()
+  }, [fetchDeviceLinkIdentity])
+
   return (
     <SettingContainer theme={theme}>
       <SettingGroup theme={theme}>
@@ -277,6 +342,37 @@ const GeneralSettings: FC = () => {
         <SettingRow>
           <SettingRowTitle>{t('settings.hardware_acceleration.title')}</SettingRowTitle>
           <Switch checked={disableHardwareAcceleration} onChange={handleHardwareAccelerationChange} />
+        </SettingRow>
+      </SettingGroup>
+      <SettingGroup theme={theme}>
+        <SettingTitle>{t('settings.general.device_link.title')}</SettingTitle>
+        <SettingDivider />
+        <SettingRow>
+          <SettingRowTitle>{t('settings.general.device_link.device_name')}</SettingRowTitle>
+          <Flex align="center" gap={8} style={{ flex: 1, justifyContent: 'flex-end' }}>
+            <Input
+              spellCheck={false}
+              placeholder={t('settings.general.device_link.name_placeholder')}
+              value={deviceLinkName}
+              onChange={(e) => setDeviceLinkName(e.target.value)}
+              onPressEnter={handleSaveDeviceLinkName}
+              style={{ width: 240 }}
+              disabled={savingDeviceLinkName || loadingDeviceLinkIdentity}
+            />
+            <Button
+              type="primary"
+              onClick={handleSaveDeviceLinkName}
+              loading={savingDeviceLinkName}
+              disabled={loadingDeviceLinkIdentity}
+            >
+              {t('common.save')}
+            </Button>
+          </Flex>
+        </SettingRow>
+        <SettingDivider />
+        <SettingRow>
+          <SettingRowTitle>{t('settings.general.device_link.device_id')}</SettingRowTitle>
+          <span style={{ color: 'var(--text-secondary)' }}>{deviceLinkId || '--'}</span>
         </SettingRow>
       </SettingGroup>
       <SettingGroup theme={theme}>

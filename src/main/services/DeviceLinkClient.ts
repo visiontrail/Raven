@@ -70,6 +70,11 @@ class DeviceLinkClient {
     this.ws = undefined
   }
 
+  restart() {
+    this.stop()
+    this.start()
+  }
+
   private connect() {
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
       return
@@ -104,6 +109,10 @@ class DeviceLinkClient {
   }
 
   private handleClose(event: any) {
+    if (event?.target && this.ws && event.target !== this.ws) {
+      return
+    }
+
     this.logger.warn('Device link closed', { code: event?.code, reason: event?.reason })
     this.clearHeartbeat()
     this.promptTimers.clear()

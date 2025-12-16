@@ -3090,12 +3090,22 @@
         "button": "备份",
         "title": "数据备份与恢复"
       },
-      "custom_update_server": {
-        "title": "使用自定义更新服务器"
-      },
-      "display": {
-        "title": "显示设置"
-      },
+  "custom_update_server": {
+    "title": "使用自定义更新服务器"
+  },
+  "device_link": {
+    "device_id": "设备 ID",
+    "device_name": "设备名称",
+    "load_failed": "获取设备标识失败",
+    "name_placeholder": "输入在 RavenAIService 中显示的名称",
+    "name_required": "设备名称不能为空",
+    "rename_failed": "更新设备名称失败",
+    "rename_success": "设备名称已更新并重新注册",
+    "title": "设备连接"
+  },
+  "display": {
+    "title": "显示设置"
+  },
       "emoji_picker": "表情选择器",
       "image_upload": "图片上传",
       "label": "常规设置",

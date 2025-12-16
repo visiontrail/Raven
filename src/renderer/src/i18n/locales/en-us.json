@@ -3090,12 +3090,22 @@
         "button": "Backup",
         "title": "Data Backup and Recovery"
       },
-      "custom_update_server": {
-        "title": "Use Custom Update Server"
-      },
-      "display": {
-        "title": "Display Settings"
-      },
+  "custom_update_server": {
+    "title": "Use Custom Update Server"
+  },
+  "device_link": {
+    "device_id": "Device ID",
+    "device_name": "Device Name",
+    "load_failed": "Failed to load device identity",
+    "name_placeholder": "Enter a name to display in RavenAIService",
+    "name_required": "Device name cannot be empty",
+    "rename_failed": "Failed to update device name",
+    "rename_success": "Device name updated and re-registered",
+    "title": "Device Link"
+  },
+  "display": {
+    "title": "Display Settings"
+  },
       "emoji_picker": "Emoji Picker",
       "image_upload": "Image Upload",
       "label": "General Settings",

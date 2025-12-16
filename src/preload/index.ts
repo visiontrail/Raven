@@ -107,7 +107,10 @@ const api = {
       return () => ipcRenderer.off(IpcChannel.DeviceLink_Prompt, listener)
     },
     sendPromptResult: (payload: PromptResultMessage) =>
-      ipcRenderer.invoke(IpcChannel.DeviceLink_PromptResult, payload)
+      ipcRenderer.invoke(IpcChannel.DeviceLink_PromptResult, payload),
+    getIdentity: () => ipcRenderer.invoke(IpcChannel.DeviceLink_GetIdentity),
+    updateIdentity: (payload: { deviceId?: string; deviceName?: string }) =>
+      ipcRenderer.invoke(IpcChannel.DeviceLink_UpdateIdentity, payload)
   },
   zip: {
     compress: (text: string) => ipcRenderer.invoke(IpcChannel.Zip_Compress, text),

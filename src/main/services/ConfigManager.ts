@@ -300,7 +300,8 @@ export class ConfigManager {
   }
 
   setDeviceLinkDeviceId(value: string) {
-    this.set(ConfigKeys.DeviceLinkDeviceId, value)
+    const nextValue = value?.trim() || this.defaultDeviceIdentity()
+    this.set(ConfigKeys.DeviceLinkDeviceId, nextValue)
   }
 
   getDeviceLinkDeviceName(): string {
@@ -309,7 +310,8 @@ export class ConfigManager {
   }
 
   setDeviceLinkDeviceName(value: string) {
-    this.set(ConfigKeys.DeviceLinkDeviceName, value)
+    const nextValue = value?.trim()
+    this.set(ConfigKeys.DeviceLinkDeviceName, nextValue || this.getDeviceLinkDeviceId())
   }
 
   getCustomUpdateServerUrl(): string {

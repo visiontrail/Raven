@@ -3088,12 +3088,22 @@
         "button": "備份",
         "title": "資料備份與復原"
       },
-      "custom_update_server": {
-        "title": "使用自定義更新伺服器"
-      },
-      "display": {
-        "title": "顯示設定"
-      },
+  "custom_update_server": {
+    "title": "使用自定義更新伺服器"
+  },
+  "device_link": {
+    "device_id": "設備 ID",
+    "device_name": "設備名稱",
+    "load_failed": "取得設備識別失敗",
+    "name_placeholder": "輸入在 RavenAIService 中顯示的名稱",
+    "name_required": "設備名稱不能為空",
+    "rename_failed": "更新設備名稱失敗",
+    "rename_success": "設備名稱已更新並重新註冊",
+    "title": "設備連接"
+  },
+  "display": {
+    "title": "顯示設定"
+  },
       "emoji_picker": "表情選擇器",
       "image_upload": "圖片上傳",
       "label": "一般設定",
