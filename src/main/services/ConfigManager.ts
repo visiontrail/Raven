@@ -1,6 +1,8 @@
 import { defaultLanguage, UpgradeChannel, ZOOM_SHORTCUTS } from '@shared/config/constant'
 import { LanguageVarious, Shortcut, ThemeMode } from '@types'
 import { app } from 'electron'
+import os from 'os'
+import crypto from 'crypto'
 import Store from 'electron-store'
 
 import { locales } from '../utils/locales'
@@ -29,7 +31,11 @@ export enum ConfigKeys {
   Proxy = 'proxy',
   EnableDeveloperMode = 'enableDeveloperMode',
   UseCustomUpdateServer = 'useCustomUpdateServer',
-  CustomUpdateServerUrl = 'customUpdateServerUrl'
+  CustomUpdateServerUrl = 'customUpdateServerUrl',
+  RavenAIServiceHost = 'ravenAIServiceHost',
+  RavenAIServicePort = 'ravenAIServicePort',
+  DeviceLinkDeviceId = 'deviceLinkDeviceId',
+  DeviceLinkDeviceName = 'deviceLinkDeviceName'
 }
 
 export class ConfigManager {
@@ -237,6 +243,73 @@ export class ConfigManager {
 
   setUseCustomUpdateServer(value: boolean) {
     this.set(ConfigKeys.UseCustomUpdateServer, value)
+  }
+
+  // Device Link: RavenAIService endpoint and device identity (defaults fall back to hostname)
+  getRavenAIServiceHost(): string {
+    const stored = this.get<string>(ConfigKeys.RavenAIServiceHost)
+    // Migrate old default to new IP if not explicitly set
+    if (!stored || stored === 'localhost') {
+      return '172.16.9.224'
+    }
+    return stored
+  }
+
+  setRavenAIServiceHost(value: string) {
+    this.set(ConfigKeys.RavenAIServiceHost, value)
+  }
+
+  getRavenAIServicePort(): number {
+    return this.get<number>(ConfigKeys.RavenAIServicePort, 8085)
+  }
+
+  setRavenAIServicePort(value: number) {
+    this.set(ConfigKeys.RavenAIServicePort, value)
+  }
+
+  private defaultDeviceHostname(): string {
+    return os.hostname() || 'unknown-device'
+  }
+
+  private defaultDeviceIdentity(): string {
+    const hostname = this.defaultDeviceHostname()
+    const version = app?.getVersion?.() || 'unknown'
+    const suffix = crypto.randomBytes(3).toString('hex')
+    return `${hostname}-${version}-${suffix}`
+  }
+
+  private ensureDeviceLinkIdentityDefaults(): string {
+    const storedId = this.get<string>(ConfigKeys.DeviceLinkDeviceId)
+    const storedName = this.get<string>(ConfigKeys.DeviceLinkDeviceName)
+    const identity = storedId?.trim() || this.defaultDeviceIdentity()
+
+    if (!storedId || !storedId.trim()) {
+      this.set(ConfigKeys.DeviceLinkDeviceId, identity)
+    }
+
+    if (!storedName || !storedName.trim()) {
+      this.set(ConfigKeys.DeviceLinkDeviceName, identity)
+    }
+
+    return identity
+  }
+
+  getDeviceLinkDeviceId(): string {
+    const deviceId = this.get<string>(ConfigKeys.DeviceLinkDeviceId)
+    return deviceId?.trim() || this.ensureDeviceLinkIdentityDefaults()
+  }
+
+  setDeviceLinkDeviceId(value: string) {
+    this.set(ConfigKeys.DeviceLinkDeviceId, value)
+  }
+
+  getDeviceLinkDeviceName(): string {
+    const deviceName = this.get<string>(ConfigKeys.DeviceLinkDeviceName)
+    return deviceName?.trim() || this.ensureDeviceLinkIdentityDefaults()
+  }
+
+  setDeviceLinkDeviceName(value: string) {
+    this.set(ConfigKeys.DeviceLinkDeviceName, value)
   }
 
   getCustomUpdateServerUrl(): string {

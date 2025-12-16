@@ -27,6 +27,7 @@ import selectionService, { initSelectionService } from './services/SelectionServ
 import { registerShortcuts } from './services/ShortcutService'
 import { TrayService } from './services/TrayService'
 import { windowService } from './services/WindowService'
+import deviceLinkClient from './services/DeviceLinkClient'
 import process from 'node:process'
 
 const logger = loggerService.withContext('MainEntry')
@@ -132,6 +133,7 @@ if (!app.requestSingleInstanceLock()) {
     registerShortcuts(mainWindow)
 
     registerIpc(mainWindow, app)
+    deviceLinkClient.start(mainWindow)
 
     replaceDevtoolsFont(mainWindow)
 
@@ -194,6 +196,8 @@ if (!app.requestSingleInstanceLock()) {
     if (selectionService) {
       selectionService.quit()
     }
+
+    deviceLinkClient.stop()
   })
 
   app.on('will-quit', async () => {

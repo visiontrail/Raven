@@ -62,6 +62,7 @@ import { decrypt, encrypt } from './utils/aes'
 import { getCacheDir, getConfigDir, getFilesDir, hasWritePermission, isPathInside, untildify } from './utils/file'
 import { updateAppDataConfig } from './utils/init'
 import { compress, decompress } from './utils/zip'
+import deviceLinkClient from './services/DeviceLinkClient'
 
 const logger = loggerService.withContext('IPC')
 
@@ -78,6 +79,8 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
 
   // Initialize Python service with main window
   pythonService.setMainWindow(mainWindow)
+  deviceLinkClient.attachMainWindow(mainWindow)
+  deviceLinkClient.registerIpcHandlers()
 
   ipcMain.handle(IpcChannel.App_Info, () => ({
     version: app.getVersion(),

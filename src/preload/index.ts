@@ -7,6 +7,7 @@ import { SpanContext } from '@opentelemetry/api'
 import { UpgradeChannel } from '@shared/config/constant'
 import type { LogLevel, LogSourceWithContext } from '@shared/config/logger'
 import { IpcChannel } from '@shared/IpcChannel'
+import type { PromptMessage, PromptResultMessage } from '@main/services/DeviceLinkContract'
 import {
   AddMemoryOptions,
   AssistantMessage,
@@ -96,6 +97,17 @@ const api = {
   },
   devTools: {
     toggle: () => ipcRenderer.invoke(IpcChannel.System_ToggleDevTools)
+  },
+  deviceLink: {
+    onPrompt: (callback: (payload: PromptMessage) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: PromptMessage) => {
+        callback(payload)
+      }
+      ipcRenderer.on(IpcChannel.DeviceLink_Prompt, listener)
+      return () => ipcRenderer.off(IpcChannel.DeviceLink_Prompt, listener)
+    },
+    sendPromptResult: (payload: PromptResultMessage) =>
+      ipcRenderer.invoke(IpcChannel.DeviceLink_PromptResult, payload)
   },
   zip: {
     compress: (text: string) => ipcRenderer.invoke(IpcChannel.Zip_Compress, text),

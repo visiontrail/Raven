@@ -2,6 +2,7 @@ import KeyvStorage from '@kangfenmao/keyv-storage'
 import { loggerService } from '@logger'
 
 import { startAutoSync } from './services/BackupService'
+import { deviceLinkHandler } from './services/DeviceLinkHandler'
 import { deviceLogMonitorService } from './services/DeviceLogMonitorService'
 import { startNutstoreAutoSync } from './services/NutstoreService'
 import storeSyncService from './services/StoreSyncService'
@@ -45,8 +46,18 @@ function initDeviceLogMonitor() {
   }, 3000) // 3秒后启动
 }
 
+function initDeviceLinkHandler() {
+  try {
+    deviceLinkHandler.start()
+    window.addEventListener('beforeunload', () => deviceLinkHandler.stop())
+  } catch (error) {
+    loggerService.error('Failed to start device link handler:', error as Error)
+  }
+}
+
 initKeyv()
 initAutoSync()
 initStoreSync()
 initWebTrace()
 initDeviceLogMonitor()
+initDeviceLinkHandler()

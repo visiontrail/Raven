@@ -228,6 +228,10 @@ export enum IpcChannel {
   // DevTools
   System_ToggleDevTools = 'system:toggleDevTools',
 
+  // Device Link
+  DeviceLink_Prompt = 'device-link:prompt',
+  DeviceLink_PromptResult = 'device-link:prompt-result',
+
   // events
   BackupProgress = 'backup-progress',
   ThemeUpdated = 'theme:updated',
