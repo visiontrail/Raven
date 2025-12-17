@@ -6,14 +6,13 @@
  * 2. FTP 上传文件到指定远程路径
  */
 
-import * as fs from 'fs-extra'
-import * as path from 'path'
-
 import { loggerService } from '@logger'
 import { ftpService } from '@main/services/FTPService'
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js'
 import { app, net } from 'electron'
+import * as fs from 'fs-extra'
+import * as path from 'path'
 
 const logger = loggerService.withContext('MCPServer:FileTransfer')
 
@@ -74,13 +73,13 @@ function extractFileNameFromContentDisposition(contentDisposition: string): stri
     // 匹配 filename="xxx" 或 filename='xxx' 或 filename=xxx
     const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i
     const matches = filenameRegex.exec(contentDisposition)
-    
+
     if (matches && matches[1]) {
       let filename = matches[1].trim()
       // 移除引号
       filename = filename.replace(/^["']|["']$/g, '')
       // 处理 filename*=UTF-8''encoded_filename 格式
-      if (filename.startsWith('UTF-8\'\'')) {
+      if (filename.startsWith("UTF-8''")) {
         filename = decodeURIComponent(filename.substring(7))
       } else {
         // 尝试解码 URL 编码

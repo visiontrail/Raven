@@ -197,8 +197,7 @@ const GeneralSettings: FC = () => {
       setDeviceLinkId(identity?.deviceId || '')
     } catch (error) {
       window.message.error({
-        content:
-          error instanceof Error ? error.message : t('settings.general.device_link.load_failed'),
+        content: error instanceof Error ? error.message : t('settings.general.device_link.load_failed'),
         key: 'device-link-load-error'
       })
     } finally {
@@ -363,8 +362,7 @@ const GeneralSettings: FC = () => {
               type="primary"
               onClick={handleSaveDeviceLinkName}
               loading={savingDeviceLinkName}
-              disabled={loadingDeviceLinkIdentity}
-            >
+              disabled={loadingDeviceLinkIdentity}>
               {t('common.save')}
             </Button>
           </Flex>

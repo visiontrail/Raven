@@ -19,6 +19,7 @@ import BackupManager from './services/BackupManager'
 import { codeToolsService } from './services/CodeToolsService'
 import { configManager } from './services/ConfigManager'
 import CopilotService from './services/CopilotService'
+import deviceLinkClient from './services/DeviceLinkClient'
 import DxtService from './services/DxtService'
 import { ExportService } from './services/ExportService'
 import { fileStorage as fileManager } from './services/FileStorage'
@@ -62,7 +63,6 @@ import { decrypt, encrypt } from './utils/aes'
 import { getCacheDir, getConfigDir, getFilesDir, hasWritePermission, isPathInside, untildify } from './utils/file'
 import { updateAppDataConfig } from './utils/init'
 import { compress, decompress } from './utils/zip'
-import deviceLinkClient from './services/DeviceLinkClient'
 
 const logger = loggerService.withContext('IPC')
 

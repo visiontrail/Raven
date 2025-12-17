@@ -1,9 +1,11 @@
+import os from 'node:os'
+
 import { loggerService } from '@logger'
 import { IpcChannel } from '@shared/IpcChannel'
 import { app, BrowserWindow, ipcMain } from 'electron'
-import os from 'node:os'
 import { WebSocket } from 'undici'
 
+import { configManager } from './ConfigManager'
 import {
   ClientToServerMessage,
   DEVICE_LINK_WS_PATH,
@@ -12,7 +14,6 @@ import {
   RegisterMessage,
   ServerToClientMessage
 } from './DeviceLinkContract'
-import { configManager } from './ConfigManager'
 import { windowService } from './WindowService'
 
 const DEFAULT_HEARTBEAT_MS = 30_000
@@ -178,7 +179,8 @@ class DeviceLinkClient {
   }
 
   private handlePrompt(message: PromptMessage) {
-    const mainWindow = this.mainWindow && !this.mainWindow.isDestroyed() ? this.mainWindow : windowService.getMainWindow()
+    const mainWindow =
+      this.mainWindow && !this.mainWindow.isDestroyed() ? this.mainWindow : windowService.getMainWindow()
     this.promptTimers.set(message.request_id, Date.now())
     this.logger.info('Prompt received from server', {
       requestId: message.request_id,

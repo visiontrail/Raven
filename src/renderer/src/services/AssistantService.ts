@@ -187,8 +187,7 @@ python代码将在一个沙箱环境中运行，权限范围如下：
     type: 'assistant',
     regularPhrases: [
       {
-        content:
-          '请提取${组件或板卡}日志\n问题简述： ${问题描述}\n研发定位人员姓名： ${研发人员姓名}',
+        content: '请提取${组件或板卡}日志\n问题简述： ${问题描述}\n研发定位人员姓名： ${研发人员姓名}',
         title: '日志提取',
         id: 'preset-log-collection',
         createdAt: Date.now(),
