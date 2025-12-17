@@ -48,14 +48,27 @@ export class FileProcessor {
     const matchingFiles = allFiles
       .filter((file) => {
         const fileName = file.toString()
+        const baseName = path.basename(fileName)
         const ext = path.extname(fileName)
 
-        // 必须满足扩展名匹配
-        if (!types.includes(ext)) {
+        // 支持两种匹配模式：
+        // 1. 扩展名匹配（types中以.开头的项）
+        // 2. 完整文件名匹配（types中不以.开头的项，用于无扩展名的文件如gnb-oam-lx10）
+        const isTypeMatch = types.some((type) => {
+          if (type.startsWith('.')) {
+            // 扩展名匹配
+            return ext === type
+          } else {
+            // 完整文件名匹配或包含匹配
+            return baseName === type || baseName.includes(type)
+          }
+        })
+
+        if (!isTypeMatch) {
           return false
         }
 
-        // 如果没有提供nameHint，只要扩展名匹配就返回
+        // 如果没有提供nameHint，只要类型匹配就返回
         if (!nameHint) {
           return true
         }
