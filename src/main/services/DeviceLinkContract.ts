@@ -84,6 +84,7 @@ export interface ErrorMessage {
 export type ClientToServerMessage =
   | RegisterMessage
   | PingMessage
+  | PongMessage
   | PromptAckMessage
   | PromptResultMessage
   | ErrorMessage
