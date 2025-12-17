@@ -29,16 +29,16 @@ enum FTPUploadPathType {
  */
 const FTP_CONFIG = {
   host: '172.77.245.1',
-  port: 21,
-  username: 'root',
-  password: 'root'
+  port: 10002,
+  username: 'anonymous',
+  password: 'anonymous'
 }
 
 /**
  * FTP 上传路径映射
  */
 const FTP_UPLOAD_PATHS: Record<FTPUploadPathType, string> = {
-  [FTPUploadPathType.UPGRADE_PACKAGE]: '/opt/soft/upgrade/'
+  [FTPUploadPathType.UPGRADE_PACKAGE]: '/firmware'
 }
 
 /**
