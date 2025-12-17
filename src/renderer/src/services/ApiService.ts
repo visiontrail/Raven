@@ -441,7 +441,7 @@ export async function fetchChatCompletion({
     assistant.prompt = await replacePromptVariables(assistant.prompt, assistant.model?.name)
   }
 
-  // 在对话上下文中追加当前系统时间（精确到毫秒），帮助模型感知当前时间
+  // 在对话上下文中追加当前系统时间（精确到毫秒）和设备名称，帮助模型感知当前时间和设备信息
   try {
     const now = new Date()
     const pad = (n: number, w = 2) => n.toString().padStart(w, '0')
@@ -455,10 +455,23 @@ export async function fetchChatCompletion({
     const timezoneOffset = `UTC${offsetSign}${pad(offsetHours)}:${pad(offsetMinutes)}`
     const timezoneName = Intl.DateTimeFormat().resolvedOptions().timeZone
 
-    const timeLine = `Current system time: ${formatted} (${timezoneOffset}, ${timezoneName})`
-    assistant.prompt = assistant.prompt ? `${assistant.prompt}\n${timeLine}` : timeLine
+    const timeLine = `Current system time(当前时间): ${formatted} (${timezoneOffset}, ${timezoneName})`
+
+    // 获取设备名称
+    let deviceLine = ''
+    try {
+      const identity = await window.api.deviceLink.getIdentity()
+      if (identity?.deviceName) {
+        deviceLine = `Current environment information(当前环境信息): ${identity.deviceName}`
+      }
+    } catch (deviceError) {
+      logger.warn('Failed to get device identity', deviceError as Error)
+    }
+
+    const contextLines = [timeLine, deviceLine].filter(Boolean).join('\n')
+    assistant.prompt = assistant.prompt ? `${assistant.prompt}\n${contextLines}` : contextLines
   } catch (e) {
-    logger.warn('Failed to append time context to system prompt', e as Error)
+    logger.warn('Failed to append time/device context to system prompt', e as Error)
   }
 
   const provider = getAssistantProvider(assistant)
