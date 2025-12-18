@@ -29,6 +29,7 @@ class DeviceLinkClient {
   private reconnectDelay = RECONNECT_BASE_MS
   private heartbeatMs = DEFAULT_HEARTBEAT_MS
   private shouldReconnect = false
+  private lastPongAt = 0
   private ipcRegistered = false
   private connectAttempts = 0
   private promptTimers: Map<string, number> = new Map()
@@ -56,6 +57,7 @@ class DeviceLinkClient {
       this.mainWindow = mainWindow
     }
     this.shouldReconnect = true
+    this.startHeartbeat()
     this.connect()
   }
 
@@ -81,6 +83,7 @@ class DeviceLinkClient {
   }
 
   private connect() {
+    if (!this.shouldReconnect) return
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
       return
     }
@@ -110,6 +113,7 @@ class DeviceLinkClient {
     this.logger.info('Device link connected', { attempts: this.connectAttempts })
     this.connectAttempts = 0
     this.reconnectDelay = RECONNECT_BASE_MS
+    this.lastPongAt = Date.now()
     this.sendRegister()
   }
 
@@ -119,10 +123,10 @@ class DeviceLinkClient {
     }
 
     this.logger.warn('Device link closed', { code: event?.code, reason: event?.reason })
-    this.clearHeartbeat()
     this.promptTimers.clear()
     this.ws = undefined
     this.isRegistered = false
+    this.lastPongAt = 0
 
     if (this.shouldReconnect) {
       this.scheduleReconnect()
@@ -131,6 +135,7 @@ class DeviceLinkClient {
 
   private handleError(event: any) {
     this.logger.error('Device link error', event as Error)
+    this.restartConnection('socket_error')
   }
 
   private handleMessage(event: any) {
@@ -154,6 +159,7 @@ class DeviceLinkClient {
     switch (message.type) {
       case 'register_ack':
         this.heartbeatMs = (message.heartbeat_interval || DEFAULT_HEARTBEAT_MS / 1000) * 1000
+        this.lastPongAt = Date.now()
         this.logger.info('Register ack received', {
           heartbeatMs: this.heartbeatMs,
           serverTime: message.server_time,
@@ -169,6 +175,7 @@ class DeviceLinkClient {
         break
 
       case 'pong':
+        this.lastPongAt = Date.now()
         this.logger.debug('Heartbeat pong received')
         break
 
@@ -208,9 +215,9 @@ class DeviceLinkClient {
 
   private startHeartbeat() {
     this.clearHeartbeat()
-    this.heartbeatTimer = setInterval(() => {
-      this.sendMessage({ type: 'ping' })
-    }, this.heartbeatMs || DEFAULT_HEARTBEAT_MS)
+    const interval = this.heartbeatMs || DEFAULT_HEARTBEAT_MS
+    this.heartbeatTimer = setInterval(() => this.handleHeartbeatTick(), interval)
+    this.handleHeartbeatTick()
   }
 
   private clearHeartbeat() {
@@ -220,17 +227,73 @@ class DeviceLinkClient {
     }
   }
 
-  private scheduleReconnect() {
-    if (this.reconnectTimer || !this.shouldReconnect) return
+  private handleHeartbeatTick() {
+    if (!this.shouldReconnect) return
 
-    const delay = Math.min(this.reconnectDelay, RECONNECT_MAX_MS)
-    this.logger.info('Scheduling device link reconnect', { delay, nextAttempt: this.connectAttempts + 1 })
+    const interval = this.heartbeatMs || DEFAULT_HEARTBEAT_MS
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      this.logger.debug('Heartbeat tick: socket not open, ensuring reconnect')
+      this.scheduleReconnect(true)
+      return
+    }
+
+    if (!this.isRegistered) {
+      this.logger.warn('Heartbeat tick: socket open but not registered, resending register')
+      this.sendRegister()
+      return
+    }
+
+    const now = Date.now()
+    if (this.lastPongAt && now - this.lastPongAt > interval * 2) {
+      this.logger.warn('Heartbeat pong timeout, restarting connection', { lastPongMsAgo: now - this.lastPongAt })
+      this.restartConnection('heartbeat_timeout')
+      return
+    }
+
+    this.sendMessage({ type: 'ping' })
+  }
+
+  private scheduleReconnect(immediate = false) {
+    if (!this.shouldReconnect) return
+
+    if (this.reconnectTimer) {
+      if (!immediate) return
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = undefined
+    }
+
+    if (immediate) {
+      this.reconnectDelay = RECONNECT_BASE_MS
+    }
+
+    const delay = immediate ? RECONNECT_BASE_MS : Math.min(this.reconnectDelay, RECONNECT_MAX_MS)
+    this.logger.info('Scheduling device link reconnect', {
+      delay,
+      nextAttempt: this.connectAttempts + 1,
+      immediate
+    })
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = undefined
       this.reconnectDelay = Math.min(this.reconnectDelay * 2, RECONNECT_MAX_MS)
       this.connect()
     }, delay)
+  }
+
+  private restartConnection(reason: string) {
+    this.logger.warn('Restarting device link connection', { reason })
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      try {
+        this.ws.close()
+      } catch (error) {
+        this.logger.debug('Error closing websocket during restart', error as Error)
+      }
+    } else {
+      this.ws = undefined
+    }
+    this.isRegistered = false
+    this.lastPongAt = 0
+    this.scheduleReconnect(true)
   }
 
   private sendRegister() {
