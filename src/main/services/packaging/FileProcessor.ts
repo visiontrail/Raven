@@ -45,43 +45,47 @@ export class FileProcessor {
   async findFilesByType(dir: string, types: string[], nameHint?: string): Promise<string[]> {
     // A simple implementation, can be improved with more specific logic
     const allFiles = await fs.readdir(dir, { recursive: true })
-    const matchingFiles = allFiles
-      .filter((file) => {
-        const fileName = file.toString()
-        const baseName = path.basename(fileName)
-        const ext = path.extname(fileName)
 
-        // 支持两种匹配模式：
-        // 1. 扩展名匹配（types中以.开头的项）
-        // 2. 完整文件名匹配（types中不以.开头的项，用于无扩展名的文件如gnb-oam-lx10）
-        const isTypeMatch = types.some((type) => {
-          if (type.startsWith('.')) {
-            // 扩展名匹配
-            return ext === type
-          } else {
-            // 完整文件名匹配或包含匹配
-            return baseName === type || baseName.includes(type)
-          }
-        })
+    // 首先按类型匹配所有文件
+    const typeMatchedFiles = allFiles.filter((file) => {
+      const fileName = file.toString()
+      const baseName = path.basename(fileName)
+      const ext = path.extname(fileName)
 
-        if (!isTypeMatch) {
-          return false
+      // 支持两种匹配模式：
+      // 1. 扩展名匹配（types中以.开头的项）
+      // 2. 完整文件名匹配（types中不以.开头的项，用于无扩展名的文件如gnb-oam-lx10）
+      return types.some((type) => {
+        if (type.startsWith('.')) {
+          // 扩展名匹配
+          return ext === type
+        } else {
+          // 完整文件名匹配或包含匹配
+          return baseName === type || baseName.includes(type)
         }
-
-        // 如果没有提供nameHint，只要类型匹配就返回
-        if (!nameHint) {
-          return true
-        }
-
-        // 从nameHint中提取基础名称（去掉扩展名）
-        // 例如：'cucp.deb' -> 'cucp', 'gnb-oam-lx10' -> 'gnb-oam-lx10'
-        const nameHintBase = path.basename(nameHint, path.extname(nameHint))
-
-        // 文件名必须包含nameHint的基础名称
-        return fileName.includes(nameHintBase)
       })
-      .map((f) => path.join(dir, f.toString()))
-    return matchingFiles
+    })
+
+    // 如果没有提供nameHint，只按类型匹配返回
+    if (!nameHint) {
+      return typeMatchedFiles.map((f) => path.join(dir, f.toString()))
+    }
+
+    // 从nameHint中提取基础名称（去掉扩展名）
+    // 例如：'cucp.deb' -> 'cucp', 'gnb-oam-lx10' -> 'gnb-oam-lx10'
+    const nameHintBase = path.basename(nameHint, path.extname(nameHint))
+
+    // 尝试使用nameHint进一步过滤
+    const nameHintMatchedFiles = typeMatchedFiles.filter((file) => {
+      const fileName = file.toString()
+      return fileName.includes(nameHintBase)
+    })
+
+    // 如果使用nameHint找到了文件，返回这些文件
+    // 否则回退到只按类型匹配的结果（允许文件名不包含组件名）
+    const resultFiles = nameHintMatchedFiles.length > 0 ? nameHintMatchedFiles : typeMatchedFiles
+
+    return resultFiles.map((f) => path.join(dir, f.toString()))
   }
 
   isArchiveFile(filePath: string): boolean {
