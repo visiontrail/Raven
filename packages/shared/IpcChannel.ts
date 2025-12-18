@@ -233,6 +233,7 @@ export enum IpcChannel {
   DeviceLink_PromptResult = 'device-link:prompt-result',
   DeviceLink_GetIdentity = 'device-link:get-identity',
   DeviceLink_UpdateIdentity = 'device-link:update-identity',
+  DeviceLink_UpdateCapabilities = 'device-link:update-capabilities',
 
   // events
   BackupProgress = 'backup-progress',

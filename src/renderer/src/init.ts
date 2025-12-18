@@ -2,6 +2,7 @@ import KeyvStorage from '@kangfenmao/keyv-storage'
 import { loggerService } from '@logger'
 
 import { startAutoSync } from './services/BackupService'
+import { deviceCapabilitiesSyncService } from './services/DeviceCapabilitiesSyncService'
 import { deviceLinkHandler } from './services/DeviceLinkHandler'
 import { deviceLogMonitorService } from './services/DeviceLogMonitorService'
 import { startNutstoreAutoSync } from './services/NutstoreService'
@@ -55,9 +56,19 @@ function initDeviceLinkHandler() {
   }
 }
 
+function initDeviceCapabilitiesSync() {
+  try {
+    deviceCapabilitiesSyncService.start()
+    window.addEventListener('beforeunload', () => deviceCapabilitiesSyncService.stop())
+  } catch (error) {
+    loggerService.error('Failed to start device capabilities sync service:', error as Error)
+  }
+}
+
 initKeyv()
 initAutoSync()
 initStoreSync()
 initWebTrace()
 initDeviceLogMonitor()
 initDeviceLinkHandler()
+initDeviceCapabilitiesSync()

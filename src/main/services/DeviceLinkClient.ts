@@ -9,6 +9,7 @@ import { configManager } from './ConfigManager'
 import {
   ClientToServerMessage,
   DEVICE_LINK_WS_PATH,
+  DeviceCapabilities,
   PromptMessage,
   PromptResultMessage,
   RegisterMessage,
@@ -31,6 +32,8 @@ class DeviceLinkClient {
   private ipcRegistered = false
   private connectAttempts = 0
   private promptTimers: Map<string, number> = new Map()
+  private capabilities?: DeviceCapabilities
+  private isRegistered = false
 
   private readonly logger = loggerService.withContext('DeviceLinkClient')
 
@@ -61,6 +64,7 @@ class DeviceLinkClient {
     this.clearHeartbeat()
     this.promptTimers.clear()
     this.connectAttempts = 0
+    this.isRegistered = false
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = undefined
@@ -118,6 +122,7 @@ class DeviceLinkClient {
     this.clearHeartbeat()
     this.promptTimers.clear()
     this.ws = undefined
+    this.isRegistered = false
 
     if (this.shouldReconnect) {
       this.scheduleReconnect()
@@ -154,7 +159,9 @@ class DeviceLinkClient {
           serverTime: message.server_time,
           deviceId: message.device_id
         })
+        this.isRegistered = true
         this.startHeartbeat()
+        this.sendCapabilitiesUpdate()
         break
 
       case 'ping':
@@ -233,9 +240,42 @@ class DeviceLinkClient {
       device_name: configManager.getDeviceLinkDeviceName(),
       client_version: app.getVersion(),
       host: os.hostname(),
-      models: []
+      models: [],
+      capabilities: this.capabilities
     }
 
+    this.sendMessage(message)
+  }
+
+  public updateCapabilities(capabilities: DeviceCapabilities) {
+    this.capabilities = capabilities
+    this.logger.info('Updated device capabilities for device link', {
+      hasMcp: Boolean(capabilities?.mcp),
+      mcpServers: capabilities?.mcp?.servers?.length || 0
+    })
+    this.sendCapabilitiesUpdate()
+  }
+
+  private sendCapabilitiesUpdate() {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return
+    }
+    if (!this.isRegistered) {
+      return
+    }
+    if (!this.capabilities) {
+      return
+    }
+
+    const message: ClientToServerMessage = {
+      type: 'capabilities_update',
+      device_id: configManager.getDeviceLinkDeviceId(),
+      capabilities: this.capabilities
+    }
+
+    this.logger.info('Sending capabilities update to device link server', {
+      mcpServers: this.capabilities?.mcp?.servers?.length || 0
+    })
     this.sendMessage(message)
   }
 

@@ -20,6 +20,7 @@ import { codeToolsService } from './services/CodeToolsService'
 import { configManager } from './services/ConfigManager'
 import CopilotService from './services/CopilotService'
 import deviceLinkClient from './services/DeviceLinkClient'
+import type { DeviceCapabilities } from './services/DeviceLinkContract'
 import DxtService from './services/DxtService'
 import { ExportService } from './services/ExportService'
 import { fileStorage as fileManager } from './services/FileStorage'
@@ -257,6 +258,18 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
         deviceId: configManager.getDeviceLinkDeviceId(),
         deviceName: configManager.getDeviceLinkDeviceName()
       }
+    }
+  )
+
+  ipcMain.handle(
+    IpcChannel.DeviceLink_UpdateCapabilities,
+    (_event, capabilities: DeviceCapabilities | undefined) => {
+      if (capabilities) {
+        deviceLinkClient.updateCapabilities(capabilities)
+      } else {
+        logger.warn('Device link capabilities update called with empty payload')
+      }
+      return true
     }
   )
 

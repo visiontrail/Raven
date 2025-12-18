@@ -31,7 +31,7 @@ export interface RegisterMessage {
   client_version: string
   host: string
   models: string[]
-  capabilities?: Record<string, unknown>
+  capabilities?: DeviceCapabilities
 }
 
 export interface RegisterAckMessage {
@@ -81,12 +81,59 @@ export interface ErrorMessage {
   message: string
 }
 
+export interface CapabilitiesUpdateMessage {
+  type: 'capabilities_update'
+  device_id?: string
+  capabilities: DeviceCapabilities
+}
+
+export interface McpToolCapability {
+  name: string
+  description?: string
+  input_schema?: Record<string, unknown>
+  output_schema?: Record<string, unknown>
+}
+
+export interface McpPromptCapability {
+  name: string
+  description?: string
+  arguments?: unknown
+}
+
+export interface McpResourceCapability {
+  uri: string
+  name?: string
+  description?: string
+  mimeType?: string
+}
+
+export interface McpServerCapability {
+  id: string
+  name: string
+  provider?: string
+  type?: string
+  baseUrl?: string
+  description?: string
+  tools?: McpToolCapability[]
+  prompts?: McpPromptCapability[]
+  resources?: McpResourceCapability[]
+}
+
+export interface DeviceCapabilities {
+  mcp?: {
+    servers: McpServerCapability[]
+    collectedAt?: string
+  }
+  [key: string]: unknown
+}
+
 export type ClientToServerMessage =
   | RegisterMessage
   | PingMessage
   | PongMessage
   | PromptAckMessage
   | PromptResultMessage
+  | CapabilitiesUpdateMessage
   | ErrorMessage
 
 export type ServerToClientMessage = RegisterAckMessage | PingMessage | PongMessage | PromptMessage | ErrorMessage

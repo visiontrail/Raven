@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import type { ExtractChunkData } from '@cherrystudio/embedjs-interfaces'
 import { electronAPI } from '@electron-toolkit/preload'
-import type { PromptMessage, PromptResultMessage } from '@main/services/DeviceLinkContract'
+import type { DeviceCapabilities, PromptMessage, PromptResultMessage } from '@main/services/DeviceLinkContract'
 import { SpanEntity, TokenUsage } from '@mcp-trace/trace-core'
 import { SpanContext } from '@opentelemetry/api'
 import { UpgradeChannel } from '@shared/config/constant'
@@ -109,7 +109,9 @@ const api = {
     sendPromptResult: (payload: PromptResultMessage) => ipcRenderer.invoke(IpcChannel.DeviceLink_PromptResult, payload),
     getIdentity: () => ipcRenderer.invoke(IpcChannel.DeviceLink_GetIdentity),
     updateIdentity: (payload: { deviceId?: string; deviceName?: string }) =>
-      ipcRenderer.invoke(IpcChannel.DeviceLink_UpdateIdentity, payload)
+      ipcRenderer.invoke(IpcChannel.DeviceLink_UpdateIdentity, payload),
+    updateCapabilities: (capabilities: DeviceCapabilities) =>
+      ipcRenderer.invoke(IpcChannel.DeviceLink_UpdateCapabilities, capabilities)
   },
   zip: {
     compress: (text: string) => ipcRenderer.invoke(IpcChannel.Zip_Compress, text),
