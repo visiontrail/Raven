@@ -848,6 +848,7 @@ export interface MCPToolInputSchema {
   description?: string
   required?: string[]
   properties: Record<string, object>
+  [key: string]: unknown
 }
 
 export const MCPToolOutputSchema = z.object({
