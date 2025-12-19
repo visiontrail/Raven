@@ -94,8 +94,8 @@ const COMPONENT_CONFIGS = {
         direct_include: false
       },
       bposc_fpga: {
-        file_name: 'bposc.bin',
-        file_attr: '310',
+        file_name: 'bpoka100.bin',
+        file_attr: '313',
         file_types: ['.bin'],
         description: 'packager.components.lingxi-10.bposc_fpga',
         direct_include: false
