@@ -87,11 +87,19 @@ export interface CapabilitiesUpdateMessage {
   capabilities: DeviceCapabilities
 }
 
+export interface McpToolParameter {
+  name: string
+  description?: string
+  required?: boolean
+  schema?: Record<string, unknown>
+}
+
 export interface McpToolCapability {
   name: string
   description?: string
   input_schema?: Record<string, unknown>
   output_schema?: Record<string, unknown>
+  parameters?: McpToolParameter[]
 }
 
 export interface McpPromptCapability {

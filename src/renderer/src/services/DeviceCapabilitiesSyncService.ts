@@ -4,7 +4,8 @@ import type {
   McpPromptCapability,
   McpResourceCapability,
   McpServerCapability,
-  McpToolCapability
+  McpToolCapability,
+  McpToolParameter
 } from '@main/services/DeviceLinkContract'
 import type { MCPPrompt, MCPResource, MCPServer, MCPTool } from '@renderer/types'
 import store from '@renderer/store'
@@ -153,8 +154,37 @@ class DeviceCapabilitiesSyncService {
         name: tool.name,
         description: tool.description,
         input_schema: tool.inputSchema,
-        output_schema: tool.outputSchema
+        output_schema: tool.outputSchema,
+        parameters: this.extractToolParameters(tool.inputSchema)
       }))
+  }
+
+  private extractToolParameters(inputSchema?: MCPTool['inputSchema']): McpToolParameter[] {
+    if (!inputSchema || typeof inputSchema !== 'object') {
+      return []
+    }
+
+    const properties = inputSchema.properties
+    if (!properties || typeof properties !== 'object') {
+      return []
+    }
+
+    const requiredSet = new Set<string>(Array.isArray(inputSchema.required) ? inputSchema.required : [])
+
+    return Object.entries(properties).map(([name, schema]) => {
+      const isObject = schema !== null && typeof schema === 'object'
+      const schemaObject = isObject ? (schema as Record<string, unknown>) : undefined
+      const description = schemaObject
+        ? ((schemaObject.description as string | undefined) ?? (schemaObject.title as string | undefined))
+        : undefined
+
+      return {
+        name,
+        description,
+        required: requiredSet.has(name),
+        schema: schemaObject
+      }
+    })
   }
 
   private async listPrompts(server: MCPServer): Promise<McpPromptCapability[]> {
@@ -192,4 +222,3 @@ class DeviceCapabilitiesSyncService {
 }
 
 export const deviceCapabilitiesSyncService = new DeviceCapabilitiesSyncService()
-
