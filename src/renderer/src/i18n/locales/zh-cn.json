@@ -1904,7 +1904,9 @@
         "cuup_stack": "CUUP Stack配置",
         "cwmp_data": "CWMP数据文件",
         "du_gnb": "DU GNB配置",
-        "du_stack": "DU Stack配置"
+        "du_stack": "DU Stack配置",
+        "pengcheng_core_amf_config": "鹏程核心网AMF配置文件",
+        "pengcheng_core_upf_config": "鹏程核心网UPF配置文件"
       },
       "ka-rx": {
         "firmware": "固件"
@@ -1929,6 +1931,9 @@
         "du": "协议栈DU",
         "galaxy_core_network": "银河自研核心网",
         "oam": "OAM软件",
+        "pengcheng_core_amf": "鹏程核心网AMF包",
+        "pengcheng_core_scripts": "鹏程核心网脚本包",
+        "pengcheng_core_upf": "鹏程核心网UPF包",
         "satellite_app_server": "星载应用服务器",
         "sct_fpga": "主控板FPGA"
       }

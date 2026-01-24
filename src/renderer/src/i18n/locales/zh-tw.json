@@ -1902,7 +1902,9 @@
         "cuup_stack": "CUUP Stack 配置",
         "cwmp_data": "CWMP 資料檔案",
         "du_gnb": "DU GNB 配置",
-        "du_stack": "DU Stack 配置"
+        "du_stack": "DU Stack 配置",
+        "pengcheng_core_amf_config": "鵬程核心網 AMF 配置檔案",
+        "pengcheng_core_upf_config": "鵬程核心網 UPF 配置檔案"
       },
       "ka-tx": {
         "firmware": "韌體"
@@ -1927,6 +1929,9 @@
         "du": "協定堆疊 DU",
         "galaxy_core_network": "銀河自研核心網",
         "oam": "OAM 軟體",
+        "pengcheng_core_amf": "鵬程核心網 AMF 包",
+        "pengcheng_core_scripts": "鵬程核心網腳本包",
+        "pengcheng_core_upf": "鵬程核心網 UPF 包",
         "satellite_app_server": "星載應用伺服器",
         "sct_fpga": "主控板 FPGA"
       }

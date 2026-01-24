@@ -1902,7 +1902,9 @@
         "cuup_stack": "Конфигурация стека CUUP",
         "cwmp_data": "Файлы данных CWMP",
         "du_gnb": "Конфигурация DU GNB",
-        "du_stack": "Конфигурация стека DU"
+        "du_stack": "Конфигурация стека DU",
+        "pengcheng_core_amf_config": "Файл конфигурации AMF базовой сети Pengcheng",
+        "pengcheng_core_upf_config": "Файл конфигурации UPF базовой сети Pengcheng"
       },
       "lingxi-07a": {
         "bpoqv_fpga": "FPGA базовой полосы QV",
@@ -1921,6 +1923,9 @@
         "du": "Стек протоколов DU",
         "galaxy_core_network": "Самостоятельно разработанная базовая сеть Galaxy",
         "oam": "Программное обеспечение OAM",
+        "pengcheng_core_amf": "Пакет AMF базовой сети Pengcheng",
+        "pengcheng_core_scripts": "Пакет скриптов базовой сети Pengcheng",
+        "pengcheng_core_upf": "Пакет UPF базовой сети Pengcheng",
         "satellite_app_server": "Сервер спутниковых приложений",
         "sct_fpga": "FPGA платы управления"
       }

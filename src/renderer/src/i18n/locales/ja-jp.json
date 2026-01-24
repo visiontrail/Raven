@@ -1902,7 +1902,9 @@
         "cuup_stack": "CUUP Stack設定",
         "cwmp_data": "CWMPデータファイル",
         "du_gnb": "DU GNB設定",
-        "du_stack": "DU Stack設定"
+        "du_stack": "DU Stack設定",
+        "pengcheng_core_amf_config": "Pengchengコアネットワーク AMF設定ファイル",
+        "pengcheng_core_upf_config": "Pengchengコアネットワーク UPF設定ファイル"
       },
       "lingxi-07a": {
         "bpoqv_fpga": "QVベースバンドFPGA",
@@ -1921,6 +1923,9 @@
         "du": "プロトコルスタックDU",
         "galaxy_core_network": "ギャラクシー自社開発コアネットワーク",
         "oam": "OAMソフトウェア",
+        "pengcheng_core_amf": "Pengchengコアネットワーク AMFパッケージ",
+        "pengcheng_core_scripts": "Pengchengコアネットワークスクリプトパッケージ",
+        "pengcheng_core_upf": "Pengchengコアネットワーク UPFパッケージ",
         "satellite_app_server": "衛星搭載アプリケーションサーバー",
         "sct_fpga": "メインコントロールボードFPGA"
       }

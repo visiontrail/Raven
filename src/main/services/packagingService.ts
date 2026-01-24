@@ -141,6 +141,27 @@ const COMPONENT_CONFIGS = {
         file_types: ['.tgz', '.tar.gz'],
         description: 'packager.components.lingxi-10.satellite_app_server',
         direct_include: true
+      },
+      pengcheng_core_amf: {
+        file_name: 'pengcheng_core_amf.tgz',
+        file_attr: '404',
+        file_types: ['.tgz', '.tar.gz'],
+        description: 'packager.components.lingxi-10.pengcheng_core_amf',
+        direct_include: true
+      },
+      pengcheng_core_upf: {
+        file_name: 'pengcheng_core_upf.tgz',
+        file_attr: '405',
+        file_types: ['.tgz', '.tar.gz'],
+        description: 'packager.components.lingxi-10.pengcheng_core_upf',
+        direct_include: true
+      },
+      pengcheng_core_scripts: {
+        file_name: 'pengcheng_core_scripts.tgz',
+        file_attr: '406',
+        file_types: ['.tgz', '.tar.gz'],
+        description: 'packager.components.lingxi-10.pengcheng_core_scripts',
+        direct_include: true
       }
     }
   },
@@ -225,6 +246,20 @@ const COMPONENT_CONFIGS = {
         file_attr: '322',
         file_types: ['.json'],
         description: 'packager.components.config.du_stack',
+        direct_include: false
+      },
+      pengcheng_core_amf_config: {
+        file_name: 'pengcheng_core_amf.json',
+        file_attr: '323',
+        file_types: ['.json'],
+        description: 'packager.components.config.pengcheng_core_amf_config',
+        direct_include: false
+      },
+      pengcheng_core_upf_config: {
+        file_name: 'pengcheng_core_upf.json',
+        file_attr: '324',
+        file_types: ['.json'],
+        description: 'packager.components.config.pengcheng_core_upf_config',
         direct_include: false
       }
     }

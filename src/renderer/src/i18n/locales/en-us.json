@@ -1904,7 +1904,9 @@
         "cuup_stack": "CUUP Stack Configuration",
         "cwmp_data": "CWMP Data File",
         "du_gnb": "DU GNB Configuration",
-        "du_stack": "DU Stack Configuration"
+        "du_stack": "DU Stack Configuration",
+        "pengcheng_core_amf_config": "Pengcheng Core Network AMF Configuration",
+        "pengcheng_core_upf_config": "Pengcheng Core Network UPF Configuration"
       },
       "ka-tx": {
         "firmware": "Firmware"
@@ -1929,6 +1931,9 @@
         "du": "Protocol Stack DU",
         "galaxy_core_network": "Galaxy Self-developed Core Network",
         "oam": "OAM Software",
+        "pengcheng_core_amf": "Pengcheng Core Network AMF Package",
+        "pengcheng_core_scripts": "Pengcheng Core Network Scripts Package",
+        "pengcheng_core_upf": "Pengcheng Core Network UPF Package",
         "satellite_app_server": "Satellite Application Server",
         "sct_fpga": "Main Control Board FPGA"
       }
