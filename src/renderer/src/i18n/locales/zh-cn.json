@@ -1930,7 +1930,7 @@
       },
       "lingxi-10": {
         "bpodvb_fpga": "DVB基带FPGA",
-        "bposc_fpga": "基带板FPGA",
+        "bpoka100": "基带板FPGA",
         "cucp": "协议栈CUCP",
         "cuup": "协议栈CUUP",
         "du": "协议栈DU",

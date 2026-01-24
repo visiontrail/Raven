@@ -1930,7 +1930,7 @@
       },
       "lingxi-10": {
         "bpodvb_fpga": "DVB Baseband FPGA",
-        "bposc_fpga": "Baseband Board FPGA",
+        "bpoka100": "Baseband Board FPGA",
         "cucp": "Protocol Stack CUCP",
         "cuup": "Protocol Stack CUUP",
         "du": "Protocol Stack DU",

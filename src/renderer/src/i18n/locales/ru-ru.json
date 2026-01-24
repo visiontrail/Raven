@@ -1930,7 +1930,7 @@
       },
       "lingxi-10": {
         "bpodvb_fpga": "FPGA базовой полосы DVB",
-        "bposc_fpga": "FPGA базовой платы",
+        "bpoka100": "FPGA базовой платы",
         "cucp": "Стек протоколов CUCP",
         "cuup": "Стек протоколов CUUP",
         "du": "Стек протоколов DU",
