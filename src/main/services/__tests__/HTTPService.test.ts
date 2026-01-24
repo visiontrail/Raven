@@ -245,7 +245,20 @@ describe('HTTPService', () => {
       expect(progressCallback).toHaveBeenCalled()
       const lastPayload = progressCallback.mock.calls.at(-1)?.[0]
       expect(lastPayload).toMatchObject({
-        totalBytes: 1024
+        totalBytes: 2048
+      })
+    })
+
+    it('should surface user cancellation as AbortError', async () => {
+      const cancelError: any = new Error('canceled')
+      cancelError.code = 'ERR_CANCELED'
+
+      mockedAxios.mockRejectedValue(cancelError)
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+      await expect(httpService.uploadFile(mockFilePath, mockPackageMetadata, mockHttpConfig)).rejects.toMatchObject({
+        name: 'AbortError',
+        message: 'Upload cancelled by user'
       })
     })
   })

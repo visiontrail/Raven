@@ -6,7 +6,7 @@ import {
   FolderOpenOutlined,
   UploadOutlined
 } from '@ant-design/icons'
-import { Button, Card, Descriptions, Flex, Form, Input, message, Popconfirm, Progress, Select, Switch, Tag, Tooltip } from 'antd'
+import { Button, Card, Descriptions, Flex, Form, Input, message, Popconfirm, Select, Switch, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import { Package as PackageIcon } from 'lucide-react'
 import { FC, useEffect, useRef, useState } from 'react'
@@ -50,11 +50,6 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
     success: 'green',
     failed: 'red',
     cancelled: 'orange'
-  }
-
-  const formatSpeed = (speedBytesPerSecond?: number) => {
-    if (!speedBytesPerSecond || speedBytesPerSecond < 0) return '0 B/s'
-    return `${formatFileSize(speedBytesPerSecond)}/s`
   }
 
   // Initialize form with current metadata
@@ -417,32 +412,16 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
           </Flex>
           {uploadTask && (
             <div style={{ marginTop: 16 }}>
-              <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
-                <div style={{ fontWeight: 600 }}>{t('files.package.upload_progress') || '上传进度'}</div>
+              <Flex justify="space-between" align="center">
                 <Flex align="center" gap={8}>
+                  <div style={{ fontWeight: 600 }}>{t('files.package.upload_progress') || '上传状态'}</div>
                   <Tag color={uploadStatusColor[uploadTask.status]}>{uploadStatusText[uploadTask.status]}</Tag>
-                  {(uploadTask.status === 'started' || uploadTask.status === 'progress') && (
-                    <Button size="small" danger icon={<CloseOutlined />} onClick={() => cancelHttpUpload(uploadTask.uploadId)}>
-                      {t('common.cancel')}
-                    </Button>
-                  )}
                 </Flex>
-              </Flex>
-              <Progress
-                percent={Math.min(uploadTask.percentage, 100)}
-                status={
-                  uploadTask.status === 'failed'
-                    ? 'exception'
-                    : uploadTask.status === 'success'
-                      ? 'success'
-                      : 'active'
-                }
-              />
-              <Flex justify="space-between" style={{ marginTop: 4 }}>
-                <span>
-                  {formatFileSize(uploadTask.bytesTransferred)} / {formatFileSize(uploadTask.totalBytes || 0)}
-                </span>
-                <span>{formatSpeed(uploadTask.speedBytesPerSecond)}</span>
+                {(uploadTask.status === 'started' || uploadTask.status === 'progress') && (
+                  <Button size="small" danger icon={<CloseOutlined />} onClick={() => cancelHttpUpload(uploadTask.uploadId)}>
+                    {t('common.cancel')}
+                  </Button>
+                )}
               </Flex>
               {uploadTask.error && (
                 <div style={{ marginTop: 6, color: '#ff4d4f', fontSize: 12 }}>{uploadTask.error}</div>

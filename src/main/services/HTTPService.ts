@@ -3,42 +3,16 @@
 import { loggerService } from '@logger'
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
 import * as crypto from 'crypto'
+import { http as followHttp, https as followHttps } from 'follow-redirects'
 import FormData from 'form-data'
 import * as fs from 'fs-extra'
 import * as http from 'http'
 import * as https from 'https'
 import * as path from 'path'
-import { Transform, TransformCallback } from 'stream'
 
 import { HTTPUploadProgress } from '@shared/PackageUploadEvent'
 import { HTTPConfig, Package } from '../../renderer/src/types/package'
-
-/**
- * A Transform stream that tracks how many bytes have passed through it.
- * This provides accurate progress tracking as data is actually read and sent.
- */
-class ProgressTrackingStream extends Transform {
-  private bytesRead = 0
-  private readonly totalBytes: number
-  private readonly onProgress: (bytesRead: number) => void
-
-  constructor(totalBytes: number, onProgress: (bytesRead: number) => void) {
-    super()
-    this.totalBytes = totalBytes
-    this.onProgress = onProgress
-  }
-
-  _transform(chunk: Buffer, _encoding: BufferEncoding, callback: TransformCallback): void {
-    this.bytesRead += chunk.length
-    this.onProgress(this.bytesRead)
-    this.push(chunk)
-    callback()
-  }
-
-  getBytesRead(): number {
-    return this.bytesRead
-  }
-}
+import type { ClientRequest } from 'http'
 
 // Dynamic import for axios http adapter with multiple fallback strategies
 let axiosHttpAdapter: AxiosRequestConfig['adapter'] | undefined
@@ -117,6 +91,83 @@ async function getHttpAdapter(): Promise<AxiosRequestConfig['adapter']> {
 // Verify Node.js environment by checking for http/https modules
 function isNodeEnvironment(): boolean {
   return typeof http.request === 'function' && typeof https.request === 'function'
+}
+
+type HttpLikeTransport = {
+  request: (...args: any[]) => ClientRequest
+}
+
+/**
+ * Track bytes written on the underlying socket to reflect real HTTP upload progress.
+ */
+function attachSocketProgress(
+  req: ClientRequest,
+  uploadTotalBytes: number,
+  reportProgress: (bytesTransferred: number, force?: boolean) => void,
+  onServerResponse?: () => void
+): void {
+  req.on('socket', (socket) => {
+    const initialBytesWritten = socket.bytesWritten
+    let headerBytes = 0
+    let cleaned = false
+
+    const computeHeaderBytes = () => {
+      if (headerBytes === 0 && (req as any)._header) {
+        headerBytes = Buffer.byteLength((req as any)._header)
+      }
+      return headerBytes
+    }
+
+    const emitProgress = (force = false) => {
+      if (cleaned) return
+      const headerSize = computeHeaderBytes()
+      const sentBodyBytes = Math.max(0, socket.bytesWritten - initialBytesWritten - headerSize)
+      const boundedBytes = Math.min(uploadTotalBytes, sentBodyBytes)
+      reportProgress(boundedBytes, force)
+    }
+
+    const interval = setInterval(() => emitProgress(false), 200)
+
+    const cleanup = () => {
+      if (cleaned) return
+      cleaned = true
+      clearInterval(interval)
+      socket.removeListener('error', cleanup)
+      req.removeListener('error', cleanup)
+    }
+
+    socket.on('error', cleanup)
+    req.on('error', cleanup)
+
+    req.on('finish', () => {
+      emitProgress(true)
+      cleanup()
+    })
+    req.on('response', () => {
+      onServerResponse?.()
+      emitProgress(true)
+      cleanup()
+    })
+    req.on('close', () => {
+      emitProgress(true)
+      cleanup()
+    })
+  })
+}
+
+function createProgressTransport(
+  baseTransport: HttpLikeTransport,
+  uploadTotalBytes: number,
+  reportProgress: (bytesTransferred: number, force?: boolean) => void,
+  onServerResponse?: () => void
+): HttpLikeTransport {
+  return {
+    request: (...args: any[]) => {
+      const req = baseTransport.request(...args)
+      attachSocketProgress(req, uploadTotalBytes, reportProgress, onServerResponse)
+      return req
+    }
+  }
 }
 
 const logger = loggerService.withContext('HTTPService')
@@ -239,51 +290,15 @@ export class HTTPService implements IHTTPService {
         }
       }
 
-      // Progress tracking state - track based on stream reads, not socket writes
-      // This gives accurate progress as the file is actually read and sent
-      let lastReportedBytes = 0
-      let lastReportTime = Date.now()
-
-      const reportProgress = (bytesTransferred: number, force = false) => {
-        if (!options?.onProgress) return
-        const now = Date.now()
-        const elapsedMs = now - lastReportTime
-        // Report at most every 100ms for smoother updates, unless forced or complete
-        if (!force && elapsedMs < 100 && bytesTransferred < totalBytes) {
-          return
-        }
-        const deltaBytes = bytesTransferred - lastReportedBytes
-        // Calculate speed based on time since last report
-        const speedBytesPerSecond =
-          elapsedMs > 0 ? deltaBytes / (elapsedMs / 1000) : deltaBytes === 0 ? 0 : deltaBytes
-
-        lastReportedBytes = bytesTransferred
-        lastReportTime = now
-
-        options.onProgress({
-          bytesTransferred,
-          totalBytes,
-          percentage: totalBytes > 0 ? Math.min(100, Math.round((bytesTransferred / totalBytes) * 100)) : 0,
-          speedBytesPerSecond
-        })
-      }
-
-      // Emit initial progress
-      reportProgress(0, true)
-
       // axios with node form-data
       const formData = new FormData()
       ;(formData as any).maxDataSize = Number.MAX_SAFE_INTEGER
 
-      // Use a ProgressTrackingStream to track actual data throughput
-      // This provides accurate progress as data is read from file and pushed through the stream
-      const fileStream = fs.createReadStream(filePath, { highWaterMark: 64 * 1024 }) // 64KB chunks for smoother progress
-      const progressStream = new ProgressTrackingStream(totalBytes, (bytesRead) => {
-        reportProgress(bytesRead, false)
+      // Append file stream directly; progress will be tracked closer to the socket below
+      formData.append('file', fs.createReadStream(filePath, { highWaterMark: 64 * 1024 }), {
+        filename: fileName,
+        knownLength: totalBytes
       })
-      fileStream.pipe(progressStream)
-
-      formData.append('file', progressStream, { filename: fileName, knownLength: totalBytes })
       formData.append('packageInfo', packageInfoJson)
 
       // Pre-compute Content-Length for better proxy compatibility
@@ -301,6 +316,59 @@ export class HTTPService implements IHTTPService {
         }
       }
 
+      // Total bytes to send (use Content-Length when available so boundary bytes are included)
+      const uploadTotalBytes = contentLength ?? totalBytes
+
+      // Progress tracking state - based on bytes written to the underlying socket
+      let lastReportedBytes = 0
+      let lastReportTime = Date.now()
+      let serverResponded = false
+
+      const reportProgress = (bytesTransferred: number, force = false) => {
+        if (!options?.onProgress) return
+        const now = Date.now()
+        const elapsedMs = now - lastReportTime
+        // Report at most every 100ms for smoother updates, unless forced or complete
+        if (!force && elapsedMs < 100 && bytesTransferred < uploadTotalBytes) {
+          return
+        }
+        const deltaBytes = bytesTransferred - lastReportedBytes
+        // Skip redundant logs when nothing has changed unless this is a forced flush
+        if (!force && deltaBytes === 0) {
+          return
+        }
+        const speedBytesPerSecond =
+          elapsedMs > 0 ? deltaBytes / (elapsedMs / 1000) : deltaBytes === 0 ? 0 : deltaBytes
+
+        const percentage =
+          uploadTotalBytes > 0
+            ? Math.min(
+                100,
+                // Hold at 99% until the server actually responds to avoid premature "completion" feedback
+                serverResponded
+                  ? Math.round((bytesTransferred / uploadTotalBytes) * 100)
+                  : Math.min(99, Math.round((bytesTransferred / uploadTotalBytes) * 100))
+              )
+            : 0
+
+        logger.debug(
+          `[UploadProgress] bytesTransferred: ${bytesTransferred}, totalBytes: ${uploadTotalBytes}, percentage: ${percentage}%, deltaBytes: ${deltaBytes}, elapsedMs: ${elapsedMs}, speedBytesPerSecond: ${speedBytesPerSecond}`
+        )
+
+        lastReportedBytes = bytesTransferred
+        lastReportTime = now
+
+        options.onProgress({
+          bytesTransferred,
+          totalBytes: uploadTotalBytes,
+          percentage,
+          speedBytesPerSecond
+        })
+      }
+
+      // Emit initial progress after tracker is ready
+      reportProgress(0, true)
+
       // Prepare request configuration
       // Force the Node.js HTTP adapter explicitly with a direct reference to avoid
       // axios falling back to the Fetch adapter in Electron environments where
@@ -312,10 +380,26 @@ export class HTTPService implements IHTTPService {
       }
 
       const httpAdapter = await getHttpAdapter()
+      const url = new URL(httpConfig.url)
+      const isHttps = url.protocol === 'https:'
+      const baseTransport = isHttps ? followHttps : followHttp
+      const markServerResponse = () => {
+        serverResponded = true
+      }
+      const progressTransport =
+        options?.onProgress && uploadTotalBytes > 0
+          ? createProgressTransport(
+              baseTransport,
+              uploadTotalBytes,
+              (bytes, force) => reportProgress(bytes, force),
+              markServerResponse
+            )
+          : undefined
 
       const requestConfig: AxiosRequestConfig = {
         // Use the concrete Node adapter function to bypass axios environment checks.
         adapter: httpAdapter,
+        ...(progressTransport ? { transport: progressTransport } : {}),
         method: httpConfig.method,
         url: httpConfig.url,
         data: formData,
@@ -328,10 +412,8 @@ export class HTTPService implements IHTTPService {
         maxBodyLength: Infinity,
         timeout: 0, // disable timeout per requirement
         signal: options?.signal
-        // Note: We don't use onUploadProgress here because it reports bytes written to
-        // the socket buffer, which fills up almost instantly on fast networks.
-        // Instead, we use ProgressTrackingStream to track actual data throughput
-        // as it flows through the stream, providing accurate real-time progress.
+        // Progress is tracked via a custom transport that samples socket.bytesWritten,
+        // giving us real HTTP egress progress instead of local file read progress.
       }
 
       // Add authentication if provided
@@ -346,7 +428,8 @@ export class HTTPService implements IHTTPService {
       const response: AxiosResponse = await axios(requestConfig)
 
       // Ensure final progress is reported when upload completes
-      reportProgress(totalBytes, true)
+      markServerResponse()
+      reportProgress(uploadTotalBytes, true)
 
       logger.debug('=== HTTP响应信息 ===')
       logger.debug(`响应状态码: ${response.status}`)
@@ -363,15 +446,24 @@ export class HTTPService implements IHTTPService {
         throw new Error(`HTTP upload failed with status ${response.status}: ${response.statusText}`)
       }
     } catch (error) {
+      const isCanceled =
+        (axios as any).isCancel?.(error) ||
+        (axios.isAxiosError(error) && error.code === 'ERR_CANCELED') ||
+        (error as any)?.code === 'ERR_CANCELED' ||
+        (error as any)?.name === 'AbortError' ||
+        (error as any)?.canceled === true
+
+      if (isCanceled) {
+        logger.info('HTTP upload cancelled by user')
+        const abortError = new Error('Upload cancelled by user')
+        ;(abortError as any).name = 'AbortError'
+        throw abortError
+      }
+
       logger.error('HTTP upload failed:', error as Error)
 
       // Provide more specific error messages
       if (axios.isAxiosError(error)) {
-        if ((axios as any).isCancel?.(error) || error.code === 'ERR_CANCELED') {
-          const abortError = new Error('Upload cancelled by user')
-          ;(abortError as any).name = 'AbortError'
-          throw abortError
-        }
         if (error.code === 'ECONNREFUSED') {
           throw new Error('Connection refused: Unable to connect to the server')
         } else if (error.code === 'ETIMEDOUT') {
@@ -381,10 +473,6 @@ export class HTTPService implements IHTTPService {
         } else if (error.request) {
           throw new Error('No response received from server')
         }
-      }
-
-      if ((error as any)?.name === 'AbortError') {
-        throw error
       }
 
       throw error
