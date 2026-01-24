@@ -770,6 +770,7 @@
     "regenerate": "重新生成",
     "rename": "重新命名",
     "reset": "重設",
+    "retry": "重試",
     "save": "儲存",
     "saved": "已儲存",
     "search": "搜尋",
@@ -864,6 +865,7 @@
       },
       "title": "刪除文件"
     },
+    "device_logs": "設備本地日誌",
     "document": "文件",
     "edit": "編輯",
     "error_loading_logs": "載入日誌時出錯",
@@ -896,12 +898,12 @@
       "tags_placeholder": "輸入標籤",
       "upload_device_todo": "上傳到裝置功能將會實現",
       "upload_failed": "上傳失敗",
+      "upload_progress": "上傳進度",
       "upload_server_todo": "上傳到伺服器功能將會實現",
       "upload_success": "上傳成功",
       "upload_to_device": "上傳到裝置",
       "upload_to_server": "上傳到伺服器",
       "uploading": "上傳中",
-      "upload_progress": "上傳進度",
       "view_details": "查看詳情"
     },
     "package_type": "套件類型",
@@ -909,6 +911,7 @@
     "packages_count": "{{count}} 個套件",
     "patch": "補丁",
     "path": "路徑",
+    "refactor_packages": "重構包服務器",
     "scan_packages": "掃描套件",
     "search_packages": "搜尋套件...",
     "size": "大小",
@@ -1417,17 +1420,17 @@
       "show_sidebar": "顯示側邊欄"
     },
     "notification": {
-      "assistant": "助手回應",
+      "assistant": "助手響應",
       "knowledge": {
-        "error": "[to be translated]:{{error}}",
-        "success": "[to be translated]:成功添加 {{type}} 到知识库"
+        "error": "{{error}}",
+        "success": "成功添加 {{type}} 到知識庫"
       }
     },
     "ollama": {
       "keep_alive_time": {
-        "description": "[to be translated]:对话后模型在内存中保持的时间（默认：5 分钟）",
-        "placeholder": "[to be translated]:分钟",
-        "title": "[to be translated]:保持活跃时间"
+        "description": "對話後模型在內存中保持的時間（默認：5 分鐘）",
+        "placeholder": "分鐘",
+        "title": "保持活躍時間"
       },
       "title": "Ollama"
     },
@@ -1448,11 +1451,11 @@
       },
       "button": {
         "delete": {
-          "confirm": "[to be translated]:确定要删除此图片吗？",
-          "image": "[to be translated]:删除图片"
+          "confirm": "確定要刪除此圖片嗎？",
+          "image": "刪除圖片"
         },
         "new": {
-          "image": "[to be translated]:新建图片"
+          "image": "新建圖片"
         }
       },
       "edit": {
@@ -1480,7 +1483,7 @@
       "guidance_scale": "引導比例",
       "guidance_scale_tip": "無分類器指導。控制模型在尋找相關影像時對提示詞的遵循程度",
       "image": {
-        "size": "[to be translated]:图片尺寸"
+        "size": "圖片尺寸"
       },
       "image_file_required": "請先上傳圖片",
       "image_file_retry": "請重新上傳圖片",
@@ -1537,7 +1540,7 @@
         "medium": "中"
       },
       "regenerate": {
-        "confirm": "[to be translated]:这将覆盖已生成的图片，是否继续？"
+        "confirm": "這將覆蓋已生成的圖片，是否繼續？"
       },
       "remix": {
         "image_file": "參考圖",
@@ -1910,10 +1913,10 @@
         "pengcheng_core_amf_config": "鵬程核心網 AMF 配置檔案",
         "pengcheng_core_upf_config": "鵬程核心網 UPF 配置檔案"
       },
-      "ka-tx": {
+      "ka-rx": {
         "firmware": "韌體"
       },
-      "ka-rx": {
+      "ka-tx": {
         "firmware": "韌體"
       },
       "lingxi-07a": {
@@ -1951,9 +1954,6 @@
     },
     "infoPreview": "資訊預覽",
     "isPatch": "是否為 PATCH 包",
-    "subFileType": "主備選擇",
-    "subFileType.master": "主份",
-    "subFileType.backup": "備份",
     "log": {
       "cleared": "已清空所有選擇",
       "errorUnknown": "打包過程中發生未知錯誤",
@@ -1966,11 +1966,16 @@
     "selectFile": "選擇檔案",
     "siIniPreview": "si.ini 預覽",
     "startPackaging": "開始打包",
+    "subFileType": {
+      "backup": "備份",
+      "label": "主備選擇",
+      "master": "主份"
+    },
     "title": "打包工具",
     "types": {
       "config": "配置檔案包",
-      "ka-tx": "KA 發送天線",
       "ka-rx": "KA 接收天線",
+      "ka-tx": "KA 發送天線",
       "lingxi-06-thrid": "靈犀 06 三標段",
       "lingxi-07a": "靈犀 07A",
       "lingxi-10": "靈犀 10"
@@ -3097,22 +3102,22 @@
         "button": "備份",
         "title": "資料備份與復原"
       },
-  "custom_update_server": {
-    "title": "使用自定義更新伺服器"
-  },
-  "device_link": {
-    "device_id": "設備 ID",
-    "device_name": "設備名稱",
-    "load_failed": "取得設備識別失敗",
-    "name_placeholder": "輸入在 RavenAIService 中顯示的名稱",
-    "name_required": "設備名稱不能為空",
-    "rename_failed": "更新設備名稱失敗",
-    "rename_success": "設備名稱已更新並重新註冊",
-    "title": "設備連接"
-  },
-  "display": {
-    "title": "顯示設定"
-  },
+      "custom_update_server": {
+        "title": "使用自定義更新伺服器"
+      },
+      "device_link": {
+        "device_id": "設備 ID",
+        "device_name": "設備名稱",
+        "load_failed": "取得設備識別失敗",
+        "name_placeholder": "輸入在 RavenAIService 中顯示的名稱",
+        "name_required": "設備名稱不能為空",
+        "rename_failed": "更新設備名稱失敗",
+        "rename_success": "設備名稱已更新並重新註冊",
+        "title": "設備連接"
+      },
+      "display": {
+        "title": "顯示設定"
+      },
       "emoji_picker": "表情選擇器",
       "image_upload": "圖片上傳",
       "label": "一般設定",

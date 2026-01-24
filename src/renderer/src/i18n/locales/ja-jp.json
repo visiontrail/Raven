@@ -770,6 +770,7 @@
     "regenerate": "再生成",
     "rename": "名前を変更",
     "reset": "リセット",
+    "retry": "リトライ",
     "save": "保存",
     "saved": "保存されました",
     "search": "検索",
@@ -858,12 +859,13 @@
     "count": "個のファイル",
     "created_at": "作成日時",
     "delete": {
-      "content": "[to be translated]:删除文件会删除文件在所有消息中的引用，确定要删除此文件吗？",
+      "content": "ファイルを削除すると、そのファイルへのすべてのメッセージ内の参照が削除されます。このファイルを削除してもよろしいですか？",
       "paintings": {
-        "warning": "[to be translated]:绘图中包含该图片，暂时无法删除"
+        "warning": "この画像は図面に含まれているため、一時的に削除できません"
       },
       "title": "ファイルの削除"
     },
+    "device_logs": "デバイスのローカルログ",
     "document": "ドキュメント",
     "edit": "編集",
     "error_loading_logs": "ログの読み込み中にエラーが発生しました",
@@ -896,12 +898,12 @@
       "tags_placeholder": "タグを入力",
       "upload_device_todo": "デバイスへのアップロード機能は今後実装予定です",
       "upload_failed": "アップロードに失敗しました",
+      "upload_progress": "アップロード進行状況",
       "upload_server_todo": "サーバーへのアップロード機能は今後実装予定です",
       "upload_success": "アップロードが成功しました",
       "upload_to_device": "デバイスにアップロード",
       "upload_to_server": "サーバーにアップロード",
       "uploading": "アップロード中",
-      "upload_progress": "アップロード進行状況",
       "view_details": "詳細を表示"
     },
     "package_type": "パッケージタイプ",
@@ -909,6 +911,7 @@
     "packages_count": "{{count}}個のパッケージ",
     "patch": "アップグレードパッケージ",
     "path": "パス",
+    "refactor_packages": "リファクタリングパッケージサーバー",
     "scan_packages": "パッケージをスキャン",
     "search_packages": "パッケージを検索...",
     "size": "サイズ",
@@ -1417,17 +1420,17 @@
       "show_sidebar": "サイドバーを表示"
     },
     "notification": {
-      "assistant": "助手回應",
+      "assistant": "助手响应",
       "knowledge": {
-        "error": "[to be translated]:{{error}}",
-        "success": "[to be translated]:成功添加 {{type}} 到知识库"
+        "error": "{{error}}",
+        "success": "{{type}}をナレッジベースに正常に追加しました"
       }
     },
     "ollama": {
       "keep_alive_time": {
-        "description": "[to be translated]:对话后模型在内存中保持的时间（默认：5 分钟）",
-        "placeholder": "[to be translated]:分钟",
-        "title": "[to be translated]:保持活跃时间"
+        "description": "会話後にモデルをメモリに保持する時間（デフォルト：5分）",
+        "placeholder": "分",
+        "title": "アクティブ保持時間"
       },
       "title": "Ollama"
     },
@@ -1448,11 +1451,11 @@
       },
       "button": {
         "delete": {
-          "confirm": "[to be translated]:确定要删除此图片吗？",
-          "image": "[to be translated]:删除图片"
+          "confirm": "この画像を削除してもよろしいですか？",
+          "image": "画像を削除"
         },
         "new": {
-          "image": "[to be translated]:新建图片"
+          "image": "画像を作成"
         }
       },
       "edit": {
@@ -1480,7 +1483,7 @@
       "guidance_scale": "ガイダンススケール",
       "guidance_scale_tip": "分類器なしのガイダンス。モデルが関連する画像を探す際にプロンプトにどれだけ従うかを制御します",
       "image": {
-        "size": "[to be translated]:图片尺寸"
+        "size": "画像サイズ"
       },
       "image_file_required": "画像を先にアップロードしてください",
       "image_file_retry": "画像を先にアップロードしてください",
@@ -1537,7 +1540,7 @@
         "medium": "中"
       },
       "regenerate": {
-        "confirm": "[to be translated]:这将覆盖已生成的图片，是否继续？"
+        "confirm": "生成された画像が上書きされます。続行しますか？"
       },
       "remix": {
         "image_file": "参照画像",
@@ -1910,6 +1913,12 @@
         "pengcheng_core_amf_config": "Pengchengコアネットワーク AMF設定ファイル",
         "pengcheng_core_upf_config": "Pengchengコアネットワーク UPF設定ファイル"
       },
+      "ka-rx": {
+        "firmware": "ファームウェア"
+      },
+      "ka-tx": {
+        "firmware": "ファームウェア"
+      },
       "lingxi-07a": {
         "bpoqv_fpga": "QVベースバンドFPGA",
         "bposc_fpga": "ベースバンドボードFPGA",
@@ -1957,9 +1966,16 @@
     "selectFile": "ファイルを選択",
     "siIniPreview": "si.ini プレビュー",
     "startPackaging": "パッケージングを開始",
+    "subFileType": {
+      "backup": "バックアップ",
+      "label": "メイン/予備選択",
+      "master": "メイン"
+    },
     "title": "パッケージングツール",
     "types": {
       "config": "設定ファイルパッケージ",
+      "ka-rx": "KA受信アンテナ",
+      "ka-tx": "KA送信アンテナ",
       "lingxi-06-thrid": "Lingxi 06 第三期",
       "lingxi-07a": "Lingxi 07A",
       "lingxi-10": "Lingxi 10"
@@ -3086,22 +3102,22 @@
         "button": "バックアップ",
         "title": "データのバックアップと復元"
       },
-  "custom_update_server": {
-    "title": "カスタム更新サーバーを使用"
-  },
-  "device_link": {
-    "device_id": "Device ID",
-    "device_name": "Device Name",
-    "load_failed": "Failed to load device identity",
-    "name_placeholder": "Enter a name to display in RavenAIService",
-    "name_required": "Device name cannot be empty",
-    "rename_failed": "Failed to update device name",
-    "rename_success": "Device name updated and re-registered",
-    "title": "Device Link"
-  },
-  "display": {
-    "title": "表示設定"
-  },
+      "custom_update_server": {
+        "title": "カスタム更新サーバーを使用"
+      },
+      "device_link": {
+        "device_id": "Device ID",
+        "device_name": "Device Name",
+        "load_failed": "Failed to load device identity",
+        "name_placeholder": "Enter a name to display in RavenAIService",
+        "name_required": "Device name cannot be empty",
+        "rename_failed": "Failed to update device name",
+        "rename_success": "Device name updated and re-registered",
+        "title": "Device Link"
+      },
+      "display": {
+        "title": "表示設定"
+      },
       "emoji_picker": "絵文字ピッカー",
       "image_upload": "画像アップロード",
       "label": "一般設定",

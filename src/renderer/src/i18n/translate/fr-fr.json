@@ -770,6 +770,7 @@
     "regenerate": "Regénérer",
     "rename": "Renommer",
     "reset": "Réinitialiser",
+    "retry": "Réessayer",
     "save": "Enregistrer",
     "saved": "enregistré",
     "search": "Rechercher",
@@ -864,6 +865,7 @@
       },
       "title": "Supprimer le fichier"
     },
+    "device_logs": "Journaux de l'appareil",
     "document": "Document",
     "edit": "Éditer",
     "error_loading_logs": "Erreur lors du chargement des journaux",
@@ -896,12 +898,12 @@
       "tags_placeholder": "Entrez les étiquettes",
       "upload_device_todo": "La fonction de téléchargement vers l'appareil sera implémentée",
       "upload_failed": "Échec du téléchargement",
+      "upload_progress": "Progression du téléchargement",
       "upload_server_todo": "La fonction de téléchargement vers le serveur sera implémentée",
       "upload_success": "Téléchargement réussi",
       "upload_to_device": "Télécharger vers l'appareil",
       "upload_to_server": "Télécharger vers le serveur",
       "uploading": "Téléchargement",
-      "upload_progress": "Progression du téléchargement",
       "view_details": "Voir les détails"
     },
     "package_type": "Type de paquet",
@@ -909,6 +911,7 @@
     "packages_count": "{{count}} paquets",
     "patch": "Correctif",
     "path": "Chemin",
+    "refactor_packages": "Serveur de paquets de refactorisation",
     "scan_packages": "Scanner les paquets",
     "search_packages": "Rechercher des paquets...",
     "size": "Taille",
@@ -1419,15 +1422,15 @@
     "notification": {
       "assistant": "助手响应",
       "knowledge": {
-        "error": "[to be translated]:{{error}}",
-        "success": "[to be translated]:成功添加 {{type}} 到知识库"
+        "error": "{{error}}",
+        "success": "{{type}} ajouté avec succès à la base de connaissances"
       }
     },
     "ollama": {
       "keep_alive_time": {
-        "description": "[to be translated]:对话后模型在内存中保持的时间（默认：5 分钟）",
-        "placeholder": "[to be translated]:分钟",
-        "title": "[to be translated]:保持活跃时间"
+        "description": "Temps de conservation du modèle en mémoire après la conversation (par défaut : 5 minutes)",
+        "placeholder": "minutes",
+        "title": "Temps de conservation actif"
       },
       "title": "Ollama"
     },
@@ -1448,11 +1451,11 @@
       },
       "button": {
         "delete": {
-          "confirm": "[to be translated]:确定要删除此图片吗？",
-          "image": "[to be translated]:删除图片"
+          "confirm": "Voulez-vous vraiment supprimer cette image ?",
+          "image": "Supprimer l'image"
         },
         "new": {
-          "image": "[to be translated]:新建图片"
+          "image": "Créer une image"
         }
       },
       "edit": {
@@ -1480,7 +1483,7 @@
       "guidance_scale": "引导比例",
       "guidance_scale_tip": "无分类器指导。控制模型在寻找相关图像时对提示词的遵循程度",
       "image": {
-        "size": "[to be translated]:图片尺寸"
+        "size": "Taille de l'image"
       },
       "image_file_required": "请先上传图片",
       "image_file_retry": "请重新上传图片",
@@ -1537,7 +1540,7 @@
         "medium": "中"
       },
       "regenerate": {
-        "confirm": "[to be translated]:这将覆盖已生成的图片，是否继续？"
+        "confirm": "Cela écrasera l'image générée. Voulez-vous continuer ?"
       },
       "remix": {
         "image_file": "参考图",
@@ -1906,12 +1909,14 @@
         "cuup_stack": "Configuration CUUP Stack",
         "cwmp_data": "Fichier de données CWMP",
         "du_gnb": "Configuration DU GNB",
-        "du_stack": "Configuration DU Stack"
-      },
-      "ka-tx": {
-        "firmware": "Microprogramme"
+        "du_stack": "Configuration DU Stack",
+        "pengcheng_core_amf_config": "Fichier de configuration AMF du réseau central Pengcheng",
+        "pengcheng_core_upf_config": "Fichier de configuration UPF du réseau central Pengcheng"
       },
       "ka-rx": {
+        "firmware": "Microprogramme"
+      },
+      "ka-tx": {
         "firmware": "Microprogramme"
       },
       "lingxi-07a": {
@@ -1931,6 +1936,9 @@
         "du": "Pile protocolaire DU",
         "galaxy_core_network": "Réseau central Galaxy",
         "oam": "Logiciel OAM",
+        "pengcheng_core_amf": "Paquet AMF du réseau central Pengcheng",
+        "pengcheng_core_scripts": "Paquet de scripts du réseau central Pengcheng",
+        "pengcheng_core_upf": "Paquet UPF du réseau central Pengcheng",
         "satellite_app_server": "Serveur d'applications satellitaires",
         "sct_fpga": "SCT FPGA"
       }
@@ -1946,9 +1954,6 @@
     },
     "infoPreview": "Aperçu des informations",
     "isPatch": "S'agit-il d'un paquet PATCH ?",
-    "subFileType": "Type de copie",
-    "subFileType.master": "Principal",
-    "subFileType.backup": "Sauvegarde",
     "log": {
       "cleared": "Toutes les sélections ont été effacées",
       "errorUnknown": "Une erreur inconnue s'est produite pendant l'empaquetage",
@@ -1961,11 +1966,16 @@
     "selectFile": "Sélectionner un fichier",
     "siIniPreview": "Aperçu de si.ini",
     "startPackaging": "Démarrer l'empaquetage",
+    "subFileType": {
+      "backup": "Sauvegarde",
+      "label": "Sélection primaire/de secours",
+      "master": "Principal"
+    },
     "title": "Outil d'empaquetage",
     "types": {
       "config": "Paquet de configuration",
-      "ka-tx": "Antenne KA Tx",
       "ka-rx": "Antenne KA Rx",
+      "ka-tx": "Antenne KA Tx",
       "lingxi-06-thrid": "Lingxi 06 Phase 3",
       "lingxi-07a": "Lingxi 07A",
       "lingxi-10": "Lingxi 10"
@@ -3094,6 +3104,16 @@
       },
       "custom_update_server": {
         "title": "使用自定义更新服务器"
+      },
+      "device_link": {
+        "device_id": "ID de l'appareil",
+        "device_name": "Nom de l'appareil",
+        "load_failed": "Échec de la récupération de l'identifiant de l'appareil",
+        "name_placeholder": "Entrez le nom à afficher dans RavenAIService",
+        "name_required": "Le nom de l'appareil ne peut pas être vide",
+        "rename_failed": "Échec de la mise à jour du nom de l'appareil",
+        "rename_success": "Nom de l'appareil mis à jour et réenregistré",
+        "title": "Connexion de l'appareil"
       },
       "display": {
         "title": "Paramètres d'affichage"

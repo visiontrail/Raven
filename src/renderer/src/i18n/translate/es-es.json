@@ -770,6 +770,7 @@
     "regenerate": "Regenerar",
     "rename": "Renombrar",
     "reset": "Restablecer",
+    "retry": "Reintentar",
     "save": "Guardar",
     "saved": "Guardado",
     "search": "Buscar",
@@ -864,6 +865,7 @@
       },
       "title": "Eliminar archivo"
     },
+    "device_logs": "Registros del dispositivo",
     "document": "Documento",
     "edit": "Editar",
     "error_loading_logs": "Error al cargar los registros",
@@ -896,12 +898,12 @@
       "tags_placeholder": "Ingrese etiquetas",
       "upload_device_todo": "La función de subir al dispositivo se implementará",
       "upload_failed": "Error en la subida",
+      "upload_progress": "Progreso de subida",
       "upload_server_todo": "La función de subir al servidor se implementará",
       "upload_success": "Subida exitosa",
       "upload_to_device": "Subir al dispositivo",
       "upload_to_server": "Subir al servidor",
       "uploading": "Subida",
-      "upload_progress": "Progreso de subida",
       "view_details": "Ver detalles"
     },
     "package_type": "Tipo de paquete",
@@ -909,6 +911,7 @@
     "packages_count": "{{count}} paquetes",
     "patch": "Parche",
     "path": "Ruta",
+    "refactor_packages": "Servidor de paquetes de refactorización",
     "scan_packages": "Escanear paquetes",
     "search_packages": "Buscar paquetes...",
     "size": "Tamaño",
@@ -1419,15 +1422,15 @@
     "notification": {
       "assistant": "助手响应",
       "knowledge": {
-        "error": "[to be translated]:{{error}}",
-        "success": "[to be translated]:成功添加 {{type}} 到知识库"
+        "error": "{{error}}",
+        "success": "{{type}} agregado exitosamente a la base de conocimiento"
       }
     },
     "ollama": {
       "keep_alive_time": {
-        "description": "[to be translated]:对话后模型在内存中保持的时间（默认：5 分钟）",
-        "placeholder": "[to be translated]:分钟",
-        "title": "[to be translated]:保持活跃时间"
+        "description": "Tiempo para mantener el modelo en memoria después de la conversación (predeterminado: 5 minutos)",
+        "placeholder": "minutos",
+        "title": "Tiempo de activación"
       },
       "title": "Ollama"
     },
@@ -1448,11 +1451,11 @@
       },
       "button": {
         "delete": {
-          "confirm": "[to be translated]:确定要删除此图片吗？",
-          "image": "[to be translated]:删除图片"
+          "confirm": "¿Está seguro de que desea eliminar esta imagen?",
+          "image": "Eliminar imagen"
         },
         "new": {
-          "image": "[to be translated]:新建图片"
+          "image": "Crear imagen"
         }
       },
       "edit": {
@@ -1480,7 +1483,7 @@
       "guidance_scale": "引导比例",
       "guidance_scale_tip": "无分类器指导。控制模型在寻找相关图像时对提示词的遵循程度",
       "image": {
-        "size": "[to be translated]:图片尺寸"
+        "size": "Tamaño de la imagen"
       },
       "image_file_required": "请先上传图片",
       "image_file_retry": "请重新上传图片",
@@ -1537,7 +1540,7 @@
         "medium": "中"
       },
       "regenerate": {
-        "confirm": "[to be translated]:这将覆盖已生成的图片，是否继续？"
+        "confirm": "Esto sobrescribirá la imagen generada. ¿Desea continuar?"
       },
       "remix": {
         "image_file": "参考图",
@@ -1906,12 +1909,14 @@
         "cuup_stack": "Configuración CUUP Stack",
         "cwmp_data": "Archivo de datos CWMP",
         "du_gnb": "Configuración DU GNB",
-        "du_stack": "Configuración DU Stack"
-      },
-      "ka-tx": {
-        "firmware": "Firmware"
+        "du_stack": "Configuración DU Stack",
+        "pengcheng_core_amf_config": "Archivo de configuración AMF del núcleo Pengcheng",
+        "pengcheng_core_upf_config": "Archivo de configuración UPF del núcleo Pengcheng"
       },
       "ka-rx": {
+        "firmware": "Firmware"
+      },
+      "ka-tx": {
         "firmware": "Firmware"
       },
       "lingxi-07a": {
@@ -1931,6 +1936,9 @@
         "du": "Pila de protocolos DU",
         "galaxy_core_network": "Red central Galaxy",
         "oam": "Software OAM",
+        "pengcheng_core_amf": "Paquete AMF del núcleo Pengcheng",
+        "pengcheng_core_scripts": "Paquete de scripts del núcleo Pengcheng",
+        "pengcheng_core_upf": "Paquete UPF del núcleo Pengcheng",
         "satellite_app_server": "Servidor de aplicaciones satelital",
         "sct_fpga": "SCT FPGA"
       }
@@ -1946,9 +1954,6 @@
     },
     "infoPreview": "Vista previa de información",
     "isPatch": "¿Es un paquete PATCH?",
-    "subFileType": "Tipo de copia",
-    "subFileType.master": "Principal",
-    "subFileType.backup": "Copia de seguridad",
     "log": {
       "cleared": "Se han borrado todas las selecciones",
       "errorUnknown": "Ocurrió un error desconocido durante el empaquetado",
@@ -1961,11 +1966,16 @@
     "selectFile": "Seleccionar archivo",
     "siIniPreview": "Vista previa de si.ini",
     "startPackaging": "Iniciar empaquetado",
+    "subFileType": {
+      "backup": "Respaldo",
+      "label": "Selección principal/reserva",
+      "master": "Principal"
+    },
     "title": "Empaquetador",
     "types": {
       "config": "Paquete de configuración",
-      "ka-tx": "Antena KA Tx",
       "ka-rx": "Antena KA Rx",
+      "ka-tx": "Antena KA Tx",
       "lingxi-06-thrid": "Lingxi 06 Fase 3",
       "lingxi-07a": "Lingxi 07A",
       "lingxi-10": "Lingxi 10"
@@ -3094,6 +3104,16 @@
       },
       "custom_update_server": {
         "title": "使用自定义更新服务器"
+      },
+      "device_link": {
+        "device_id": "ID del dispositivo",
+        "device_name": "Nombre del dispositivo",
+        "load_failed": "Error al obtener la identificación del dispositivo",
+        "name_placeholder": "Ingrese el nombre que se mostrará en RavenAIService",
+        "name_required": "El nombre del dispositivo no puede estar vacío",
+        "rename_failed": "Error al actualizar el nombre del dispositivo",
+        "rename_success": "Nombre del dispositivo actualizado y registrado nuevamente",
+        "title": "Conexión del dispositivo"
       },
       "display": {
         "title": "Configuración de visualización"

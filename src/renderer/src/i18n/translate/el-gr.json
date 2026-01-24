@@ -770,6 +770,7 @@
     "regenerate": "Ξαναπαραγωγή",
     "rename": "Μετονομασία",
     "reset": "Επαναφορά",
+    "retry": "Δοκιμάστε ξανά",
     "save": "Αποθήκευση",
     "saved": "Αποθηκεύτηκε",
     "search": "Αναζήτηση",
@@ -864,6 +865,7 @@
       },
       "title": "Διαγραφή αρχείου"
     },
+    "device_logs": "Τοπικά αρχεία καταγραφής συσκευής",
     "document": "Έγγραφο",
     "edit": "Επεξεργασία",
     "error_loading_logs": "Σφάλμα κατά τη φόρτωση των αρχείων καταγραφής",
@@ -896,12 +898,12 @@
       "tags_placeholder": "Εισαγάγετε ετικέτες",
       "upload_device_todo": "Η λειτουργία μεταφόρτωσης στη συσκευή θα υλοποιηθεί",
       "upload_failed": "Αποτυχία μεταφόρτωσης",
+      "upload_progress": "Πρόοδος μεταφόρτωσης",
       "upload_server_todo": "Η λειτουργία μεταφόρτωσης στον διακομιστή θα υλοποιηθεί",
       "upload_success": "Επιτυχής μεταφόρτωση",
       "upload_to_device": "Μεταφόρτωση στη συσκευή",
       "upload_to_server": "Μεταφόρτωση στον διακομιστή",
       "uploading": "Μεταφόρτωση",
-      "upload_progress": "Πρόοδος μεταφόρτωσης",
       "view_details": "Προβολή λεπτομερειών"
     },
     "package_type": "Τύπος πακέτου",
@@ -909,6 +911,7 @@
     "packages_count": "{{count}} πακέτα",
     "patch": "Διόρθωση",
     "path": "Διαδρομή",
+    "refactor_packages": "Διακομιστής πακέτων αναδιοργάνωσης",
     "scan_packages": "Σάρωση πακέτων",
     "search_packages": "Αναζήτηση πακέτων...",
     "size": "Μέγεθος",
@@ -1417,17 +1420,17 @@
       "show_sidebar": "Εμφάνιση πλευρικής γραμμής"
     },
     "notification": {
-      "assistant": "Απάντηση βοηθού",
+      "assistant": "助手响应",
       "knowledge": {
-        "error": "[to be translated]:{{error}}",
-        "success": "[to be translated]:成功添加 {{type}} 到知识库"
+        "error": "{{error}}",
+        "success": "Το {{type}} προστέθηκε με επιτυχία στη βάση γνώσεων"
       }
     },
     "ollama": {
       "keep_alive_time": {
-        "description": "[to be translated]:对话后模型在内存中保持的时间（默认：5 分钟）",
-        "placeholder": "[to be translated]:分钟",
-        "title": "[to be translated]:保持活跃时间"
+        "description": "Χρόνος διατήρησης του μοντέλου στη μνήμη μετά τη συνομιλία (προεπιλογή: 5 λεπτά)",
+        "placeholder": "λεπτά",
+        "title": "Χρόνος ενεργής διατήρησης"
       },
       "title": "Ollama"
     },
@@ -1448,11 +1451,11 @@
       },
       "button": {
         "delete": {
-          "confirm": "[to be translated]:确定要删除此图片吗？",
-          "image": "[to be translated]:删除图片"
+          "confirm": "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτή την εικόνα;",
+          "image": "Διαγραφή εικόνας"
         },
         "new": {
-          "image": "[to be translated]:新建图片"
+          "image": "Δημιουργία εικόνας"
         }
       },
       "edit": {
@@ -1480,7 +1483,7 @@
       "guidance_scale": "Κλίμακα καθοδήγησης",
       "guidance_scale_tip": "Καθοδήγηση χωρίς ταξινομητή. Ελέγχει το βαθμό στον οποίο το μοντέλο ακολουθεί τις προτροπές κατά την αναζήτηση σχετικών εικόνων",
       "image": {
-        "size": "[to be translated]:图片尺寸"
+        "size": "Μέγεθος εικόνας"
       },
       "image_file_required": "Παρακαλώ ανεβάστε πρώτα μια εικόνα",
       "image_file_retry": "Παρακαλώ ανεβάστε ξανά την εικόνα",
@@ -1537,7 +1540,7 @@
         "medium": "Μεσαία"
       },
       "regenerate": {
-        "confirm": "[to be translated]:这将覆盖已生成的图片，是否继续？"
+        "confirm": "Αυτό θα αντικαταστήσει την παραγόμενη εικόνα. Θέλετε να συνεχίσετε;"
       },
       "remix": {
         "image_file": "Εικόνα αναφοράς",
@@ -1906,12 +1909,14 @@
         "cuup_stack": "CUUP Stack配置",
         "cwmp_data": "CWMP数据文件",
         "du_gnb": "DU GNB配置",
-        "du_stack": "DU Stack配置"
-      },
-      "ka-tx": {
-        "firmware": "Firmware"
+        "du_stack": "DU Stack配置",
+        "pengcheng_core_amf_config": "Αρχείο ρυθμίσεων AMF του πυρήνα Pengcheng",
+        "pengcheng_core_upf_config": "Αρχείο ρυθμίσεων UPF του πυρήνα Pengcheng"
       },
       "ka-rx": {
+        "firmware": "Firmware"
+      },
+      "ka-tx": {
         "firmware": "Firmware"
       },
       "lingxi-07a": {
@@ -1931,6 +1936,9 @@
         "du": "协议栈DU",
         "galaxy_core_network": "银河自研核心网",
         "oam": "OAM软件",
+        "pengcheng_core_amf": "Πακέτο AMF του πυρήνα Pengcheng",
+        "pengcheng_core_scripts": "Πακέτο σεναρίων του πυρήνα Pengcheng",
+        "pengcheng_core_upf": "Πακέτο UPF του πυρήνα Pengcheng",
         "satellite_app_server": "星载应用服务器",
         "sct_fpga": "主控板FPGA"
       }
@@ -1946,9 +1954,6 @@
     },
     "infoPreview": "信息预览",
     "isPatch": "是否为PATCH包",
-    "subFileType": "Τύπος αντιγράφου",
-    "subFileType.master": "Κύριο",
-    "subFileType.backup": "Αντίγραφο",
     "log": {
       "cleared": "已清空所有选择",
       "errorUnknown": "打包过程中发生未知错误",
@@ -1961,11 +1966,16 @@
     "selectFile": "选择文件",
     "siIniPreview": "si.ini 预览",
     "startPackaging": "开始打包",
+    "subFileType": {
+      "backup": "Αντίγραφο ασφαλείας",
+      "label": "Επιλογή κύριου/εφεδρικού",
+      "master": "Κύριο"
+    },
     "title": "打包工具",
     "types": {
       "config": "配置文件包",
-      "ka-tx": "KA Tx Κεραία",
       "ka-rx": "KA Rx Κεραία",
+      "ka-tx": "KA Tx Κεραία",
       "lingxi-06-thrid": "灵犀 06 三标段",
       "lingxi-07a": "灵犀 07A",
       "lingxi-10": "灵犀 10"
@@ -3094,6 +3104,16 @@
       },
       "custom_update_server": {
         "title": "使用自定义更新服务器"
+      },
+      "device_link": {
+        "device_id": "ID συσκευής",
+        "device_name": "Όνομα συσκευής",
+        "load_failed": "Αποτυχία λήψης ταυτότητας συσκευής",
+        "name_placeholder": "Εισάγετε το όνομα που θα εμφανίζεται στο RavenAIService",
+        "name_required": "Το όνομα συσκευής δεν μπορεί να είναι κενό",
+        "rename_failed": "Αποτυχία ενημέρωσης ονόματος συσκευής",
+        "rename_success": "Το όνομα συσκευής ενημερώθηκε και καταχωρήθηκε εκ νέου",
+        "title": "Σύνδεση συσκευής"
       },
       "display": {
         "title": "Ρυθμίσεις εμφάνισης"

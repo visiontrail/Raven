@@ -770,6 +770,7 @@
     "regenerate": "Пересоздать",
     "rename": "Переименовать",
     "reset": "Сбросить",
+    "retry": "Повторить",
     "save": "Сохранить",
     "saved": "Сохранено",
     "search": "Поиск",
@@ -858,12 +859,13 @@
     "count": "файлов",
     "created_at": "Время создания",
     "delete": {
-        "content": "Удаление файла также удалит ссылки на файл во всех сообщениях. Вы уверены, что хотите удалить этот файл?",
-        "paintings": {
-          "warning": "Изображение содержится в рисунке, удаление временно невозможно"
-        },
-        "title": "Удалить файл"
+      "content": "Удаление файла также удалит ссылки на файл во всех сообщениях. Вы уверены, что хотите удалить этот файл?",
+      "paintings": {
+        "warning": "Изображение содержится в рисунке, удаление временно невозможно"
       },
+      "title": "Удалить файл"
+    },
+    "device_logs": "Локальные журналы устройства",
     "document": "Документ",
     "edit": "Редактировать",
     "error_loading_logs": "Ошибка загрузки логов",
@@ -896,12 +898,12 @@
       "tags_placeholder": "Введите теги",
       "upload_device_todo": "Функция загрузки на устройство будет реализована",
       "upload_failed": "Ошибка загрузки",
+      "upload_progress": "Прогресс загрузки",
       "upload_server_todo": "Функция загрузки на сервер будет реализована",
       "upload_success": "Загрузка успешна",
       "upload_to_device": "Загрузить на устройство",
       "upload_to_server": "Загрузить на сервер",
       "uploading": "Загрузка",
-      "upload_progress": "Прогресс загрузки",
       "view_details": "Просмотр деталей"
     },
     "package_type": "Тип пакета",
@@ -909,6 +911,7 @@
     "packages_count": "{{count}} пакетов",
     "patch": "Патч",
     "path": "Путь",
+    "refactor_packages": "Сервер пакетов рефакторинга",
     "scan_packages": "Сканировать пакеты",
     "search_packages": "Поиск пакетов...",
     "size": "Размер",
@@ -1910,6 +1913,12 @@
         "pengcheng_core_amf_config": "Файл конфигурации AMF базовой сети Pengcheng",
         "pengcheng_core_upf_config": "Файл конфигурации UPF базовой сети Pengcheng"
       },
+      "ka-rx": {
+        "firmware": "Прошивка"
+      },
+      "ka-tx": {
+        "firmware": "Прошивка"
+      },
       "lingxi-07a": {
         "bpoqv_fpga": "FPGA базовой полосы QV",
         "bposc_fpga": "FPGA базовой платы",
@@ -1957,9 +1966,16 @@
     "selectFile": "Выбрать файл",
     "siIniPreview": "Предварительный просмотр si.ini",
     "startPackaging": "Начать упаковку",
+    "subFileType": {
+      "backup": "Резервная копия",
+      "label": "Выбор основной/резервной",
+      "master": "Основной"
+    },
     "title": "Инструмент упаковки",
     "types": {
       "config": "Пакет конфигурации",
+      "ka-rx": "KA приемная антенна",
+      "ka-tx": "KA передающая антенна",
       "lingxi-06-thrid": "Lingxi 06 третий этап",
       "lingxi-07a": "Lingxi 07A",
       "lingxi-10": "Lingxi 10"
@@ -3086,22 +3102,22 @@
         "button": "Резервное копирование",
         "title": "Резервное копирование и восстановление данных"
       },
-  "custom_update_server": {
-    "title": "Использовать пользовательский сервер обновлений"
-  },
-  "device_link": {
-    "device_id": "Device ID",
-    "device_name": "Device Name",
-    "load_failed": "Failed to load device identity",
-    "name_placeholder": "Enter a name to display in RavenAIService",
-    "name_required": "Device name cannot be empty",
-    "rename_failed": "Failed to update device name",
-    "rename_success": "Device name updated and re-registered",
-    "title": "Device Link"
-  },
-  "display": {
-    "title": "Настройки отображения"
-  },
+      "custom_update_server": {
+        "title": "Использовать пользовательский сервер обновлений"
+      },
+      "device_link": {
+        "device_id": "Device ID",
+        "device_name": "Device Name",
+        "load_failed": "Failed to load device identity",
+        "name_placeholder": "Enter a name to display in RavenAIService",
+        "name_required": "Device name cannot be empty",
+        "rename_failed": "Failed to update device name",
+        "rename_success": "Device name updated and re-registered",
+        "title": "Device Link"
+      },
+      "display": {
+        "title": "Настройки отображения"
+      },
       "emoji_picker": "Выбор эмодзи",
       "image_upload": "Загрузка изображений",
       "label": "Общие настройки",
