@@ -6,16 +6,18 @@ import {
   FolderOpenOutlined,
   UploadOutlined
 } from '@ant-design/icons'
-import { Button, Card, Descriptions, Flex, Form, Input, message, Popconfirm, Select, Switch, Tag, Tooltip } from 'antd'
+import { Button, Card, Descriptions, Flex, Form, Input, message, Popconfirm, Progress, Select, Switch, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import { Package as PackageIcon } from 'lucide-react'
-import { FC, useEffect, useState } from 'react'
+import { FC, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
+import { HTTPUploadStatus } from '@shared/PackageUploadEvent'
 import { usePackages } from '../../hooks/usePackages'
 import { ipAddressService } from '../../services/IPAddressService'
 import { loggerService } from '../../services/LoggerService'
+import { cancelHttpUpload, startHttpUpload, useHttpUploadTask } from '../../services/PackageUploadStore'
 import { HTTPConfig, Package, PackageMetadata, PackageType } from '../../types/package'
 import { formatFileSize } from '../../utils'
 
@@ -27,11 +29,33 @@ interface PackageDetailViewProps {
 
 const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, onPackageUpdated }) => {
   const { t } = useTranslation()
-  const { updatePackageMetadata, deletePackage, openPackageLocation, uploadToFTP, uploadToHTTP } = usePackages()
+  const { updatePackageMetadata, deletePackage, openPackageLocation, uploadToFTP } = usePackages()
   const [loading, setLoading] = useState(false)
   const [showPrompt, setShowPrompt] = useState(false)
   const [promptText, setPromptText] = useState('')
   const [form] = Form.useForm()
+  const uploadTask = useHttpUploadTask(pkg.id)
+  const lastUploadStatusRef = useRef<HTTPUploadStatus | null>(null)
+  const isHttpUploading = uploadTask ? uploadTask.status === 'started' || uploadTask.status === 'progress' : false
+  const uploadStatusText: Record<HTTPUploadStatus, string> = {
+    started: t('files.package.uploading') || '准备上传',
+    progress: t('files.package.uploading') || '上传中',
+    success: t('common.completed') || '已完成',
+    failed: t('common.failed') || '失败',
+    cancelled: t('common.cancel') || '已取消'
+  }
+  const uploadStatusColor: Record<HTTPUploadStatus, string> = {
+    started: 'blue',
+    progress: 'blue',
+    success: 'green',
+    failed: 'red',
+    cancelled: 'orange'
+  }
+
+  const formatSpeed = (speedBytesPerSecond?: number) => {
+    if (!speedBytesPerSecond || speedBytesPerSecond < 0) return '0 B/s'
+    return `${formatFileSize(speedBytesPerSecond)}/s`
+  }
 
   // Initialize form with current metadata
   const initializeForm = () => {
@@ -73,6 +97,23 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
     ipAddressService.initialize()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pkg.id])
+
+  useEffect(() => {
+    if (!uploadTask) {
+      lastUploadStatusRef.current = null
+      return
+    }
+    if (uploadTask.status !== lastUploadStatusRef.current) {
+      if (uploadTask.status === 'success') {
+        message.success(t('files.package.upload_success'))
+      } else if (uploadTask.status === 'failed') {
+        message.error(uploadTask.error || t('files.package.upload_failed'))
+      } else if (uploadTask.status === 'cancelled') {
+        message.info(t('common.cancel') || '上传已取消')
+      }
+    }
+    lastUploadStatusRef.current = uploadTask.status
+  }, [uploadTask, t])
 
   // Auto save metadata
   const handleAutoSave = async () => {
@@ -202,8 +243,6 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
   // Handle upload to server (HTTP)
   const handleUploadToServer = async () => {
     try {
-      setLoading(true)
-
       // Default HTTP configuration for package-server
       const defaultHttpConfig: HTTPConfig = {
         url: 'http://172.16.9.224:8083/api/upload',
@@ -213,19 +252,17 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
         }
       }
 
-      const success = await uploadToHTTP(pkg.id, defaultHttpConfig)
-      if (success) {
-        message.success(t('files.package.upload_success'))
-        loggerService.info(`Package uploaded successfully to HTTP server: ${pkg.name}`)
+      const { success, error } = await startHttpUpload(pkg.id, defaultHttpConfig, pkg.name)
+      if (!success && error) {
+        message.error(`${t('files.package.upload_failed')}: ${error}`)
+        loggerService.error(`Failed to start HTTP upload: ${pkg.name}`, error)
       } else {
-        message.error(t('files.package.upload_failed'))
-        loggerService.error(`Failed to upload package to HTTP server: ${pkg.name}`)
+        message.info(t('files.package.uploading') || '正在上传到服务器...')
+        loggerService.info(`Started HTTP upload for package: ${pkg.name}`)
       }
     } catch (error) {
       message.error(t('files.package.upload_failed'))
       loggerService.error('Error uploading package to HTTP server:', error as Error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -363,7 +400,7 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
             <Button icon={<UploadOutlined />} onClick={handleUploadToDevice} loading={loading}>
               {t('files.package.upload_to_device')}
             </Button>
-            <Button icon={<UploadOutlined />} onClick={handleUploadToServer}>
+            <Button icon={<UploadOutlined />} onClick={handleUploadToServer} loading={isHttpUploading}>
               {t('files.package.upload_to_server')}
             </Button>
             <Popconfirm
@@ -378,6 +415,40 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
               </Button>
             </Popconfirm>
           </Flex>
+          {uploadTask && (
+            <div style={{ marginTop: 16 }}>
+              <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
+                <div style={{ fontWeight: 600 }}>{t('files.package.upload_progress') || '上传进度'}</div>
+                <Flex align="center" gap={8}>
+                  <Tag color={uploadStatusColor[uploadTask.status]}>{uploadStatusText[uploadTask.status]}</Tag>
+                  {(uploadTask.status === 'started' || uploadTask.status === 'progress') && (
+                    <Button size="small" danger icon={<CloseOutlined />} onClick={() => cancelHttpUpload(uploadTask.uploadId)}>
+                      {t('common.cancel')}
+                    </Button>
+                  )}
+                </Flex>
+              </Flex>
+              <Progress
+                percent={Math.min(uploadTask.percentage, 100)}
+                status={
+                  uploadTask.status === 'failed'
+                    ? 'exception'
+                    : uploadTask.status === 'success'
+                      ? 'success'
+                      : 'active'
+                }
+              />
+              <Flex justify="space-between" style={{ marginTop: 4 }}>
+                <span>
+                  {formatFileSize(uploadTask.bytesTransferred)} / {formatFileSize(uploadTask.totalBytes || 0)}
+                </span>
+                <span>{formatSpeed(uploadTask.speedBytesPerSecond)}</span>
+              </Flex>
+              {uploadTask.error && (
+                <div style={{ marginTop: 6, color: '#ff4d4f', fontSize: 12 }}>{uploadTask.error}</div>
+              )}
+            </div>
+          )}
         </Card>
       </Content>
     </Container>

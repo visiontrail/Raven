@@ -3,6 +3,7 @@
 import axios from 'axios'
 import FormData from 'form-data'
 import * as fs from 'fs-extra'
+import { PassThrough } from 'stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { HTTPConfig, Package } from '../../../renderer/src/types/package'
@@ -15,15 +16,20 @@ vi.mock('fs-extra', () => ({
   createReadStream: vi.fn()
 }))
 
-vi.mock('axios', () => ({
-  default: vi.fn(),
-  isAxiosError: vi.fn()
-}))
+vi.mock('axios', () => {
+  const axiosMock: any = vi.fn()
+  axiosMock.isAxiosError = vi.fn()
+  return {
+    default: axiosMock,
+    isAxiosError: axiosMock.isAxiosError
+  }
+})
 
 // Mock FormData constructor
 const MockFormDataInstance = {
   append: vi.fn(),
-  getHeaders: vi.fn().mockReturnValue({ 'content-type': 'multipart/form-data' })
+  getHeaders: vi.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+  getLength: vi.fn()
 }
 
 vi.mock('form-data', () => ({
@@ -71,11 +77,20 @@ describe('HTTPService', () => {
     // Mock fs methods - use mockImplementation instead of mockResolvedValue to avoid type issues
     vi.spyOn(mockedFs, 'pathExists').mockImplementation(() => Promise.resolve(true as any))
     vi.spyOn(mockedFs, 'stat').mockImplementation(() => Promise.resolve({ size: 1024 } as any))
-    vi.spyOn(mockedFs, 'createReadStream').mockReturnValue('mock-stream' as any)
+    vi.spyOn(mockedFs, 'createReadStream').mockImplementation(() => {
+      const stream = new PassThrough()
+      // emit a small chunk and end so hash calculation can finish immediately
+      process.nextTick(() => {
+        stream.write(Buffer.from('test'))
+        stream.end()
+      })
+      return stream as any
+    })
 
     // Reset FormData mock
     MockFormDataInstance.append.mockClear()
     MockFormDataInstance.getHeaders.mockReturnValue({ 'content-type': 'multipart/form-data' })
+    MockFormDataInstance.getLength.mockImplementation((cb: (err: any, length: number) => void) => cb(null, 2048))
 
     // Mock axios
     mockedAxios.mockResolvedValue({
@@ -107,7 +122,8 @@ describe('HTTPService', () => {
           url: 'https://example.com/upload',
           headers: expect.objectContaining({
             'X-Custom-Header': 'test-value',
-            'content-type': 'multipart/form-data'
+            'content-type': 'multipart/form-data',
+            'Content-Length': 2048
           })
         })
       )
@@ -207,24 +223,29 @@ describe('HTTPService', () => {
     it('should call progress callback during upload', async () => {
       const progressCallback = vi.fn()
 
-      // Mock axios to simulate progress
-      mockedAxios.mockImplementation((config: any) => {
-        if (config.onUploadProgress) {
-          config.onUploadProgress({ loaded: 512 })
-        }
-        return Promise.resolve({
-          status: 200,
-          statusText: 'OK',
-          data: { success: true }
+      const hashStream = new PassThrough()
+      const uploadStream = new PassThrough()
+      let callCount = 0
+      mockedFs.createReadStream.mockImplementation(() => {
+        const stream = callCount === 0 ? hashStream : uploadStream
+        callCount += 1
+        setImmediate(() => {
+          stream.write(Buffer.alloc(512))
+          stream.end()
         })
+        return stream as any
       })
 
-      await httpService.uploadFile(mockFilePath, mockPackageMetadata, mockHttpConfig, progressCallback)
+      const uploadPromise = httpService.uploadFile(mockFilePath, mockPackageMetadata, mockHttpConfig, {
+        onProgress: progressCallback
+      })
 
-      expect(progressCallback).toHaveBeenCalledWith({
-        bytesTransferred: 512,
-        totalBytes: 1024,
-        percentage: 50
+      await uploadPromise
+
+      expect(progressCallback).toHaveBeenCalled()
+      const lastPayload = progressCallback.mock.calls.at(-1)?.[0]
+      expect(lastPayload).toMatchObject({
+        totalBytes: 1024
       })
     })
   })

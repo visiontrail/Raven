@@ -5,30 +5,125 @@ import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
 import * as crypto from 'crypto'
 import FormData from 'form-data'
 import * as fs from 'fs-extra'
+import * as http from 'http'
+import * as https from 'https'
 import * as path from 'path'
+import { Transform, TransformCallback } from 'stream'
 
+import { HTTPUploadProgress } from '@shared/PackageUploadEvent'
 import { HTTPConfig, Package } from '../../renderer/src/types/package'
+
+/**
+ * A Transform stream that tracks how many bytes have passed through it.
+ * This provides accurate progress tracking as data is actually read and sent.
+ */
+class ProgressTrackingStream extends Transform {
+  private bytesRead = 0
+  private readonly totalBytes: number
+  private readonly onProgress: (bytesRead: number) => void
+
+  constructor(totalBytes: number, onProgress: (bytesRead: number) => void) {
+    super()
+    this.totalBytes = totalBytes
+    this.onProgress = onProgress
+  }
+
+  _transform(chunk: Buffer, _encoding: BufferEncoding, callback: TransformCallback): void {
+    this.bytesRead += chunk.length
+    this.onProgress(this.bytesRead)
+    this.push(chunk)
+    callback()
+  }
+
+  getBytesRead(): number {
+    return this.bytesRead
+  }
+}
+
+// Dynamic import for axios http adapter with multiple fallback strategies
+let axiosHttpAdapter: AxiosRequestConfig['adapter'] | undefined
+
+async function getHttpAdapter(): Promise<AxiosRequestConfig['adapter']> {
+  if (axiosHttpAdapter) return axiosHttpAdapter
+
+  // Strategy 1: Try dynamic import of the http adapter using require()
+  // This works better in Electron's externalized dependencies environment
+  try {
+    // Use require() for better compatibility with externalized node_modules
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const httpAdapterPath = require.resolve('axios/lib/adapters/http.js')
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const adapterModule = require(httpAdapterPath)
+    if (adapterModule?.default || typeof adapterModule === 'function') {
+      axiosHttpAdapter = adapterModule.default || adapterModule
+      return axiosHttpAdapter
+    }
+  } catch (e) {
+    console.warn('Failed to load axios http adapter via require:', e)
+  }
+
+  // Strategy 2: Try dynamic import of the http adapter (ES Module style)
+  try {
+    const adapterModule = await import('axios/lib/adapters/http.js')
+    if (adapterModule?.default) {
+      axiosHttpAdapter = adapterModule.default
+      return axiosHttpAdapter
+    }
+  } catch {
+    // Continue to next strategy
+  }
+
+  // Strategy 3: Try accessing via axios.defaults.adapter when it's http
+  try {
+    const defaultAdapter = axios.defaults.adapter
+    if (defaultAdapter && typeof defaultAdapter === 'function') {
+      axiosHttpAdapter = defaultAdapter as AxiosRequestConfig['adapter']
+      return axiosHttpAdapter
+    }
+  } catch {
+    // Continue to next strategy
+  }
+
+  // Strategy 4: Try accessing internal adapters object
+  try {
+    const adapters = (axios as any).Axios?.prototype?.adapters || (axios as any).adapters
+    if (adapters?.http) {
+      axiosHttpAdapter = adapters.http
+      return axiosHttpAdapter
+    }
+  } catch {
+    // Continue to next strategy
+  }
+
+  // Strategy 5: Use axios's getAdapter function if available
+  try {
+    const getAdapter = (axios as any).getAdapter || (axios.defaults as any).getAdapter
+    if (typeof getAdapter === 'function') {
+      const adapter = getAdapter('http')
+      if (adapter && typeof adapter === 'function') {
+        axiosHttpAdapter = adapter
+        return axiosHttpAdapter
+      }
+    }
+  } catch {
+    // Continue to fallback
+  }
+
+  throw new Error(
+    'Axios HTTP adapter is unavailable. Please ensure the upload runs in the Electron main (Node) process.'
+  )
+}
+
+// Verify Node.js environment by checking for http/https modules
+function isNodeEnvironment(): boolean {
+  return typeof http.request === 'function' && typeof https.request === 'function'
+}
 
 const logger = loggerService.withContext('HTTPService')
 
-/**
- * Interface for HTTP upload progress callback
- */
-export interface HTTPUploadProgress {
-  /**
-   * Number of bytes transferred
-   */
-  bytesTransferred: number
-
-  /**
-   * Total number of bytes to transfer
-   */
-  totalBytes: number
-
-  /**
-   * Progress percentage (0-100)
-   */
-  percentage: number
+interface HTTPUploadOptions {
+  onProgress?: (progress: HTTPUploadProgress) => void
+  signal?: AbortSignal
 }
 
 /**
@@ -40,14 +135,14 @@ export interface IHTTPService {
    * @param filePath Local file path
    * @param packageInfo Complete package information
    * @param httpConfig HTTP configuration
-   * @param onProgress Progress callback
+   * @param options Upload options (progress, cancellation)
    * @returns Promise<boolean> True if successful
    */
   uploadFile(
     filePath: string,
     packageInfo: Package,
     httpConfig: HTTPConfig,
-    onProgress?: (progress: HTTPUploadProgress) => void
+    options?: HTTPUploadOptions
   ): Promise<boolean>
 
   /**
@@ -92,7 +187,7 @@ export class HTTPService implements IHTTPService {
     filePath: string,
     packageInfo: Package,
     httpConfig: HTTPConfig,
-    onProgress?: (progress: HTTPUploadProgress) => void
+    options?: HTTPUploadOptions
   ): Promise<boolean> {
     try {
       // Check if file exists
@@ -144,102 +239,104 @@ export class HTTPService implements IHTTPService {
         }
       }
 
-      // Prefer native fetch with Web FormData/Blob to avoid adapter body length mismatches
-      const hasWebFormData =
-        typeof (globalThis as any).FormData === 'function' && typeof (globalThis as any).Blob === 'function'
-      if (hasWebFormData) {
-        const WebFormData = (globalThis as any).FormData
-        const WebBlob = (globalThis as any).Blob
+      // Progress tracking state - track based on stream reads, not socket writes
+      // This gives accurate progress as the file is actually read and sent
+      let lastReportedBytes = 0
+      let lastReportTime = Date.now()
 
-        const form = new WebFormData()
-        const fileBuffer = await fs.readFile(filePath)
-        const blob = new WebBlob([fileBuffer])
-        form.append('file', blob, fileName)
-        form.append('packageInfo', packageInfoJson)
-
-        const headersForFetch: Record<string, string> = { ...userHeaders }
-
-        // Add authentication to headers
-        if (httpConfig.authentication) {
-          const dummy: AxiosRequestConfig = { headers: { ...headersForFetch } }
-          this.addAuthentication(dummy, httpConfig.authentication)
-          Object.assign(headersForFetch, dummy.headers)
+      const reportProgress = (bytesTransferred: number, force = false) => {
+        if (!options?.onProgress) return
+        const now = Date.now()
+        const elapsedMs = now - lastReportTime
+        // Report at most every 100ms for smoother updates, unless forced or complete
+        if (!force && elapsedMs < 100 && bytesTransferred < totalBytes) {
+          return
         }
+        const deltaBytes = bytesTransferred - lastReportedBytes
+        // Calculate speed based on time since last report
+        const speedBytesPerSecond =
+          elapsedMs > 0 ? deltaBytes / (elapsedMs / 1000) : deltaBytes === 0 ? 0 : deltaBytes
 
-        // Do not set Content-Type for fetch with FormData; undici will set with boundary
-        delete headersForFetch['Content-Type']
-        delete headersForFetch['content-type']
+        lastReportedBytes = bytesTransferred
+        lastReportTime = now
 
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 300000)
+        options.onProgress({
+          bytesTransferred,
+          totalBytes,
+          percentage: totalBytes > 0 ? Math.min(100, Math.round((bytesTransferred / totalBytes) * 100)) : 0,
+          speedBytesPerSecond
+        })
+      }
 
+      // Emit initial progress
+      reportProgress(0, true)
+
+      // axios with node form-data
+      const formData = new FormData()
+      ;(formData as any).maxDataSize = Number.MAX_SAFE_INTEGER
+
+      // Use a ProgressTrackingStream to track actual data throughput
+      // This provides accurate progress as data is read from file and pushed through the stream
+      const fileStream = fs.createReadStream(filePath, { highWaterMark: 64 * 1024 }) // 64KB chunks for smoother progress
+      const progressStream = new ProgressTrackingStream(totalBytes, (bytesRead) => {
+        reportProgress(bytesRead, false)
+      })
+      fileStream.pipe(progressStream)
+
+      formData.append('file', progressStream, { filename: fileName, knownLength: totalBytes })
+      formData.append('packageInfo', packageInfoJson)
+
+      // Pre-compute Content-Length for better proxy compatibility
+      let contentLength: number | null = null
+      if (typeof (formData as any).getLength === 'function') {
         try {
-          const res = await fetch(httpConfig.url, {
-            method: httpConfig.method,
-            headers: headersForFetch as any,
-            body: form as any,
-            signal: controller.signal
-          } as any)
-
-          clearTimeout(timeoutId)
-
-          if (res.ok) {
-            logger.info(`Successfully uploaded ${fileName} to ${httpConfig.url}`)
-            return true
-          }
-
-          throw new Error(`HTTP upload failed with status ${res.status}: ${res.statusText}`)
-        } catch (err: any) {
-          // Align error surface with axios branch
-          if (err?.name === 'AbortError') {
-            throw new Error('Request timeout: The server did not respond within the expected time')
-          }
-          throw err
+          contentLength = await new Promise<number>((resolve, reject) => {
+            ;(formData as any).getLength((err: Error | null, length: number) =>
+              err ? reject(err) : resolve(length)
+            )
+          })
+        } catch (err) {
+          console.warn('WARNING: unable to compute Content-Length, falling back to chunked upload:', (err as Error).message || err)
+          contentLength = null
         }
       }
 
-      // Fallback to axios with node form-data (ensure no Content-Length mismatch by leaving it unset)
-      const formData = new FormData()
-      ;(formData as any).maxDataSize = Number.MAX_SAFE_INTEGER
-      const fileStream = fs.createReadStream(filePath)
-      formData.append('file', fileStream, { filename: fileName, knownLength: totalBytes })
-      formData.append('packageInfo', packageInfoJson)
-
       // Prepare request configuration
+      // Force the Node.js HTTP adapter explicitly with a direct reference to avoid
+      // axios falling back to the Fetch adapter in Electron environments where
+      // process detection can mark the HTTP adapter as "not supported".
+      if (!isNodeEnvironment()) {
+        throw new Error(
+          'HTTP upload must run in the Electron main (Node) process, not in the renderer process.'
+        )
+      }
+
+      const httpAdapter = await getHttpAdapter()
+
       const requestConfig: AxiosRequestConfig = {
+        // Use the concrete Node adapter function to bypass axios environment checks.
+        adapter: httpAdapter,
         method: httpConfig.method,
         url: httpConfig.url,
         data: formData,
         headers: {
           ...userHeaders,
-          ...formData.getHeaders()
+          ...formData.getHeaders(),
+          ...(contentLength !== null && Number.isFinite(contentLength) ? { 'Content-Length': contentLength } : {})
         },
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
-        timeout: 300000 // 5 minutes timeout
+        timeout: 0, // disable timeout per requirement
+        signal: options?.signal
+        // Note: We don't use onUploadProgress here because it reports bytes written to
+        // the socket buffer, which fills up almost instantly on fast networks.
+        // Instead, we use ProgressTrackingStream to track actual data throughput
+        // as it flows through the stream, providing accurate real-time progress.
       }
-
-      // Force Node http adapter (avoid fetch/undici content-length mismatch with node FormData)
-      ;(requestConfig as any).adapter = 'http'
-      ;(requestConfig as any).env = {}
 
       // Add authentication if provided
       if (httpConfig.authentication) {
         this.addAuthentication(requestConfig, httpConfig.authentication)
-      }
-
-      // Add progress tracking if callback provided
-      if (onProgress) {
-        requestConfig.onUploadProgress = (progressEvent) => {
-          const bytesTransferred = progressEvent.loaded || 0
-          const percentage = totalBytes > 0 ? Math.round((bytesTransferred / totalBytes) * 100) : 0
-
-          onProgress({
-            bytesTransferred,
-            totalBytes,
-            percentage
-          })
-        }
       }
 
       logger.debug(`请求头信息: ${JSON.stringify(requestConfig.headers, null, 2)}`)
@@ -247,6 +344,9 @@ export class HTTPService implements IHTTPService {
 
       // Make the HTTP request
       const response: AxiosResponse = await axios(requestConfig)
+
+      // Ensure final progress is reported when upload completes
+      reportProgress(totalBytes, true)
 
       logger.debug('=== HTTP响应信息 ===')
       logger.debug(`响应状态码: ${response.status}`)
@@ -267,6 +367,11 @@ export class HTTPService implements IHTTPService {
 
       // Provide more specific error messages
       if (axios.isAxiosError(error)) {
+        if ((axios as any).isCancel?.(error) || error.code === 'ERR_CANCELED') {
+          const abortError = new Error('Upload cancelled by user')
+          ;(abortError as any).name = 'AbortError'
+          throw abortError
+        }
         if (error.code === 'ECONNREFUSED') {
           throw new Error('Connection refused: Unable to connect to the server')
         } else if (error.code === 'ETIMEDOUT') {
@@ -276,6 +381,10 @@ export class HTTPService implements IHTTPService {
         } else if (error.request) {
           throw new Error('No response received from server')
         }
+      }
+
+      if ((error as any)?.name === 'AbortError') {
+        throw error
       }
 
       throw error

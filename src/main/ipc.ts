@@ -740,8 +740,11 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
   ipcMain.handle(IpcChannel.Package_UploadToFTP, (_, id: string, ftpConfig: any) => {
     return packageService.uploadPackageToFTP(id, ftpConfig)
   })
-  ipcMain.handle(IpcChannel.Package_UploadToHTTP, (_, id: string, httpConfig: any) => {
-    return packageService.uploadPackageToHTTP(id, httpConfig)
+  ipcMain.handle(IpcChannel.Package_UploadToHTTP, (event, id: string, httpConfig: any, uploadId?: string) => {
+    return packageService.uploadPackageToHTTPWithEvents(id, httpConfig, event.sender, uploadId)
+  })
+  ipcMain.handle(IpcChannel.Package_CancelHTTPUpload, (_, uploadId: string) => {
+    return packageService.cancelHTTPUpload(uploadId)
   })
   ipcMain.handle(IpcChannel.Package_ScanDirectory, (_, directoryPath: string) => {
     return packageService.scanPackagesInDirectory(directoryPath)

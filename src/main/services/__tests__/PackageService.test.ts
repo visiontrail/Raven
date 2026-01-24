@@ -19,7 +19,8 @@ vi.mock('fs-extra', () => ({
   readdir: vi.fn().mockImplementation(() => Promise.resolve(undefined)),
   stat: vi.fn().mockImplementation(() => Promise.resolve(undefined)),
   unlink: vi.fn().mockImplementation(() => Promise.resolve(undefined)),
-  readFile: vi.fn().mockImplementation(() => Promise.resolve(undefined))
+  readFile: vi.fn().mockImplementation(() => Promise.resolve(undefined)),
+  createReadStream: vi.fn().mockImplementation(() => Promise.resolve(undefined))
 }))
 
 // Mock extractMetadataFromTGZ
@@ -85,9 +86,17 @@ describe('PackageService', () => {
     vi.spyOn(mockedFs, 'readJSON').mockImplementation(() => Promise.resolve([]))
     vi.spyOn(mockedFs, 'writeJSON').mockImplementation(() => Promise.resolve())
     vi.spyOn(mockedFs, 'readdir').mockImplementation(() => Promise.resolve(['test.tgz', 'other.txt', 'another.tar.gz']))
-    vi.spyOn(mockedFs, 'stat').mockImplementation(() => Promise.resolve({ isFile: () => true } as any))
+    vi.spyOn(mockedFs, 'stat').mockImplementation(() => Promise.resolve({ isFile: () => true, size: 1024 } as any))
     vi.spyOn(mockedFs, 'unlink').mockImplementation(() => Promise.resolve())
     vi.spyOn(mockedFs, 'readFile').mockImplementation(() => Promise.resolve(Buffer.from('test')))
+    vi.spyOn(mockedFs, 'createReadStream').mockImplementation(() => {
+      const stream = new (require('events').EventEmitter)()
+      process.nextTick(() => {
+        stream.emit('data', Buffer.from('data'))
+        stream.emit('end')
+      })
+      return stream
+    })
 
     // Reset FTP service mocks
     vi.spyOn(mockFtpService, 'uploadFile').mockImplementation(() => Promise.resolve(true))

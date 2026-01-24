@@ -8,6 +8,7 @@ import { SpanContext } from '@opentelemetry/api'
 import { UpgradeChannel } from '@shared/config/constant'
 import type { LogLevel, LogSourceWithContext } from '@shared/config/logger'
 import { IpcChannel } from '@shared/IpcChannel'
+import { HTTPUploadEventPayload } from '@shared/PackageUploadEvent'
 import {
   AddMemoryOptions,
   AssistantMessage,
@@ -341,7 +342,14 @@ const api = {
     delete: (id: string) => ipcRenderer.invoke(IpcChannel.Package_Delete, id),
     scanForPackages: () => ipcRenderer.invoke(IpcChannel.Package_ScanForPackages),
     uploadToFTP: (id: string, ftpConfig: any) => ipcRenderer.invoke(IpcChannel.Package_UploadToFTP, id, ftpConfig),
-    uploadToHTTP: (id: string, httpConfig: any) => ipcRenderer.invoke(IpcChannel.Package_UploadToHTTP, id, httpConfig),
+    uploadToHTTP: (id: string, httpConfig: any, uploadId?: string) =>
+      ipcRenderer.invoke(IpcChannel.Package_UploadToHTTP, id, httpConfig, uploadId),
+    cancelHTTPUpload: (uploadId: string) => ipcRenderer.invoke(IpcChannel.Package_CancelHTTPUpload, uploadId),
+    onHTTPUploadEvent: (callback: (payload: HTTPUploadEventPayload) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: HTTPUploadEventPayload) => callback(payload)
+      ipcRenderer.on(IpcChannel.Package_HTTPUploadEvent, listener)
+      return () => ipcRenderer.off(IpcChannel.Package_HTTPUploadEvent, listener)
+    },
     scanDirectory: (directoryPath: string) => ipcRenderer.invoke(IpcChannel.Package_ScanDirectory, directoryPath),
     extractMetadata: (filePath: string) => ipcRenderer.invoke(IpcChannel.Package_ExtractMetadata, filePath),
     parseReleaseNote: (packagePath: string) => ipcRenderer.invoke(IpcChannel.Package_ParseReleaseNote, packagePath)

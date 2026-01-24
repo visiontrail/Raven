@@ -113,14 +113,21 @@ export const usePackages = () => {
   /**
    * Upload package to HTTP server
    */
-  const uploadToHTTP = useCallback(async (id: string, httpConfig: any): Promise<boolean> => {
-    try {
-      return await window.api.package.uploadToHTTP(id, httpConfig)
-    } catch (err) {
-      loggerService.error('Error uploading to HTTP:', err as Error)
-      return false
-    }
-  }, [])
+  const uploadToHTTP = useCallback(
+    async (
+      id: string,
+      httpConfig: any,
+      uploadId?: string
+    ): Promise<{ success: boolean; uploadId?: string; cancelled?: boolean; error?: string }> => {
+      try {
+        return await window.api.package.uploadToHTTP(id, httpConfig, uploadId)
+      } catch (err) {
+        loggerService.error('Error uploading to HTTP:', err as Error)
+        return { success: false, error: err instanceof Error ? err.message : 'Upload failed' }
+      }
+    },
+    []
+  )
 
   /**
    * Open package location in file explorer

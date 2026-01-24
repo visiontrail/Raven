@@ -1,13 +1,17 @@
 // src/main/services/PackageService.ts
 
 import { loggerService } from '@logger'
+import { randomUUID } from 'crypto'
+import { WebContents } from 'electron'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 
+import { IpcChannel } from '@shared/IpcChannel'
+import { HTTPUploadEventPayload, HTTPUploadProgress, HTTPUploadStatus } from '@shared/PackageUploadEvent'
 import { FTPConfig, HTTPConfig, Package, PackageMetadata } from '../../renderer/src/types/package'
 import { extractMetadataFromTGZ } from '../utils/packageUtils'
 import { ftpService, FTPUploadProgress } from './FTPService'
-import { httpService, HTTPUploadProgress } from './HTTPService'
+import { httpService } from './HTTPService'
 
 const logger = loggerService.withContext('PackageService')
 
@@ -70,6 +74,21 @@ export interface IPackageService {
   ): Promise<boolean>
 
   /**
+   * Upload package to HTTP server with progress events to renderer
+   */
+  uploadPackageToHTTPWithEvents(
+    id: string,
+    httpConfig: HTTPConfig,
+    sender: WebContents,
+    uploadId?: string
+  ): Promise<{ success: boolean; uploadId: string; cancelled?: boolean; error?: string }>
+
+  /**
+   * Cancel an ongoing HTTP upload
+   */
+  cancelHTTPUpload(uploadId: string): boolean
+
+  /**
    * Add a package to the service
    * @param packageInfo Package information
    * @returns Promise<boolean> True if successful
@@ -97,6 +116,7 @@ export interface IPackageService {
 export class PackageService implements IPackageService {
   private packages: Map<string, Package> = new Map()
   private metadataFilePath: string
+  private httpUploadControllers: Map<string, { controller: AbortController; packageId: string }> = new Map()
 
   constructor() {
     // Store metadata in a JSON file in the user data directory
@@ -293,20 +313,21 @@ export class PackageService implements IPackageService {
     httpConfig: HTTPConfig,
     onProgress?: (progress: HTTPUploadProgress) => void
   ): Promise<boolean> {
+    const pkg = this.packages.get(id)
+    if (!pkg) {
+      console.error(`Package with id ${id} not found`)
+      return false
+    }
+
+    if (!(await fs.pathExists(pkg.path))) {
+      console.error(`Package file not found: ${pkg.path}`)
+      return false
+    }
+
     try {
-      const pkg = this.packages.get(id)
-      if (!pkg) {
-        throw new Error(`Package with id ${id} not found`)
-      }
-
-      if (!(await fs.pathExists(pkg.path))) {
-        throw new Error(`Package file not found: ${pkg.path}`)
-      }
-
       console.log(`Starting HTTP upload for package ${pkg.name} to ${httpConfig.url}`)
 
-      // Use HTTP service to upload the file with complete package information
-      const success = await httpService.uploadFile(pkg.path, pkg, httpConfig, onProgress)
+      const success = await this.runHttpUpload(pkg, httpConfig, { onProgress })
 
       if (success) {
         console.log(`Successfully uploaded package ${pkg.name} to HTTP server`)
@@ -317,6 +338,119 @@ export class PackageService implements IPackageService {
       console.error(`Error uploading package ${id} to HTTP:`, error)
       return false
     }
+  }
+
+  /**
+   * Upload package to HTTP server and stream progress to renderer
+   */
+  async uploadPackageToHTTPWithEvents(
+    id: string,
+    httpConfig: HTTPConfig,
+    sender: WebContents,
+    uploadId?: string
+  ): Promise<{ success: boolean; uploadId: string; cancelled?: boolean; error?: string }> {
+    const pkg = this.packages.get(id)
+    if (!pkg) {
+      return { success: false, uploadId: uploadId || '', error: `Package with id ${id} not found` }
+    }
+
+    if (!(await fs.pathExists(pkg.path))) {
+      return { success: false, uploadId: uploadId || '', error: `Package file not found: ${pkg.path}` }
+    }
+
+    const finalUploadId = uploadId || randomUUID()
+    const fileStats = await fs.stat(pkg.path)
+    let lastProgress: HTTPUploadProgress = {
+      bytesTransferred: 0,
+      totalBytes: fileStats.size,
+      percentage: 0,
+      speedBytesPerSecond: 0
+    }
+
+    const sendEvent = (payload: Partial<HTTPUploadEventPayload> & { status: HTTPUploadStatus }) => {
+      if (sender.isDestroyed()) return
+      const totalBytesValue = (payload.totalBytes ?? fileStats.size) || 1
+      const eventPayload: HTTPUploadEventPayload = {
+        uploadId: finalUploadId,
+        packageId: pkg.id,
+        fileName: pkg.name,
+        bytesTransferred: payload.bytesTransferred ?? 0,
+        totalBytes: totalBytesValue,
+        percentage:
+          payload.percentage !== undefined
+            ? payload.percentage
+            : Math.min(
+                100,
+                Math.round(((payload.bytesTransferred ?? 0) / totalBytesValue) * 100)
+              ),
+        speedBytesPerSecond: payload.speedBytesPerSecond ?? 0,
+        status: payload.status,
+        error: payload.error
+      }
+      sender.send(IpcChannel.Package_HTTPUploadEvent, eventPayload)
+    }
+
+    const controller = new AbortController()
+    this.httpUploadControllers.set(finalUploadId, { controller, packageId: pkg.id })
+
+    sendEvent({ status: 'started', ...lastProgress })
+
+    try {
+      const success = await this.runHttpUpload(pkg, httpConfig, {
+        signal: controller.signal,
+        onProgress: (progress) => {
+          lastProgress = progress
+          sendEvent({
+            status: 'progress',
+            ...progress
+          })
+        }
+      })
+
+      sendEvent({
+        status: success ? 'success' : 'failed',
+        bytesTransferred: fileStats.size,
+        totalBytes: fileStats.size,
+        percentage: 100,
+        speedBytesPerSecond: 0
+      })
+
+      return { success, uploadId: finalUploadId }
+    } catch (error) {
+      const cancelled =
+        (error as any)?.name === 'AbortError' || (error as any)?.code === 'ERR_CANCELED' || (error as any)?.canceled
+      sendEvent({
+        status: cancelled ? 'cancelled' : 'failed',
+        ...lastProgress,
+        error: (error as Error).message
+      })
+
+      return { success: false, uploadId: finalUploadId, cancelled, error: (error as Error).message }
+    } finally {
+      this.httpUploadControllers.delete(finalUploadId)
+    }
+  }
+
+  /**
+   * Cancel an ongoing HTTP upload
+   */
+  cancelHTTPUpload(uploadId: string): boolean {
+    const entry = this.httpUploadControllers.get(uploadId)
+    if (!entry) return false
+    entry.controller.abort()
+    this.httpUploadControllers.delete(uploadId)
+    return true
+  }
+
+  private async runHttpUpload(
+    pkg: Package,
+    httpConfig: HTTPConfig,
+    options?: { onProgress?: (progress: HTTPUploadProgress) => void; signal?: AbortSignal }
+  ): Promise<boolean> {
+    return httpService.uploadFile(pkg.path, pkg, httpConfig, {
+      onProgress: options?.onProgress,
+      signal: options?.signal
+    })
   }
 
   /**

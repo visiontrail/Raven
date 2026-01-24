@@ -107,6 +107,8 @@ export interface IFTPService {
  * Implementation of the FTP Service
  */
 export class FTPService implements IFTPService {
+  private lastListFilesLogTime = 0
+
   /**
    * Upload a file to FTP server
    */
@@ -185,10 +187,13 @@ export class FTPService implements IFTPService {
    */
   async listFiles(ftpConfig: FTPConfig): Promise<FTPFileInfo[]> {
     const client = new FTPClient()
+    const shouldLog = Date.now() - this.lastListFilesLogTime > 5 * 60 * 1000
 
     try {
-      logger.info(`[FTPService] Starting FTP server connection: ${ftpConfig.host}:${ftpConfig.port}`)
-      logger.info(`[FTPService] FTP configuration:`, ftpConfig)
+      if (shouldLog) {
+        logger.info(`[FTPService] Starting FTP server connection: ${ftpConfig.host}:${ftpConfig.port}`)
+        logger.info(`[FTPService] FTP configuration:`, ftpConfig)
+      }
 
       // Connect to FTP server
       await client.access({
@@ -198,18 +203,18 @@ export class FTPService implements IFTPService {
         password: ftpConfig.password,
         secure: false
       })
-      logger.info(`[FTPService] FTP connection successful`)
+      if (shouldLog) logger.info(`[FTPService] FTP connection successful`)
 
       // Change to the specified directory
       if (ftpConfig.remotePath && ftpConfig.remotePath !== '/') {
-        logger.info(`[FTPService] Switching to directory: ${ftpConfig.remotePath}`)
+        if (shouldLog) logger.info(`[FTPService] Switching to directory: ${ftpConfig.remotePath}`)
         await client.cd(ftpConfig.remotePath)
       }
 
       // List files in the directory
-      logger.info(`[FTPService] Starting to list files...`)
+      if (shouldLog) logger.info(`[FTPService] Starting to list files...`)
       const fileList = await client.list()
-      logger.info(`[FTPService] Raw file list:`, fileList)
+      if (shouldLog) logger.info(`[FTPService] Raw file list:`, fileList)
 
       // Convert to our FTPFileInfo format
       const files: FTPFileInfo[] = fileList.map((file) => {
@@ -220,14 +225,17 @@ export class FTPService implements IFTPService {
           isDirectory: file.isDirectory,
           path: path.posix.join(ftpConfig.remotePath || '/', file.name)
         }
-        logger.info('[FTPService] Converting file:', { source: file, target: ftpFile })
+        if (shouldLog) logger.info('[FTPService] Converting file:', { source: file, target: ftpFile })
         return ftpFile
       })
 
-      logger.info(
-        `[FTPService] Successfully listed ${files.length} files from ${ftpConfig.host}:${ftpConfig.remotePath}`
-      )
-      logger.info(`[FTPService] Final file list:`, files)
+      if (shouldLog) {
+        logger.info(
+          `[FTPService] Successfully listed ${files.length} files from ${ftpConfig.host}:${ftpConfig.remotePath}`
+        )
+        logger.info(`[FTPService] Final file list:`, files)
+        this.lastListFilesLogTime = Date.now()
+      }
       return files
     } catch (error) {
       logger.error('[FTPService] FTP list files failed:', error as Error)
