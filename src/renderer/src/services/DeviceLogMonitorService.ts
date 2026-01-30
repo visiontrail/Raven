@@ -3,7 +3,7 @@
  * 独立于页面生命周期，在应用启动时自动运行
  */
 
-import { message } from 'antd'
+import { message, Progress } from 'antd'
 import { createElement } from 'react'
 import { EventEmitter } from 'events'
 
@@ -32,6 +32,7 @@ export interface UploadStatusPayload {
   state: 'idle' | UploadStage
   fileName?: string
   logType?: 'protocol' | 'oam_antenna' | 'full'
+  progress?: number
 }
 
 // 默认配置
@@ -59,7 +60,180 @@ class DeviceLogMonitorService {
   private currentUploadXhr: XMLHttpRequest | null = null
   private currentUploadInfo: { fileName: string; logType: 'protocol' | 'oam_antenna' | 'full' } | null = null
   private currentUploadStage: UploadStatusPayload['state'] = 'idle'
+  private currentUploadProgress = 0
   private uploadMessageKey = 'device-log-upload'
+
+  private getLogTypeLabel(logType?: 'protocol' | 'oam_antenna' | 'full'): string {
+    if (!logType) return '日志'
+    switch (logType) {
+      case 'protocol':
+        return '协议栈'
+      case 'oam_antenna':
+        return 'OAM/天线'
+      case 'full':
+        return '完整日志'
+      default:
+        return '日志'
+    }
+  }
+
+  private renderUploadToast(options: {
+    type: 'loading' | 'success' | 'warning' | 'error' | 'info'
+    title: string
+    description?: string
+    fileName?: string
+    logType?: 'protocol' | 'oam_antenna' | 'full'
+    progress?: number
+    actions?: Array<{ label: string; onClick: () => void; danger?: boolean }>
+  }): void {
+    const closeToast = () => message.destroy(this.uploadMessageKey)
+    const logTypeLabel = this.getLogTypeLabel(options.logType)
+    const fullName =
+      options.fileName && options.fileName.length > 0
+        ? `${options.fileName}${options.logType ? ` (${logTypeLabel})` : ''}`
+        : ''
+
+    const actions = [...(options.actions ?? [])]
+    // 保证始终有关闭按钮
+    actions.push({
+      label: '关闭',
+      onClick: closeToast
+    })
+
+    message.open({
+      type: options.type,
+      key: this.uploadMessageKey,
+      duration: 0,
+      style: { maxWidth: 520 },
+      content: createElement(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            maxWidth: 520
+          }
+        },
+        createElement(
+          'div',
+          {
+            style: {
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 8
+            }
+          },
+          createElement(
+            'div',
+            { style: { flex: 1, minWidth: 0 } },
+            createElement(
+              'div',
+              { style: { fontWeight: 600, color: 'var(--color-text)' } },
+              options.title
+            ),
+            options.description
+              ? createElement(
+                  'div',
+                  {
+                    style: {
+                      marginTop: 4,
+                      color: 'var(--color-text-secondary)'
+                    }
+                  },
+                  options.description
+                )
+              : null,
+            fullName
+              ? createElement(
+                  'div',
+                  {
+                    style: {
+                      marginTop: 4,
+                      color: 'var(--color-text-tertiary)',
+                      fontSize: 12,
+                      wordBreak: 'break-all'
+                    }
+                  },
+                  fullName
+                )
+              : null
+          ),
+          createElement(
+            'a',
+            {
+              style: {
+                color: 'var(--color-text-secondary)',
+                cursor: 'pointer',
+                fontSize: 14,
+                lineHeight: 1
+              },
+              onClick: closeToast
+            },
+            '×'
+          )
+        ),
+        options.progress !== undefined
+          ? createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8
+                }
+              },
+              createElement(Progress, {
+                percent: Math.max(0, Math.min(options.progress, 100)),
+                size: 'small',
+                status: options.type === 'error' ? 'exception' : options.type === 'success' ? 'normal' : 'active',
+                strokeWidth: 8,
+                showInfo: false,
+                style: { flex: 1, margin: 0 }
+              }),
+              createElement(
+                'span',
+                {
+                  style: {
+                    minWidth: 42,
+                    textAlign: 'right',
+                    fontVariantNumeric: 'tabular-nums',
+                    color: 'var(--color-text)'
+                  }
+                },
+                `${Math.round(Math.max(0, Math.min(options.progress, 100)))}%`
+              )
+            )
+          : null,
+        actions.length
+          ? createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: 12
+                }
+              },
+              actions.map((action, index) =>
+                createElement(
+                  'a',
+                  {
+                    key: `${action.label}-${index}`,
+                    onClick: action.onClick,
+                    style: {
+                      color: action.danger ? 'var(--color-danger)' : 'var(--color-primary)',
+                      fontWeight: 500
+                    }
+                  },
+                  action.label
+                )
+              )
+            )
+          : null
+      )
+    })
+  }
 
   private constructor() {
     // 从 localStorage 加载配置
@@ -92,7 +266,8 @@ class DeviceLogMonitorService {
       return {
         state: this.currentUploadStage,
         fileName: this.currentUploadInfo.fileName,
-        logType: this.currentUploadInfo.logType
+        logType: this.currentUploadInfo.logType,
+        progress: this.currentUploadStage === 'uploading' ? this.currentUploadProgress : undefined
       }
     }
     return { state: 'idle' }
@@ -112,15 +287,7 @@ class DeviceLogMonitorService {
   private emitUploadStatus(payload: UploadStatusPayload): void {
     console.log('[DeviceLogMonitorService] 上传状态变更:', payload)
     if (payload.state !== 'idle' && payload.fileName) {
-      const logTypeLabel =
-        payload.logType === 'protocol'
-          ? '协议栈'
-          : payload.logType === 'oam_antenna'
-            ? 'OAM/天线'
-            : payload.logType === 'full'
-              ? '完整日志'
-              : '日志'
-
+      const logTypeLabel = this.getLogTypeLabel(payload.logType)
       const fullName = `${payload.fileName}${payload.logType ? ` (${logTypeLabel})` : ''}`
       const stageLabelMap: Record<UploadStage, string> = {
         discovering: '检测到新日志',
@@ -128,62 +295,37 @@ class DeviceLogMonitorService {
         uploading: '日志上传中'
       }
       const stageText = payload.state === 'idle' ? '' : stageLabelMap[payload.state as UploadStage] || '日志处理中'
+      const progressValue = payload.state === 'uploading' ? Math.max(0, Math.min(payload.progress ?? 0, 100)) : undefined
 
-      message.open({
+      this.renderUploadToast({
         type: 'loading',
-        key: this.uploadMessageKey,
-        duration: 0,
-        style: { maxWidth: 520 },
-        content: createElement(
-          'div',
+        title: stageText,
+        description: fullName,
+        fileName: payload.fileName,
+        logType: payload.logType,
+        progress: progressValue,
+        actions: [
           {
-            style: {
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }
-          },
-          createElement(
-            'span',
-            {
-              style: {
-                flex: 1,
-                wordBreak: 'break-all'
-              }
-            },
-            `${stageText}：${fullName}`
-          ),
-          createElement(
-            'a',
-            {
-              style: {
-                color: 'var(--color-primary)',
-                fontWeight: 500,
-                cursor: 'pointer'
-              },
-              onClick: () => this.cancelCurrentUpload()
-            },
-            '取消'
-          )
-        )
+            label: '取消',
+            onClick: () => this.cancelCurrentUpload()
+          }
+        ]
       })
-    } else if (payload.state === 'idle') {
-      message.destroy(this.uploadMessageKey)
-    } else {
-      message.destroy(this.uploadMessageKey)
     }
     this.eventEmitter.emit('upload-status', payload)
   }
 
   private setUploadStatus(
     state: UploadStatusPayload['state'],
-    info?: { fileName: string; logType: 'protocol' | 'oam_antenna' | 'full' }
+    info?: { fileName: string; logType: 'protocol' | 'oam_antenna' | 'full' },
+    progress?: number
   ): void {
     this.currentUploadStage = state
 
     if (state === 'idle') {
       this.currentUploadInfo = null
       this.currentUploadXhr = null
+      this.currentUploadProgress = 0
       this.emitUploadStatus({ state: 'idle' })
       return
     }
@@ -197,10 +339,19 @@ class DeviceLogMonitorService {
       this.currentUploadInfo = info
     }
 
+    if (state === 'uploading') {
+      if (progress !== undefined) {
+        this.currentUploadProgress = Math.max(0, Math.min(progress, 100))
+      }
+    } else {
+      this.currentUploadProgress = 0
+    }
+
     this.emitUploadStatus({
       state,
       fileName: targetInfo.fileName,
-      logType: targetInfo.logType
+      logType: targetInfo.logType,
+      progress: state === 'uploading' ? this.currentUploadProgress : undefined
     })
   }
 
@@ -412,7 +563,7 @@ class DeviceLogMonitorService {
       let finished = false
 
       this.currentUploadXhr = xhr
-      this.setUploadStatus('uploading', { fileName, logType })
+      this.setUploadStatus('uploading', { fileName, logType }, 0)
 
       const finalize = () => {
         if (finished) return
@@ -424,6 +575,7 @@ class DeviceLogMonitorService {
         if (event.lengthComputable) {
           const progress = Math.round((event.loaded / event.total) * 100)
           console.log(`[DeviceLogMonitorService] 上传进度: ${fileName} - ${progress}%`)
+          this.setUploadStatus('uploading', { fileName, logType }, progress)
         }
       })
 
@@ -532,18 +684,45 @@ class DeviceLogMonitorService {
       try {
         await ftpService.deleteFile(file.path)
         console.log(`[DeviceLogMonitorService] 已删除FTP源文件: ${file.name}`)
-        message.success(`${file.name} 自动上传并删除源文件完成`)
+        this.renderUploadToast({
+          type: 'success',
+          title: '日志上传完成',
+          description: `${file.name} 已上传并删除FTP源文件`,
+          fileName: file.name,
+          logType: file.type,
+          progress: 100
+        })
       } catch (delErr) {
+        const delMessage = delErr instanceof Error ? delErr.message : '未知原因'
         console.error(`[DeviceLogMonitorService] 删除FTP源文件失败: ${file.name}`, delErr)
-        message.warning(`${file.name} 上传成功但删除FTP源文件失败`)
+        this.renderUploadToast({
+          type: 'warning',
+          title: '上传成功，但删除FTP源文件失败',
+          description: `${file.name} 上传成功，但删除源文件失败：${delMessage}`,
+          fileName: file.name,
+          logType: file.type,
+          progress: 100
+        })
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '未知错误'
       console.error(`[DeviceLogMonitorService] 上传失败: ${file.name}`, error)
       if (errorMessage === '上传已取消') {
-        message.info(`${file.name} 上传已取消`)
+        this.renderUploadToast({
+          type: 'info',
+          title: '上传已取消',
+          description: `${file.name} 的上传已被取消`,
+          fileName: file.name,
+          logType: file.type
+        })
       } else {
-        message.error(`${file.name} 自动上传失败: ${errorMessage}`)
+        this.renderUploadToast({
+          type: 'error',
+          title: '自动上传失败',
+          description: `${file.name} 上传失败：${errorMessage}`,
+          fileName: file.name,
+          logType: file.type
+        })
       }
     } finally {
       this.uploadingFiles.delete(fileKey)
