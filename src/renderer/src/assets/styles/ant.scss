@@ -12,6 +12,24 @@
   outline: none;
 }
 
+// Keep global message/toast at top-center so it doesn't cover window controls
+.ant-message {
+  top: 16px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.ant-message-notice {
+  pointer-events: auto;
+}
+
 // Align lucide icon in Button
 .ant-btn .ant-btn-icon {
   display: inline-flex;

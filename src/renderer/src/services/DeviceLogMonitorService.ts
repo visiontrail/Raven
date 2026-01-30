@@ -4,6 +4,8 @@
  */
 
 import { message } from 'antd'
+import { createElement } from 'react'
+import { EventEmitter } from 'events'
 
 import FtpService, { FtpConfig } from './FtpService'
 import { ipAddressService } from './IPAddressService'
@@ -17,11 +19,19 @@ export interface DeviceLogFile {
   path: string
 }
 
+export type UploadStage = 'discovering' | 'downloading' | 'uploading'
+
 interface MonitorConfig {
   enabled: boolean // 是否启用监控
   interval: number // 检查间隔（秒）
   autoUpload: boolean // 是否自动上传
   logServerUrl: string // 日志服务器地址
+}
+
+export interface UploadStatusPayload {
+  state: 'idle' | UploadStage
+  fileName?: string
+  logType?: 'protocol' | 'oam_antenna' | 'full'
 }
 
 // 默认配置
@@ -44,6 +54,12 @@ class DeviceLogMonitorService {
   private isMonitoring = false
   private uploadingFiles: Set<string> = new Set() // 正在上传的文件集合
   private isFirstScan = true // 首次扫描标识
+  private isChecking = false // 避免定时检查并发触发
+  private eventEmitter = new EventEmitter()
+  private currentUploadXhr: XMLHttpRequest | null = null
+  private currentUploadInfo: { fileName: string; logType: 'protocol' | 'oam_antenna' | 'full' } | null = null
+  private currentUploadStage: UploadStatusPayload['state'] = 'idle'
+  private uploadMessageKey = 'device-log-upload'
 
   private constructor() {
     // 从 localStorage 加载配置
@@ -58,6 +74,138 @@ class DeviceLogMonitorService {
       DeviceLogMonitorService.instance = new DeviceLogMonitorService()
     }
     return DeviceLogMonitorService.instance
+  }
+
+  /**
+   * 订阅上传状态变化
+   */
+  onUploadStatusChange(handler: (payload: UploadStatusPayload) => void): () => void {
+    this.eventEmitter.on('upload-status', handler)
+    return () => this.eventEmitter.off('upload-status', handler)
+  }
+
+  /**
+   * 获取当前上传状态（用于初始化界面显示）
+   */
+  getCurrentUploadStatus(): UploadStatusPayload {
+    if (this.currentUploadStage !== 'idle' && this.currentUploadInfo) {
+      return {
+        state: this.currentUploadStage,
+        fileName: this.currentUploadInfo.fileName,
+        logType: this.currentUploadInfo.logType
+      }
+    }
+    return { state: 'idle' }
+  }
+
+  /**
+   * 取消当前正在进行的HTTP上传
+   */
+  cancelCurrentUpload(): void {
+    if (this.currentUploadXhr) {
+      this.currentUploadXhr.abort()
+    } else {
+      message.info('当前没有正在上传的日志')
+    }
+  }
+
+  private emitUploadStatus(payload: UploadStatusPayload): void {
+    console.log('[DeviceLogMonitorService] 上传状态变更:', payload)
+    if (payload.state !== 'idle' && payload.fileName) {
+      const logTypeLabel =
+        payload.logType === 'protocol'
+          ? '协议栈'
+          : payload.logType === 'oam_antenna'
+            ? 'OAM/天线'
+            : payload.logType === 'full'
+              ? '完整日志'
+              : '日志'
+
+      const fullName = `${payload.fileName}${payload.logType ? ` (${logTypeLabel})` : ''}`
+      const stageLabelMap: Record<UploadStage, string> = {
+        discovering: '检测到新日志',
+        downloading: '日志下载中',
+        uploading: '日志上传中'
+      }
+      const stageText = payload.state === 'idle' ? '' : stageLabelMap[payload.state as UploadStage] || '日志处理中'
+
+      message.open({
+        type: 'loading',
+        key: this.uploadMessageKey,
+        duration: 0,
+        style: { maxWidth: 520 },
+        content: createElement(
+          'div',
+          {
+            style: {
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }
+          },
+          createElement(
+            'span',
+            {
+              style: {
+                flex: 1,
+                wordBreak: 'break-all'
+              }
+            },
+            `${stageText}：${fullName}`
+          ),
+          createElement(
+            'a',
+            {
+              style: {
+                color: 'var(--color-primary)',
+                fontWeight: 500,
+                cursor: 'pointer'
+              },
+              onClick: () => this.cancelCurrentUpload()
+            },
+            '取消'
+          )
+        )
+      })
+    } else if (payload.state === 'idle') {
+      message.destroy(this.uploadMessageKey)
+    } else {
+      message.destroy(this.uploadMessageKey)
+    }
+    this.eventEmitter.emit('upload-status', payload)
+  }
+
+  private setUploadStatus(
+    state: UploadStatusPayload['state'],
+    info?: { fileName: string; logType: 'protocol' | 'oam_antenna' | 'full' }
+  ): void {
+    this.currentUploadStage = state
+
+    if (state === 'idle') {
+      this.currentUploadInfo = null
+      this.currentUploadXhr = null
+      this.emitUploadStatus({ state: 'idle' })
+      return
+    }
+
+    const targetInfo = info ?? this.currentUploadInfo
+    if (!targetInfo) {
+      return
+    }
+
+    if (info) {
+      this.currentUploadInfo = info
+    }
+
+    this.emitUploadStatus({
+      state,
+      fileName: targetInfo.fileName,
+      logType: targetInfo.logType
+    })
+  }
+
+  private clearCurrentUpload(): void {
+    this.setUploadStatus('idle')
   }
 
   /**
@@ -261,6 +409,16 @@ class DeviceLogMonitorService {
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest()
+      let finished = false
+
+      this.currentUploadXhr = xhr
+      this.setUploadStatus('uploading', { fileName, logType })
+
+      const finalize = () => {
+        if (finished) return
+        finished = true
+        this.clearCurrentUpload()
+      }
 
       xhr.upload.addEventListener('progress', (event) => {
         if (event.lengthComputable) {
@@ -275,27 +433,38 @@ class DeviceLogMonitorService {
             const response = JSON.parse(xhr.responseText)
             if (response.success === true) {
               console.log(`[DeviceLogMonitorService] 上传成功: ${fileName}`)
+              finalize()
               resolve()
             } else {
+              finalize()
               reject(new Error(`上传失败: ${response.message || '未知错误'}`))
             }
           } catch (parseError) {
+            finalize()
             reject(new Error(`解析响应失败: ${parseError}`))
           }
         } else {
+          finalize()
           reject(new Error(`上传失败: ${xhr.status} ${xhr.statusText}`))
         }
       })
 
       xhr.addEventListener('error', () => {
+        finalize()
         reject(new Error('网络错误'))
       })
 
       xhr.addEventListener('timeout', () => {
+        finalize()
         reject(new Error('上传超时'))
       })
 
-      xhr.timeout = 5 * 60 * 1000 // 5分钟
+      xhr.addEventListener('abort', () => {
+        finalize()
+        reject(new Error('上传已取消'))
+      })
+
+      xhr.timeout = 30 * 60 * 1000 // 30分钟
 
       const formData = new FormData()
       formData.append('file', fileBlob, fileName)
@@ -335,14 +504,17 @@ class DeviceLogMonitorService {
     }
 
     this.uploadingFiles.add(fileKey)
+    let localPath: string | null = null
 
     try {
+      this.setUploadStatus('discovering', { fileName: file.name, logType: file.type })
       const ftpService = new FtpService(this.getFTPConfig())
 
       // 1. 下载到本地临时目录
       console.log(`[DeviceLogMonitorService] 从FTP下载: ${file.name}`)
+      this.setUploadStatus('downloading')
       const tempDir = await window.api.file.createTempFile('device_logs')
-      const localPath = `${tempDir}/${file.name}`
+      localPath = `${tempDir}/${file.name}`
       await ftpService.downloadFile(file.path, localPath)
 
       // 2. 读取文件
@@ -356,6 +528,7 @@ class DeviceLogMonitorService {
       await this.uploadToLogServer(fileBlob, file.name, file.type)
 
       await window.api.file.delete(localPath)
+      localPath = null
       try {
         await ftpService.deleteFile(file.path)
         console.log(`[DeviceLogMonitorService] 已删除FTP源文件: ${file.name}`)
@@ -365,10 +538,24 @@ class DeviceLogMonitorService {
         message.warning(`${file.name} 上传成功但删除FTP源文件失败`)
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误'
       console.error(`[DeviceLogMonitorService] 上传失败: ${file.name}`, error)
-      message.error(`${file.name} 自动上传失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      if (errorMessage === '上传已取消') {
+        message.info(`${file.name} 上传已取消`)
+      } else {
+        message.error(`${file.name} 自动上传失败: ${errorMessage}`)
+      }
     } finally {
       this.uploadingFiles.delete(fileKey)
+      if (localPath) {
+        try {
+          await window.api.file.delete(localPath)
+          console.log(`[DeviceLogMonitorService] 已清理本地临时文件: ${localPath}`)
+        } catch (cleanupError) {
+          console.warn(`[DeviceLogMonitorService] 清理本地临时文件失败: ${localPath}`, cleanupError)
+        }
+      }
+      this.setUploadStatus('idle')
     }
   }
 
@@ -376,6 +563,18 @@ class DeviceLogMonitorService {
    * 检测新文件并处理
    */
   private async detectAndHandleNewFiles(): Promise<void> {
+    if (this.isChecking) {
+      console.log('[DeviceLogMonitorService] 上一次检查尚未完成，跳过本次触发')
+      return
+    }
+
+    // 如果当前有上传任务进行中，避免并发触发导致同一文件重复上传
+    if (this.currentUploadStage !== 'idle' || this.uploadingFiles.size > 0) {
+      console.log('[DeviceLogMonitorService] 当前有上传任务进行中，跳过本次检查')
+      return
+    }
+
+    this.isChecking = true
     console.log('[DeviceLogMonitorService] 执行定时检查...')
 
     try {
@@ -430,6 +629,8 @@ class DeviceLogMonitorService {
       this.saveFilesState()
     } catch (error) {
       console.error('[DeviceLogMonitorService] 检查失败:', error)
+    } finally {
+      this.isChecking = false
     }
   }
 
