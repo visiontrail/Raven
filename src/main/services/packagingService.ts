@@ -253,14 +253,16 @@ const COMPONENT_CONFIGS = {
         file_attr: '323',
         file_types: ['.json'],
         description: 'packager.components.config.pengcheng_core_amf_config',
-        direct_include: false
+        direct_include: false,
+        preserve_original_name: true
       },
       pengcheng_core_upf_config: {
         file_name: 'pengcheng_core_upf.json',
         file_attr: '324',
         file_types: ['.json'],
         description: 'packager.components.config.pengcheng_core_upf_config',
-        direct_include: false
+        direct_include: false,
+        preserve_original_name: true
       }
     }
   },
@@ -296,6 +298,8 @@ export interface Component {
   selected_file?: string
   version?: string
   auto_version?: string
+  // 打包时实际落地的文件名（保持用户原始选择时使用）
+  output_file_name?: string
   release_note?: string // 新增：存储release note内容
 }
 
@@ -600,6 +604,8 @@ class PackagingService {
     let sourceFile = component.selected_file
     logger.info(`开始处理组件 ${component.name}, 文件: ${sourceFile}`)
 
+    const preserveOriginalName = (componentConfig as any).preserve_original_name === true
+
     // 处理压缩包文件的release note提取
     const isArchive = this.fileProcessor.isArchiveFile(sourceFile)
     logger.info(`文件 ${sourceFile} 是否为压缩包: ${isArchive}`)
@@ -628,8 +634,8 @@ class PackagingService {
         logger.info(`组件 ${component.name} 的压缩包中未找到 release note 文件`)
       }
 
-      // 如果不是直接包含，需要查找特定文件
-      if (!componentConfig.direct_include) {
+      // 如果需要保持用户原始文件名，则不再向下查找具体文件，直接使用用户提供的文件
+      if (!preserveOriginalName && !componentConfig.direct_include) {
         const foundFiles = await this.fileProcessor.findFilesByType(
           extractDir,
           componentConfig.file_types,
@@ -651,7 +657,9 @@ class PackagingService {
       }
     }
 
-    await this.fileProcessor.copyAndRenameFile(sourceFile, workDir, componentConfig.file_name)
+    const targetFileName = preserveOriginalName ? path.basename(sourceFile) : componentConfig.file_name
+    const destPath = await this.fileProcessor.copyAndRenameFile(sourceFile, workDir, targetFileName)
+    component.output_file_name = path.basename(destPath)
   }
 
   private _generateOutputFilename(packageConfig: PackageConfig): string {
@@ -726,8 +734,13 @@ class PackagingService {
       if (!componentConfig) return
 
       const fileVersion = component.version || component.auto_version || 'V0.0.0.0'
+      const fileName =
+        component.output_file_name ||
+        ((componentConfig as any).preserve_original_name && component.selected_file
+          ? path.basename(component.selected_file)
+          : componentConfig.file_name)
 
-      content += `FileName_${index + 1}=${componentConfig.file_name};\n`
+      content += `FileName_${index + 1}=${fileName};\n`
       content += `FileAttr_${index + 1}=${componentConfig.file_attr};\n`
       content += `FileVer_${index + 1}=${fileVersion};\n\n`
     })
