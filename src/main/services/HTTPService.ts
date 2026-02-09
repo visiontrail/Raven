@@ -20,6 +20,20 @@ let axiosHttpAdapter: AxiosRequestConfig['adapter'] | undefined
 async function getHttpAdapter(): Promise<AxiosRequestConfig['adapter']> {
   if (axiosHttpAdapter) return axiosHttpAdapter
 
+  const resolveWithGetAdapter = (candidate: unknown): AxiosRequestConfig['adapter'] | undefined => {
+    const getAdapter = (axios as any).getAdapter || (axios.defaults as any).getAdapter
+    if (typeof getAdapter !== 'function') {
+      return undefined
+    }
+
+    const adapter = getAdapter(candidate)
+    if (adapter && typeof adapter === 'function') {
+      return adapter
+    }
+
+    return undefined
+  }
+
   // Strategy 1: Try dynamic import of the http adapter using require()
   // This works better in Electron's externalized dependencies environment
   try {
@@ -54,6 +68,14 @@ async function getHttpAdapter(): Promise<AxiosRequestConfig['adapter']> {
       axiosHttpAdapter = defaultAdapter as AxiosRequestConfig['adapter']
       return axiosHttpAdapter
     }
+
+    // Axios v1 often stores adapter preference as an array like ['xhr', 'http', 'fetch'].
+    // Resolve it through axios.getAdapter() so we can still obtain a callable adapter.
+    const resolvedAdapter = resolveWithGetAdapter(defaultAdapter)
+    if (resolvedAdapter) {
+      axiosHttpAdapter = resolvedAdapter
+      return axiosHttpAdapter
+    }
   } catch {
     // Continue to next strategy
   }
@@ -71,13 +93,10 @@ async function getHttpAdapter(): Promise<AxiosRequestConfig['adapter']> {
 
   // Strategy 5: Use axios's getAdapter function if available
   try {
-    const getAdapter = (axios as any).getAdapter || (axios.defaults as any).getAdapter
-    if (typeof getAdapter === 'function') {
-      const adapter = getAdapter('http')
-      if (adapter && typeof adapter === 'function') {
-        axiosHttpAdapter = adapter
-        return axiosHttpAdapter
-      }
+    const adapter = resolveWithGetAdapter('http')
+    if (adapter) {
+      axiosHttpAdapter = adapter
+      return axiosHttpAdapter
     }
   } catch {
     // Continue to fallback
