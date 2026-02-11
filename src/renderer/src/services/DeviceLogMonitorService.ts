@@ -294,7 +294,7 @@ class DeviceLogMonitorService {
         downloading: '日志下载中',
         uploading: '日志上传中'
       }
-      const stageText = payload.state === 'idle' ? '' : stageLabelMap[payload.state as UploadStage] || '日志处理中'
+      const stageText = stageLabelMap[payload.state] || '日志处理中'
       const progressValue = payload.state === 'uploading' ? Math.max(0, Math.min(payload.progress ?? 0, 100)) : undefined
 
       this.renderUploadToast({
