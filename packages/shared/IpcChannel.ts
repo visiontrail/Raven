@@ -6,6 +6,7 @@ export enum IpcChannel {
   App_SetEnableSpellCheck = 'app:set-enable-spell-check',
   App_SetSpellCheckLanguages = 'app:set-spell-check-languages',
   App_ShowUpdateDialog = 'app:show-update-dialog',
+  App_InstallUpdate = 'app:install-update',
   App_CheckForUpdate = 'app:check-for-update',
   App_Reload = 'app:reload',
   App_Info = 'app:info',

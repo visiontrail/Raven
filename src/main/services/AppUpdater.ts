@@ -366,6 +366,16 @@ export default class AppUpdater {
       })
   }
 
+  public installUpdate() {
+    if (!this.releaseInfo) {
+      return false
+    }
+
+    app.isQuitting = true
+    setImmediate(() => autoUpdater.quitAndInstall())
+    return true
+  }
+
   private formatReleaseNotes(releaseNotes: string | ReleaseNoteInfo[] | null | undefined): string {
     if (!releaseNotes) {
       return ''

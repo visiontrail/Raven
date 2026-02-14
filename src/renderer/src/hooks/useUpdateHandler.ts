@@ -4,13 +4,14 @@ import { setUpdateState } from '@renderer/store/runtime'
 import { uuid } from '@renderer/utils'
 import { IpcChannel } from '@shared/IpcChannel'
 import type { ProgressInfo, UpdateInfo } from 'builder-util-runtime'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 export default function useUpdateHandler() {
   const dispatch = useAppDispatch()
   const { t } = useTranslation()
   const notificationService = NotificationService.getInstance()
+  const hasPromptedRestartRef = useRef(false)
 
   useEffect(() => {
     if (!window.electron) return
@@ -67,6 +68,25 @@ export default function useUpdateHandler() {
             downloaded: true
           })
         )
+
+        if (hasPromptedRestartRef.current) {
+          return
+        }
+        hasPromptedRestartRef.current = true
+
+        window.modal.confirm({
+          title: t('update.title'),
+          content: t('update.message', { version: releaseInfo.version }),
+          okText: t('update.install'),
+          cancelText: t('update.later'),
+          centered: true,
+          onOk: async () => {
+            const installed = await window.api.installUpdate()
+            if (!installed) {
+              window.message.error(t('settings.about.updateError'))
+            }
+          }
+        })
       }),
       ipcRenderer.on(IpcChannel.UpdateError, (_, error) => {
         dispatch(
