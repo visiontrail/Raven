@@ -1950,7 +1950,8 @@
       "noComponents": "Please select at least one component for packaging.",
       "noPackageType": "Package type undefined, cannot package.",
       "noPackageVersion": "Please enter package version number.",
-      "selectFile": "Failed to select file"
+      "selectFile": "Failed to select file",
+      "rarNotFullySupported": "RAR files are not fully supported. Please extract them first, then select the required file."
     },
     "infoPreview": "Information Preview",
     "isPatch": "Is Patch Package",

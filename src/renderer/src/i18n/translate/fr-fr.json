@@ -1950,7 +1950,8 @@
       "noComponents": "Veuillez sélectionner au moins un composant à empaqueter.",
       "noPackageType": "Le type de paquet n'est pas défini, empaquetage impossible.",
       "noPackageVersion": "Veuillez saisir la version du paquet.",
-      "selectFile": "Échec de la sélection du fichier"
+      "selectFile": "Échec de la sélection du fichier",
+      "rarNotFullySupported": "Les fichiers RAR ne sont pas entièrement pris en charge. Décompressez-les d'abord, puis sélectionnez le fichier requis."
     },
     "infoPreview": "Aperçu des informations",
     "isPatch": "S'agit-il d'un paquet PATCH ?",

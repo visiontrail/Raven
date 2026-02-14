@@ -178,6 +178,13 @@ const PackageTab: React.FC = () => {
 
       const fileName = window.api.path.basename(filePath)
       loggerService.debug(`[Renderer] File selected for ${componentName}: ${fileName} at path: ${filePath}`)
+      if (fileName.toLowerCase().endsWith('.rar')) {
+        message.warning(t('packager.error.rarNotFullySupported'))
+        loggerService.warn(
+          `[Renderer] RAR file selected for ${componentName}: ${filePath}. Prompting user to extract before selecting.`
+        )
+        return
+      }
 
       let detectedVersion: string | undefined
       try {

@@ -1950,7 +1950,8 @@
       "noComponents": "Seleccione al menos un componente para empaquetar.",
       "noPackageType": "El tipo de paquete no está definido, no se puede empaquetar.",
       "noPackageVersion": "Ingrese la versión del paquete.",
-      "selectFile": "No se pudo seleccionar el archivo"
+      "selectFile": "No se pudo seleccionar el archivo",
+      "rarNotFullySupported": "Los archivos RAR no son totalmente compatibles. Descomprímelos primero y luego selecciona el archivo correspondiente."
     },
     "infoPreview": "Vista previa de información",
     "isPatch": "¿Es un paquete PATCH?",

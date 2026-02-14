@@ -1950,7 +1950,8 @@
       "noComponents": "请至少选择一个组件进行打包。",
       "noPackageType": "包类型未定义，无法打包。",
       "noPackageVersion": "请输入整包版本号。",
-      "selectFile": "选择文件失败"
+      "selectFile": "选择文件失败",
+      "rarNotFullySupported": "Τα αρχεία RAR δεν υποστηρίζονται πλήρως. Αποσυμπιέστε τα πρώτα και μετά επιλέξτε το απαιτούμενο αρχείο."
     },
     "infoPreview": "信息预览",
     "isPatch": "是否为PATCH包",
