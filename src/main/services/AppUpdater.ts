@@ -75,9 +75,17 @@ export default class AppUpdater {
     }
     try {
       logger.info(`get release version from github: ${channel}`)
+      
+      // 添加超时控制
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000)
+
       const responses = await net.fetch('https://api.github.com/repos/visiontrail/Raven/releases?per_page=8', {
-        headers
+        headers,
+        signal: controller.signal
       })
+      clearTimeout(timeoutId)
+
       const data = (await responses.json()) as GithubReleaseInfo[]
       let mightHaveLatest = false
       const release: GithubReleaseInfo | undefined = data.find((item: GithubReleaseInfo) => {
@@ -99,12 +107,18 @@ export default class AppUpdater {
 
       if (mightHaveLatest) {
         logger.info(`might have latest release, get latest release`)
+        const controller2 = new AbortController()
+        const timeoutId2 = setTimeout(() => controller2.abort(), 10000)
+
         const latestReleaseResponse = await net.fetch(
           'https://api.github.com/repos/visiontrail/Raven/releases/latest',
           {
-            headers
+            headers,
+            signal: controller2.signal
           }
         )
+        clearTimeout(timeoutId2)
+
         const latestRelease = (await latestReleaseResponse.json()) as GithubReleaseInfo
         if (semver.gt(latestRelease.tag_name, release.tag_name)) {
           logger.info(
@@ -163,6 +177,27 @@ export default class AppUpdater {
     this.autoUpdater.disableDifferentialDownload = true
   }
 
+  private async _checkUrlAccessible(url: string, timeout: number = 5000): Promise<boolean> {
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+      const response = await net.fetch(url, {
+        signal: controller.signal,
+        method: 'HEAD',
+        headers: {
+          'User-Agent': generateUserAgent()
+        }
+      })
+
+      clearTimeout(timeoutId)
+      return response.ok
+    } catch (error) {
+      logger.warn(`Failed to access ${url}:`, error as Error)
+      return false
+    }
+  }
+
   private async _setFeedUrl() {
     // 检查是否使用自定义更新服务器
     const useCustomServer = configManager.getUseCustomUpdateServer()
@@ -195,10 +230,23 @@ export default class AppUpdater {
       return
     }
 
-    this._setChannel(UpgradeChannel.LATEST, FeedUrl.PRODUCTION)
+    // 对于国内用户，先尝试使用生产环境服务器
     const ipCountry = await getIpCountry()
     logger.info(`ipCountry is ${ipCountry}, set channel to ${UpgradeChannel.LATEST}`)
-    if (ipCountry.toLowerCase() !== 'cn') {
+    
+    if (ipCountry.toLowerCase() === 'cn') {
+      // 先检查生产环境服务器是否可访问
+      logger.info('Checking PRODUCTION server accessibility...')
+      const isProductionAccessible = await this._checkUrlAccessible(FeedUrl.PRODUCTION)
+      
+      if (isProductionAccessible) {
+        logger.info('PRODUCTION server is accessible, using it')
+        this._setChannel(UpgradeChannel.LATEST, FeedUrl.PRODUCTION)
+      } else {
+        logger.warn('PRODUCTION server is not accessible, falling back to GITHUB_LATEST')
+        this._setChannel(UpgradeChannel.LATEST, FeedUrl.GITHUB_LATEST)
+      }
+    } else {
       this._setChannel(UpgradeChannel.LATEST, FeedUrl.GITHUB_LATEST)
     }
   }
@@ -220,9 +268,24 @@ export default class AppUpdater {
     }
 
     try {
+      logger.info('Checking for update')
       await this._setFeedUrl()
 
-      this.updateCheckResult = await this.autoUpdater.checkForUpdates()
+      const feedUrl = this.autoUpdater.getFeedURL()
+      logger.info(`Using feed URL: ${feedUrl}, channel: ${this.autoUpdater.channel}`)
+
+      // 设置超时检查
+      const checkPromise = this.autoUpdater.checkForUpdates()
+      const timeoutPromise = new Promise<null>((_, reject) => {
+        setTimeout(() => reject(new Error('Update check timeout after 30 seconds')), 30000)
+      })
+
+      this.updateCheckResult = await Promise.race([checkPromise, timeoutPromise]) as UpdateCheckResult | null
+      
+      if (!this.updateCheckResult) {
+        throw new Error('Update check timed out')
+      }
+
       logger.info(
         `update check result: ${this.updateCheckResult?.isUpdateAvailable}, channel: ${this.autoUpdater.channel}, currentVersion: ${this.autoUpdater.currentVersion}`
       )
@@ -239,10 +302,33 @@ export default class AppUpdater {
         updateInfo: this.updateCheckResult?.isUpdateAvailable ? this.updateCheckResult?.updateInfo : null
       }
     } catch (error) {
-      logger.error('Failed to check for update:', error as Error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const feedUrl = this.autoUpdater.getFeedURL()
+      
+      logger.error(`Failed to check for update from ${feedUrl}:`, error as Error)
+      
+      // 向渲染进程发送更友好的错误信息
+      let userFriendlyMessage = errorMessage
+      
+      // 检查是否是网络相关错误
+      if (errorMessage.includes('ERR_NAME_NOT_RESOLVED') || errorMessage.includes('ENOTFOUND')) {
+        userFriendlyMessage = `Unable to resolve update server (${feedUrl}). Please check your network connection or DNS settings.`
+      } else if (errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT')) {
+        userFriendlyMessage = `Update check timed out. The server (${feedUrl}) may be unreachable.`
+      } else if (errorMessage.includes('ERR_CONNECTION_REFUSED') || errorMessage.includes('ECONNREFUSED')) {
+        userFriendlyMessage = `Connection refused by update server (${feedUrl}). Please try again later.`
+      }
+      
+      windowService.getMainWindow()?.webContents.send(IpcChannel.UpdateError, {
+        message: userFriendlyMessage,
+        feedUrl,
+        originalError: errorMessage
+      })
+      
       return {
         currentVersion: app.getVersion(),
-        updateInfo: null
+        updateInfo: null,
+        error: errorMessage
       }
     }
   }
