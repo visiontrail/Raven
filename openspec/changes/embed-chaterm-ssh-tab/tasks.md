@@ -14,9 +14,9 @@
   - 无 TypeScript API 破坏 (typecheck:node + typecheck:web 双双通过)
   - 仅 3 个快照测试因 jsdom/React 渲染格式变化（CSS `flex: 1` → `flex: 1 1 0%`、`style.color=unset` 现在被序列化）需要重生成；源码未改动，行为等价
   - 文档同步：[CLAUDE.md:76](CLAUDE.md:76)、[AGENTS.md:76](AGENTS.md:76) 中的 electron-vite 版本与 Electron 锁定说明已更新
-- [ ] 2.4 在 Chaterm 主进程入口加 `CHATERM_EMBEDDED` 检测开关，导出 `mountChaterm({ webContentsId, bridge, signals })` 与 `unmountChaterm()` 函数
-- [ ] 2.5 Chaterm 自有的"更新检查器"、"账号登录"、"edition 切换" 在嵌入模式下短路返回（保留代码，不执行）
-- [ ] 2.6 Chaterm 渲染层入口检测 `CHATERM_EMBEDDED`，禁用 Pinia 对主题/语言/Provider 的本地持久化写入
+- [x] 2.4 在 Chaterm 主进程入口加 `CHATERM_EMBEDDED` 检测开关，导出 `mountChaterm({ webContentsId, bridge, signals })` 与 `unmountChaterm()` 函数
+- [x] 2.5 Chaterm 自有的"更新检查器"、"账号登录"、"edition 切换" 在嵌入模式下短路返回（保留代码，不执行）
+- [x] 2.6 Chaterm 渲染层入口检测 `CHATERM_EMBEDDED`，禁用 Pinia 对主题/语言/Provider 的本地持久化写入
 
 ## 3. Chaterm 内 LLM 桥接 (Provider 注册)
 
