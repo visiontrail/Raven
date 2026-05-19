@@ -13,7 +13,7 @@ import { getSidebarIconLabel, getThemeModeLabel } from '@renderer/i18n/label'
 import { ThemeMode } from '@renderer/types'
 import { isEmoji } from '@renderer/utils'
 import { Avatar, Tooltip } from 'antd'
-import { FileSearch, Folder, MessageSquare, Monitor, Moon, Package, Settings, Sparkle, Sun } from 'lucide-react'
+import { FileSearch, Folder, MessageSquare, Monitor, Moon, Package, Settings, Sparkle, Sun, TerminalSquare } from 'lucide-react'
 import { FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -121,7 +121,8 @@ const MainMenus: FC = () => {
     agents: <Sparkle size={18} className="icon" />,
     knowledge: <FileSearch size={18} className="icon" />,
     files: <Folder size={17} className="icon" />,
-    packager: <Package size={18} className="icon" />
+    packager: <Package size={18} className="icon" />,
+    terminal: <TerminalSquare size={18} className="icon" />
   }
 
   const pathMap = {
@@ -129,7 +130,8 @@ const MainMenus: FC = () => {
     agents: '/agents',
     knowledge: '/knowledge',
     files: '/files',
-    packager: '/packager'
+    packager: '/packager',
+    terminal: '/terminal'
   }
 
   return sidebarIcons.visible.map((icon) => {

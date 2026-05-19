@@ -12,7 +12,7 @@ import { useAppDispatch } from '@renderer/store'
 import { setSidebarIcons } from '@renderer/store/settings'
 import { SidebarIcon } from '@renderer/types'
 import { message } from 'antd'
-import { FileSearch, Folder, MessageSquareQuote, Package, Sparkle } from 'lucide-react'
+import { FileSearch, Folder, MessageSquareQuote, Package, Sparkle, TerminalSquare } from 'lucide-react'
 import { FC, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
@@ -113,7 +113,8 @@ const SidebarIconsManager: FC<SidebarIconsManagerProps> = ({
       agents: <Sparkle size={16} />,
       knowledge: <FileSearch size={16} />,
       files: <Folder size={15} />,
-      packager: <Package size={16} />
+      packager: <Package size={16} />,
+      terminal: <TerminalSquare size={16} />
     }),
     []
   )

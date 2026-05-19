@@ -4218,6 +4218,10 @@
   "warning": {
     "missing_provider": "The supplier does not exist; reverted to the default supplier {{provider}}. This may cause issues."
   },
+  "terminal": {
+    "title": "Terminal",
+    "comingSoon": "Coming soon"
+  },
   "words": {
     "knowledgeGraph": "Knowledge Graph",
     "quit": "Quit",

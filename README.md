@@ -222,9 +222,9 @@ We believe the Enterprise Edition will become your team's AI productivity engine
 
 - [ublacklist](https://github.com/iorate/ublacklist): Blocks specific sites from appearing in Google search results
 
-This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
 
-For commercial licensing inquiries, please contact: **📧 [license@cherry-ai.com](mailto:license@cherry-ai.com)**
+Third-party component licenses (e.g. Chaterm GPL-3.0, Cline Apache-2.0) are listed in [LICENSES/](LICENSES/) and [NOTICE](NOTICE).
 
 ---
 
@@ -252,8 +252,8 @@ For commercial licensing inquiries, please contact: **📧 [license@cherry-ai.co
 
 <!-- Links & Images -->
 
-[license-shield]: https://img.shields.io/badge/License-AGPLv3-important.svg?logo=gnu
-[license-link]: https://www.gnu.org/licenses/agpl-3.0
+[license-shield]: https://img.shields.io/badge/License-GPLv3-important.svg?logo=gnu
+[license-link]: https://www.gnu.org/licenses/gpl-3.0
 [commercial-shield]: https://img.shields.io/badge/License-Contact-white.svg?logoColor=white&logo=telegram&color=blue
 [commercial-link]: mailto:license@cherry-ai.com?subject=Commercial%20License%20Inquiry
 [sponsor-shield]: https://img.shields.io/badge/Sponsor-FF6699.svg?logo=githubsponsors&logoColor=white

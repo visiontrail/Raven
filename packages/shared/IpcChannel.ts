@@ -320,5 +320,20 @@ export enum IpcChannel {
   TRACE_ADD_STREAM_MESSAGE = 'trace:addStreamMessage',
 
   // CodeTools
-  CodeTools_Run = 'code-tools:run'
+  CodeTools_Run = 'code-tools:run',
+
+  // Raven LLM Bridge — exposed to trusted webview consumers (e.g. embedded Chaterm)
+  // Stream responses use dynamic channel 'raven:llm:stream:<requestId>' (not enumerated here)
+  Raven_LLM_ListAvailableModels = 'raven:llm:listAvailableModels',
+  Raven_LLM_CreateMessage = 'raven:llm:createMessage',
+  Raven_LLM_Abort = 'raven:llm:abort',
+
+  // Raven UI Bridge — exposed to trusted webview consumers
+  Raven_UI_Navigate = 'raven:ui:navigate',
+  Raven_UI_ThemeChanged = 'raven:ui:theme-changed',
+  Raven_UI_LocaleChanged = 'raven:ui:locale-changed'
+
+  // NOTE: Chaterm internal channels use the 'chaterm:' prefix.
+  // They are defined in ChatermProcessService, NOT enumerated here,
+  // to avoid coupling the Raven IpcChannel enum to Chaterm's internal API surface.
 }

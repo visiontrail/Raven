@@ -4218,6 +4218,10 @@
   "warning": {
     "missing_provider": "サプライヤーが存在しないため、デフォルトのサプライヤー {{provider}} にロールバックされました。これにより問題が発生する可能性があります。"
   },
+  "terminal": {
+    "title": "ターミナル",
+    "comingSoon": "近日公開"
+  },
   "words": {
     "knowledgeGraph": "ナレッジグラフ",
     "quit": "終了",

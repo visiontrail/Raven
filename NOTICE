@@ -1,0 +1,27 @@
+Raven
+Copyright (c) Raven contributors. All rights reserved.
+
+This product includes software developed by third parties. See the LICENSES/ directory
+for the license texts of individual components.
+
+---
+
+## Chaterm (ChatermForRaven)
+
+Source: third_party/ChatermForRaven/
+License: GNU General Public License v3.0 (see LICENSES/CHATERM-GPL-3.0.md)
+Upstream: https://github.com/visiontrail/ChatermForRaven
+
+Chaterm is embedded as a webview-based SSH terminal tab within Raven.
+Distribution of builds that include Chaterm is subject to the GPL-3.0 or an applicable
+dual-license agreement with the Chaterm authors.
+
+---
+
+## Cline (via Chaterm)
+
+Source: Incorporated in third_party/ChatermForRaven/
+License: Apache License, Version 2.0 (see LICENSES/CLINE-APACHE-2.0.md)
+Upstream: https://github.com/cline/cline
+
+Chaterm's agent loop and provider abstraction layer are derived from the Cline project.

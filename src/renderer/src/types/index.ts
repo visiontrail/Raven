@@ -703,6 +703,7 @@ export type SidebarIcon =
   | 'files'
   | 'packager'
   | 'code_tools'
+  | 'terminal'
 
 export type ExternalToolResult = {
   mcpTools?: MCPTool[]

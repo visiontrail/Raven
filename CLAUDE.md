@@ -49,6 +49,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **WindowService**: Multi-window management (main, mini, selection windows)
 - **ProxyManager**: Network proxy handling
 - **SearchService**: Full-text search capabilities
+- **RavenLLMBridgeService**: LLM bridge exposing `raven:llm:*` IPC channels to trusted webview consumers (e.g. embedded Chaterm); manages sender allowlist and request lifecycle
+- **ChatermProcessService**: Lifecycle management for the embedded Chaterm SSH terminal; validates resources at `resources/chaterm/`, registers the `raven-chaterm://` protocol, and gates the Terminal tab on asset availability
 
 #### AI Core (`src/renderer/src/aiCore/`)
 
@@ -71,7 +73,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Build System
 
-- **Electron-Vite**: Development and build tooling (v4.0.0)
+- **Electron-Vite**: Development and build tooling (v5.0.0); Electron pinned to 41.3.0 to match embedded Chaterm runtime
 - **Rolldown-Vite**: Using experimental rolldown-vite instead of standard vite
 - **Workspaces**: Monorepo structure with `packages/` directory
 - **Multiple Entry Points**: Main app, mini window, selection toolbar
@@ -83,6 +85,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Playwright**: End-to-end testing
 - **Component Testing**: React Testing Library
 - **Coverage**: Available via `yarn test:coverage`
+
+#### Chaterm Embedding (`third_party/ChatermForRaven/`)
+
+Chaterm is an AI-native SSH terminal (Vue 3 + Electron) embedded as a `<webview>` in Raven's Terminal tab (`/terminal`). Key design points:
+
+- **IPC namespaces**: `raven:llm:*` / `raven:ui:*` (Raven → Chaterm bridge); `chaterm:*` (Chaterm internal — sender-validated)
+- **LLM bridge**: Chaterm's AI calls are routed through `RavenLLMBridgeService` so Raven's AiProvider config (API keys, model selection) is reused — Chaterm never manages its own provider credentials in embedded mode
+- **Resource path**: Chaterm build artifacts are placed in `resources/chaterm/` at package time; loaded via the `raven-chaterm://` custom protocol
+- **Chaterm preload**: `resources/chaterm/preload.js` exposes `window.ravenLLM` and `window.ravenUI` to the Chaterm renderer
 
 ### Key Patterns
 

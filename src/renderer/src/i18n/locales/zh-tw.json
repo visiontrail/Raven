@@ -4218,6 +4218,10 @@
   "warning": {
     "missing_provider": "供應商不存在，已回退到預設供應商 {{provider}}。這可能導致問題。"
   },
+  "terminal": {
+    "title": "終端",
+    "comingSoon": "即將推出"
+  },
   "words": {
     "knowledgeGraph": "知識圖譜",
     "quit": "結束",

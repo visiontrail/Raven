@@ -16,6 +16,7 @@ import LaunchpadPage from './pages/launchpad/LaunchpadPage'
 import MinAppsPage from './pages/minapps/MinAppsPage'
 import PaintingsRoutePage from './pages/paintings/PaintingsRoutePage'
 import SettingsPage from './pages/settings/SettingsPage'
+import TerminalPage from './pages/terminal/TerminalPage'
 import TranslatePage from './pages/translate/TranslatePage'
 
 const Router: FC = () => {
@@ -34,6 +35,7 @@ const Router: FC = () => {
         <Route path="/code" element={<CodeToolsPage />} />
         <Route path="/settings/*" element={<SettingsPage />} />
         <Route path="/launchpad" element={<LaunchpadPage />} />
+        <Route path="/terminal" element={<TerminalPage />} />
       </Routes>
     )
   }, [])

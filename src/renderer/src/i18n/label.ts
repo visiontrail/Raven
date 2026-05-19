@@ -142,7 +142,8 @@ const sidebarIconKeyMap = {
   agents: 'agents.title',
   knowledge: 'knowledge.title',
   files: 'files.title',
-  packager: 'packager.title'
+  packager: 'packager.title',
+  terminal: 'terminal.title'
 } as const
 
 export const getSidebarIconLabel = (key: string): string => {
