@@ -29,15 +29,17 @@
 
 ## 4. Raven 主进程 — LLM 桥接服务
 
-- [ ] 4.1 实现 `RavenLLMBridgeService`：维护 `requestId → { abortController, sender }` 表；构造时接收 Raven 的 `AiProviderFactory`
-- [ ] 4.2 注册 `raven:llm:listAvailableModels` handler：调用 Raven providers store，返回 `{providerId, modelId, displayName, capabilities}[]`，过滤掉无 API key 与禁用项
-- [ ] 4.3 注册 `raven:llm:createMessage` handler：sender allowlist 校验；忽略入参中的凭证字段；`modelId` 未指定时取 Raven 默认对话模型；不在 `listAvailableModels` 集合中则返回 `E_MODEL_NOT_AVAILABLE`
-- [ ] 4.4 实现 streaming 适配器：把 `AiProvider.completions()` 的回调/iterator 拆成事件协议（`start | text | tool_use_start | tool_use_delta | tool_use_end | usage | end`），按 `raven:llm:stream:<requestId>` 推送
-- [ ] 4.5 注册 `raven:llm:abort` handler：根据 `requestId` 找到 abortController 调用 abort；之后到达的 provider 事件全部丢弃；1 秒内补发 `end(finishReason=abort)`
-- [ ] 4.6 sender allowlist：注册函数 `bridge.registerAllowedSender(webContentsId)`，在 Chaterm webview 创建后由 `ChatermProcessService` 调用
-- [ ] 4.7 token 统计接入：`usage` 事件触发时调用 Raven 现有 token 统计 store，写入 `source = 'chaterm'`
-- [ ] 4.8 日志规范：`info` 级别记录 `requestId/modelId/source/finishReason/durationMs/promptTokenCount`，**不**记录消息正文
+- [x] 4.1 实现 `RavenLLMBridgeService`：维护 `requestId → { abortController, sender }` 表；构造时接收 Raven 的 `AiProviderFactory`
+- [x] 4.2 注册 `raven:llm:listAvailableModels` handler：调用 Raven providers store，返回 `{providerId, modelId, displayName, capabilities}[]`，过滤掉无 API key 与禁用项
+- [x] 4.3 注册 `raven:llm:createMessage` handler：sender allowlist 校验；忽略入参中的凭证字段；`modelId` 未指定时取 Raven 默认对话模型；不在 `listAvailableModels` 集合中则返回 `E_MODEL_NOT_AVAILABLE`
+- [x] 4.4 实现 streaming 适配器：把 `AiProvider.completions()` 的回调/iterator 拆成事件协议（`start | text | tool_use_start | tool_use_delta | tool_use_end | usage | end`），按 `raven:llm:stream:<requestId>` 推送
+- [x] 4.5 注册 `raven:llm:abort` handler：根据 `requestId` 找到 abortController 调用 abort；之后到达的 provider 事件全部丢弃；1 秒内补发 `end(finishReason=abort)`
+- [x] 4.6 sender allowlist：注册函数 `bridge.registerAllowedSender(webContentsId)`，在 Chaterm webview 创建后由 `ChatermProcessService` 调用
+- [x] 4.7 token 统计接入：`usage` 事件触发时调用 Raven 现有 token 统计 store，写入 `source = 'chaterm'`（提供 `onUsage` 回调注入点；统计 store 的具体接线由渲染层任务完成）
+- [x] 4.8 日志规范：`info` 级别记录 `requestId/modelId/source/finishReason/durationMs/promptTokenCount`，**不**记录消息正文
 - [ ] 4.9 为 Anthropic / OpenAI provider 各写一组流式协议单测（含工具调用、并发、abort）
+  - 桥接层协议单测已完成（sender allowlist、credential 剥离、modelId 校验、text/usage/end 转发、abort 时序、事件丢弃）：[RavenLLMBridgeService.test.ts](src/main/services/__tests__/RavenLLMBridgeService.test.ts)
+  - **待补：** Anthropic / OpenAI 特定的 provider→事件 协议映射单测（需先完成 §3 Chaterm 侧的 raven-bridge handler 或渲染层 AiProvider 适配器）
 - [ ] 4.10 Gemini / Bedrock / 其它 provider 标记为 v1 灰度（在 `listAvailableModels` 中暂用 `capabilities.tools=false` 或不返回），后续 change 解锁
 
 ## 5. Raven 主进程 — Chaterm 进程服务与资源加载
