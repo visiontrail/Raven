@@ -2,6 +2,7 @@ require('dotenv').config()
 const { notarize } = require('@electron/notarize')
 const { execSync } = require('child_process')
 const path = require('path')
+const { verifySignedBinaries } = require('./verify-notarization')
 
 exports.default = async function notarizing(context) {
   if (context.electronPlatformName !== 'darwin') {
@@ -22,11 +23,18 @@ exports.default = async function notarizing(context) {
         `codesign --force --deep --sign - --timestamp=none --entitlements "${entitlementsPath}" "${appPath}"`,
         { stdio: 'inherit' }
       )
+      verifySignedBinaries(appPath, { log: (message) => console.log(`  • ${message}`) })
       console.log('  • Ad-hoc signing complete:', appPath)
     } catch (e) {
       console.warn('  • Ad-hoc signing failed (app may not run on macOS 26+):', e.message)
     }
     return
+  }
+
+  const signatureCheck = verifySignedBinaries(appPath, { log: (message) => console.log(`  • ${message}`) })
+  if (signatureCheck.failures.length > 0) {
+    const files = signatureCheck.failures.map((failure) => `\n    - ${failure.filePath}`).join('')
+    throw new Error(`Unsigned embedded Chaterm native binaries found before notarization:${files}`)
   }
 
   await notarize({

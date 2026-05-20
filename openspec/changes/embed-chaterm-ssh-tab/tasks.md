@@ -25,7 +25,7 @@
 - [x] 3.3 实现 abort 支持：消费者中断时调用 `raven:llm:abort`
 - [x] 3.4 在 `src/main/agent/api/index.ts` 的 `buildApiHandler()` 添加 `raven-bridge` 分支；嵌入模式下默认 provider 强制为 `raven-bridge`，忽略 Chaterm 本地 provider 配置
 - [x] 3.5 单元测试：mock 桥接事件流，验证 `text` / `tool_use_*` / `usage` / `end` 全部正确映射；中止时 `ApiStream` 立即结束并不抛
-- [ ] 3.6 在 Chaterm 设置页隐藏/锁定 Provider 选择、API Key、Base URL、登录入口，并加只读说明文案与"前往 Raven 设置"按钮（按钮通过 `raven:ui:navigate('/settings/providers')` IPC 触发）
+- [x] 3.6 在 Chaterm 设置页隐藏/锁定 Provider 选择、API Key、Base URL、登录入口，并加只读说明文案与"前往 Raven 设置"按钮（按钮通过 `raven:ui:navigate('/settings/providers')` IPC 触发）
 
 ## 4. Raven 主进程 — LLM 桥接服务
 
@@ -78,19 +78,29 @@
 
 ## 7. Chaterm 专用 preload
 
-- [ ] 7.1 在 Chaterm 子模块新建 `src/preload/raven-embedded.ts`：仅暴露 `window.ravenLLM`（`listAvailableModels`、`createMessage`、`abort`、`onStream`）与 `window.ravenUI`（`onThemeChanged`、`onLocaleChanged`、`navigate`）
-- [ ] 7.2 把 Chaterm 原有 preload 中与"账号"、"更新"相关的 API 在嵌入模式下空实现
-- [ ] 7.3 构建后输出到 `out/preload/raven-embedded.js`，并被 Raven `electron-builder` 拷贝到 `resources/chaterm/preload.js`
+- [x] 7.1 在 Chaterm 子模块新建 `src/preload/raven-embedded.ts`：仅暴露 `window.ravenLLM`（`listAvailableModels`、`createMessage`、`abort`、`onStream`）与 `window.ravenUI`（`onThemeChanged`、`onLocaleChanged`、`navigate`）
+  - `src/preload/raven-embedded.ts` / `.d.ts` 已提供 `window.ravenLLM`、`window.ravenUI`、`window.ravenEmbedded`，仅在 `CHATERM_EMBEDDED=1` / `--chaterm-embedded=1` 时通过 `contextBridge` 暴露
+- [x] 7.2 把 Chaterm 原有 preload 中与"账号"、"更新"相关的 API 在嵌入模式下空实现
+  - 嵌入模式主进程注册 no-op IPC stubs：`update:checkUpdate`、`update:download`、`update:quitAndInstall`、`open-external-login` 均返回 skipped（`third_party/ChatermForRaven/src/main/embedded/ipc-stubs.ts`）
+- [x] 7.3 构建后输出到 `out/preload/raven-embedded.js`，并被 Raven `electron-builder` 拷贝到 `resources/chaterm/preload.js`
+  - `node scripts/build-chaterm.js --skip-install` 已验证生成 `out/preload/raven-embedded.js` 并复制为 `resources/chaterm/preload.js`
 
 ## 8. 构建与打包
 
-- [ ] 8.1 Chaterm 子模块的 `electron.vite.config.ts` 添加嵌入模式 build target，渲染产物输出到 `out/renderer/`，preload 输出到 `out/preload/raven-embedded.js`
-- [ ] 8.2 在 Raven 根目录新增脚本 `scripts/build-chaterm.js`：调用子模块构建并把产物 copy 到 `resources/chaterm/`
-- [ ] 8.3 Raven `package.json` 在 `build` 与 `build:mac/win/linux` 之前 `yarn workspace ... run build:embedded` 或直接调用 `scripts/build-chaterm.js`
-- [ ] 8.4 `electron-builder.yml` 增加 `extraResources` 把 `resources/chaterm/**` 投放到打包路径；`asarUnpack` 包含 `**/*.node`
-- [ ] 8.5 构建期版本一致性校验：`scripts/check-electron-version.js` 比对 Raven 与 Chaterm 子模块 `electron` 版本，不一致时 fail-fast (`E_ELECTRON_VERSION_MISMATCH`)
-- [ ] 8.6 扩展 macOS notarize 脚本，递归扫描 `resources/chaterm/**/*.node` 与 `node-pty` helper 二进制，确保都已签名
-- [ ] 8.7 新增 `scripts/verify-notarization.js`，CI 中在发布前运行；任意未签名二进制 → fail
+- [x] 8.1 Chaterm 子模块的 `electron.vite.config.ts` 添加嵌入模式 build target，渲染产物输出到 `out/renderer/`，preload 输出到 `out/preload/raven-embedded.js`
+  - preload rollup inputs 已包含 `raven-embedded`，renderer define 注入 `RENDERER_CHATERM_EMBEDDED`；构建验证通过
+- [x] 8.2 在 Raven 根目录新增脚本 `scripts/build-chaterm.js`：调用子模块构建并把产物 copy 到 `resources/chaterm/`
+  - 脚本支持 `--skip-install` / `--install` 与 `APP_EDITION`，并校验 `index.html` 与 `preload.js`
+- [x] 8.3 Raven `package.json` 在 `build` 与 `build:mac/win/linux` 之前 `yarn workspace ... run build:embedded` 或直接调用 `scripts/build-chaterm.js`
+  - 新增 `prepackage:chaterm`，`build`、`build:no-check`、`build:mac/*`、`build:linux/*` 均先执行版本检查与 Chaterm 构建
+- [x] 8.4 `electron-builder.yml` 增加 `extraResources` 把 `resources/chaterm/**` 投放到打包路径；`asarUnpack` 包含 `**/*.node`
+  - `extraResources` 指向 `resources/chaterm -> chaterm`，`asarUnpack` 包含 `resources/chaterm/**` 与 `**/*.node`
+- [x] 8.5 构建期版本一致性校验：`scripts/check-electron-version.js` 比对 Raven 与 Chaterm 子模块 `electron` 版本，不一致时 fail-fast (`E_ELECTRON_VERSION_MISMATCH`)
+  - `node scripts/check-electron-version.js` 已验证 Raven 与 Chaterm 均为 Electron `41.3.0`
+- [x] 8.6 扩展 macOS notarize 脚本，递归扫描 `resources/chaterm/**/*.node` 与 `node-pty` helper 二进制，确保都已签名
+  - `scripts/notarize.js` 在 ad-hoc signing / notarize 前调用签名校验，扫描 Chaterm resource native 模块与 `node-pty` Mach-O helper
+- [x] 8.7 新增 `scripts/verify-notarization.js`，CI 中在发布前运行；任意未签名二进制 → fail
+  - 新增 `verify:notarization` 脚本，并接入 release/nightly macOS workflow；本地 `node scripts/verify-notarization.js dist` 验证通过
 
 ## 9. 端到端验证
 
