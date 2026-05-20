@@ -4220,7 +4220,11 @@
   },
   "terminal": {
     "title": "Terminal",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "loading": "Loading Terminal…",
+    "crashed": "Terminal crashed",
+    "reload": "Reload",
+    "notAvailable": "Terminal is not available. Chaterm resources not found."
   },
   "words": {
     "knowledgeGraph": "Knowledge Graph",

@@ -8,11 +8,14 @@ import '@main/config'
 import { loggerService } from '@logger'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { replaceDevtoolsFont } from '@main/utils/windowUtil'
-import { app } from 'electron'
+import { IpcChannel } from '@shared/IpcChannel'
+import { app, ipcMain, webContents } from 'electron'
 import installExtension, { REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS } from 'electron-devtools-installer'
 
 import { isDev, isLinux, isWin } from './constant'
 import { registerIpc } from './ipc'
+import { ChatermProcessService } from './services/ChatermProcessService'
+import { registerChatermProtocolScheme } from './services/chaterm/protocol'
 import { configManager } from './services/ConfigManager'
 import mcpService from './services/MCPService'
 import { nodeTraceService } from './services/NodeTraceService'
@@ -23,6 +26,7 @@ import {
   registerProtocolClient,
   setupAppImageDeepLink
 } from './services/ProtocolClient'
+import { RavenLLMBridgeService } from './services/RavenLLMBridgeService'
 import selectionService, { initSelectionService } from './services/SelectionService'
 import { registerShortcuts } from './services/ShortcutService'
 import { TrayService } from './services/TrayService'
@@ -97,6 +101,15 @@ if (!isDev) {
   })
 }
 
+// Privileged scheme registration MUST happen before app.whenReady() — Electron
+// freezes the scheme list at ready time.
+registerChatermProtocolScheme()
+
+// Long-lived services. Constructed before whenReady so quit hooks can reach them
+// even on a failure during initialization.
+const ravenLLMBridgeService = new RavenLLMBridgeService()
+const chatermProcessService = new ChatermProcessService({ bridge: ravenLLMBridgeService })
+
 // Check for single instance lock
 if (!app.requestSingleInstanceLock()) {
   app.quit()
@@ -157,6 +170,48 @@ if (!app.requestSingleInstanceLock()) {
     } catch (error) {
       logger.error('Failed to initialize packaging service:', error as Error)
     }
+
+    // Initialize Raven LLM bridge & Chaterm process service (no-op if Chaterm
+    // assets are missing). Per spec §D9 a missing resources/chaterm/ MUST NOT
+    // crash Raven — assets check inside start() handles that.
+    try {
+      ravenLLMBridgeService.start()
+      await chatermProcessService.start()
+      logger.info('Chaterm process service started', { enabled: chatermProcessService.isEnabled() })
+    } catch (error) {
+      logger.error('Failed to start Chaterm process service:', error as Error)
+    }
+
+    // §6: Chaterm renderer↔main IPC handlers (called from Raven renderer, not from the webview)
+    ipcMain.handle(IpcChannel.Chaterm_GetStatus, () => ({
+      isEnabled: chatermProcessService.isEnabled(),
+      hasAssets: chatermProcessService.hasAssets(),
+      preloadPath: chatermProcessService.getPreloadPath()
+    }))
+
+    ipcMain.handle(IpcChannel.Chaterm_AttachWebview, async (_event, webContentsId: number) => {
+      const wc = webContents.fromId(webContentsId)
+      if (!wc) {
+        throw new Error(`No webContents found for id=${webContentsId}`)
+      }
+      await chatermProcessService.attachWebview(wc, {
+        onCrashed: (details) => {
+          // Forward crash notification to the Raven renderer so TerminalPage can show the crash UI
+          mainWindow.webContents.send('chaterm:webview-crashed', details)
+        }
+      })
+    })
+
+    ipcMain.handle(IpcChannel.Chaterm_DetachWebview, async () => {
+      await chatermProcessService.detachWebview('renderer-requested')
+    })
+
+    // Forward raven:ui:navigate from Chaterm webview → Raven renderer.
+    // Chaterm preload calls ipcRenderer.send('raven:ui:navigate', path) which
+    // arrives here via the main process; we relay it to the host window.
+    ipcMain.on(IpcChannel.Raven_UI_Navigate, (_event, path: string) => {
+      mainWindow.webContents.send(IpcChannel.Raven_UI_Navigate, path)
+    })
   })
 
   registerProtocolClient(app)
@@ -207,6 +262,13 @@ if (!app.requestSingleInstanceLock()) {
       packagingService.cleanup()
     } catch (error) {
       logger.warn('Error cleaning up MCP service:', error as Error)
+    }
+    // Chaterm cleanup is capped at 3s (spec §5.6) so it never blocks quit.
+    try {
+      await chatermProcessService.destroy()
+      ravenLLMBridgeService.destroy()
+    } catch (error) {
+      logger.warn('Error cleaning up Chaterm services:', error as Error)
     }
     // finish the logger
     logger.finish()

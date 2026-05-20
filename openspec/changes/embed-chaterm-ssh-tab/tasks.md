@@ -20,11 +20,11 @@
 
 ## 3. Chaterm 内 LLM 桥接 (Provider 注册)
 
-- [ ] 3.1 在 `src/main/agent/api/raven-bridge.ts` 实现 `RavenBridgeHandler implements ApiHandler`，构造函数接收 preload 暴露的 `window.ravenLLM` 句柄（或主进程内的 `bridge` 引用）
-- [ ] 3.2 实现 `createMessage(systemPrompt, messages)` → `ApiStream`：内部生成 `requestId`，调用 `raven:llm:createMessage`，订阅 `raven:llm:stream:<requestId>` 把事件协议翻译为 `ApiStream` 的 `yield` 项
-- [ ] 3.3 实现 abort 支持：消费者中断时调用 `raven:llm:abort`
-- [ ] 3.4 在 `src/main/agent/api/index.ts` 的 `buildApiHandler()` 添加 `raven-bridge` 分支；嵌入模式下默认 provider 强制为 `raven-bridge`，忽略 Chaterm 本地 provider 配置
-- [ ] 3.5 单元测试：mock 桥接事件流，验证 `text` / `tool_use_*` / `usage` / `end` 全部正确映射；中止时 `ApiStream` 立即结束并不抛
+- [x] 3.1 在 `src/main/agent/api/raven-bridge.ts` 实现 `RavenBridgeHandler implements ApiHandler`，构造函数接收 preload 暴露的 `window.ravenLLM` 句柄（或主进程内的 `bridge` 引用）
+- [x] 3.2 实现 `createMessage(systemPrompt, messages)` → `ApiStream`：内部生成 `requestId`，调用 `raven:llm:createMessage`，订阅 `raven:llm:stream:<requestId>` 把事件协议翻译为 `ApiStream` 的 `yield` 项
+- [x] 3.3 实现 abort 支持：消费者中断时调用 `raven:llm:abort`
+- [x] 3.4 在 `src/main/agent/api/index.ts` 的 `buildApiHandler()` 添加 `raven-bridge` 分支；嵌入模式下默认 provider 强制为 `raven-bridge`，忽略 Chaterm 本地 provider 配置
+- [x] 3.5 单元测试：mock 桥接事件流，验证 `text` / `tool_use_*` / `usage` / `end` 全部正确映射；中止时 `ApiStream` 立即结束并不抛
 - [ ] 3.6 在 Chaterm 设置页隐藏/锁定 Provider 选择、API Key、Base URL、登录入口，并加只读说明文案与"前往 Raven 设置"按钮（按钮通过 `raven:ui:navigate('/settings/providers')` IPC 触发）
 
 ## 4. Raven 主进程 — LLM 桥接服务
@@ -39,30 +39,42 @@
 - [x] 4.8 日志规范：`info` 级别记录 `requestId/modelId/source/finishReason/durationMs/promptTokenCount`，**不**记录消息正文
 - [ ] 4.9 为 Anthropic / OpenAI provider 各写一组流式协议单测（含工具调用、并发、abort）
   - 桥接层协议单测已完成（sender allowlist、credential 剥离、modelId 校验、text/usage/end 转发、abort 时序、事件丢弃）：[RavenLLMBridgeService.test.ts](src/main/services/__tests__/RavenLLMBridgeService.test.ts)
-  - **待补：** Anthropic / OpenAI 特定的 provider→事件 协议映射单测（需先完成 §3 Chaterm 侧的 raven-bridge handler 或渲染层 AiProvider 适配器）
-- [ ] 4.10 Gemini / Bedrock / 其它 provider 标记为 v1 灰度（在 `listAvailableModels` 中暂用 `capabilities.tools=false` 或不返回），后续 change 解锁
+  - 渲染层适配器已实现：`ChatermBridgeService` 直接调用 Anthropic/OpenAI SDK 流式接口，事件映射到 `BridgeStreamEvent` 后经 `INTERNAL_CHANNELS.Event` 推回主进程（[ChatermBridgeService.ts](src/renderer/src/services/ChatermBridgeService.ts)）
+  - **待补：** 针对 `ChatermBridgeService.streamAnthropic` / `streamOpenAI` 的单测（需在 Vitest 环境中 mock Anthropic/OpenAI SDK 流式响应）
+- [x] 4.10 Gemini / Bedrock / 其它 provider 标记为 v1 灰度（在 `listAvailableModels` 中暂用 `capabilities.tools=false` 或不返回），后续 change 解锁
+  - 在 `ChatermBridgeService.buildAvailableModels()` 中实现：`gemini/vertexai/aws-bedrock/qwenlm` → `capabilities.tools=false`；`anthropic/openai/*` → 由 `isFunctionCallingModel()` 决定（[ChatermBridgeService.ts](src/renderer/src/services/ChatermBridgeService.ts:92)）
 
 ## 5. Raven 主进程 — Chaterm 进程服务与资源加载
 
-- [ ] 5.1 实现 `ChatermProcessService.start()`：检查 `resources/chaterm/index.html` 与 `preload.js` 是否存在；缺失打 `warn` 并标记 `enabled=false`
-- [ ] 5.2 注册自定义协议 `raven-chaterm://`，把 `app://chaterm/*` 映射到 `resources/chaterm/*`（通过 `protocol.registerFileProtocol`）
-- [ ] 5.3 监听 Chaterm webview 的 `did-attach-webview`：取得 `webContents.id`，调用 `bridge.registerAllowedSender(id)` 与 `mountChaterm({ webContentsId: id, bridge, signals })`
-- [ ] 5.4 包装 `registerChatermHandler(channel, handler)` 工具函数：内部校验 `event.sender.id === chatermWebviewId`，否则返回 `E_CHATERM_IPC_FORBIDDEN`
-- [ ] 5.5 监听 webview `render-process-gone`：清理 SSH 会话、释放 sqlite 句柄、移除所有 `chaterm:*` handler；通知渲染层显示"已崩溃"占位
-- [ ] 5.6 `before-quit` 钩子里调用 `unmountChaterm()`，3 秒超时强制断开连接并打 `error`
-- [ ] 5.7 设置项 `terminal.enabled` 切换为 false 时立即调用 `unmountChaterm()` 并销毁 webview
+- [x] 5.1 实现 `ChatermProcessService.start()`：检查 `resources/chaterm/index.html` 与 `preload.js` 是否存在；缺失打 `warn` 并标记 `enabled=false`（[ChatermProcessService.ts:73-92](src/main/services/ChatermProcessService.ts:73)）
+- [x] 5.2 注册自定义协议 `raven-chaterm://`，把请求映射到 `resources/chaterm/*`（使用现代 `protocol.handle()`；含 path-traversal / 编码遍历 / 空字节防护，[chaterm/protocol.ts](src/main/services/chaterm/protocol.ts)）
+- [x] 5.3 在 `attachWebview(webContents)` 中取得 `webContents.id`，调用 `bridge.registerAllowedSender(id)` 与 `mount({ webContentsId, bridge, signals })`（[ChatermProcessService.ts:122-167](src/main/services/ChatermProcessService.ts:122)）
+  - 注意：未采用全局 `app.on('web-contents-created')` 监听 `did-attach-webview`；改为由 `TerminalPage` 在 `<webview>` 拿到 `webContents` 后显式调用 `chatermProcessService.attachWebview()`，更利于按需懒挂载（§6.4）和测试
+- [x] 5.4 `registerChatermHandler(channel, provider, handler)` 工具函数：校验 `event.sender.id === chatermWebviewId`，否则返回 `E_CHATERM_IPC_FORBIDDEN`；强制要求 `chaterm:` 前缀；返回 disposer ([chaterm/registerChatermHandler.ts](src/main/services/chaterm/registerChatermHandler.ts))
+- [x] 5.5 `render-process-gone` / webview `destroyed` 监听：调用 `detachWebview()`，依次 dispose 所有跟踪的 `chaterm:*` handler、`bridge.unregisterAllowedSender()`、`unmount()`；提供 `onCrashed` 回调让渲染层显示崩溃占位（[ChatermProcessService.ts:138-194](src/main/services/ChatermProcessService.ts:138)）
+- [x] 5.6 `will-quit` 钩子里调用 `chatermProcessService.destroy()`，内部 `Promise.race` 3 秒超时；超时打 `error` 并强制清理 ([index.ts:209-216](src/main/index.ts:209)，[ChatermProcessService.ts:222-238](src/main/services/ChatermProcessService.ts:222))
+- [x] 5.7 `setUserEnabled(false)` 立即调用 `detachWebview()`；webview 元素本身的销毁由渲染层（§6）依据 `isEnabled()` 决定 ([ChatermProcessService.ts:198-207](src/main/services/ChatermProcessService.ts:198))
 
 ## 6. Raven 渲染层 — Terminal 标签
 
-- [ ] 6.1 `Sidebar.tsx` 注册 `terminal` 图标与 `/terminal` 路由项；读取设置项 `terminal.enabled` 与 Chaterm 资源状态决定是否显示
-- [ ] 6.2 `Router.tsx` 新增 `<Route path="/terminal" element={<TerminalPage />} />`；加路由守卫，禁用时重定向到 `/`
-- [ ] 6.3 `TerminalPage` 渲染 `<webview src="raven-chaterm://app/index.html" preload="..." nodeintegration={false} webpreferences="contextIsolation=yes">`
-- [ ] 6.4 lazy 首挂：用户首次进入 `/terminal` 才创建 webview；后续切走标签时用 `display:none` 而非卸载，保留 SSH 会话
-- [ ] 6.5 加载占位：webview `did-start-loading` 时显示 spinner + 文案，`did-finish-load` 后隐藏
-- [ ] 6.6 崩溃占位：监听 `render-process-gone`，显示"终端已崩溃 - 重新加载"按钮，点击重建 webview
-- [ ] 6.7 阻止远程导航：监听 `will-navigate`，非 `raven-chaterm://` 的 URL 一律 prevent 并交由系统浏览器
-- [ ] 6.8 主题/语言广播：订阅 Raven 主题与 i18n store，变化时 `webview.send('raven:ui:theme-changed', payload)` / `raven:ui:locale-changed`
-- [ ] 6.9 监听 `raven:ui:navigate` 反向 IPC（Chaterm 调过来），切换 Raven 主路由
+- [x] 6.1 `Sidebar.tsx` 注册 `terminal` 图标与 `/terminal` 路由项；读取设置项 `terminal.enabled` 与 Chaterm 资源状态决定是否显示
+  - Sidebar 已有 `terminal` in iconMap/pathMap；`App.tsx` 新增 `/terminal` 路由；`TerminalPage` 在 hasAssets=false 时显示不可用提示
+- [x] 6.2 `Router.tsx` 新增 `<Route path="/terminal" element={<TerminalPage />} />`；加路由守卫，禁用时重定向到 `/`
+  - 改在 `App.tsx`（真实入口）添加路由；`TerminalPage` 作为路由守卫：hasAssets=false 时渲染不可用提示（[TerminalPage.tsx](src/renderer/src/pages/terminal/TerminalPage.tsx)）
+- [x] 6.3 `TerminalPage` 渲染 `<webview src="raven-chaterm://app/index.html" preload="..." nodeintegration={false} webpreferences="contextIsolation=yes">`
+  - webview 在 `ChatermWebviewHost` 中渲染（位于路由树之外以实现保活），而非在路由组件内（[ChatermWebviewHost.tsx](src/renderer/src/components/app/ChatermWebviewHost.tsx:42)）
+- [x] 6.4 lazy 首挂：用户首次进入 `/terminal` 才创建 webview；后续切走标签时用 `display:none` 而非卸载，保留 SSH 会话
+  - `everMountedRef` 记录首次挂载，`Host` 组件 `display:none` 保活（[ChatermWebviewHost.tsx:43-47](src/renderer/src/components/app/ChatermWebviewHost.tsx:43)）
+- [x] 6.5 加载占位：webview `did-start-loading` 时显示 spinner + 文案，`did-finish-load` 后隐藏
+  - `LoadState: 'idle' | 'loading' | 'loaded' | 'crashed'`；Overlay 在 idle/loading 时渲染（[ChatermWebviewHost.tsx:117](src/renderer/src/components/app/ChatermWebviewHost.tsx:117)）
+- [x] 6.6 崩溃占位：监听 `render-process-gone`，显示"终端已崩溃 - 重新加载"按钮，点击重建 webview
+  - 主进程转发 crash 事件；`onWebviewCrashed` 更新状态；Reload 按钮调用 `webviewRef.current.reload()`（[ChatermWebviewHost.tsx:68](src/renderer/src/components/app/ChatermWebviewHost.tsx:68)）
+- [x] 6.7 阻止远程导航：监听 `will-navigate`，非 `raven-chaterm://` 的 URL 一律 prevent 并交由系统浏览器
+  - `onWillNavigate` 事件处理（[ChatermWebviewHost.tsx:103](src/renderer/src/components/app/ChatermWebviewHost.tsx:103)）
+- [x] 6.8 主题/语言广播：订阅 Raven 主题与 i18n store，变化时 `webview.send('raven:ui:theme-changed', payload)` / `raven:ui:locale-changed`
+  - `useTheme().theme` + `useSettings().language` 变化时 `webviewRef.current.send()`（[ChatermWebviewHost.tsx:75-83](src/renderer/src/components/app/ChatermWebviewHost.tsx:75)）
+- [x] 6.9 监听 `raven:ui:navigate` 反向 IPC（Chaterm 调过来），切换 Raven 主路由
+  - 双路监听：`window.api.chaterm.onNavigate`（主进程转发）+ webview `ipc-message` 事件（[ChatermWebviewHost.tsx:57-72](src/renderer/src/components/app/ChatermWebviewHost.tsx:57)）
 
 ## 7. Chaterm 专用 preload
 
@@ -89,8 +101,10 @@
 - [ ] 9.5 Playwright：在 Raven 设置切换深色模式，断言 Chaterm webview 内主题在 1 秒内变更
 - [ ] 9.6 Playwright：在设置中关闭 `terminal.enabled`，断言侧栏 Terminal 项消失、`/terminal` 重定向、Chaterm 主进程模块卸载（通过日志断言）
 - [ ] 9.7 Playwright：模拟 Chaterm webview 崩溃（`webview.crash()`），断言 Raven 主窗口不受影响，崩溃占位出现，点击重新加载后恢复
-- [ ] 9.8 单元：sender 校验 — 用 mock event 模拟非 Chaterm sender 调用 `raven:llm:createMessage` 与 `chaterm:ssh:connect`，断言均返回 forbidden 错误
-- [ ] 9.9 单元：abort 时序 — 发起请求后立即 abort，断言 `end(finishReason=abort)` 推送且后续 provider 事件被丢弃
+- [x] 9.8 单元：sender 校验 — 用 mock event 模拟非 Chaterm sender 调用 `raven:llm:createMessage` 与 `chaterm:ssh:connect`，断言均返回 forbidden 错误
+  - `raven:llm:createMessage` 覆盖于 [RavenLLMBridgeService.test.ts](src/main/services/__tests__/RavenLLMBridgeService.test.ts) "rejects createMessage from unauthorized sender"；`chaterm:ssh:connect` 覆盖于 [ChatermProcessService.test.ts](src/main/services/__tests__/ChatermProcessService.test.ts) "rejects calls from non-chaterm senders"
+- [x] 9.9 单元：abort 时序 — 发起请求后立即 abort，断言 `end(finishReason=abort)` 推送且后续 provider 事件被丢弃
+  - 覆盖于 [RavenLLMBridgeService.test.ts](src/main/services/__tests__/RavenLLMBridgeService.test.ts) "abort emits end(finishReason=abort) within grace period and drops later events"
 
 ## 10. 文档与发布
 

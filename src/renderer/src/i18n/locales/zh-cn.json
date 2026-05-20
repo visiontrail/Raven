@@ -4220,7 +4220,11 @@
   },
   "terminal": {
     "title": "终端",
-    "comingSoon": "即将推出"
+    "comingSoon": "即将推出",
+    "loading": "正在加载终端…",
+    "crashed": "终端已崩溃",
+    "reload": "重新加载",
+    "notAvailable": "终端不可用。未找到 Chaterm 资源文件。"
   },
   "words": {
     "knowledgeGraph": "知识图谱",

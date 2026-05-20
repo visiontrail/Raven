@@ -1,27 +1,25 @@
 /**
  * Raven LLM Bridge — protocol types and error codes.
  *
- * The bridge exposes Raven-configured LLM providers to trusted webview consumers
- * (initially: embedded Chaterm) via the `raven:llm:*` IPC namespace. This module
- * defines the wire shapes; the runtime lives in `../RavenLLMBridgeService.ts`.
+ * Wire-protocol types (BridgeStreamEvent, AvailableModel, CreateMessageRequest,
+ * INTERNAL_CHANNELS, etc.) live in the shared package so the renderer-side
+ * ChatermBridgeService can import them without crossing build-target boundaries.
  */
 
-export type FinishReason = 'stop' | 'length' | 'tool_use' | 'abort' | 'error'
+// Re-export shared wire types so existing imports within the main process
+// continue to work without modification.
+export type {
+  AvailableModel,
+  BridgeMessage,
+  BridgeStreamEvent,
+  CreateMessageAck,
+  CreateMessageRequest,
+  FinishReason,
+  ModelCapabilities
+} from '@shared/chaterm-bridge'
+export { INTERNAL_CHANNELS, streamChannelFor } from '@shared/chaterm-bridge'
 
-export type BridgeStreamEvent =
-  | { type: 'start'; modelId: string; createdAt: number }
-  | { type: 'text'; delta: string }
-  | { type: 'tool_use_start'; toolCallId: string; name: string; partialInput?: string }
-  | { type: 'tool_use_delta'; toolCallId: string; inputJsonDelta: string }
-  | { type: 'tool_use_end'; toolCallId: string; finalInput: unknown }
-  | {
-      type: 'usage'
-      inputTokens: number
-      outputTokens: number
-      cacheRead?: number
-      cacheWrite?: number
-    }
-  | { type: 'end'; finishReason: FinishReason; error?: string }
+// ---------- Main-process-only types ----------
 
 export const BRIDGE_ERROR_CODES = {
   BRIDGE_FORBIDDEN: 'E_BRIDGE_FORBIDDEN',
@@ -43,57 +41,7 @@ export class BridgeError extends Error {
   }
 }
 
-export interface ModelCapabilities {
-  tools: boolean
-  vision: boolean
-  streaming: boolean
-}
-
-export interface AvailableModel {
-  providerId: string
-  modelId: string
-  displayName: string
-  capabilities: ModelCapabilities
-}
-
-export interface BridgeMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool'
-  content: unknown
-}
-
-export interface CreateMessageRequest {
-  requestId: string
-  systemPrompt?: string
-  messages: BridgeMessage[]
-  tools?: unknown[]
-  modelId?: string
-  /**
-   * Fields the bridge MUST ignore even if a caller sets them. The bridge always
-   * uses Raven-configured credentials.
-   */
-  apiKey?: never
-  baseURL?: never
-}
-
-export interface CreateMessageAck {
-  requestId: string
-}
-
-/**
- * Stream channel name for a given request. Dynamic — not enumerated in IpcChannel.
- */
-export const streamChannelFor = (requestId: string): string => `raven:llm:stream:${requestId}`
-
-/**
- * Internal channels used between the main process bridge and Raven's main renderer
- * (where AiProvider lives). Not exposed to webviews.
- */
-export const INTERNAL_CHANNELS = {
-  ListModels: 'raven:llm:internal:list-models',
-  Execute: 'raven:llm:internal:execute',
-  Event: 'raven:llm:internal:event',
-  Abort: 'raven:llm:internal:abort'
-} as const
+import type { AvailableModel, BridgeStreamEvent, CreateMessageRequest } from '@shared/chaterm-bridge'
 
 /**
  * Pluggable provider interface used by the bridge to fan out a request.

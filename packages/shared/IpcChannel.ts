@@ -331,7 +331,12 @@ export enum IpcChannel {
   // Raven UI Bridge — exposed to trusted webview consumers
   Raven_UI_Navigate = 'raven:ui:navigate',
   Raven_UI_ThemeChanged = 'raven:ui:theme-changed',
-  Raven_UI_LocaleChanged = 'raven:ui:locale-changed'
+  Raven_UI_LocaleChanged = 'raven:ui:locale-changed',
+
+  // Chaterm renderer ↔ main process channels (called from Raven renderer, NOT from webview)
+  Chaterm_GetStatus = 'chaterm:getStatus',
+  Chaterm_AttachWebview = 'chaterm:attachWebview',
+  Chaterm_DetachWebview = 'chaterm:detachWebview'
 
   // NOTE: Chaterm internal channels use the 'chaterm:' prefix.
   // They are defined in ChatermProcessService, NOT enumerated here,

@@ -2,6 +2,7 @@ import KeyvStorage from '@kangfenmao/keyv-storage'
 import { loggerService } from '@logger'
 
 import { startAutoSync } from './services/BackupService'
+import chatermBridgeService from './services/ChatermBridgeService'
 import { deviceCapabilitiesSyncService } from './services/DeviceCapabilitiesSyncService'
 import { deviceLinkHandler } from './services/DeviceLinkHandler'
 import { deviceLogMonitorService } from './services/DeviceLogMonitorService'
@@ -72,3 +73,5 @@ initWebTrace()
 initDeviceLogMonitor()
 initDeviceLinkHandler()
 initDeviceCapabilitiesSync()
+chatermBridgeService.start()
+window.addEventListener('beforeunload', () => chatermBridgeService.stop())

@@ -470,6 +470,24 @@ const api = {
     deleteFiles: (ftpConfig: any, remotePaths: string[]) =>
       ipcRenderer.invoke(IpcChannel.FTP_DeleteFiles, ftpConfig, remotePaths),
     testConnection: (ftpConfig: any) => ipcRenderer.invoke(IpcChannel.FTP_TestConnection, ftpConfig)
+  },
+  chaterm: {
+    getStatus: (): Promise<{ isEnabled: boolean; hasAssets: boolean; preloadPath: string }> =>
+      ipcRenderer.invoke(IpcChannel.Chaterm_GetStatus),
+    attachWebview: (webContentsId: number): Promise<void> =>
+      ipcRenderer.invoke(IpcChannel.Chaterm_AttachWebview, webContentsId),
+    detachWebview: (): Promise<void> => ipcRenderer.invoke(IpcChannel.Chaterm_DetachWebview),
+    onWebviewCrashed: (callback: (details: Electron.RenderProcessGoneDetails) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, details: Electron.RenderProcessGoneDetails) =>
+        callback(details)
+      ipcRenderer.on('chaterm:webview-crashed', listener)
+      return () => ipcRenderer.removeListener('chaterm:webview-crashed', listener)
+    },
+    onNavigate: (callback: (path: string) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, path: string) => callback(path)
+      ipcRenderer.on(IpcChannel.Raven_UI_Navigate, listener)
+      return () => ipcRenderer.removeListener(IpcChannel.Raven_UI_Navigate, listener)
+    }
   }
 }
 

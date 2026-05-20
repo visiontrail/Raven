@@ -10,6 +10,7 @@ import { Provider } from 'react-redux'
 import { HashRouter, Route, Routes } from 'react-router-dom'
 import { PersistGate } from 'redux-persist/integration/react'
 
+import ChatermWebviewHost from './components/app/ChatermWebviewHost'
 import Sidebar from './components/app/Sidebar'
 import TopViewContainer from './components/TopView'
 import AntdProvider from './context/AntdProvider'
@@ -24,6 +25,7 @@ import HomePage from './pages/home/HomePage'
 import KnowledgePage from './pages/knowledge/KnowledgePage'
 import PackagerPage from './pages/Packager/Packager'
 import SettingsPage from './pages/settings/SettingsPage'
+import TerminalPage from './pages/terminal/TerminalPage'
 
 const logger = loggerService.withContext('App')
 
@@ -70,8 +72,12 @@ function App(): React.ReactElement {
                           <Route path="/knowledge" element={<KnowledgePage />} />
                           <Route path="/packager/*" element={<PackagerPage />} />
                           <Route path="/settings/*" element={<SettingsPage />} />
+                          {/* §6.1/6.2: Terminal tab — ChatermWebviewHost renders the webview */}
+                          <Route path="/terminal" element={<TerminalPage />} />
                         </Routes>
                       </React.Suspense>
+                      {/* §6.4: Persistent webview host outside Routes keeps SSH sessions alive */}
+                      <ChatermWebviewHost />
                     </HashRouter>
                   </TopViewContainer>
                 </PersistGate>
