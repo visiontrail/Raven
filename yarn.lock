@@ -16906,12 +16906,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-abi@npm:4.12.0":
-  version: 4.12.0
-  resolution: "node-abi@npm:4.12.0"
+"node-abi@npm:4.31.0":
+  version: 4.31.0
+  resolution: "node-abi@npm:4.31.0"
   dependencies:
     semver: "npm:^7.6.3"
-  checksum: 10c0/78a0697b1ea7da95bee5465d92772a883fb829ae01e89cf2b60c2af79bf784e422cdde9cc2f15684d5bafb9a0ac3d8e16292520107dc36eff30c541e23ac9fb7
+  checksum: 10c0/d08fcb9d01f51eacba3fccc10a70b2a92b646220e9a020e17213510dc5b3b2d508fc518070df743f45dd92bf6db05ef8c390b9df341e8204f6a82e2d4ced735d
   languageName: node
   linkType: hard
 
