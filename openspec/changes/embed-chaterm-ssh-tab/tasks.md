@@ -37,10 +37,10 @@
 - [x] 4.6 sender allowlist：注册函数 `bridge.registerAllowedSender(webContentsId)`，在 Chaterm webview 创建后由 `ChatermProcessService` 调用
 - [x] 4.7 token 统计接入：`usage` 事件触发时调用 Raven 现有 token 统计 store，写入 `source = 'chaterm'`（提供 `onUsage` 回调注入点；统计 store 的具体接线由渲染层任务完成）
 - [x] 4.8 日志规范：`info` 级别记录 `requestId/modelId/source/finishReason/durationMs/promptTokenCount`，**不**记录消息正文
-- [ ] 4.9 为 Anthropic / OpenAI provider 各写一组流式协议单测（含工具调用、并发、abort）
+- [x] 4.9 为 Anthropic / OpenAI provider 各写一组流式协议单测（含工具调用、并发、abort）
   - 桥接层协议单测已完成（sender allowlist、credential 剥离、modelId 校验、text/usage/end 转发、abort 时序、事件丢弃）：[RavenLLMBridgeService.test.ts](src/main/services/__tests__/RavenLLMBridgeService.test.ts)
   - 渲染层适配器已实现：`ChatermBridgeService` 直接调用 Anthropic/OpenAI SDK 流式接口，事件映射到 `BridgeStreamEvent` 后经 `INTERNAL_CHANNELS.Event` 推回主进程（[ChatermBridgeService.ts](src/renderer/src/services/ChatermBridgeService.ts)）
-  - **待补：** 针对 `ChatermBridgeService.streamAnthropic` / `streamOpenAI` 的单测（需在 Vitest 环境中 mock Anthropic/OpenAI SDK 流式响应）
+  - 已补 `ChatermBridgeService.test.ts`：mock Anthropic/OpenAI SDK 流式响应，覆盖工具调用、usage、finishReason、并发隔离、abort 后事件丢弃
 - [x] 4.10 Gemini / Bedrock / 其它 provider 标记为 v1 灰度（在 `listAvailableModels` 中暂用 `capabilities.tools=false` 或不返回），后续 change 解锁
   - 在 `ChatermBridgeService.buildAvailableModels()` 中实现：`gemini/vertexai/aws-bedrock/qwenlm` → `capabilities.tools=false`；`anthropic/openai/*` → 由 `isFunctionCallingModel()` 决定（[ChatermBridgeService.ts](src/renderer/src/services/ChatermBridgeService.ts:92)）
 
