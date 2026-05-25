@@ -3,7 +3,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { loggerService } from '@logger'
-import type { WebContents } from 'electron'
+import { app, type WebContents } from 'electron'
 
 import { getResourcePath } from '../utils'
 import { registerChatermProtocolHandler, unregisterChatermProtocolHandler } from './chaterm/protocol'
@@ -62,7 +62,13 @@ export class ChatermProcessService implements ChatermWebviewIdProvider {
     this.bridge = options.bridge
     this.mount = options.mount ?? noopMount
     this.unmount = options.unmount ?? noopUnmount
-    this.resourcesPath = options.resourcesPath ?? path.join(getResourcePath(), 'chaterm')
+    // In packaged apps chaterm lands at process.resourcesPath/chaterm (extraResources).
+    // In dev it lives under the project tree at app.getAppPath()/resources/chaterm.
+    this.resourcesPath = options.resourcesPath ?? (
+      app.isPackaged
+        ? path.join(process.resourcesPath, 'chaterm')
+        : path.join(getResourcePath(), 'chaterm')
+    )
   }
 
   // ---------- §5.1: assets check & startup ----------

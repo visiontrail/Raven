@@ -25,6 +25,7 @@ const SUBMODULE = path.join(REPO_ROOT, 'third_party', 'ChatermForRaven')
 const OUT_RENDERER = path.join(SUBMODULE, 'out', 'renderer')
 const OUT_PRELOAD = path.join(SUBMODULE, 'out', 'preload', 'raven-embedded.js')
 const OUT_PRELOAD_MAP = path.join(SUBMODULE, 'out', 'preload', 'raven-embedded.js.map')
+const OUT_PRELOAD_INDEX = path.join(SUBMODULE, 'out', 'preload', 'index.js')
 const TARGET_DIR = path.join(REPO_ROOT, 'resources', 'chaterm')
 
 const args = process.argv.slice(2)
@@ -114,6 +115,13 @@ function main() {
   fs.copyFileSync(OUT_PRELOAD, path.join(TARGET_DIR, 'preload.js'))
   if (fs.existsSync(OUT_PRELOAD_MAP)) {
     fs.copyFileSync(OUT_PRELOAD_MAP, path.join(TARGET_DIR, 'preload.js.map'))
+  }
+  // index.js is required by preload.js via require('./index.js')
+  if (fs.existsSync(OUT_PRELOAD_INDEX)) {
+    fs.copyFileSync(OUT_PRELOAD_INDEX, path.join(TARGET_DIR, 'index.js'))
+  } else {
+    console.error(`[build-chaterm] Chaterm preload index.js missing: ${OUT_PRELOAD_INDEX}`)
+    process.exit(1)
   }
 
   // index.html sanity check — Raven's ChatermProcessService.start() gates the

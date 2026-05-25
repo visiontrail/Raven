@@ -91,7 +91,11 @@ const ChatermWebviewHost: FC = () => {
 
       // §6.5: loading indicators
       const onStartLoading = () => setLoadState('loading')
-      const onFinishLoad = () => {
+      let attached = false
+      const markLoaded = (origin: string) => {
+        if (attached) return
+        attached = true
+        console.info('[ChatermWebviewHost] webview loaded via', origin)
         setLoadState('loaded')
         // Attach webview to ChatermProcessService via IPC so the bridge can validate senders
         const id = element.getWebContentsId()
@@ -101,6 +105,25 @@ const ChatermWebviewHost: FC = () => {
         // Send initial theme + locale so Chaterm starts in sync
         element.send(IpcChannel.Raven_UI_ThemeChanged, { theme })
         element.send(IpcChannel.Raven_UI_LocaleChanged, { locale: i18n.language })
+      }
+      const onFinishLoad = () => markLoaded('did-finish-load')
+      // Fallback: dom-ready fires earlier than did-finish-load and is sufficient
+      // for Chaterm — once the document is parsed the renderer has bootstrapped.
+      // Some embedded scenarios delay the window.onload event (e.g. lazy chunks
+      // still in flight), leaving did-finish-load pending forever.
+      const onDomReady = () => markLoaded('dom-ready')
+
+      // §6.5: transition to crashed on load failure so the overlay doesn't hang
+      const onFailLoad = (event: any) => {
+        console.warn('[ChatermWebviewHost] did-fail-load', {
+          errorCode: event.errorCode,
+          errorDescription: event.errorDescription,
+          validatedURL: event.validatedURL
+        })
+        if (event.errorCode !== -3) {
+          // -3 is ERR_ABORTED (user-initiated navigation cancel), not a real failure
+          setLoadState('crashed')
+        }
       }
 
       // §6.7: block remote navigation — only allow raven-chaterm:// URLs
@@ -120,6 +143,8 @@ const ChatermWebviewHost: FC = () => {
 
       element.addEventListener('did-start-loading', onStartLoading)
       element.addEventListener('did-finish-load', onFinishLoad)
+      element.addEventListener('dom-ready', onDomReady)
+      element.addEventListener('did-fail-load', onFailLoad)
       element.addEventListener('will-navigate', onWillNavigate)
       element.addEventListener('ipc-message', onIpcMessage)
     },

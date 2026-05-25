@@ -3,7 +3,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { loggerService } from '@logger'
-import { net, protocol } from 'electron'
+import { net, protocol, session } from 'electron'
 
 const logger = loggerService.withContext('ChatermProtocol')
 
@@ -86,12 +86,19 @@ export function registerChatermProtocolScheme(): void {
   ])
 }
 
+/** Partition name used by the Chaterm webview; must match ChatermWebviewHost.tsx. */
+export const CHATERM_PARTITION = 'persist:chaterm'
+
 /**
  * Register the protocol handler. Must be called after `app.whenReady()`.
  * Idempotent — calling twice replaces the previous handler.
+ *
+ * Registers in BOTH the default session (main BrowserWindow) and the
+ * Chaterm webview's `persist:chaterm` partition session, because
+ * `protocol.handle()` only covers the default session.
  */
 export function registerChatermProtocolHandler(resourcesPath: string): void {
-  protocol.handle(CHATERM_SCHEME, async (request) => {
+  const handler = async (request: Request): Promise<Response> => {
     const filePath = resolveChatermFilePath(request.url, resourcesPath)
     if (!filePath) {
       logger.warn('Rejected chaterm protocol request', { url: request.url })
@@ -102,7 +109,10 @@ export function registerChatermProtocolHandler(resourcesPath: string): void {
       return new Response('not found', { status: STATUS_NOT_FOUND })
     }
     return net.fetch(pathToFileURL(filePath).toString())
-  })
+  }
+
+  protocol.handle(CHATERM_SCHEME, handler)
+  session.fromPartition(CHATERM_PARTITION).protocol.handle(CHATERM_SCHEME, handler)
   logger.info('Chaterm protocol handler registered', { scheme: CHATERM_SCHEME, resourcesPath })
 }
 
@@ -112,5 +122,10 @@ export function unregisterChatermProtocolHandler(): void {
     protocol.unhandle(CHATERM_SCHEME)
   } catch {
     // ignore — unhandle throws if no handler was registered
+  }
+  try {
+    session.fromPartition(CHATERM_PARTITION).protocol.unhandle(CHATERM_SCHEME)
+  } catch {
+    // ignore
   }
 }
