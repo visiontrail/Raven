@@ -8,6 +8,8 @@
 - [ ] 1.6 修改 `src/main/index.ts`：原 `app.whenReady().then(async () => { ... })` body 改为 `await bootstrapChatermMain({ mode: 'standalone' })`；保留窗口创建、托盘、autoUpdater、单实例等独立模式专属逻辑
 - [ ] 1.7 修改 `src/main/embedded.ts`：`mountChaterm` 调 `bootstrapChatermMain({ mode: 'embedded', validateSender: (ev) => ev.sender.id === options.webContentsId })`；保存返回的 `disposers` 到 `mountState`；`unmountChaterm` 反向执行 disposers
 - [ ] 1.8 单测：`bootstrap.test.ts` 验证 (a) 标准模式下注册的 channel 全部命中；(b) 嵌入模式下注册的 channel 全部命中且 sender 校验生效；(c) 同一 channel 二次 `mount` 不抛错；(d) `unmount` 后 `ipcMain.listenerCount` 归零
+- [ ] 1.9 （D9）把 `src/main/index.ts:623` 的 `app.on('before-quit', ...)` 整段用 `if (!isChatermEmbedded())` 包围；同步检查 `app.on('window-all-closed' | 'open-url' | 'second-instance')` 等其它生命周期监听是否已正确门控，未门控的一并补上
+- [ ] 1.10 单测：在 embedded mode 下 require Chaterm main bundle 后，`app.listenerCount('before-quit')` 不包含 Chaterm 注册的监听器（即只剩 Raven 自己的）
 
 ## 2. 准备 — Chaterm 子模块构建产物
 
@@ -34,8 +36,11 @@
 
 - [ ] 5.1 修改 `third_party/ChatermForRaven/src/preload/raven-embedded.ts`：在 `RavenUIApi` 加 `onSession(listener: (payload) => void): () => void`，监听 `IpcRenderer` 上的 `raven:ui:set-session` 事件
 - [ ] 5.2 修改 `src/renderer/src/main.ts`：在 Vue mount 前订阅 `window.ravenUI.onSession`，收到 payload 后写入 localStorage（`login-skipped` / `ctm-token` / `userInfo`），并设置全局 `__ravenSessionReady = true`
-- [ ] 5.3 修改 `src/renderer/src/router/guards.ts`：移除嵌入态硬编码 guest 短路；嵌入模式下 `beforeEach` 等待 `__ravenSessionReady`（轮询或 Promise.race(timeout=3000)）后再继续；超时 fallback 到 guest 模式（保持热修等价行为）并 `logger.error('raven.session.handoff.timeout')`
-- [ ] 5.4 单测 `guards.test.ts`：(a) 收到 session 后正常进入 `/`；(b) 3 秒超时后 fallback 到 guest；(c) 非嵌入模式不受影响
+- [ ] 5.3 修改 `src/renderer/src/router/guards.ts`：移除嵌入态硬编码 guest 短路；嵌入模式下 `beforeEach` 等待 `__ravenSessionReady`（轮询或 Promise.race(timeout=3000)）后再继续；超时 fallback 到 guest 模式 + `logger.error('raven.session.handoff.timeout')` + 通过 `window.ravenUI.notifyHostWarn(payload)` 反向通知 Raven 显示 toast
+- [ ] 5.4 单测 `guards.test.ts`：(a) 收到 session 后正常进入 `/`；(b) 3 秒超时后 fallback 到 guest 且 notifyHostWarn 被调用一次；(c) 非嵌入模式不受影响
+- [ ] 5.5 （D8）在 Chaterm preload `raven-embedded.ts` 的 `RavenUIApi` 加 `notifyHostWarn(payload: { code: string; message: string }): void`，内部 `ipcRenderer.sendToHost(IpcChannel.Raven_UI_HostWarn, payload)`
+- [ ] 5.6 （D8）在 `ChatermWebviewHost.tsx` 的 `ipc-message` 监听里识别 `Raven_UI_HostWarn`，调用 Raven `notification.warning({ message, btn: '查看日志' })`；点击按钮打开 Raven 日志窗口
+- [ ] 5.7 （D8）`@shared/IpcChannel` 新增常量 `Raven_UI_HostWarn = 'raven:ui:host-warn'`
 
 ## 6. 加载完成事件 spec 化（固化热修）
 

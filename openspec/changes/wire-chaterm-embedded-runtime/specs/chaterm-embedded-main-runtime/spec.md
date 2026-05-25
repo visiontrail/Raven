@@ -50,26 +50,57 @@
 
 ---
 
-### Requirement: Raven → Chaterm Session Handoff
+### Requirement: Embedded Guest Workspace Without Login
 
-Raven SHALL 在 webview `mount` 成功后通过 `raven:ui:set-session` IPC 把当前用户身份下发给 Chaterm 渲染层；payload 至少包含 `{ uid: number, token: string, isGuest: boolean, name?: string }`。Chaterm 渲染层收到后 MUST 把字段写入 localStorage（沿用上游字段名 `ctm-token` / `userInfo` / `login-skipped`）并触发标准的 `initUserDatabase` 流程，**禁止**再依赖 `router/guards.ts` 中的硬编码 guest 短路。
+Raven 嵌入模式 SHALL 不显示 Chaterm 登录页，也 SHALL NOT 引入 Raven → Chaterm 账号 session handoff。Chaterm 渲染层在 `isChatermEmbedded()` 为 true 时 MUST 使用本地 guest workspace：
 
-Chaterm 渲染层在收到 session 前 MUST 阻塞所有需要用户身份的导航；超时 3 秒未收到 session 时 SHALL fallback 到 guest 模式（`isGuest: true, uid: 999999999`）并打 `error` 日志便于排查。
+- 写入 upstream guest 字段：`login-skipped=true`、`ctm-token=guest_token`、`userInfo.uid=999999999`；
+- 访问 `/login` 时重定向到 `/`；
+- 继续走上游 guest 分支，调用 `window.api.initUserDatabase({ uid: 999999999 })`；禁止再用 `router/guards.ts` 的嵌入态直接 `next()` 短路绕过 DB 初始化；
+- `initUserDatabase` 失败时 MUST 显示 Terminal 初始化失败状态并写 `error` 日志，MUST NOT 回退到 Chaterm 登录页。
 
-#### Scenario: 正常握手
+Chaterm 渲染层在 guest DB 初始化失败时 MUST 同时执行：
 
-- **WHEN** webview `did-attach-webview` 触发，`ChatermProcessService.attachWebview()` 完成 `mountChaterm()`
-- **THEN** Raven MUST 在 500ms 内通过 `webContents.send(IpcChannel.Raven_UI_SetSession, payload)` 下发 session；Chaterm 渲染层收到后写入 localStorage 并 `router.replace('/')`，进入终端主界面
+1. 通过 `raven:ui:host-warn` IPC 通知 Raven 主窗口显示 toast（"Terminal 初始化失败 — 查看日志"）；
+2. Raven 主进程与 Chaterm 渲染层双侧 `error` 级别日志（`chaterm.guest.init.failed` / `raven.chaterm.host_warn`）。
 
-#### Scenario: 切换 Raven 账号
+#### Scenario: 嵌入模式直接进入本地 guest workspace
 
-- **WHEN** Raven 主进程通知账号已切换（未来 Raven 接入账号体系后）
-- **THEN** Raven MUST 通过 `raven:ui:set-session` 重新下发新 session；Chaterm 收到后 MUST 调用 `unmountChaterm` 等价的 reset（清 localStorage + 重新 `initUserDatabase`）
+- **WHEN** webview 已完成 blank-first attach 并导航到 Chaterm URL
+- **THEN** Chaterm guard MUST 写入 guest localStorage，调用 `initUserDatabase({ uid: 999999999 })`，成功后进入终端主界面
 
-#### Scenario: 下发超时
+#### Scenario: 用户访问登录页
 
-- **WHEN** Chaterm 渲染层在挂载后 3 秒内未收到 `raven:ui:set-session`
-- **THEN** guards.ts MUST fallback 到 guest 模式让用户进入主界面，同时 `console.error` 与 logger.error 记录 `raven.session.handoff.timeout`
+- **WHEN** 嵌入模式下 Chaterm router 尝试进入 `/login`
+- **THEN** guard MUST 重定向到 `/`，不得展示 Chaterm 登录 UI
+
+#### Scenario: guest DB 初始化失败
+
+- **WHEN** `window.api.initUserDatabase({ uid: 999999999 })` reject 或返回失败
+- **THEN** guard MUST 显示初始化失败状态，通过 `raven:ui:host-warn` 通知 Raven 显示 warning toast，并记录 `chaterm.guest.init.failed`
+
+---
+
+### Requirement: AI-Controlled SSH Command Execution
+
+在嵌入模式下，Chaterm Agent SHALL 通过 Raven LLM 桥接复用 Raven 的模型配置，并 MUST 能消费模型返回的工具调用来控制已连接的 SSH terminal。
+
+实现边界：
+
+- `RavenBridgeHandler` MUST 把 Raven LLM 桥返回的 `tool_use_*` 事件转换为 Chaterm Agent 已有的 tool XML（例如 `<execute_command>...</execute_command>`）；
+- Chaterm Agent MUST 通过既有 `execute_command` handler 调用 remote-terminal / SSH 执行路径，而不是新增 Raven 侧 SSH tool；
+- 命令执行 MUST 继承 Chaterm 现有 approval / auto-approval / interaction detection / TUI detection 策略；
+- 如果当前 Raven 默认模型不支持 tool use，Chaterm Agent MUST 显示模型能力不足提示，而不是进入无法执行工具的循环。
+
+#### Scenario: AI 在远程 SSH 上执行命令
+
+- **WHEN** 用户已在 Chaterm 中连接到 mock/localhost SSH 主机，并向 Chaterm Agent 发出"在远端执行 `echo raven-ai-control`"的任务
+- **THEN** Raven LLM 桥 MUST 产生 `execute_command` 工具调用，Chaterm Agent MUST 在远程 SSH shell 执行该命令，并把包含 `raven-ai-control` 的输出回传给 Agent 会话
+
+#### Scenario: 模型不支持工具调用
+
+- **WHEN** Raven 当前默认模型 `capabilities.tools === false`
+- **THEN** Chaterm Agent MUST 禁用或提示 Agent 工具执行不可用，不得静默发送不会产生工具调用的请求
 
 ---
 
@@ -100,7 +131,12 @@ Raven 主进程 MUST 通过动态 `require()` 加载 Chaterm 主 bundle（路径
 
 ### Requirement: Loading & Crash Overlay Semantics
 
-`ChatermWebviewHost` 的加载完成判定 MUST 基于 `dom-ready` 与 `did-finish-load` 任一事件首次触发；遮罩 MUST 在该事件触发后立即隐藏。`did-fail-load` 事件（且 `errorCode !== -3`）MUST 触发 `crashed` 状态并显示"终端已崩溃 / 重新加载"按钮。
+`ChatermWebviewHost` MUST 在 webview 处于 `about:blank` 时完成 attach/mount，成功后才导航到 Chaterm URL。加载完成判定 MUST 基于 Chaterm URL 导航后的 `dom-ready` 与 `did-finish-load` 任一事件首次触发；遮罩 MUST 在该事件触发后立即隐藏。`did-fail-load` 事件（且 `errorCode !== -3`）MUST 触发 `crashed` 状态并显示"终端已崩溃 / 重新加载"按钮。
+
+#### Scenario: attach 完成后才导航
+
+- **WHEN** 用户首次进入 `/terminal`
+- **THEN** Host MUST 先创建 `about:blank` webview 并完成 `attachWebview()`；只有 attach 成功后才导航到 `raven-chaterm://app/index.html`
 
 #### Scenario: dom-ready 先到
 
