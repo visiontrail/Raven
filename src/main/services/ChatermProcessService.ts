@@ -5,10 +5,28 @@ import { pathToFileURL } from 'node:url'
 import { loggerService } from '@logger'
 import { app, type WebContents } from 'electron'
 
+import { IpcChannel } from '@shared/IpcChannel'
+
 import { getResourcePath } from '../utils'
 import { registerChatermProtocolHandler, unregisterChatermProtocolHandler } from './chaterm/protocol'
 import type { ChatermWebviewIdProvider } from './chaterm/registerChatermHandler'
 import type { RavenLLMBridgeService } from './RavenLLMBridgeService'
+
+/**
+ * Raven → Chaterm session payload. Embedded mode fixes this to the upstream
+ * guest identity (uid 999999999) — future work will replace `buildSessionPayload`
+ * with the real Raven account once Raven gains an account system.
+ */
+export interface RavenSessionPayload {
+  uid: number
+  token: string
+  isGuest: boolean
+  name: string
+}
+
+function buildSessionPayload(): RavenSessionPayload {
+  return { uid: 999999999, token: 'guest_token', isGuest: true, name: 'Guest' }
+}
 
 const logger = loggerService.withContext('ChatermProcessService')
 
@@ -174,7 +192,16 @@ export class ChatermProcessService implements ChatermWebviewIdProvider {
         }
       })
       this.bridge.registerAllowedSender(webContents.id)
-      logger.info('Chaterm webview attached', { webContentsId: webContents.id })
+      const sessionPayload = buildSessionPayload()
+      try {
+        webContents.send(IpcChannel.Raven_UI_SetSession, sessionPayload)
+      } catch (sendErr) {
+        // Sending the session is best-effort: if the webview is destroyed
+        // mid-attach, the renderer guard's timeout will surface the failure
+        // via `notifyHostWarn`. We don't roll back mount for a transient send.
+        logger.warn('Raven session send failed', { error: (sendErr as Error).message, webContentsId: webContents.id })
+      }
+      logger.info('Chaterm webview attached', { webContentsId: webContents.id, sessionGuest: sessionPayload.isGuest })
     } catch (err) {
       // Rollback partial state.
       webContents.off('render-process-gone', crashHandler)

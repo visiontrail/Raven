@@ -44,6 +44,14 @@ vi.mock('electron', async () => {
       handle: vi.fn(),
       unhandle: vi.fn()
     },
+    session: {
+      fromPartition: vi.fn(() => ({
+        protocol: {
+          handle: vi.fn(),
+          unhandle: vi.fn()
+        }
+      }))
+    },
     net: {
       fetch: vi.fn(async () => new Response('ok'))
     },
