@@ -64,11 +64,9 @@ export class ChatermProcessService implements ChatermWebviewIdProvider {
     this.unmount = options.unmount ?? noopUnmount
     // In packaged apps chaterm lands at process.resourcesPath/chaterm (extraResources).
     // In dev it lives under the project tree at app.getAppPath()/resources/chaterm.
-    this.resourcesPath = options.resourcesPath ?? (
-      app.isPackaged
-        ? path.join(process.resourcesPath, 'chaterm')
-        : path.join(getResourcePath(), 'chaterm')
-    )
+    this.resourcesPath =
+      options.resourcesPath ??
+      (app.isPackaged ? path.join(process.resourcesPath, 'chaterm') : path.join(getResourcePath(), 'chaterm'))
   }
 
   // ---------- §5.1: assets check & startup ----------
@@ -143,8 +141,6 @@ export class ChatermProcessService implements ChatermWebviewIdProvider {
     this.chatermWebContents = webContents
     this.chatermWebviewId = webContents.id
 
-    this.bridge.registerAllowedSender(webContents.id)
-
     // §5.5: clean up on crash.
     const crashHandler = (_event: Electron.Event, details: Electron.RenderProcessGoneDetails) => {
       logger.error('Chaterm webview render process gone', undefined, {
@@ -177,10 +173,21 @@ export class ChatermProcessService implements ChatermWebviewIdProvider {
           }
         }
       })
+      this.bridge.registerAllowedSender(webContents.id)
       logger.info('Chaterm webview attached', { webContentsId: webContents.id })
     } catch (err) {
       // Rollback partial state.
-      this.bridge.unregisterAllowedSender(webContents.id)
+      webContents.off('render-process-gone', crashHandler)
+      try {
+        this.bridge.unregisterAllowedSender(webContents.id)
+      } catch (rollbackErr) {
+        logger.warn('Chaterm sender unregister rollback failed', { error: (rollbackErr as Error).message })
+      }
+      try {
+        await this.unmount()
+      } catch (rollbackErr) {
+        logger.warn('Chaterm unmount rollback failed', { error: (rollbackErr as Error).message })
+      }
       this.chatermWebContents = null
       this.chatermWebviewId = null
       throw err
@@ -206,7 +213,11 @@ export class ChatermProcessService implements ChatermWebviewIdProvider {
     }
     this.chatermHandlerDisposers.clear()
 
-    this.bridge.unregisterAllowedSender(id)
+    try {
+      this.bridge.unregisterAllowedSender(id)
+    } catch (err) {
+      logger.warn('Chaterm sender unregister failed', { error: (err as Error).message, webContentsId: id, reason })
+    }
 
     try {
       await this.unmount()

@@ -59,18 +59,18 @@ files:
 asarUnpack:
   - resources/**
   - '**/*.{metal,exp,lib}'
-  # OpenSpec embed-chaterm-ssh-tab §8.4 — keep Chaterm bundle (and any embedded
-  # native modules like better-sqlite3 / node-pty) accessible outside the asar
-  # so getResourcePath()+'/chaterm/' resolves to real files at runtime.
+  # OpenSpec Chaterm embedding — keep the renderer, preload, main bundle, and
+  # any embedded native modules like better-sqlite3 / node-pty accessible
+  # outside the asar so getResourcePath()+'/chaterm/' resolves at runtime.
   - 'resources/chaterm/**'
   - '**/*.node'
 extraResources:
-  # OpenSpec embed-chaterm-ssh-tab §8.4 — also expose the embedded Chaterm
-  # bundle at Resources/chaterm/ for tooling/notarization scripts that iterate
-  # the package Resources directory. The runtime path used by Raven main is
-  # asar-unpacked above; this entry is redundant for runtime but ensures
-  # electron-builder is aware of the directory and our notarize script
-  # (scripts/notarize.js) can recurse it for code signing.
+  # OpenSpec Chaterm embedding — also expose the embedded Chaterm renderer,
+  # preload, and main bundle at Resources/chaterm/ for tooling/notarization
+  # scripts that iterate the package Resources directory. The runtime path used
+  # by Raven main is asar-unpacked above; this entry is redundant for runtime
+  # but ensures electron-builder is aware of the directory and notarization can
+  # recurse it for code signing.
   - from: resources/chaterm
     to: chaterm
     filter:

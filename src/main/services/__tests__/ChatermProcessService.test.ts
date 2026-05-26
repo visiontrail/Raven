@@ -200,7 +200,14 @@ describe('ChatermProcessService', () => {
 
   it('attaches a webview and registers it as an allowed bridge sender', async () => {
     vi.mocked(existsSync).mockReturnValue(true)
+    const calls: string[] = []
     const mount = vi.fn(async () => {})
+    mount.mockImplementation(async () => {
+      calls.push('mount')
+    })
+    bridge.registerAllowedSender.mockImplementation(() => {
+      calls.push('register')
+    })
     const svc = new ChatermProcessService({
       bridge: bridge as any,
       mount,
@@ -213,7 +220,23 @@ describe('ChatermProcessService', () => {
 
     expect(bridge.registerAllowedSender).toHaveBeenCalledWith(101)
     expect(mount).toHaveBeenCalledWith(expect.objectContaining({ webContentsId: 101 }))
+    expect(calls).toEqual(['mount', 'register'])
     expect(svc.getChatermWebviewId()).toBe(101)
+  })
+
+  it('attaches with the default no-op mount when the Chaterm main bundle is unavailable', async () => {
+    vi.mocked(existsSync).mockReturnValue(true)
+    const svc = new ChatermProcessService({
+      bridge: bridge as any,
+      resourcesPath: RESOURCES
+    })
+    await svc.start()
+
+    const wc = new FakeWebContents(102)
+    await expect(svc.attachWebview(wc as any)).resolves.toBeUndefined()
+
+    expect(bridge.registerAllowedSender).toHaveBeenCalledWith(102)
+    expect(svc.getChatermWebviewId()).toBe(102)
   })
 
   it('refuses to attach when not enabled', async () => {
@@ -246,6 +269,53 @@ describe('ChatermProcessService', () => {
     expect(unmount).toHaveBeenCalledTimes(1)
     expect(bridge.unregisterAllowedSender).toHaveBeenCalledWith(202)
     expect(onCrashed).toHaveBeenCalledWith({ reason: 'crashed', exitCode: -1 })
+    expect(svc.getChatermWebviewId()).toBeNull()
+  })
+
+  it('rolls back mount state when bridge sender registration fails', async () => {
+    vi.mocked(existsSync).mockReturnValue(true)
+    const mount = vi.fn(async () => {})
+    const unmount = vi.fn(async () => {})
+    bridge.registerAllowedSender.mockImplementation(() => {
+      throw new Error('allowlist unavailable')
+    })
+    const svc = new ChatermProcessService({
+      bridge: bridge as any,
+      mount,
+      unmount,
+      resourcesPath: RESOURCES
+    })
+    await svc.start()
+
+    const wc = new FakeWebContents(212)
+    await expect(svc.attachWebview(wc as any)).rejects.toThrow(/allowlist unavailable/)
+
+    expect(mount).toHaveBeenCalledTimes(1)
+    expect(unmount).toHaveBeenCalledTimes(1)
+    expect(bridge.unregisterAllowedSender).toHaveBeenCalledWith(212)
+    expect(svc.getChatermWebviewId()).toBeNull()
+  })
+
+  it('rolls back webContents state when Chaterm mount fails', async () => {
+    vi.mocked(existsSync).mockReturnValue(true)
+    const mount = vi.fn(async () => {
+      throw new Error('mount failed')
+    })
+    const unmount = vi.fn(async () => {})
+    const svc = new ChatermProcessService({
+      bridge: bridge as any,
+      mount,
+      unmount,
+      resourcesPath: RESOURCES
+    })
+    await svc.start()
+
+    const wc = new FakeWebContents(213)
+    await expect(svc.attachWebview(wc as any)).rejects.toThrow(/mount failed/)
+
+    expect(bridge.registerAllowedSender).not.toHaveBeenCalled()
+    expect(bridge.unregisterAllowedSender).toHaveBeenCalledWith(213)
+    expect(unmount).toHaveBeenCalledTimes(1)
     expect(svc.getChatermWebviewId()).toBeNull()
   })
 

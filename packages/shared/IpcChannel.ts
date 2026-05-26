@@ -332,6 +332,7 @@ export enum IpcChannel {
   Raven_UI_Navigate = 'raven:ui:navigate',
   Raven_UI_ThemeChanged = 'raven:ui:theme-changed',
   Raven_UI_LocaleChanged = 'raven:ui:locale-changed',
+  Raven_UI_HostWarn = 'raven:ui:host-warn',
 
   // Chaterm renderer ↔ main process channels (called from Raven renderer, NOT from webview)
   Chaterm_GetStatus = 'chaterm:getStatus',

@@ -14,7 +14,8 @@
 //   1. (optional) npm install inside the submodule
 //   2. CHATERM_EMBEDDED=1 npm run build inside the submodule
 //   3. Copy out/renderer/      -> resources/chaterm/
-//   4. Copy out/preload/raven-embedded.js -> resources/chaterm/preload.js
+//   4. Copy out/main/          -> resources/chaterm/main/
+//   5. Copy out/preload/raven-embedded.js -> resources/chaterm/preload.js
 
 const fs = require('node:fs')
 const path = require('node:path')
@@ -23,6 +24,8 @@ const { spawnSync } = require('node:child_process')
 const REPO_ROOT = path.resolve(__dirname, '..')
 const SUBMODULE = path.join(REPO_ROOT, 'third_party', 'ChatermForRaven')
 const OUT_RENDERER = path.join(SUBMODULE, 'out', 'renderer')
+const OUT_MAIN = path.join(SUBMODULE, 'out', 'main')
+const OUT_MAIN_ENTRY = path.join(OUT_MAIN, 'index.js')
 const OUT_PRELOAD = path.join(SUBMODULE, 'out', 'preload', 'raven-embedded.js')
 const OUT_PRELOAD_MAP = path.join(SUBMODULE, 'out', 'preload', 'raven-embedded.js.map')
 const OUT_PRELOAD_INDEX = path.join(SUBMODULE, 'out', 'preload', 'index.js')
@@ -99,6 +102,14 @@ function main() {
     console.error(`[build-chaterm] Chaterm renderer output missing: ${OUT_RENDERER}`)
     process.exit(1)
   }
+  if (!fs.existsSync(OUT_MAIN)) {
+    console.error(`[build-chaterm] Chaterm main output missing: ${OUT_MAIN}`)
+    process.exit(1)
+  }
+  if (!fs.existsSync(OUT_MAIN_ENTRY)) {
+    console.error(`[build-chaterm] Chaterm main entry missing: ${OUT_MAIN_ENTRY}`)
+    process.exit(1)
+  }
   if (!fs.existsSync(OUT_PRELOAD)) {
     console.error(`[build-chaterm] Chaterm raven-embedded preload missing: ${OUT_PRELOAD}`)
     process.exit(1)
@@ -110,6 +121,9 @@ function main() {
 
   step('Copying renderer artifacts')
   copyDir(OUT_RENDERER, TARGET_DIR)
+
+  step('Copying main bundle artifacts')
+  copyDir(OUT_MAIN, path.join(TARGET_DIR, 'main'))
 
   step('Copying raven-embedded preload -> preload.js')
   fs.copyFileSync(OUT_PRELOAD, path.join(TARGET_DIR, 'preload.js'))

@@ -1,16 +1,27 @@
+import { loggerService } from '@logger'
 import { isMac } from '@renderer/config/constant'
+import { useNotification } from '@renderer/context/NotificationProvider'
 import { useTheme } from '@renderer/context/ThemeProvider'
 import i18n from '@renderer/i18n'
 import { useSettings } from '@renderer/hooks/useSettings'
 import { useFullscreen } from '@renderer/hooks/useFullscreen'
 import { IpcChannel } from '@shared/IpcChannel'
-import { WebviewTag } from 'electron'
+import { Button } from 'antd'
+import type { WebviewTag } from 'electron'
 import { FC, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'crashed'
+type HostWarnPayload = {
+  code?: string
+  message?: string
+}
+
+const CHATERM_APP_URL = 'raven-chaterm://app/index.html'
+const BLANK_WEBVIEW_URL = 'about:blank'
+const logger = loggerService.withContext('ChatermWebviewHost')
 
 /**
  * Renders and manages the Chaterm <webview> outside the Routes tree so the
@@ -31,8 +42,12 @@ const ChatermWebviewHost: FC = () => {
   const { language } = useSettings()
   const isFullscreen = useFullscreen()
   const { t } = useTranslation()
+  const notification = useNotification()
 
   const webviewRef = useRef<WebviewTag | null>(null)
+  const attachStartedRef = useRef(false)
+  const navigatedToAppRef = useRef(false)
+  const loadedRef = useRef(false)
   // Track whether the webview has ever been mounted so we can keep it alive
   const everMountedRef = useRef(false)
 
@@ -60,7 +75,9 @@ const ChatermWebviewHost: FC = () => {
     const cleanup = window.api.chaterm.onNavigate((path) => {
       navigate(path)
     })
-    return () => { cleanup() }
+    return () => {
+      cleanup()
+    }
   }, [navigate])
 
   // §6.6: listen for crash notifications forwarded by the main process
@@ -68,7 +85,9 @@ const ChatermWebviewHost: FC = () => {
     const cleanup = window.api.chaterm.onWebviewCrashed(() => {
       setLoadState('crashed')
     })
-    return () => { cleanup() }
+    return () => {
+      cleanup()
+    }
   }, [])
 
   // §6.8: broadcast theme changes to Chaterm webview
@@ -81,30 +100,93 @@ const ChatermWebviewHost: FC = () => {
   useEffect(() => {
     if (loadState !== 'loaded' || !webviewRef.current) return
     webviewRef.current.send(IpcChannel.Raven_UI_LocaleChanged, { locale: i18n.language })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language, loadState])
+
+  const resetNavigationState = useCallback(() => {
+    attachStartedRef.current = false
+    navigatedToAppRef.current = false
+    loadedRef.current = false
+  }, [])
+
+  const isAtChatermAppUrl = useCallback((element: WebviewTag) => {
+    const currentUrl = typeof element.getURL === 'function' ? element.getURL() : ''
+    return currentUrl.startsWith(CHATERM_APP_URL)
+  }, [])
+
+  const sendInitialState = useCallback(
+    (element: WebviewTag) => {
+      element.send(IpcChannel.Raven_UI_ThemeChanged, { theme })
+      element.send(IpcChannel.Raven_UI_LocaleChanged, { locale: i18n.language })
+    },
+    [theme]
+  )
+
+  const openLogs = useCallback(async () => {
+    try {
+      const info = await window.api.getAppInfo()
+      if (info?.logsPath) {
+        await window.api.openPath(info.logsPath)
+      }
+    } catch (err) {
+      logger.warn('raven.chaterm.open_logs.failed', { error: (err as Error).message })
+    }
+  }, [])
+
+  const showHostWarning = useCallback(
+    (payload: HostWarnPayload) => {
+      const message = payload?.message || t('terminal.host_warning', 'Terminal initialization failed')
+      logger.error('raven.chaterm.host_warn', payload, { logToMain: true })
+      notification.open({
+        type: 'warning',
+        message,
+        description: payload?.code,
+        duration: 6,
+        placement: 'topRight',
+        actions: (
+          <Button size="small" onClick={openLogs}>
+            {t('terminal.view_logs', 'View logs')}
+          </Button>
+        )
+      })
+    },
+    [notification, openLogs, t]
+  )
+
+  const attachAndNavigate = useCallback(async (element: WebviewTag) => {
+    if (attachStartedRef.current) return
+    attachStartedRef.current = true
+    setLoadState('loading')
+
+    const id = element.getWebContentsId()
+    try {
+      await window.api.chaterm.attachWebview(id)
+      if (webviewRef.current !== element) return
+      navigatedToAppRef.current = true
+      await element.loadURL(CHATERM_APP_URL)
+    } catch (err) {
+      attachStartedRef.current = false
+      console.error('[ChatermWebviewHost] attachWebview failed:', err)
+      setLoadState('crashed')
+    }
+  }, [])
 
   const setRef = useCallback(
     (element: WebviewTag | null) => {
       webviewRef.current = element
-      if (!element) return
+      if (!element) {
+        resetNavigationState()
+        return
+      }
 
       // §6.5: loading indicators
       const onStartLoading = () => setLoadState('loading')
-      let attached = false
       const markLoaded = (origin: string) => {
-        if (attached) return
-        attached = true
+        if (loadedRef.current || !navigatedToAppRef.current || !isAtChatermAppUrl(element)) return
+        loadedRef.current = true
         console.info('[ChatermWebviewHost] webview loaded via', origin)
         setLoadState('loaded')
-        // Attach webview to ChatermProcessService via IPC so the bridge can validate senders
-        const id = element.getWebContentsId()
-        window.api.chaterm.attachWebview(id).catch((err) => {
-          console.error('[ChatermWebviewHost] attachWebview failed:', err)
-        })
-        // Send initial theme + locale so Chaterm starts in sync
-        element.send(IpcChannel.Raven_UI_ThemeChanged, { theme })
-        element.send(IpcChannel.Raven_UI_LocaleChanged, { locale: i18n.language })
+        sendInitialState(element)
       }
       const onFinishLoad = () => markLoaded('did-finish-load')
       // Fallback: dom-ready fires earlier than did-finish-load and is sufficient
@@ -128,7 +210,10 @@ const ChatermWebviewHost: FC = () => {
 
       // §6.7: block remote navigation — only allow raven-chaterm:// URLs
       const onWillNavigate = (event: any) => {
-        if (!event.url?.startsWith('raven-chaterm://')) {
+        if (event.url === BLANK_WEBVIEW_URL || event.url?.startsWith('raven-chaterm://')) {
+          return
+        }
+        if (event.url) {
           event.preventDefault()
           window.api.shell.openExternal(event.url).catch(() => {})
         }
@@ -138,6 +223,10 @@ const ChatermWebviewHost: FC = () => {
       const onIpcMessage = (event: any) => {
         if (event.channel === IpcChannel.Raven_UI_Navigate && event.args?.[0]) {
           navigate(event.args[0])
+          return
+        }
+        if (event.channel === IpcChannel.Raven_UI_HostWarn) {
+          showHostWarning(event.args?.[0] ?? {})
         }
       }
 
@@ -147,16 +236,27 @@ const ChatermWebviewHost: FC = () => {
       element.addEventListener('did-fail-load', onFailLoad)
       element.addEventListener('will-navigate', onWillNavigate)
       element.addEventListener('ipc-message', onIpcMessage)
+      void attachAndNavigate(element)
     },
-    // navigate and theme are captured by closure; they're stable enough
+    // navigate, theme, and notification handlers are captured by closure; they're stable enough
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   )
 
   const handleReload = useCallback(() => {
+    resetNavigationState()
     setLoadState('loading')
-    webviewRef.current?.reload()
-  }, [])
+    const webview = webviewRef.current
+    if (!webview) return
+    void webview
+      .loadURL(BLANK_WEBVIEW_URL)
+      .catch((err) => {
+        console.warn('[ChatermWebviewHost] blank reload failed:', err)
+      })
+      .finally(() => {
+        void attachAndNavigate(webview)
+      })
+  }, [attachAndNavigate, resetNavigationState])
 
   // Don't render anything if Chaterm resources aren't available
   if (!hasAssets || !preloadUrl) return null
@@ -177,16 +277,14 @@ const ChatermWebviewHost: FC = () => {
       {isVisible && loadState === 'crashed' && (
         <Overlay>
           <CrashText>{t('terminal.crashed', 'Terminal crashed')}</CrashText>
-          <ReloadButton onClick={handleReload}>
-            {t('terminal.reload', 'Reload')}
-          </ReloadButton>
+          <ReloadButton onClick={handleReload}>{t('terminal.reload', 'Reload')}</ReloadButton>
         </Overlay>
       )}
 
       {shouldMount && (
         <webview
           ref={setRef}
-          src="raven-chaterm://app/index.html"
+          src={BLANK_WEBVIEW_URL}
           preload={preloadUrl}
           /* §6.3: no node integration; context isolation on */
           nodeintegration={'false' as any}
@@ -212,7 +310,9 @@ const Host = styled.div<{ $visible: boolean; $isFullscreen: boolean }>`
   position: fixed;
   left: var(--sidebar-width);
   /* On Mac account for the native titlebar / drag region; skip in fullscreen */
-  top: ${isMac ? ({ $isFullscreen }: { $isFullscreen: boolean }) => ($isFullscreen ? '0' : 'var(--navbar-height)') : '0'};
+  top: ${isMac
+    ? ({ $isFullscreen }: { $isFullscreen: boolean }) => ($isFullscreen ? '0' : 'var(--navbar-height)')
+    : '0'};
   right: 0;
   bottom: 0;
   z-index: 100;

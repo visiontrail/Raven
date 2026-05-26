@@ -3,6 +3,11 @@
 // eslint-disable-next-line
 import './bootstrap'
 
+import { existsSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import path from 'node:path'
+import process from 'node:process'
+
 import '@main/config'
 
 import { loggerService } from '@logger'
@@ -14,7 +19,7 @@ import installExtension, { REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS } from 'electro
 
 import { isDev, isLinux, isWin } from './constant'
 import { registerIpc } from './ipc'
-import { ChatermProcessService } from './services/ChatermProcessService'
+import { ChatermProcessService, type ChatermMountFn, type ChatermUnmountFn } from './services/ChatermProcessService'
 import { registerChatermProtocolScheme } from './services/chaterm/protocol'
 import { configManager } from './services/ConfigManager'
 import mcpService from './services/MCPService'
@@ -32,9 +37,54 @@ import { registerShortcuts } from './services/ShortcutService'
 import { TrayService } from './services/TrayService'
 import { windowService } from './services/WindowService'
 import deviceLinkClient from './services/DeviceLinkClient'
-import process from 'node:process'
+import { getResourcePath } from './utils'
 
 const logger = loggerService.withContext('MainEntry')
+const chatermMainLogger = loggerService.withContext('main')
+const dynamicRequire = createRequire(import.meta.url)
+
+interface ChatermMainModule {
+  mountChaterm?: ChatermMountFn
+  unmountChaterm?: ChatermUnmountFn
+}
+
+function loadChatermMain(): { mountChaterm: ChatermMountFn; unmountChaterm: ChatermUnmountFn } | null {
+  const entry = app.isPackaged
+    ? path.join(process.resourcesPath, 'chaterm', 'main', 'index.js')
+    : path.join(getResourcePath(), 'chaterm', 'main', 'index.js')
+
+  try {
+    if (!existsSync(entry)) {
+      chatermMainLogger.error('chaterm.main.load.failed', new Error('Chaterm main bundle not found'), {
+        path: entry,
+        error: 'Chaterm main bundle not found'
+      })
+      return null
+    }
+
+    const mod = dynamicRequire(entry) as ChatermMainModule
+    if (typeof mod.mountChaterm !== 'function' || typeof mod.unmountChaterm !== 'function') {
+      chatermMainLogger.error(
+        'chaterm.main.load.failed',
+        new Error('Chaterm main bundle does not export mountChaterm/unmountChaterm'),
+        {
+          path: entry,
+          error: 'Chaterm main bundle does not export mountChaterm/unmountChaterm'
+        }
+      )
+      return null
+    }
+
+    logger.info('Chaterm main bundle loaded', { path: entry })
+    return { mountChaterm: mod.mountChaterm, unmountChaterm: mod.unmountChaterm }
+  } catch (err) {
+    chatermMainLogger.error('chaterm.main.load.failed', err as Error, {
+      path: entry,
+      error: (err as Error).message
+    })
+    return null
+  }
+}
 
 /**
  * Disable hardware acceleration if setting is enabled
@@ -108,7 +158,7 @@ registerChatermProtocolScheme()
 // Long-lived services. Constructed before whenReady so quit hooks can reach them
 // even on a failure during initialization.
 const ravenLLMBridgeService = new RavenLLMBridgeService()
-const chatermProcessService = new ChatermProcessService({ bridge: ravenLLMBridgeService })
+let chatermProcessService = new ChatermProcessService({ bridge: ravenLLMBridgeService })
 
 // Check for single instance lock
 if (!app.requestSingleInstanceLock()) {
@@ -175,6 +225,12 @@ if (!app.requestSingleInstanceLock()) {
     // assets are missing). Per spec §D9 a missing resources/chaterm/ MUST NOT
     // crash Raven — assets check inside start() handles that.
     try {
+      const chatermMain = loadChatermMain()
+      chatermProcessService = new ChatermProcessService({
+        bridge: ravenLLMBridgeService,
+        mount: chatermMain?.mountChaterm,
+        unmount: chatermMain?.unmountChaterm
+      })
       ravenLLMBridgeService.start()
       await chatermProcessService.start()
       logger.info('Chaterm process service started', { enabled: chatermProcessService.isEnabled() })

@@ -19,18 +19,18 @@
 
 ## 3. Raven 主进程接入 Chaterm 主 bundle
 
-- [ ] 3.1 修改 `scripts/build-chaterm.js`：在拷贝 renderer 后新增"Copying main bundle"步骤，将 `out/main/**` 整体 `copyDir` 到 `resources/chaterm/main/`；产物缺失时 `console.error` 并 `process.exit(1)`
-- [ ] 3.2 修改 `electron-builder.cn.yml` 与 `electron-builder.global.yml` 的 `extraResources`，把 `resources/chaterm/main/**` 加入；macOS notarize 脚本（如有）覆盖新 binary
-- [ ] 3.3 修改 `src/main/index.ts`：新增 `loadChatermMain()` 函数（dev `path.join(getResourcePath(), 'chaterm', 'main', 'index.js')`；prod `path.join(process.resourcesPath, 'chaterm', 'main', 'index.js')`），动态 `require()` 加载并解构 `mountChaterm`/`unmountChaterm`；失败时 `loggerService.withContext('main').error('chaterm.main.load.failed', err)` 并返回 `null`
-- [ ] 3.4 把 `loadChatermMain()` 调用接到 `ChatermProcessService` 构造：`new ChatermProcessService({ bridge, mount: chatermMain?.mountChaterm, unmount: chatermMain?.unmountChaterm })`
-- [ ] 3.5 单测 `src/main/services/__tests__/ChatermProcessService.test.ts` 补充：mount 函数缺失时 `attachWebview` 仍走 noop 不抛错；mount 失败时回滚 sender allowlist 与 webContents 引用
+- [x] 3.1 修改 `scripts/build-chaterm.js`：在拷贝 renderer 后新增"Copying main bundle"步骤，将 `out/main/**` 整体 `copyDir` 到 `resources/chaterm/main/`；产物缺失时 `console.error` 并 `process.exit(1)`
+- [x] 3.2 按当前 Raven 主仓实际配置更新 `electron-builder.yml` 的 Chaterm `extraResources`/`asarUnpack` 覆盖范围，确保 `resources/chaterm/main/**` 随包进入 `Resources/chaterm/`；macOS notarize/verify 脚本已递归覆盖新 binary
+- [x] 3.3 修改 `src/main/index.ts`：新增 `loadChatermMain()` 函数（dev `path.join(getResourcePath(), 'chaterm', 'main', 'index.js')`；prod `path.join(process.resourcesPath, 'chaterm', 'main', 'index.js')`），动态 `require()` 加载并解构 `mountChaterm`/`unmountChaterm`；失败时 `loggerService.withContext('main').error('chaterm.main.load.failed', err)` 并返回 `null`
+- [x] 3.4 把 `loadChatermMain()` 调用接到 `ChatermProcessService` 构造：`new ChatermProcessService({ bridge, mount: chatermMain?.mountChaterm, unmount: chatermMain?.unmountChaterm })`
+- [x] 3.5 单测 `src/main/services/__tests__/ChatermProcessService.test.ts` 补充：mount 函数缺失时 `attachWebview` 仍走 noop 不抛错；mount 失败时回滚 sender allowlist 与 webContents 引用
 
 ## 4. attachWebview 三步式握手
 
 - [ ] 4.1 修改 `ChatermProcessService.attachWebview()`：把现有 `mount → registerAllowedSender` 顺序调整为 `mount → registerAllowedSender → send(IpcChannel.Raven_UI_SetSession, payload)`；payload 由新增的 `buildSessionPayload()` 函数构造，当前实现固定返回 `{ uid: 999999999, token: 'guest_token', isGuest: true, name: 'Guest' }`（未来 Raven 接入账号体系后替换数据源）
-- [ ] 4.2 修改 `ChatermProcessService.detachWebview()`：反向执行（unregisterAllowedSender → unmountChaterm）；用 `try/catch` 包裹每一步，单步抛错被 logger.warn 后继续后续步骤
+- [x] 4.2 修改 `ChatermProcessService.detachWebview()`：反向执行（unregisterAllowedSender → unmountChaterm）；用 `try/catch` 包裹每一步，单步抛错被 logger.warn 后继续后续步骤
 - [ ] 4.3 在 `@shared/IpcChannel` 新增常量 `Raven_UI_SetSession = 'raven:ui:set-session'`
-- [ ] 4.4 `attachWebview` 中途失败的回滚单测：mock `bridge.registerAllowedSender` 抛错 → 验证 `unmount` 被调用、`chatermWebContents` 被清空、`chatermWebviewId` 被清空
+- [x] 4.4 `attachWebview` 中途失败的回滚单测：mock `bridge.registerAllowedSender` 抛错 → 验证 `unmount` 被调用、`chatermWebContents` 被清空、`chatermWebviewId` 被清空
 
 ## 5. Chaterm 渲染层接收 Raven session
 
@@ -38,16 +38,16 @@
 - [ ] 5.2 修改 `src/renderer/src/main.ts`：在 Vue mount 前订阅 `window.ravenUI.onSession`，收到 payload 后写入 localStorage（`login-skipped` / `ctm-token` / `userInfo`），并设置全局 `__ravenSessionReady = true`
 - [ ] 5.3 修改 `src/renderer/src/router/guards.ts`：移除嵌入态硬编码 guest 短路；嵌入模式下 `beforeEach` 等待 `__ravenSessionReady`（轮询或 Promise.race(timeout=3000)）后再继续；超时 fallback 到 guest 模式 + `logger.error('raven.session.handoff.timeout')` + 通过 `window.ravenUI.notifyHostWarn(payload)` 反向通知 Raven 显示 toast
 - [ ] 5.4 单测 `guards.test.ts`：(a) 收到 session 后正常进入 `/`；(b) 3 秒超时后 fallback 到 guest 且 notifyHostWarn 被调用一次；(c) 非嵌入模式不受影响
-- [ ] 5.5 （D8）在 Chaterm preload `raven-embedded.ts` 的 `RavenUIApi` 加 `notifyHostWarn(payload: { code: string; message: string }): void`，内部 `ipcRenderer.sendToHost(IpcChannel.Raven_UI_HostWarn, payload)`
-- [ ] 5.6 （D8）在 `ChatermWebviewHost.tsx` 的 `ipc-message` 监听里识别 `Raven_UI_HostWarn`，调用 Raven `notification.warning({ message, btn: '查看日志' })`；点击按钮打开 Raven 日志窗口
-- [ ] 5.7 （D8）`@shared/IpcChannel` 新增常量 `Raven_UI_HostWarn = 'raven:ui:host-warn'`
+- [x] 5.5 （D8）在 Chaterm preload `raven-embedded.ts` 的 `RavenUIApi` 加 `notifyHostWarn(payload: { code: string; message: string }): void`，内部 `ipcRenderer.sendToHost(IpcChannel.Raven_UI_HostWarn, payload)`
+- [x] 5.6 （D8）在 `ChatermWebviewHost.tsx` 的 `ipc-message` 监听里识别 `Raven_UI_HostWarn`，调用 Raven `notification.warning({ message, btn: '查看日志' })`；点击按钮打开 Raven 日志窗口
+- [x] 5.7 （D8）`@shared/IpcChannel` 新增常量 `Raven_UI_HostWarn = 'raven:ui:host-warn'`
 
 ## 6. 加载完成事件 spec 化（固化热修）
 
-- [ ] 6.1 `src/renderer/src/components/app/ChatermWebviewHost.tsx`：把当前热修的 `dom-ready` + `did-finish-load` whichever-first 逻辑加单测（mock webview event emitter）
-- [ ] 6.2 单测：dom-ready 先到 → markLoaded('dom-ready') 触发 + attachWebview 调用一次
-- [ ] 6.3 单测：did-finish-load 先到 → markLoaded('did-finish-load') 触发 + attachWebview 调用一次
-- [ ] 6.4 单测：两个事件都到 → attachWebview 仅调用一次（attached guard 生效）
+- [x] 6.1 `src/renderer/src/components/app/ChatermWebviewHost.tsx`：把当前热修的 `dom-ready` + `did-finish-load` whichever-first 逻辑加单测（mock webview event emitter）
+- [x] 6.2 单测：dom-ready 先到 → markLoaded('dom-ready') 触发 + attachWebview 调用一次
+- [x] 6.3 单测：did-finish-load 先到 → markLoaded('did-finish-load') 触发 + attachWebview 调用一次
+- [x] 6.4 单测：两个事件都到 → attachWebview 仅调用一次（attached guard 生效）
 
 ## 7. 集成验证
 
