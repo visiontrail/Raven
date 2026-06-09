@@ -67,13 +67,17 @@ class ChatermBridgeService {
 
     const ipc = window.electron.ipcRenderer
 
-    const removeListModels = ipc.on(INTERNAL_CHANNELS.ListModels, (_event, payload: { replyChannel: string }) => {
+    const removeListModels = ipc.on(INTERNAL_CHANNELS.ListModels, (_event, payload: { replyChannel: string; defaultOnly?: boolean }) => {
       try {
+        if (payload.defaultOnly) {
+          ipc.send(payload.replyChannel, { modelId: getDefaultModel()?.id ?? null })
+          return
+        }
         const models = this.buildAvailableModels()
         ipc.send(payload.replyChannel, models)
       } catch (err) {
         logger.error('ChatermBridgeService: listModels failed', err as Error)
-        ipc.send(payload.replyChannel, [])
+        ipc.send(payload.replyChannel, payload.defaultOnly ? { modelId: null } : [])
       }
     })
 

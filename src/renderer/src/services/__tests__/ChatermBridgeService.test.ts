@@ -145,6 +145,14 @@ describe('ChatermBridgeService', () => {
     chatermBridgeService.stop()
   })
 
+  it('responds to default model lookup with the renderer default model id', () => {
+    chatermBridgeService.start()
+
+    listeners[INTERNAL_CHANNELS.ListModels]({}, { replyChannel: 'reply:default', defaultOnly: true })
+
+    expect(send).toHaveBeenCalledWith('reply:default', { modelId: 'claude-3-5-sonnet' })
+  })
+
   it('maps Anthropic text, tool calls, usage, and finish reason', async () => {
     mocks.providers = [anthropicProvider]
     mocks.anthropicStreamFactory.mockReturnValue(
