@@ -31,6 +31,7 @@ import {
   registerProtocolClient,
   setupAppImageDeepLink
 } from './services/ProtocolClient'
+import { RendererBridgeProvider } from './services/raven-llm-bridge/RendererBridgeProvider'
 import { RavenLLMBridgeService } from './services/RavenLLMBridgeService'
 import selectionService, { initSelectionService } from './services/SelectionService'
 import { registerShortcuts } from './services/ShortcutService'
@@ -42,27 +43,77 @@ import { getResourcePath } from './utils'
 const logger = loggerService.withContext('MainEntry')
 const chatermMainLogger = loggerService.withContext('main')
 const dynamicRequire = createRequire(import.meta.url)
+const nodeModule = dynamicRequire('node:module') as typeof import('node:module') & {
+  Module: { _initPaths(): void }
+}
 
 interface ChatermMainModule {
   mountChaterm?: ChatermMountFn
   unmountChaterm?: ChatermUnmountFn
 }
 
-function loadChatermMain(): { mountChaterm: ChatermMountFn; unmountChaterm: ChatermUnmountFn } | null {
-  const entry = app.isPackaged
-    ? path.join(process.resourcesPath, 'chaterm', 'main', 'index.js')
-    : path.join(getResourcePath(), 'chaterm', 'main', 'index.js')
+type ChatermEdition = 'cn' | 'global'
 
+function resolveChatermEmbeddedEdition(): ChatermEdition {
+  const explicitEdition = process.env.CHATERM_EMBEDDED_EDITION || process.env.APP_EDITION
+  return explicitEdition === 'global' ? 'global' : 'cn'
+}
+
+function configureChatermEmbeddedEnv(): ChatermEdition {
+  const edition = resolveChatermEmbeddedEdition()
+  process.env.CHATERM_EMBEDDED = '1'
+  process.env.CHATERM_EMBEDDED_EDITION = edition
+  process.env.APP_EDITION = edition
+  return edition
+}
+
+function appendNodePath(modulePath: string): void {
+  if (!existsSync(modulePath)) return
+
+  const paths = process.env.NODE_PATH ? process.env.NODE_PATH.split(path.delimiter).filter(Boolean) : []
+  if (paths.includes(modulePath)) return
+
+  process.env.NODE_PATH = [...paths, modulePath].join(path.delimiter)
+  nodeModule.Module._initPaths()
+  logger.info('Chaterm module resolution path added', { path: modulePath })
+}
+
+function appendChatermDependencyPaths(): void {
+  if (app.isPackaged) {
+    appendNodePath(path.join(process.resourcesPath, 'app.asar', 'third_party', 'ChatermForRaven', 'node_modules'))
+    appendNodePath(path.join(process.resourcesPath, 'app.asar.unpacked', 'third_party', 'ChatermForRaven', 'node_modules'))
+    return
+  }
+
+  appendNodePath(path.join(app.getAppPath(), 'third_party', 'ChatermForRaven', 'node_modules'))
+}
+
+function loadChatermMainEntry(
+  entry: string,
+  cwd?: string
+): { mountChaterm: ChatermMountFn; unmountChaterm: ChatermUnmountFn } | null {
   try {
     if (!existsSync(entry)) {
-      chatermMainLogger.error('chaterm.main.load.failed', new Error('Chaterm main bundle not found'), {
+      chatermMainLogger.warn('chaterm.main.load.skipped', {
         path: entry,
         error: 'Chaterm main bundle not found'
       })
       return null
     }
 
-    const mod = dynamicRequire(entry) as ChatermMainModule
+    const previousCwd = process.cwd()
+    const shouldSwitchCwd = !!cwd && existsSync(cwd) && previousCwd !== cwd
+    let mod: ChatermMainModule
+    try {
+      if (shouldSwitchCwd) {
+        process.chdir(cwd)
+      }
+      mod = dynamicRequire(entry) as ChatermMainModule
+    } finally {
+      if (shouldSwitchCwd) {
+        process.chdir(previousCwd)
+      }
+    }
     if (typeof mod.mountChaterm !== 'function' || typeof mod.unmountChaterm !== 'function') {
       chatermMainLogger.error(
         'chaterm.main.load.failed',
@@ -75,7 +126,7 @@ function loadChatermMain(): { mountChaterm: ChatermMountFn; unmountChaterm: Chat
       return null
     }
 
-    logger.info('Chaterm main bundle loaded', { path: entry })
+    logger.info('Chaterm main bundle loaded', { path: entry, cwd })
     return { mountChaterm: mod.mountChaterm, unmountChaterm: mod.unmountChaterm }
   } catch (err) {
     chatermMainLogger.error('chaterm.main.load.failed', err as Error, {
@@ -84,6 +135,36 @@ function loadChatermMain(): { mountChaterm: ChatermMountFn; unmountChaterm: Chat
     })
     return null
   }
+}
+
+function loadChatermMain(): { mountChaterm: ChatermMountFn; unmountChaterm: ChatermUnmountFn } | null {
+  const edition = configureChatermEmbeddedEnv()
+  appendChatermDependencyPaths()
+
+  const entry = app.isPackaged
+    ? path.join(process.resourcesPath, 'chaterm', 'main', 'index.js')
+    : path.join(getResourcePath(), 'chaterm', 'main', 'index.js')
+  const resourcesPath = app.isPackaged ? path.join(process.resourcesPath, 'chaterm') : path.join(getResourcePath(), 'chaterm')
+  process.env.CHATERM_EMBEDDED_RESOURCES_PATH = resourcesPath
+
+  logger.info('Chaterm embedded environment configured', { edition, resourcesPath })
+
+  if (!app.isPackaged) {
+    const chatermProjectPath = path.join(app.getAppPath(), 'third_party', 'ChatermForRaven')
+
+    const embeddedResources = loadChatermMainEntry(entry, chatermProjectPath)
+    if (embeddedResources) {
+      return embeddedResources
+    }
+
+    const devEntry = path.join(chatermProjectPath, 'out', 'main', 'index.js')
+    const loaded = loadChatermMainEntry(devEntry, chatermProjectPath)
+    if (loaded) {
+      return loaded
+    }
+  }
+
+  return loadChatermMainEntry(entry)
 }
 
 /**
@@ -158,6 +239,7 @@ registerChatermProtocolScheme()
 // Long-lived services. Constructed before whenReady so quit hooks can reach them
 // even on a failure during initialization.
 const ravenLLMBridgeService = new RavenLLMBridgeService()
+let ravenRendererBridgeProvider: RendererBridgeProvider | null = null
 let chatermProcessService = new ChatermProcessService({ bridge: ravenLLMBridgeService })
 
 // Check for single instance lock
@@ -225,6 +307,21 @@ if (!app.requestSingleInstanceLock()) {
     // assets are missing). Per spec §D9 a missing resources/chaterm/ MUST NOT
     // crash Raven — assets check inside start() handles that.
     try {
+      ravenRendererBridgeProvider?.destroy()
+      ravenRendererBridgeProvider = new RendererBridgeProvider(() => {
+        const currentWindow = windowService.getMainWindow()
+        if (currentWindow && !currentWindow.isDestroyed()) {
+          return currentWindow.webContents
+        }
+        if (!mainWindow.isDestroyed()) {
+          return mainWindow.webContents
+        }
+        return null
+      })
+      ravenRendererBridgeProvider.start()
+      ravenLLMBridgeService.setProvider(ravenRendererBridgeProvider)
+      logger.info('Raven LLM bridge renderer provider configured')
+
       const chatermMain = loadChatermMain()
       chatermProcessService = new ChatermProcessService({
         bridge: ravenLLMBridgeService,
@@ -322,6 +419,8 @@ if (!app.requestSingleInstanceLock()) {
     // Chaterm cleanup is capped at 3s (spec §5.6) so it never blocks quit.
     try {
       await chatermProcessService.destroy()
+      ravenRendererBridgeProvider?.destroy()
+      ravenRendererBridgeProvider = null
       ravenLLMBridgeService.destroy()
     } catch (error) {
       logger.warn('Error cleaning up Chaterm services:', error as Error)

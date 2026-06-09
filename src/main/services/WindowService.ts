@@ -157,7 +157,19 @@ export class WindowService {
 
     // Dangerous API
     if (isDev) {
-      mainWindow.webContents.on('will-attach-webview', (_, webPreferences) => {
+      mainWindow.webContents.on('will-attach-webview', (_, webPreferences, params) => {
+        const isChatermWebview =
+          params.partition === 'persist:chaterm' ||
+          params.src?.startsWith('raven-chaterm://') ||
+          params.preload?.includes('/chaterm/preload.js')
+
+        if (isChatermWebview) {
+          webPreferences.contextIsolation = true
+          webPreferences.nodeIntegration = false
+          webPreferences.sandbox = false
+          return
+        }
+
         webPreferences.preload = join(__dirname, '../preload/index.js')
       })
     }

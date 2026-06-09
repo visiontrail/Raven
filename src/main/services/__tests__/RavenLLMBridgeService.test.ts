@@ -192,6 +192,38 @@ describe('RavenLLMBridgeService', () => {
     })
   })
 
+  it('creates an in-process client for embedded Chaterm main Agent requests', async () => {
+    const client = service.createInProcessClient()
+    const events: BridgeStreamEvent[] = []
+    const unsubscribe = client.onStreamEvent('req-client', (event) => events.push(event))
+
+    const ack = await client.createMessage({
+      requestId: 'req-client',
+      messages: [{ role: 'user', content: 'hi' }]
+    } as CreateMessageRequest)
+    expect(ack).toEqual({ requestId: 'req-client' })
+
+    await Promise.resolve()
+    await Promise.resolve()
+
+    provider.emit({ type: 'text', delta: 'embedded hello' })
+    provider.emit({ type: 'usage', inputTokens: 3, outputTokens: 2 })
+    provider.emit({ type: 'end', finishReason: 'stop' })
+    provider.resolve()
+
+    expect(events[0]).toMatchObject({ type: 'start', modelId: SAMPLE_MODELS[0].modelId })
+    expect(events).toContainEqual({ type: 'text', delta: 'embedded hello' })
+    expect(events.at(-1)).toEqual({ type: 'end', finishReason: 'stop' })
+    expect(usageCalls[0]).toMatchObject({
+      requestId: 'req-client',
+      source: 'chaterm',
+      inputTokens: 3,
+      outputTokens: 2
+    })
+
+    unsubscribe()
+  })
+
   it('abort emits end(finishReason=abort) within grace period and drops later events', async () => {
     vi.useFakeTimers()
     try {

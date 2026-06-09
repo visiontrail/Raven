@@ -9,6 +9,8 @@ import { existsSync } from 'node:fs'
 import { ipcMain } from 'electron'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { IpcChannel } from '@shared/IpcChannel'
+
 import { ChatermProcessService } from '../ChatermProcessService'
 import { resolveChatermFilePath } from '../chaterm/protocol'
 import {
@@ -65,9 +67,16 @@ vi.mock('electron', async () => {
 // --- Mock the bridge — we only care that registerAllowedSender / unregisterAllowedSender
 //     are called with the expected ids.
 function makeBridgeStub() {
+  const llmClient = {
+    listAvailableModels: vi.fn(),
+    createMessage: vi.fn(),
+    abort: vi.fn(),
+    onStreamEvent: vi.fn()
+  }
   return {
     registerAllowedSender: vi.fn(),
     unregisterAllowedSender: vi.fn(),
+    createInProcessClient: vi.fn(() => llmClient),
     // Other methods are not exercised here; cast through unknown.
     start: vi.fn(),
     destroy: vi.fn()
@@ -80,6 +89,7 @@ function makeBridgeStub() {
  */
 class FakeWebContents extends EventEmitter {
   public destroyed = false
+  public send = vi.fn()
   constructor(public readonly id: number) {
     super()
   }
@@ -196,6 +206,14 @@ describe('ChatermProcessService', () => {
     expect(svc.hasAssets()).toBe(false)
   })
 
+  it('marks the service disabled when database assets are missing', async () => {
+    vi.mocked(existsSync).mockImplementation((filePath) => !String(filePath).endsWith('/db/init_chaterm.db'))
+    const svc = new ChatermProcessService({ bridge: bridge as any, resourcesPath: RESOURCES })
+    await svc.start()
+    expect(svc.isEnabled()).toBe(false)
+    expect(svc.hasAssets()).toBe(false)
+  })
+
   it('enables the service and registers the protocol when assets are present', async () => {
     vi.mocked(existsSync).mockReturnValue(true)
     const svc = new ChatermProcessService({ bridge: bridge as any, resourcesPath: RESOURCES })
@@ -227,9 +245,40 @@ describe('ChatermProcessService', () => {
     await svc.attachWebview(wc as any)
 
     expect(bridge.registerAllowedSender).toHaveBeenCalledWith(101)
-    expect(mount).toHaveBeenCalledWith(expect.objectContaining({ webContentsId: 101 }))
+    expect(mount).toHaveBeenCalledWith(
+      expect.objectContaining({
+        webContentsId: 101,
+        llmClient: expect.objectContaining({
+          createMessage: expect.any(Function),
+          onStreamEvent: expect.any(Function)
+        })
+      })
+    )
     expect(calls).toEqual(['mount', 'register'])
     expect(svc.getChatermWebviewId()).toBe(101)
+  })
+
+  it('resends the Raven session when the same webview attaches again', async () => {
+    vi.mocked(existsSync).mockReturnValue(true)
+    const mount = vi.fn(async () => {})
+    const svc = new ChatermProcessService({
+      bridge: bridge as any,
+      mount,
+      resourcesPath: RESOURCES
+    })
+    await svc.start()
+
+    const wc = new FakeWebContents(101)
+    await svc.attachWebview(wc as any)
+    await svc.attachWebview(wc as any)
+
+    expect(mount).toHaveBeenCalledTimes(1)
+    expect(bridge.registerAllowedSender).toHaveBeenCalledTimes(1)
+    expect(wc.send).toHaveBeenCalledTimes(2)
+    expect(wc.send).toHaveBeenLastCalledWith(
+      IpcChannel.Raven_UI_SetSession,
+      expect.objectContaining({ uid: 999999999, token: 'guest_token', isGuest: true })
+    )
   })
 
   it('attaches with the default no-op mount when the Chaterm main bundle is unavailable', async () => {

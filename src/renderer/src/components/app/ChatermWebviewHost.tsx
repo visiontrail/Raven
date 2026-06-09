@@ -21,6 +21,7 @@ type HostWarnPayload = {
 
 const CHATERM_APP_URL = 'raven-chaterm://app/index.html'
 const BLANK_WEBVIEW_URL = 'about:blank'
+const RAVEN_SESSION_HANDOFF_TIMEOUT = 'raven.session.handoff.timeout'
 const logger = loggerService.withContext('ChatermWebviewHost')
 
 /**
@@ -48,6 +49,7 @@ const ChatermWebviewHost: FC = () => {
   const attachStartedRef = useRef(false)
   const navigatedToAppRef = useRef(false)
   const loadedRef = useRef(false)
+  const sessionSyncedAfterAppReadyRef = useRef(false)
   // Track whether the webview has ever been mounted so we can keep it alive
   const everMountedRef = useRef(false)
 
@@ -107,6 +109,7 @@ const ChatermWebviewHost: FC = () => {
     attachStartedRef.current = false
     navigatedToAppRef.current = false
     loadedRef.current = false
+    sessionSyncedAfterAppReadyRef.current = false
   }, [])
 
   const isAtChatermAppUrl = useCallback((element: WebviewTag) => {
@@ -120,6 +123,30 @@ const ChatermWebviewHost: FC = () => {
       element.send(IpcChannel.Raven_UI_LocaleChanged, { locale: i18n.language })
     },
     [theme]
+  )
+
+  const markLoaded = useCallback(
+    (element: WebviewTag, origin: string) => {
+      if (loadedRef.current || !navigatedToAppRef.current || !isAtChatermAppUrl(element)) return
+      loadedRef.current = true
+      console.info('[ChatermWebviewHost] webview loaded via', origin)
+      setLoadState('loaded')
+      sendInitialState(element)
+    },
+    [isAtChatermAppUrl, sendInitialState]
+  )
+
+  const syncSessionAfterAppReady = useCallback(
+    (element: WebviewTag) => {
+      if (sessionSyncedAfterAppReadyRef.current || !navigatedToAppRef.current || !isAtChatermAppUrl(element)) return
+      sessionSyncedAfterAppReadyRef.current = true
+      const id = element.getWebContentsId()
+      void window.api.chaterm.attachWebview(id).catch((err) => {
+        sessionSyncedAfterAppReadyRef.current = false
+        logger.warn('raven.chaterm.session_resync.failed', { error: (err as Error).message })
+      })
+    },
+    [isAtChatermAppUrl]
   )
 
   const openLogs = useCallback(async () => {
@@ -164,12 +191,14 @@ const ChatermWebviewHost: FC = () => {
       if (webviewRef.current !== element) return
       navigatedToAppRef.current = true
       await element.loadURL(CHATERM_APP_URL)
+      if (webviewRef.current !== element) return
+      markLoaded(element, 'loadURL')
     } catch (err) {
       attachStartedRef.current = false
       console.error('[ChatermWebviewHost] attachWebview failed:', err)
       setLoadState('crashed')
     }
-  }, [])
+  }, [markLoaded])
 
   const setRef = useCallback(
     (element: WebviewTag | null) => {
@@ -180,20 +209,26 @@ const ChatermWebviewHost: FC = () => {
       }
 
       // §6.5: loading indicators
-      const onStartLoading = () => setLoadState('loading')
-      const markLoaded = (origin: string) => {
-        if (loadedRef.current || !navigatedToAppRef.current || !isAtChatermAppUrl(element)) return
-        loadedRef.current = true
-        console.info('[ChatermWebviewHost] webview loaded via', origin)
-        setLoadState('loaded')
-        sendInitialState(element)
+      const onStartLoading = () => {
+        if (!loadedRef.current) {
+          setLoadState('loading')
+        }
       }
-      const onFinishLoad = () => markLoaded('did-finish-load')
-      // Fallback: dom-ready fires earlier than did-finish-load and is sufficient
-      // for Chaterm — once the document is parsed the renderer has bootstrapped.
-      // Some embedded scenarios delay the window.onload event (e.g. lazy chunks
-      // still in flight), leaving did-finish-load pending forever.
-      const onDomReady = () => markLoaded('dom-ready')
+      const onFinishLoad = () => {
+        syncSessionAfterAppReady(element)
+        markLoaded(element, 'did-finish-load')
+      }
+      // dom-ready is also our signal that getWebContentsId() is safe to call.
+      // Calling it synchronously from the React ref callback throws because
+      // the webview hasn't attached + emitted dom-ready yet.
+      const onDomReady = () => {
+        if (!attachStartedRef.current) {
+          void attachAndNavigate(element)
+          return
+        }
+        syncSessionAfterAppReady(element)
+        markLoaded(element, 'dom-ready')
+      }
 
       // §6.5: transition to crashed on load failure so the overlay doesn't hang
       const onFailLoad = (event: any) => {
@@ -226,7 +261,11 @@ const ChatermWebviewHost: FC = () => {
           return
         }
         if (event.channel === IpcChannel.Raven_UI_HostWarn) {
-          showHostWarning(event.args?.[0] ?? {})
+          const payload = event.args?.[0] ?? {}
+          if (payload?.code === RAVEN_SESSION_HANDOFF_TIMEOUT) {
+            markLoaded(element, 'session-handoff-timeout')
+          }
+          showHostWarning(payload)
         }
       }
 
@@ -236,7 +275,6 @@ const ChatermWebviewHost: FC = () => {
       element.addEventListener('did-fail-load', onFailLoad)
       element.addEventListener('will-navigate', onWillNavigate)
       element.addEventListener('ipc-message', onIpcMessage)
-      void attachAndNavigate(element)
     },
     // navigate, theme, and notification handlers are captured by closure; they're stable enough
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -248,15 +286,12 @@ const ChatermWebviewHost: FC = () => {
     setLoadState('loading')
     const webview = webviewRef.current
     if (!webview) return
-    void webview
-      .loadURL(BLANK_WEBVIEW_URL)
-      .catch((err) => {
-        console.warn('[ChatermWebviewHost] blank reload failed:', err)
-      })
-      .finally(() => {
-        void attachAndNavigate(webview)
-      })
-  }, [attachAndNavigate, resetNavigationState])
+    // Loading about:blank triggers dom-ready, which re-runs attachAndNavigate
+    // (gated by attachStartedRef, which we just reset above).
+    void webview.loadURL(BLANK_WEBVIEW_URL).catch((err) => {
+      console.warn('[ChatermWebviewHost] blank reload failed:', err)
+    })
+  }, [resetNavigationState])
 
   // Don't render anything if Chaterm resources aren't available
   if (!hasAssets || !preloadUrl) return null
@@ -288,7 +323,7 @@ const ChatermWebviewHost: FC = () => {
           preload={preloadUrl}
           /* §6.3: no node integration; context isolation on */
           nodeintegration={'false' as any}
-          webpreferences="contextIsolation=yes,nodeIntegration=no"
+          webpreferences="contextIsolation=yes,nodeIntegration=no,additionalArguments=--chaterm-embedded=1"
           allowpopups={'false' as any}
           partition="persist:chaterm"
           style={{

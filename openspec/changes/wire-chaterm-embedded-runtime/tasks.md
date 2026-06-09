@@ -71,7 +71,7 @@
 - [ ] 7.1 本地 `yarn build:chaterm && yarn dev`：进 `/terminal` 主界面直接渲染（无登录页、无 loading 卡死）
 - [ ] 7.2 在 Raven DevTools console 中跑 `document.querySelector('webview').openDevTools()`，验证 Chaterm 渲染层 console 无 `No handler registered for` 报错
 - [ ] 7.3 在 Chaterm UI 中：(a) 新增一个 SSH 资产（localhost / sshd-test）；(b) 连接并执行 `echo hello`；(c) 关闭页签切回，会话保活
-- [ ] 7.4 Playwright e2e（`src/tests/e2e/terminal.spec.ts`，若已存在则补 scenario，否则新增）：进 `/terminal` → 验证 webview 渲染完成 → 验证 ipc 桥 ready → 验证模拟 SSH echo 回环
+- [~] 7.4 Playwright e2e（`src/tests/e2e/terminal.spec.ts`，若已存在则补 scenario，否则新增）：进 `/terminal` → 验证 webview 渲染完成 → 验证 ipc 桥 ready → 验证模拟 SSH echo 回环 — 落地在 [tests/e2e/terminal.spec.ts](tests/e2e/terminal.spec.ts)（Raven 实际 e2e 目录为顶层 `tests/e2e/`）：HashRouter 跳 `#/terminal` → 断 `<webview>` 挂载（passing ✅）；通过 `--user-data-dir=<tmp>` 隔离 `yarn dev` 的 `SingletonLock`，`describe.configure({mode:'serial'})` 串行执行。**两条深度断言（loaded overlay 消失 + `window.ravenLLM/ravenUI/__ravenSessionReady` 全 ready）当前 `test.fixme`：** 在 `electron.launch({args:['.']})` 无 vite dev server 的 headless 启动下，embedded webview 卡在 `about:blank`（`wv.getURL()===''`、`isLoading=true`、`isCrashed=false`），`raven-chaterm://` 协议请求未 commit；同样的 boot path 在 `yarn dev` 下视觉验证通过（§7.1）。Open question：playwright launch 缺 vite renderer dev server vs Raven main 的 protocol/handler 注册时序是否产生 race，需要单独排查 — 不在本 spec 范围内。SSH echo 回环刻意未在 e2e 覆盖（需要本机 sshd 且与 §7.3 手动用例重复）。
 - [ ] 7.5 崩溃恢复手动测试：在 webview devtools 中跑 `process.crash()`，观察 Raven 显示崩溃占位 → 点击 Reload → 重新加载成功，handler 注册无重复
 
 ## 8. 清理与发布

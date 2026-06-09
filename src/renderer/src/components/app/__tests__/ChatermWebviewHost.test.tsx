@@ -125,17 +125,28 @@ describe('ChatermWebviewHost', () => {
     vi.restoreAllMocks()
   })
 
-  it('creates the webview at about:blank, attaches, then navigates to Chaterm', async () => {
+  it('creates the webview at about:blank, attaches on dom-ready, then navigates to Chaterm', async () => {
     renderHost()
 
     const webview = await getWebview()
 
     expect(webview.getAttribute('src')).toBe('about:blank')
+    expect(webview.getAttribute('webpreferences')).toBe(
+      'contextIsolation=yes,nodeIntegration=no,additionalArguments=--chaterm-embedded=1'
+    )
+    // attach must wait for dom-ready — Electron throws if getWebContentsId is
+    // called before the webview is attached + dom-ready has fired.
+    expect(attachWebviewMock).not.toHaveBeenCalled()
+
+    act(() => {
+      webview.dispatchEvent(new Event('dom-ready'))
+    })
+
     await waitFor(() => expect(attachWebviewMock).toHaveBeenCalledWith(42))
     await waitFor(() => expect(loadUrlMock).toHaveBeenCalledWith(CHATERM_APP_URL))
   })
 
-  it('ignores about:blank dom-ready and marks loaded when Chaterm dom-ready fires', async () => {
+  it('ignores about:blank dom-ready and marks loaded when Chaterm loadURL resolves', async () => {
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
     const attach = createDeferred()
     attachWebviewMock.mockReturnValueOnce(attach.promise)
@@ -149,23 +160,28 @@ describe('ChatermWebviewHost', () => {
 
     attach.resolve()
     await waitFor(() => expect(loadUrlMock).toHaveBeenCalledWith(CHATERM_APP_URL))
-    act(() => {
-      webview.dispatchEvent(new Event('dom-ready'))
-    })
 
     await waitFor(() => {
       expect(sendMock).toHaveBeenCalledWith(IpcChannel.Raven_UI_ThemeChanged, { theme: 'dark' })
       expect(sendMock).toHaveBeenCalledWith(IpcChannel.Raven_UI_LocaleChanged, { locale: 'en-us' })
     })
-    expect(infoSpy).toHaveBeenCalledWith('[ChatermWebviewHost] webview loaded via', 'dom-ready')
+    expect(infoSpy).toHaveBeenCalledWith('[ChatermWebviewHost] webview loaded via', 'loadURL')
     infoSpy.mockRestore()
   })
 
-  it('marks loaded when did-finish-load arrives before dom-ready', async () => {
+  it('marks loaded via did-finish-load before the Chaterm loadURL promise resolves', async () => {
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const load = createDeferred()
+    loadUrlMock.mockImplementationOnce(async function (this: Element, url: string) {
+      currentUrls.set(this, url)
+      return load.promise
+    })
     renderHost()
 
     const webview = await getWebview()
+    act(() => {
+      webview.dispatchEvent(new Event('dom-ready'))
+    })
     await waitFor(() => expect(loadUrlMock).toHaveBeenCalledWith(CHATERM_APP_URL))
     act(() => {
       webview.dispatchEvent(new Event('did-finish-load'))
@@ -175,14 +191,19 @@ describe('ChatermWebviewHost', () => {
       expect(sendMock).toHaveBeenCalledWith(IpcChannel.Raven_UI_ThemeChanged, { theme: 'dark' })
     })
     expect(infoSpy).toHaveBeenCalledWith('[ChatermWebviewHost] webview loaded via', 'did-finish-load')
+    load.resolve()
+    await waitFor(() => expect(infoSpy).toHaveBeenCalledTimes(1))
     infoSpy.mockRestore()
   })
 
-  it('does not reattach or mark loaded twice when both load events arrive', async () => {
+  it('does not mark loaded twice when app load events arrive more than once', async () => {
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
     renderHost()
 
     const webview = await getWebview()
+    act(() => {
+      webview.dispatchEvent(new Event('dom-ready'))
+    })
     await waitFor(() => expect(loadUrlMock).toHaveBeenCalledWith(CHATERM_APP_URL))
     act(() => {
       webview.dispatchEvent(new Event('dom-ready'))
@@ -190,7 +211,75 @@ describe('ChatermWebviewHost', () => {
     })
 
     await waitFor(() => expect(infoSpy).toHaveBeenCalledTimes(1))
+    expect(attachWebviewMock).toHaveBeenCalledTimes(2)
+    infoSpy.mockRestore()
+  })
+
+  it('resends the Raven session after the Chaterm app document is ready', async () => {
+    renderHost()
+
+    const webview = await getWebview()
+    act(() => {
+      webview.dispatchEvent(new Event('dom-ready'))
+    })
+    await waitFor(() => expect(loadUrlMock).toHaveBeenCalledWith(CHATERM_APP_URL))
     expect(attachWebviewMock).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      webview.dispatchEvent(new Event('dom-ready'))
+    })
+
+    await waitFor(() => expect(attachWebviewMock).toHaveBeenCalledTimes(2))
+    expect(attachWebviewMock).toHaveBeenLastCalledWith(42)
+  })
+
+  it('keeps the loaded webview visible when later load events start', async () => {
+    const { queryByText } = renderHost()
+
+    const webview = await getWebview()
+    act(() => {
+      webview.dispatchEvent(new Event('dom-ready'))
+    })
+    await waitFor(() => expect(sendMock).toHaveBeenCalledWith(IpcChannel.Raven_UI_ThemeChanged, { theme: 'dark' }))
+    await waitFor(() => expect(queryByText('Loading Terminal…')).not.toBeInTheDocument())
+
+    act(() => {
+      webview.dispatchEvent(new Event('did-start-loading'))
+    })
+
+    expect(queryByText('Loading Terminal…')).not.toBeInTheDocument()
+  })
+
+  it('treats the embedded session handoff timeout as a non-fatal loaded state', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const attach = createDeferred()
+    const load = createDeferred()
+    attachWebviewMock.mockReturnValueOnce(attach.promise)
+    loadUrlMock.mockImplementationOnce(async function (this: Element, url: string) {
+      currentUrls.set(this, url)
+      return load.promise
+    })
+    renderHost()
+
+    const webview = await getWebview()
+    act(() => {
+      webview.dispatchEvent(new Event('dom-ready'))
+    })
+    attach.resolve()
+    await waitFor(() => expect(loadUrlMock).toHaveBeenCalledWith(CHATERM_APP_URL))
+
+    const event = new Event('ipc-message') as Event & { channel: string; args: unknown[] }
+    event.channel = IpcChannel.Raven_UI_HostWarn
+    event.args = [{ code: 'raven.session.handoff.timeout', message: 'Terminal 初始化超时' }]
+
+    act(() => {
+      webview.dispatchEvent(event)
+    })
+
+    await waitFor(() => {
+      expect(sendMock).toHaveBeenCalledWith(IpcChannel.Raven_UI_ThemeChanged, { theme: 'dark' })
+    })
+    expect(infoSpy).toHaveBeenCalledWith('[ChatermWebviewHost] webview loaded via', 'session-handoff-timeout')
     infoSpy.mockRestore()
   })
 
@@ -198,6 +287,9 @@ describe('ChatermWebviewHost', () => {
     renderHost()
 
     const webview = await getWebview()
+    act(() => {
+      webview.dispatchEvent(new Event('dom-ready'))
+    })
     await waitFor(() => expect(loadUrlMock).toHaveBeenCalledWith(CHATERM_APP_URL))
 
     const event = new Event('ipc-message') as Event & { channel: string; args: unknown[] }

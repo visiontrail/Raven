@@ -10,7 +10,7 @@ import { IpcChannel } from '@shared/IpcChannel'
 import { getResourcePath } from '../utils'
 import { registerChatermProtocolHandler, unregisterChatermProtocolHandler } from './chaterm/protocol'
 import type { ChatermWebviewIdProvider } from './chaterm/registerChatermHandler'
-import type { RavenLLMBridgeService } from './RavenLLMBridgeService'
+import type { RavenLLMBridgeService, RavenLLMClient } from './RavenLLMBridgeService'
 
 /**
  * Raven → Chaterm session payload. Embedded mode fixes this to the upstream
@@ -32,11 +32,18 @@ const logger = loggerService.withContext('ChatermProcessService')
 
 /** Hard upper bound on cleanup during quit (spec §5.6). */
 const DEFAULT_DESTROY_TIMEOUT_MS = 3_000
+const REQUIRED_RESOURCE_FILES = [
+  'index.html',
+  'preload.js',
+  path.join('db', 'init_chaterm.db'),
+  path.join('db', 'init_data.db')
+]
 
 /** Signal payload mirrors Chaterm's MountChatermOptions surface. */
 export interface ChatermMountOptions {
   webContentsId: number
   bridge: { registerAllowedSender(webContentsId: number): void }
+  llmClient?: RavenLLMClient
   signals?: { onUnmount?: () => void | Promise<void> }
 }
 
@@ -45,6 +52,7 @@ export type ChatermUnmountFn = () => Promise<void>
 
 export interface ChatermProcessServiceOptions {
   bridge: RavenLLMBridgeService
+  llmClient?: RavenLLMClient
   /**
    * Injection points for Chaterm's embedded entrypoint. In production these
    * come from `third_party/ChatermForRaven` once the build pipeline (§8) is
@@ -64,6 +72,7 @@ export interface AttachOptions {
 
 export class ChatermProcessService implements ChatermWebviewIdProvider {
   private readonly bridge: RavenLLMBridgeService
+  private readonly llmClient: RavenLLMClient
   private readonly mount: ChatermMountFn
   private readonly unmount: ChatermUnmountFn
   private readonly resourcesPath: string
@@ -78,6 +87,7 @@ export class ChatermProcessService implements ChatermWebviewIdProvider {
 
   constructor(options: ChatermProcessServiceOptions) {
     this.bridge = options.bridge
+    this.llmClient = options.llmClient ?? options.bridge.createInProcessClient()
     this.mount = options.mount ?? noopMount
     this.unmount = options.unmount ?? noopUnmount
     // In packaged apps chaterm lands at process.resourcesPath/chaterm (extraResources).
@@ -93,10 +103,11 @@ export class ChatermProcessService implements ChatermWebviewIdProvider {
     if (this.started) return
     this.started = true
 
-    const indexHtml = path.join(this.resourcesPath, 'index.html')
-    const preloadJs = path.join(this.resourcesPath, 'preload.js')
+    const missingFiles = REQUIRED_RESOURCE_FILES.map((file) => path.join(this.resourcesPath, file)).filter(
+      (filePath) => !existsSync(filePath)
+    )
 
-    if (existsSync(indexHtml) && existsSync(preloadJs)) {
+    if (missingFiles.length === 0) {
       this.assetsAvailable = true
       registerChatermProtocolHandler(this.resourcesPath)
       logger.info('Chaterm resources found, Terminal tab enabled', { resourcesPath: this.resourcesPath })
@@ -104,8 +115,7 @@ export class ChatermProcessService implements ChatermWebviewIdProvider {
       this.assetsAvailable = false
       logger.warn('chaterm.assets.missing — Terminal tab disabled', {
         resourcesPath: this.resourcesPath,
-        indexHtml,
-        preloadJs
+        missingFiles
       })
     }
   }
@@ -151,6 +161,7 @@ export class ChatermProcessService implements ChatermWebviewIdProvider {
     }
     if (this.chatermWebContents && !this.chatermWebContents.isDestroyed()) {
       if (this.chatermWebContents.id === webContents.id) {
+        this.sendSessionPayload(webContents)
         return
       }
       throw new Error(`Chaterm webview already attached (id=${this.chatermWebContents.id})`)
@@ -185,6 +196,7 @@ export class ChatermProcessService implements ChatermWebviewIdProvider {
       await this.mount({
         webContentsId: webContents.id,
         bridge: this.bridge,
+        llmClient: this.llmClient,
         signals: {
           onUnmount: () => {
             /* signal hook for Chaterm-side cleanup; nothing to do on Raven side */
@@ -192,15 +204,7 @@ export class ChatermProcessService implements ChatermWebviewIdProvider {
         }
       })
       this.bridge.registerAllowedSender(webContents.id)
-      const sessionPayload = buildSessionPayload()
-      try {
-        webContents.send(IpcChannel.Raven_UI_SetSession, sessionPayload)
-      } catch (sendErr) {
-        // Sending the session is best-effort: if the webview is destroyed
-        // mid-attach, the renderer guard's timeout will surface the failure
-        // via `notifyHostWarn`. We don't roll back mount for a transient send.
-        logger.warn('Raven session send failed', { error: (sendErr as Error).message, webContentsId: webContents.id })
-      }
+      const sessionPayload = this.sendSessionPayload(webContents)
       logger.info('Chaterm webview attached', { webContentsId: webContents.id, sessionGuest: sessionPayload.isGuest })
     } catch (err) {
       // Rollback partial state.
@@ -219,6 +223,19 @@ export class ChatermProcessService implements ChatermWebviewIdProvider {
       this.chatermWebviewId = null
       throw err
     }
+  }
+
+  private sendSessionPayload(webContents: WebContents): RavenSessionPayload {
+    const sessionPayload = buildSessionPayload()
+    try {
+      webContents.send(IpcChannel.Raven_UI_SetSession, sessionPayload)
+    } catch (sendErr) {
+      // Sending the session is best-effort: if the webview is destroyed
+      // mid-attach, the renderer guard's timeout will surface the failure
+      // via `notifyHostWarn`. We don't roll back mount for a transient send.
+      logger.warn('Raven session send failed', { error: (sendErr as Error).message, webContentsId: webContents.id })
+    }
+    return sessionPayload
   }
 
   async detachWebview(reason: string = 'manual'): Promise<void> {

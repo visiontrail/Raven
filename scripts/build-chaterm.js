@@ -16,6 +16,7 @@
 //   3. Copy out/renderer/      -> resources/chaterm/
 //   4. Copy out/main/          -> resources/chaterm/main/
 //   5. Copy out/preload/raven-embedded.js -> resources/chaterm/preload.js
+//   6. Copy src/renderer/src/assets/db/*.db -> resources/chaterm/db/
 
 const fs = require('node:fs')
 const path = require('node:path')
@@ -29,7 +30,9 @@ const OUT_MAIN_ENTRY = path.join(OUT_MAIN, 'index.js')
 const OUT_PRELOAD = path.join(SUBMODULE, 'out', 'preload', 'raven-embedded.js')
 const OUT_PRELOAD_MAP = path.join(SUBMODULE, 'out', 'preload', 'raven-embedded.js.map')
 const OUT_PRELOAD_INDEX = path.join(SUBMODULE, 'out', 'preload', 'index.js')
+const DB_ASSETS = path.join(SUBMODULE, 'src', 'renderer', 'src', 'assets', 'db')
 const TARGET_DIR = path.join(REPO_ROOT, 'resources', 'chaterm')
+const REQUIRED_DB_FILES = ['init_chaterm.db', 'init_data.db']
 
 const args = process.argv.slice(2)
 const forceInstall = args.includes('--install')
@@ -114,6 +117,13 @@ function main() {
     console.error(`[build-chaterm] Chaterm raven-embedded preload missing: ${OUT_PRELOAD}`)
     process.exit(1)
   }
+  for (const file of REQUIRED_DB_FILES) {
+    const dbPath = path.join(DB_ASSETS, file)
+    if (!fs.existsSync(dbPath)) {
+      console.error(`[build-chaterm] Chaterm database asset missing: ${dbPath}`)
+      process.exit(1)
+    }
+  }
 
   step(`Resetting target directory ${TARGET_DIR}`)
   rimraf(TARGET_DIR)
@@ -138,11 +148,25 @@ function main() {
     process.exit(1)
   }
 
-  // index.html sanity check — Raven's ChatermProcessService.start() gates the
-  // Terminal tab on its presence.
+  step('Copying database assets')
+  const targetDbDir = path.join(TARGET_DIR, 'db')
+  fs.mkdirSync(targetDbDir, { recursive: true })
+  for (const file of REQUIRED_DB_FILES) {
+    fs.copyFileSync(path.join(DB_ASSETS, file), path.join(targetDbDir, file))
+  }
+
+  // Resource sanity checks — Raven's ChatermProcessService.start() gates the
+  // Terminal tab on these files.
   if (!fs.existsSync(path.join(TARGET_DIR, 'index.html'))) {
     console.error('[build-chaterm] resources/chaterm/index.html missing after copy — renderer build is broken')
     process.exit(1)
+  }
+  for (const file of REQUIRED_DB_FILES) {
+    const targetDbPath = path.join(targetDbDir, file)
+    if (!fs.existsSync(targetDbPath)) {
+      console.error(`[build-chaterm] resources/chaterm/db/${file} missing after copy`)
+      process.exit(1)
+    }
   }
 
   step('Done')

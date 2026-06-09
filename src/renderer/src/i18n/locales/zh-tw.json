@@ -1950,8 +1950,8 @@
       "noComponents": "請至少選擇一個元件進行打包。",
       "noPackageType": "包類型未定義，無法打包。",
       "noPackageVersion": "請輸入整包版本號。",
-      "selectFile": "選擇檔案失敗",
-      "rarNotFullySupported": "RAR 檔案目前無法完美支援，建議先自行解壓後再選擇對應檔案。"
+      "rarNotFullySupported": "RAR 檔案目前無法完美支援，建議先自行解壓後再選擇對應檔案。",
+      "selectFile": "選擇檔案失敗"
     },
     "infoPreview": "資訊預覽",
     "isPatch": "是否為 PATCH 包",
@@ -4062,6 +4062,15 @@
       "title": "縮放"
     }
   },
+  "terminal": {
+    "comingSoon": "即將推出",
+    "crashed": "終端已崩潰",
+    "loading": "正在載入終端…",
+    "notAvailable": "終端不可用。未找到 Chaterm 資源檔案。",
+    "reload": "重新載入",
+    "title": "終端",
+    "view_logs": "檢視日誌"
+  },
   "title": {
     "agents": "智能體",
     "apps": "小程序",
@@ -4217,10 +4226,6 @@
   },
   "warning": {
     "missing_provider": "供應商不存在，已回退到預設供應商 {{provider}}。這可能導致問題。"
-  },
-  "terminal": {
-    "title": "終端",
-    "comingSoon": "即將推出"
   },
   "words": {
     "knowledgeGraph": "知識圖譜",

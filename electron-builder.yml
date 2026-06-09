@@ -75,6 +75,14 @@ extraResources:
     to: chaterm
     filter:
       - '**/*'
+  - from: third_party/ChatermForRaven/build/edition-config
+    to: edition-config
+    filter:
+      - '**/*.json'
+  - from: third_party/ChatermForRaven/src/renderer/src/assets/db
+    to: chaterm/db
+    filter:
+      - '*.db'
 win:
   executableName: Raven
   artifactName: ${productName}-${version}-${arch}-setup.${ext}

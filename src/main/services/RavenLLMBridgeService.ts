@@ -27,6 +27,13 @@ interface ActiveRequest {
   abortTimer?: NodeJS.Timeout
 }
 
+export interface RavenLLMClient {
+  listAvailableModels(): Promise<AvailableModel[]>
+  createMessage(request: CreateMessageRequest): Promise<CreateMessageAck>
+  abort(requestId: string): Promise<void>
+  onStreamEvent(requestId: string, listener: (event: BridgeStreamEvent) => void): () => void
+}
+
 export interface RavenLLMBridgeServiceOptions {
   /**
    * Provider implementation. Production wires a renderer-backed provider; tests pass a fake.
@@ -86,6 +93,92 @@ export class RavenLLMBridgeService {
     return this.allowedSenders.has(webContentsId)
   }
 
+  createInProcessClient(): RavenLLMClient {
+    const listeners = new Map<string, Set<(event: BridgeStreamEvent) => void>>()
+    const activeRequests = new Map<
+      string,
+      {
+        abortController: AbortController
+        startedAt: number
+        modelId: string
+        ended: boolean
+        abortTimer?: NodeJS.Timeout
+      }
+    >()
+
+    const dispatch = (requestId: string, event: BridgeStreamEvent) => {
+      const active = activeRequests.get(requestId)
+      if (!active || active.ended) return
+
+      if (event.type === 'end') {
+        active.ended = true
+        if (active.abortTimer) {
+          clearTimeout(active.abortTimer)
+        }
+        activeRequests.delete(requestId)
+        logger.info('LLM in-process request finished', {
+          requestId,
+          modelId: active.modelId,
+          source: 'chaterm',
+          finishReason: event.finishReason,
+          durationMs: Date.now() - active.startedAt
+        })
+      }
+
+      for (const listener of listeners.get(requestId) ?? []) {
+        listener(event)
+      }
+    }
+
+    return {
+      listAvailableModels: async () => this.requireProvider().listAvailableModels(),
+      createMessage: async (rawRequest: CreateMessageRequest) => {
+        const provider = this.requireProvider()
+        const request = this.sanitizeRequest(rawRequest)
+        const modelId = await this.resolveModelId(provider, request)
+        const abortController = new AbortController()
+
+        activeRequests.set(request.requestId, {
+          abortController,
+          startedAt: Date.now(),
+          modelId,
+          ended: false
+        })
+
+        logger.info('LLM in-process request started', {
+          requestId: request.requestId,
+          modelId,
+          source: 'chaterm',
+          messageCount: request.messages?.length ?? 0
+        })
+
+        void this.runInProcessRequest(provider, { ...request, modelId }, abortController, dispatch)
+        return { requestId: request.requestId }
+      },
+      abort: async (requestId: string) => {
+        const active = activeRequests.get(requestId)
+        if (!active || active.ended) return
+
+        logger.info('LLM in-process request aborting', { requestId })
+        active.abortController.abort()
+        active.abortTimer = setTimeout(() => {
+          dispatch(requestId, { type: 'end', finishReason: 'abort' })
+        }, ABORT_GRACE_MS)
+      },
+      onStreamEvent: (requestId: string, listener: (event: BridgeStreamEvent) => void) => {
+        const requestListeners = listeners.get(requestId) ?? new Set<(event: BridgeStreamEvent) => void>()
+        requestListeners.add(listener)
+        listeners.set(requestId, requestListeners)
+        return () => {
+          requestListeners.delete(listener)
+          if (requestListeners.size === 0) {
+            listeners.delete(requestId)
+          }
+        }
+      }
+    }
+  }
+
   /** Register IPC handlers. Idempotent. */
   start(): void {
     if (this.started) return
@@ -131,18 +224,7 @@ export class RavenLLMBridgeService {
     const request = this.sanitizeRequest(rawRequest)
 
     // Resolve & validate model.
-    let modelId = request.modelId
-    if (!modelId) {
-      modelId = (await provider.getDefaultModelId()) ?? undefined
-      if (!modelId) {
-        throw new BridgeError(BRIDGE_ERROR_CODES.NO_DEFAULT_MODEL, 'no default model configured in Raven')
-      }
-    } else {
-      const available = await provider.listAvailableModels()
-      if (!available.some((m) => m.modelId === modelId)) {
-        throw new BridgeError(BRIDGE_ERROR_CODES.MODEL_NOT_AVAILABLE, `model "${modelId}" is not available`)
-      }
-    }
+    const modelId = await this.resolveModelId(provider, request)
 
     const senderId = event.sender.id
     const abortController = new AbortController()
@@ -280,6 +362,64 @@ export class RavenLLMBridgeService {
       throw new BridgeError(BRIDGE_ERROR_CODES.BRIDGE_NOT_READY, 'bridge provider not configured')
     }
     return this.provider
+  }
+
+  private async resolveModelId(provider: BridgeProvider, request: CreateMessageRequest): Promise<string> {
+    const modelId = request.modelId
+    if (!modelId) {
+      const defaultModelId = await provider.getDefaultModelId()
+      if (!defaultModelId) {
+        throw new BridgeError(BRIDGE_ERROR_CODES.NO_DEFAULT_MODEL, 'no default model configured in Raven')
+      }
+      return defaultModelId
+    }
+
+    const available = await provider.listAvailableModels()
+    if (!available.some((m) => m.modelId === modelId)) {
+      throw new BridgeError(BRIDGE_ERROR_CODES.MODEL_NOT_AVAILABLE, `model "${modelId}" is not available`)
+    }
+    return modelId
+  }
+
+  private async runInProcessRequest(
+    provider: BridgeProvider,
+    request: CreateMessageRequest & { modelId: string },
+    abortController: AbortController,
+    dispatch: (requestId: string, event: BridgeStreamEvent) => void
+  ): Promise<void> {
+    try {
+      dispatch(request.requestId, { type: 'start', modelId: request.modelId, createdAt: Date.now() })
+      await provider.createMessage(request, abortController.signal, (event) => {
+        if (abortController.signal.aborted) return
+        if (event.type === 'usage') {
+          this.onUsage?.({
+            requestId: request.requestId,
+            modelId: request.modelId,
+            inputTokens: event.inputTokens,
+            outputTokens: event.outputTokens,
+            cacheRead: event.cacheRead,
+            cacheWrite: event.cacheWrite,
+            source: 'chaterm'
+          })
+        }
+        dispatch(request.requestId, event)
+      })
+      dispatch(request.requestId, { type: 'end', finishReason: 'stop' })
+    } catch (err) {
+      const isAbort = abortController.signal.aborted
+      dispatch(request.requestId, {
+        type: 'end',
+        finishReason: isAbort ? 'abort' : 'error',
+        error: isAbort ? undefined : err instanceof Error ? err.message : String(err)
+      })
+      if (!isAbort) {
+        logger.error('LLM in-process request failed', err as Error, {
+          requestId: request.requestId,
+          modelId: request.modelId,
+          source: 'chaterm'
+        })
+      }
+    }
   }
 
   /**

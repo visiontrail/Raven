@@ -1950,8 +1950,8 @@
       "noComponents": "Please select at least one component for packaging.",
       "noPackageType": "Package type undefined, cannot package.",
       "noPackageVersion": "Please enter package version number.",
-      "selectFile": "Failed to select file",
-      "rarNotFullySupported": "RAR files are not fully supported. Please extract them first, then select the required file."
+      "rarNotFullySupported": "RAR files are not fully supported. Please extract them first, then select the required file.",
+      "selectFile": "Failed to select file"
     },
     "infoPreview": "Information Preview",
     "isPatch": "Is Patch Package",
@@ -4062,6 +4062,15 @@
       "title": "Page Zoom"
     }
   },
+  "terminal": {
+    "comingSoon": "Coming soon",
+    "crashed": "Terminal crashed",
+    "loading": "Loading Terminal…",
+    "notAvailable": "Terminal is not available. Chaterm resources not found.",
+    "reload": "Reload",
+    "title": "Terminal",
+    "view_logs": "View logs"
+  },
   "title": {
     "agents": "Agents",
     "apps": "Apps",
@@ -4217,14 +4226,6 @@
   },
   "warning": {
     "missing_provider": "The supplier does not exist; reverted to the default supplier {{provider}}. This may cause issues."
-  },
-  "terminal": {
-    "title": "Terminal",
-    "comingSoon": "Coming soon",
-    "loading": "Loading Terminal…",
-    "crashed": "Terminal crashed",
-    "reload": "Reload",
-    "notAvailable": "Terminal is not available. Chaterm resources not found."
   },
   "words": {
     "knowledgeGraph": "Knowledge Graph",

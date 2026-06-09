@@ -1950,8 +1950,8 @@
       "noComponents": "パッケージング用に少なくとも1つのコンポーネントを選択してください。",
       "noPackageType": "パッケージタイプが未定義のため、パッケージングできません。",
       "noPackageVersion": "パッケージのバージョン番号を入力してください。",
-      "selectFile": "ファイルの選択に失敗しました",
-      "rarNotFullySupported": "RAR ファイルは完全にはサポートされていません。先に解凍してから必要なファイルを選択してください。"
+      "rarNotFullySupported": "RAR ファイルは完全にはサポートされていません。先に解凍してから必要なファイルを選択してください。",
+      "selectFile": "ファイルの選択に失敗しました"
     },
     "infoPreview": "情報プレビュー",
     "isPatch": "パッチパッケージですか",
@@ -4062,6 +4062,15 @@
       "title": "ページズーム"
     }
   },
+  "terminal": {
+    "comingSoon": "近日公開",
+    "crashed": "ターミナルがクラッシュしました",
+    "loading": "ターミナルを読み込み中…",
+    "notAvailable": "ターミナルは利用できません。Chaterm リソースが見つかりません。",
+    "reload": "再読み込み",
+    "title": "ターミナル",
+    "view_logs": "ログを表示"
+  },
   "title": {
     "agents": "エージェント",
     "apps": "アプリ",
@@ -4217,10 +4226,6 @@
   },
   "warning": {
     "missing_provider": "サプライヤーが存在しないため、デフォルトのサプライヤー {{provider}} にロールバックされました。これにより問題が発生する可能性があります。"
-  },
-  "terminal": {
-    "title": "ターミナル",
-    "comingSoon": "近日公開"
   },
   "words": {
     "knowledgeGraph": "ナレッジグラフ",

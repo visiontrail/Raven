@@ -1950,8 +1950,8 @@
       "noComponents": "请至少选择一个组件进行打包。",
       "noPackageType": "包类型未定义，无法打包。",
       "noPackageVersion": "请输入整包版本号。",
-      "selectFile": "选择文件失败",
-      "rarNotFullySupported": "RAR 文件目前无法完美支持，建议先自行解压后再选择对应文件。"
+      "rarNotFullySupported": "RAR 文件目前无法完美支持，建议先自行解压后再选择对应文件。",
+      "selectFile": "选择文件失败"
     },
     "infoPreview": "信息预览",
     "isPatch": "是否为PATCH包",
@@ -4062,6 +4062,15 @@
       "title": "缩放"
     }
   },
+  "terminal": {
+    "comingSoon": "即将推出",
+    "crashed": "终端已崩溃",
+    "loading": "正在加载终端…",
+    "notAvailable": "终端不可用。未找到 Chaterm 资源文件。",
+    "reload": "重新加载",
+    "title": "终端",
+    "view_logs": "查看日志"
+  },
   "title": {
     "agents": "智能体",
     "apps": "小程序",
@@ -4217,14 +4226,6 @@
   },
   "warning": {
     "missing_provider": "供应商不存在，已回退到默认供应商 {{provider}}。这可能导致问题。"
-  },
-  "terminal": {
-    "title": "终端",
-    "comingSoon": "即将推出",
-    "loading": "正在加载终端…",
-    "crashed": "终端已崩溃",
-    "reload": "重新加载",
-    "notAvailable": "终端不可用。未找到 Chaterm 资源文件。"
   },
   "words": {
     "knowledgeGraph": "知识图谱",
