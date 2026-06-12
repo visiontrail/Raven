@@ -157,6 +157,12 @@ class ChatermBridgeService {
     const modelId = req.modelId ?? getDefaultModel().id
     const provider = getProviderByModelId(modelId)
 
+    logger.info('ChatermBridgeService: execute started', {
+      requestId: req.requestId,
+      modelId,
+      messageCount: req.messages?.length ?? 0
+    })
+
     if (!provider) {
       dispatch({ type: 'end', finishReason: 'error', error: 'provider not found for model' })
       return
@@ -174,11 +180,18 @@ class ChatermBridgeService {
         type: 'end',
         finishReason: abortController.signal.aborted ? 'abort' : finishReason
       })
+      logger.info('ChatermBridgeService: execute finished', {
+        requestId: req.requestId,
+        modelId,
+        finishReason: abortController.signal.aborted ? 'abort' : finishReason
+      })
     } catch (err) {
       if (!abortController.signal.aborted) {
         dispatch({ type: 'end', finishReason: 'error', error: (err as Error).message })
+        logger.error('ChatermBridgeService: execute failed', err as Error, { requestId: req.requestId, modelId })
       } else {
         dispatch({ type: 'end', finishReason: 'abort' })
+        logger.info('ChatermBridgeService: execute aborted', { requestId: req.requestId, modelId })
       }
     } finally {
       this.inFlight.delete(req.requestId)
@@ -194,6 +207,12 @@ class ChatermBridgeService {
   ): Promise<FinishReason> {
     const apiKey = (provider.apiKey ?? '').split(',')[0].trim()
     const pType = provider.type
+    logger.info('ChatermBridgeService: streamCompletion provider selected', {
+      requestId: req.requestId,
+      modelId,
+      providerType: pType,
+      hasApiHost: Boolean(provider.apiHost)
+    })
 
     if (pType === 'anthropic') {
       return this.streamAnthropic(req, modelId, apiKey, provider.apiHost, signal, dispatch)
@@ -334,9 +353,24 @@ class ChatermBridgeService {
       { model: modelId, messages, stream: true, stream_options: { include_usage: true } },
       { signal }
     )
+    logger.info('ChatermBridgeService: OpenAI-compatible stream created', {
+      requestId: req.requestId,
+      modelId,
+      messageCount: messages.length
+    })
 
+    let sawChunk = false
     for await (const chunk of stream) {
       if (signal.aborted) break
+      if (!sawChunk) {
+        sawChunk = true
+        logger.info('ChatermBridgeService: first OpenAI-compatible stream chunk received', {
+          requestId: req.requestId,
+          modelId,
+          hasChoice: Boolean(chunk.choices[0]),
+          hasUsage: Boolean(chunk.usage)
+        })
+      }
       const choice = chunk.choices[0]
       const delta = choice?.delta?.content
       if (delta) dispatch({ type: 'text', delta })
