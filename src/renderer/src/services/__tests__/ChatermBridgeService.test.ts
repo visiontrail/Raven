@@ -224,6 +224,29 @@ describe('ChatermBridgeService', () => {
     expect(events.at(-1)).toEqual({ type: 'end', finishReason: 'tool_use' })
   })
 
+  it('forwards reasoning deltas from reasoning models as reasoning events', async () => {
+    mocks.providers = [openAIProvider]
+    mocks.openAIStreamFactory.mockResolvedValue(
+      createOpenAIStream([
+        { choices: [{ delta: { content: '', reasoning_content: 'let me think' } }] },
+        { choices: [{ delta: { reasoning_content: ' about this' } }] },
+        { choices: [{ delta: { content: 'answer' }, finish_reason: 'stop' }] }
+      ])
+    )
+
+    chatermBridgeService.start()
+    const events = await execute({
+      requestId: 'openai-reasoning-1',
+      modelId: 'gpt-4.1',
+      messages: [{ role: 'user', content: 'why?' }]
+    })
+
+    expect(events).toContainEqual({ type: 'reasoning', delta: 'let me think' })
+    expect(events).toContainEqual({ type: 'reasoning', delta: ' about this' })
+    expect(events).toContainEqual({ type: 'text', delta: 'answer' })
+    expect(events.at(-1)).toEqual({ type: 'end', finishReason: 'stop' })
+  })
+
   it('keeps concurrent OpenAI request streams isolated by requestId', async () => {
     mocks.providers = [openAIProvider]
     mocks.openAIStreamFactory.mockImplementation((params) =>

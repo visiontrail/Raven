@@ -274,6 +274,9 @@ class ChatermBridgeService {
         })
       } else if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
         dispatch({ type: 'text', delta: event.delta.text })
+      } else if (event.type === 'content_block_delta' && (event.delta as any).type === 'thinking_delta') {
+        const thinking = (event.delta as any).thinking
+        if (thinking) dispatch({ type: 'reasoning', delta: thinking })
       } else if (event.type === 'content_block_delta' && (event.delta as any).type === 'input_json_delta') {
         const index = (event as any).index ?? 0
         const partialJson = (event.delta as any).partial_json ?? ''
@@ -374,6 +377,13 @@ class ChatermBridgeService {
       const choice = chunk.choices[0]
       const delta = choice?.delta?.content
       if (delta) dispatch({ type: 'text', delta })
+      // Reasoning models (e.g. GLM, DeepSeek-R1 behind OpenAI-compatible gateways)
+      // stream their thinking in non-standard delta fields. Forward them so the
+      // consumer sees activity — otherwise it may hit its first-event timeout
+      // while the model is still reasoning.
+      const reasoningDelta = (choice?.delta as { reasoning_content?: string; reasoning?: string } | undefined)?.reasoning_content ??
+        (choice?.delta as { reasoning?: string } | undefined)?.reasoning
+      if (reasoningDelta) dispatch({ type: 'reasoning', delta: reasoningDelta })
       for (const call of choice?.delta?.tool_calls ?? []) {
         const index = call.index ?? toolsByIndex.size
         const id = call.id ?? toolsByIndex.get(index)?.id ?? `tool-${index}`
