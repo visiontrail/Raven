@@ -104,13 +104,13 @@
 
 ## 9. 端到端验证
 
-- [ ] 9.1 Playwright：从 Raven 启动到点击 Terminal 标签，断言 webview 加载到 Chaterm 主界面
-- [ ] 9.2 Playwright：在 Chaterm 内创建一次 SSH 连接（mock SSH server），断言连接成功并能 exec 命令
-- [ ] 9.3 Playwright：在 Chaterm 内发起一次 AI 对话，断言 token 统计页出现 `source=chaterm` 记录，且模型与 Raven 默认模型一致
-- [ ] 9.4 Playwright：切到 `/`，再切回 `/terminal`，断言 SSH 会话仍存活
+- [x] 9.1 Playwright：从 Raven 启动到点击 Terminal 标签，断言 webview 加载到 Chaterm 主界面
+- [x] 9.2 Playwright：在 Chaterm 内创建一次 SSH 连接（mock SSH server），断言连接成功并能 exec 命令
+- [x] 9.3 Playwright：在 Chaterm 内发起一次 AI 对话，断言 token 统计页出现 `source=chaterm` 记录，且模型与 Raven 默认模型一致
+- [x] 9.4 Playwright：切到 `/`，再切回 `/terminal`，断言 SSH 会话仍存活
 - [ ] 9.5 Playwright：在 Raven 设置切换深色模式，断言 Chaterm webview 内主题在 1 秒内变更
 - [ ] 9.6 Playwright：在设置中关闭 `terminal.enabled`，断言侧栏 Terminal 项消失、`/terminal` 重定向、Chaterm 主进程模块卸载（通过日志断言）
-- [ ] 9.7 Playwright：模拟 Chaterm webview 崩溃（`webview.crash()`），断言 Raven 主窗口不受影响，崩溃占位出现，点击重新加载后恢复
+- [x] 9.7 Playwright：模拟 Chaterm webview 崩溃（`webview.crash()`），断言 Raven 主窗口不受影响，崩溃占位出现，点击重新加载后恢复
 - [x] 9.8 单元：sender 校验 — 用 mock event 模拟非 Chaterm sender 调用 `raven:llm:createMessage` 与 `chaterm:ssh:connect`，断言均返回 forbidden 错误
   - `raven:llm:createMessage` 覆盖于 [RavenLLMBridgeService.test.ts](src/main/services/__tests__/RavenLLMBridgeService.test.ts) "rejects createMessage from unauthorized sender"；`chaterm:ssh:connect` 覆盖于 [ChatermProcessService.test.ts](src/main/services/__tests__/ChatermProcessService.test.ts) "rejects calls from non-chaterm senders"
 - [x] 9.9 单元：abort 时序 — 发起请求后立即 abort，断言 `end(finishReason=abort)` 推送且后续 provider 事件被丢弃
