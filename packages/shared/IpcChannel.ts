@@ -231,6 +231,10 @@ export enum IpcChannel {
   // DevTools
   System_ToggleDevTools = 'system:toggleDevTools',
 
+  // RavenAIService
+  RavenAIService_GetConfig = 'raven-ai-service:get-config',
+  RavenAIService_SetAuthToken = 'raven-ai-service:set-auth-token',
+
   // Device Link
   DeviceLink_Prompt = 'device-link:prompt',
   DeviceLink_PromptResult = 'device-link:prompt-result',

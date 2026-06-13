@@ -227,6 +227,18 @@ export function registerIpc(mainWindow: BrowserWindow, app: Electron.App) {
     return configManager.get(key)
   })
 
+  ipcMain.handle(IpcChannel.RavenAIService_GetConfig, () => ({
+    host: configManager.getRavenAIServiceHost(),
+    port: configManager.getRavenAIServicePort(),
+    baseUrl: configManager.getRavenAIServiceBaseUrl(),
+    hasToken: !!configManager.getRavenAIServiceAuthToken(),
+    token: configManager.getRavenAIServiceAuthToken()
+  }))
+
+  ipcMain.handle(IpcChannel.RavenAIService_SetAuthToken, (_event, token: string | undefined) => {
+    configManager.setRavenAIServiceAuthToken(token)
+  })
+
   ipcMain.handle(IpcChannel.DeviceLink_GetIdentity, () => ({
     deviceId: configManager.getDeviceLinkDeviceId(),
     deviceName: configManager.getDeviceLinkDeviceName()

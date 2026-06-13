@@ -471,6 +471,12 @@ const api = {
       ipcRenderer.invoke(IpcChannel.FTP_DeleteFiles, ftpConfig, remotePaths),
     testConnection: (ftpConfig: any) => ipcRenderer.invoke(IpcChannel.FTP_TestConnection, ftpConfig)
   },
+  ravenAIService: {
+    getConfig: (): Promise<{ host: string; port: number; baseUrl: string; hasToken: boolean; token?: string }> =>
+      ipcRenderer.invoke(IpcChannel.RavenAIService_GetConfig),
+    setAuthToken: (token: string | undefined): Promise<void> =>
+      ipcRenderer.invoke(IpcChannel.RavenAIService_SetAuthToken, token)
+  },
   chaterm: {
     getStatus: (): Promise<{ isEnabled: boolean; hasAssets: boolean; preloadPath: string }> =>
       ipcRenderer.invoke(IpcChannel.Chaterm_GetStatus),

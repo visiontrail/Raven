@@ -34,6 +34,7 @@ export enum ConfigKeys {
   CustomUpdateServerUrl = 'customUpdateServerUrl',
   RavenAIServiceHost = 'ravenAIServiceHost',
   RavenAIServicePort = 'ravenAIServicePort',
+  RavenAIServiceAuthToken = 'ravenAIServiceAuthToken',
   DeviceLinkDeviceId = 'deviceLinkDeviceId',
   DeviceLinkDeviceName = 'deviceLinkDeviceName'
 }
@@ -265,6 +266,20 @@ export class ConfigManager {
 
   setRavenAIServicePort(value: number) {
     this.set(ConfigKeys.RavenAIServicePort, value)
+  }
+
+  getRavenAIServiceAuthToken(): string | undefined {
+    return this.get<string>(ConfigKeys.RavenAIServiceAuthToken) || undefined
+  }
+
+  setRavenAIServiceAuthToken(value: string | undefined) {
+    this.set(ConfigKeys.RavenAIServiceAuthToken, value ?? '')
+  }
+
+  getRavenAIServiceBaseUrl(): string {
+    const host = this.getRavenAIServiceHost()
+    const port = this.getRavenAIServicePort()
+    return `http://${host}:${port}`
   }
 
   private defaultDeviceHostname(): string {
