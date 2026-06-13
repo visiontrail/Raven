@@ -15,7 +15,7 @@
 - [x] 2.5 实现 `startProjectExpertRun()`，用 multipart form 调用 `POST /api/v1/ai-chat/project-expert/stream`
 - [x] 2.6 实现 `cancelRun()`，优先调用 `/api/v1/ai-chat/chat/runs/{run_id}/cancel`，缺少 `run_id` 时回退到 session cancel endpoint
 - [x] 2.7 实现 `getRunResult()` 兜底查询 log-analysis/project-expert result endpoint
-- [ ] 2.8 单元测试覆盖 base URL 构建、Authorization header、multipart 字段、401/403 错误解析、本地服务不可达错误
+- [x] 2.8 单元测试覆盖 base URL 构建、Authorization header、multipart 字段、401/403 错误解析、本地服务不可达错误
 
 ## 3. SSE Parser 与 Run 状态机
 
@@ -24,7 +24,7 @@
 - [x] 3.3 新增 Agent run hook 或 Redux slice，维护 `idle/running/succeeded/failed/cancelled/stale` 状态、消息、trace、当前文件、当前项目、AbortController
 - [x] 3.4 支持 SSE 提前断开时保留 `sessionId/runId`，将 run 标记为可恢复或可查询
 - [x] 3.5 支持 retry：失败或取消后复用同一 Agent 类型、message、projectRepoId 与 file
-- [ ] 3.6 单元测试覆盖 answer delta 拼接、trace 追加、terminal 状态、取消竞态、SSE 半包、断流恢复状态
+- [x] 3.6 单元测试覆盖 answer delta 拼接、trace 追加、terminal 状态、取消竞态、SSE 半包、断流恢复状态
 
 ## 4. Agents 工作台 UI
 
@@ -38,7 +38,7 @@
 - [x] 4.8 新增 trace 面板，按时间展示 run_start、tool step、thinking、system_notice、run_complete/cancelled/error
 - [x] 4.9 新增运行控制按钮：发送、取消、重试、刷新项目列表
 - [x] 4.10 保留现有普通 Agent 模板入口，确保用户 Agent 数据、导入、添加、管理、创建 Assistant 行为仍可访问
-- [ ] 4.11 组件测试覆盖项目必选、文件保留、取消按钮状态、模板入口可达、连接错误展示
+- [x] 4.11 组件测试覆盖项目必选、文件保留、取消按钮状态、模板入口可达、连接错误展示
 
 ## 5. 本地 RavenAIService 验证
 
@@ -52,6 +52,6 @@
 ## 6. 质量门禁
 
 - [x] 6.1 运行 `yarn typecheck:web`，修复新增 React/TypeScript 类型问题
-- [ ] 6.2 运行相关 renderer 单元测试，至少覆盖 AIService client、SSE parser、run 状态机、AgentsPage 关键 UI
-- [ ] 6.3 运行 `yarn check:i18n`，确保新增文案有中英文 key 或符合现有 i18n 约定
-- [ ] 6.4 更新 `AGENTS.md` 或 Raven Client 文档，说明 Agents 工作台复用本地 IP RavenAIService，TypeScript SDK 本地 Agent loop 不在本阶段
+- [x] 6.2 运行相关 renderer 单元测试，至少覆盖 AIService client、SSE parser、run 状态机、AgentsPage 关键 UI
+- [x] 6.3 运行 `yarn check:i18n`，确保新增文案有中英文 key 或符合现有 i18n 约定
+- [x] 6.4 更新 `AGENTS.md` 或 Raven Client 文档，说明 Agents 工作台复用本地 IP RavenAIService，TypeScript SDK 本地 Agent loop 不在本阶段
