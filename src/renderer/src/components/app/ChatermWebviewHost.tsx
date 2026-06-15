@@ -180,25 +180,28 @@ const ChatermWebviewHost: FC = () => {
     [notification, openLogs, t]
   )
 
-  const attachAndNavigate = useCallback(async (element: WebviewTag) => {
-    if (attachStartedRef.current) return
-    attachStartedRef.current = true
-    setLoadState('loading')
+  const attachAndNavigate = useCallback(
+    async (element: WebviewTag) => {
+      if (attachStartedRef.current) return
+      attachStartedRef.current = true
+      setLoadState('loading')
 
-    const id = element.getWebContentsId()
-    try {
-      await window.api.chaterm.attachWebview(id)
-      if (webviewRef.current !== element) return
-      navigatedToAppRef.current = true
-      await element.loadURL(CHATERM_APP_URL)
-      if (webviewRef.current !== element) return
-      markLoaded(element, 'loadURL')
-    } catch (err) {
-      attachStartedRef.current = false
-      console.error('[ChatermWebviewHost] attachWebview failed:', err)
-      setLoadState('crashed')
-    }
-  }, [markLoaded])
+      const id = element.getWebContentsId()
+      try {
+        await window.api.chaterm.attachWebview(id)
+        if (webviewRef.current !== element) return
+        navigatedToAppRef.current = true
+        await element.loadURL(CHATERM_APP_URL)
+        if (webviewRef.current !== element) return
+        markLoaded(element, 'loadURL')
+      } catch (err) {
+        attachStartedRef.current = false
+        console.error('[ChatermWebviewHost] attachWebview failed:', err)
+        setLoadState('crashed')
+      }
+    },
+    [markLoaded]
+  )
 
   const setRef = useCallback(
     (element: WebviewTag | null) => {
@@ -300,44 +303,70 @@ const ChatermWebviewHost: FC = () => {
   const shouldMount = everMountedRef.current
 
   return (
-    <Host $visible={isVisible} $isFullscreen={isFullscreen}>
-      {/* §6.5: loading overlay */}
-      {isVisible && (loadState === 'idle' || loadState === 'loading') && (
-        <Overlay>
-          <LoadingText>{t('terminal.loading', 'Loading Terminal…')}</LoadingText>
-        </Overlay>
-      )}
+    <>
+      {/*
+        Native window-drag region for the title-bar strip above the webview.
+        On macOS the frameless window (titleBarStyle: 'hidden') reserves a
+        `var(--navbar-height)` strip at the top for dragging; other pages fill it
+        with a navbar that has `-webkit-app-region: drag`. The Terminal tab renders
+        the page as a <webview>, which can't host an app-region and starts below the
+        strip — so without this element the strip is empty and the window can't be
+        moved while the Terminal tab is active. Skip in fullscreen (no strip) and on
+        non-mac platforms (the webview fills from top:0 there).
+      */}
+      {isVisible && isMac && !isFullscreen && <TitleBarDragRegion />}
+      <Host $visible={isVisible} $isFullscreen={isFullscreen}>
+        {/* §6.5: loading overlay */}
+        {isVisible && (loadState === 'idle' || loadState === 'loading') && (
+          <Overlay>
+            <LoadingText>{t('terminal.loading', 'Loading Terminal…')}</LoadingText>
+          </Overlay>
+        )}
 
-      {/* §6.6: crash overlay */}
-      {isVisible && loadState === 'crashed' && (
-        <Overlay>
-          <CrashText>{t('terminal.crashed', 'Terminal crashed')}</CrashText>
-          <ReloadButton onClick={handleReload}>{t('terminal.reload', 'Reload')}</ReloadButton>
-        </Overlay>
-      )}
+        {/* §6.6: crash overlay */}
+        {isVisible && loadState === 'crashed' && (
+          <Overlay>
+            <CrashText>{t('terminal.crashed', 'Terminal crashed')}</CrashText>
+            <ReloadButton onClick={handleReload}>{t('terminal.reload', 'Reload')}</ReloadButton>
+          </Overlay>
+        )}
 
-      {shouldMount && (
-        <webview
-          ref={setRef}
-          src={BLANK_WEBVIEW_URL}
-          preload={preloadUrl}
-          /* §6.3: no node integration; context isolation on */
-          nodeintegration={'false' as any}
-          webpreferences="contextIsolation=yes,nodeIntegration=no,additionalArguments=--chaterm-embedded=1"
-          allowpopups={'false' as any}
-          partition="persist:chaterm"
-          style={{
-            flex: 1,
-            width: '100%',
-            height: '100%',
-            /* hide webview canvas when crashed; the overlay shows on top */
-            display: loadState === 'crashed' ? 'none' : 'flex'
-          }}
-        />
-      )}
-    </Host>
+        {shouldMount && (
+          <webview
+            ref={setRef}
+            src={BLANK_WEBVIEW_URL}
+            preload={preloadUrl}
+            /* §6.3: no node integration; context isolation on */
+            nodeintegration={'false' as any}
+            webpreferences="contextIsolation=yes,nodeIntegration=no,additionalArguments=--chaterm-embedded=1"
+            allowpopups={'false' as any}
+            partition="persist:chaterm"
+            style={{
+              flex: 1,
+              width: '100%',
+              height: '100%',
+              /* hide webview canvas when crashed; the overlay shows on top */
+              display: loadState === 'crashed' ? 'none' : 'flex'
+            }}
+          />
+        )}
+      </Host>
+    </>
   )
 }
+
+// Fills the reserved macOS title-bar strip above the webview so the window stays
+// draggable while the Terminal tab is active (the <webview> can't host a drag region).
+// Left edge starts after the sidebar to leave room for the native traffic lights.
+const TitleBarDragRegion = styled.div`
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  height: var(--navbar-height);
+  z-index: 100;
+  -webkit-app-region: drag;
+`
 
 const Host = styled.div<{ $visible: boolean; $isFullscreen: boolean }>`
   display: ${({ $visible }) => ($visible ? 'flex' : 'none')};

@@ -6,6 +6,12 @@ import styled from 'styled-components'
 interface Props {
   events: AgentTraceEvent[]
   running: boolean
+  /**
+   * Length of `events`. The array is mutated in place upstream, so its reference
+   * is stable; this primitive is what actually changes and re-triggers the
+   * `buildRows` memo as new trace events stream in.
+   */
+  eventCount: number
 }
 
 type Row =
@@ -97,8 +103,12 @@ function buildRows(events: AgentTraceEvent[]): Row[] {
   return rows
 }
 
-const TraceStream: FC<Props> = ({ events, running }) => {
-  const rows = useMemo(() => buildRows(events), [events])
+const TraceStream: FC<Props> = ({ events, running, eventCount }) => {
+  // `eventCount` is intentionally in the dep list: `events` is mutated in place,
+  // so its reference alone never invalidates the memo. The linter can't see the
+  // mutation and flags it as unnecessary, hence the disable.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rows = useMemo(() => buildRows(events), [events, eventCount])
   const [expanded, setExpanded] = useState(true)
 
   if (rows.length === 0 && !running) return null

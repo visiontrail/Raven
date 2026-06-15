@@ -93,7 +93,13 @@ const ChatPanel: FC<Props> = ({
         ) : (
           <Thread>
             {messages.map((m) => (
-              <MessageItem key={m.id} message={m} />
+              <MessageItem
+                key={m.id}
+                message={m}
+                content={m.content}
+                traceRunning={!!m.traceRunning}
+                traceCount={m.traceEvents?.length ?? 0}
+              />
             ))}
           </Thread>
         )}

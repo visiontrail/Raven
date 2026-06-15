@@ -1,3 +1,4 @@
+import { loggerService } from '@logger'
 import { Navbar, NavbarCenter } from '@renderer/components/app/Navbar'
 import { AIServiceAgentClient, AIServiceConnectionError } from '@renderer/services/AIServiceAgentClient'
 import {
@@ -19,6 +20,8 @@ import ChatPanel from './ChatPanel'
 import { conversationStore } from './conversationStore'
 import LoginView from './LoginView'
 import { useConversation, useSessions } from './useConversation'
+
+const logger = loggerService.withContext('AgentChatWorkbench')
 
 interface Props {
   onSwitchToTemplates: () => void
@@ -167,12 +170,24 @@ const AgentChatWorkbench: FC<Props> = ({ onSwitchToTemplates }) => {
     const content = input.trim()
     const fileToSend = meta.supportsFile ? selectedFile : null
 
+    logger.info('handleSend invoked', {
+      agentKind,
+      hasContent: !!content,
+      hasFile: !!fileToSend,
+      projectRepoId,
+      sessionId
+    })
+
     if (meta.projectRepo === 'required' && projectRepoId == null) {
+      logger.warn('handleSend blocked: project repo required but none selected', { agentKind })
       window.message?.warning({ content: '请先选择一个项目仓库', key: 'project-required' })
       void loadProjectRepos()
       return
     }
-    if (!content && !fileToSend) return
+    if (!content && !fileToSend) {
+      logger.warn('handleSend blocked: empty message and no file', { agentKind })
+      return
+    }
 
     let sid = sessionId
     if (!sid) {

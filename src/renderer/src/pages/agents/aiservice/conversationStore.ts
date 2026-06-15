@@ -1,3 +1,4 @@
+import { loggerService } from '@logger'
 import { AIServiceAgentClient, AIServiceConnectionError } from '@renderer/services/AIServiceAgentClient'
 import {
   agentKindToBackend,
@@ -11,7 +12,20 @@ import {
 import { uuid } from '@renderer/utils'
 import { streamSSE } from '@renderer/utils/sseParser'
 
+const logger = loggerService.withContext('AIServiceConversation')
+
+/** How long to wait without any SSE frame before logging a stall warning. */
+const STALL_WARN_INTERVAL_MS = 15000
+
 export const THINKING_PLACEHOLDER = '__RAVEN_AI_THINKING__'
+
+/** Per-run diagnostic counters threaded through the SSE pump for logging. */
+interface PumpDiag {
+  label: string
+  startedAt: number
+  frameCount: number
+  firstFrameAt: number
+}
 
 const DEFAULT_LOG_MESSAGE = '请分析这个日志文件'
 
@@ -48,6 +62,7 @@ class ConversationStore {
   private client: AIServiceAgentClient | null = null
   private listeners = new Set<() => void>()
   private version = 0
+  private notifyScheduled = false
 
   readonly bySession: Record<string, ConversationState> = {}
   sessions: ChatSessionSummary[] = []
@@ -65,9 +80,29 @@ class ConversationStore {
 
   getVersion = (): number => this.version
 
+  /**
+   * Coalesce store notifications. A single SSE run can emit thousands of frames
+   * (observed 2000+ over ~160s); firing every `useSyncExternalStore` listener
+   * synchronously per frame mutates the store faster than React can commit a
+   * render, which React aborts with "Maximum update depth exceeded" and kills
+   * the stream mid-run. We bump the version and flush listeners at most once per
+   * animation frame, so the snapshot stays stable long enough for React to
+   * finish rendering. State mutations remain synchronous; only the React
+   * re-render is batched.
+   */
   private notify() {
-    this.version += 1
-    this.listeners.forEach((l) => l())
+    if (this.notifyScheduled) return
+    this.notifyScheduled = true
+    const flush = () => {
+      this.notifyScheduled = false
+      this.version += 1
+      this.listeners.forEach((l) => l())
+    }
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(flush)
+    } else {
+      setTimeout(flush, 16)
+    }
   }
 
   setClient(client: AIServiceAgentClient | null) {
@@ -119,6 +154,11 @@ class ConversationStore {
   }
 
   private markTerminal(state: ConversationState, status: RunStatus) {
+    logger.info(
+      'Run reached terminal state',
+      { sessionId: state.sessionId, status, runId: state.activeRunId },
+      { logToMain: true }
+    )
     state.isSending = false
     state.runStatus = status
     state.activeRunId = null
@@ -251,13 +291,25 @@ class ConversationStore {
     state: ConversationState,
     response: Response,
     ac: AbortController,
-    pendingAnswerId: string
+    pendingAnswerId: string,
+    diag?: PumpDiag
   ): Promise<{ terminal: boolean }> {
     if (!response.body) throw new Error('Empty response body; cannot stream')
     const reader = response.body.getReader()
     let terminal = false
     for await (const frame of streamSSE(reader, ac.signal)) {
       if (ac.signal.aborted) break
+      if (diag) {
+        diag.frameCount += 1
+        if (diag.frameCount === 1) {
+          diag.firstFrameAt = Date.now()
+          logger.info(
+            'SSE first frame received',
+            { label: diag.label, latencyMs: diag.firstFrameAt - diag.startedAt },
+            { logToMain: true }
+          )
+        }
+      }
       const payload = frame.data as Payload
       const newRunId = payload?.run_id as string | undefined
       if (newRunId && state.currentAnswerId === pendingAnswerId) {
@@ -270,6 +322,7 @@ class ConversationStore {
       const type = (payload?.event || payload?.type) as string | undefined
       if (type === 'done' || type === 'error' || type === 'run_complete' || type === 'cancelled') {
         terminal = true
+        logger.info('SSE terminal frame', { label: diag?.label, type }, { logToMain: true })
       }
       this.notify()
     }
@@ -371,7 +424,7 @@ class ConversationStore {
           state.lastAgentKind = lastWithAgent.run_agent_kind as ConversationState['lastAgentKind']
         }
       } catch (err) {
-        console.warn('Failed to load session messages', err)
+        logger.warn('Failed to load session messages', err as Error, { sessionId })
       }
 
       try {
@@ -385,7 +438,7 @@ class ConversationStore {
           this.markTerminal(state, this.terminalStatus(state))
         }
       } catch (err) {
-        if ((err as Error)?.name !== 'AbortError') console.debug('active-run query skipped', err)
+        if ((err as Error)?.name !== 'AbortError') logger.debug('active-run query skipped', err as Error, { sessionId })
       }
 
       state.loaded = true
@@ -411,15 +464,23 @@ class ConversationStore {
     state.subscription = ac
     state.isSending = true
     this.notify()
+    const startedAt = Date.now()
+    logger.info('subscribeRun: resuming run stream', { sessionId, runId }, { logToMain: true })
+    const diag: PumpDiag = { label: `subscribeRun:${runId}`, startedAt, frameCount: 0, firstFrameAt: 0 }
     try {
       const resp = await this.client.subscribeRun(runId, ac.signal)
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
       const pending = state.currentAnswerId || `run:${runId}:assistant`
-      const { terminal } = await this.pump(state, resp, ac, pending)
+      const { terminal } = await this.pump(state, resp, ac, pending, diag)
+      logger.info(
+        'subscribeRun: stream ended',
+        { sessionId, runId, terminal, frameCount: diag.frameCount, durationMs: Date.now() - startedAt },
+        { logToMain: true }
+      )
       if (terminal) this.markTerminal(state, state.runStatus === 'idle' ? 'succeeded' : state.runStatus)
     } catch (err) {
       if ((err as Error)?.name === 'AbortError') return
-      console.warn('Failed to subscribe to run', err)
+      logger.error('subscribeRun: failed to subscribe to run', err as Error, { sessionId, runId })
       this.markTerminal(state, 'failed')
     } finally {
       if (state.subscription === ac) state.subscription = null
@@ -439,9 +500,29 @@ class ConversationStore {
   ): Promise<void> {
     if (!this.client) throw new Error('AIServiceAgentClient not initialized')
     const state = this.ensureState(sessionId)
-    if (state.isSending) return
+    if (state.isSending) {
+      logger.warn('startRun ignored: a run is already in flight for this session', {
+        sessionId,
+        agentKind: params.agentKind
+      })
+      return
+    }
 
     const backendKind = agentKindToBackend(params.agentKind)
+    const runStartedAt = Date.now()
+    logger.info(
+      'startRun: issuing agent request',
+      {
+        sessionId,
+        agentKind: params.agentKind,
+        backendKind,
+        projectRepoId: params.projectRepoId ?? null,
+        hasFile: !!params.file,
+        messageLength: (params.message || '').length,
+        baseUrl: this.client.getBaseUrl?.()
+      },
+      { logToMain: true }
+    )
     const userDisplay = params.file
       ? `${params.message || DEFAULT_LOG_MESSAGE}\n\n附件: ${params.file.name}`
       : params.message
@@ -466,6 +547,24 @@ class ConversationStore {
 
     const ac = new AbortController()
     state.subscription = ac
+
+    // Watchdog: surface a stalled run (no SSE frames arriving) in the logs so a
+    // silent "正在准备…" hang is diagnosable instead of invisible.
+    const diag: PumpDiag = {
+      label: `startRun:${params.agentKind}:${sessionId}`,
+      startedAt: runStartedAt,
+      frameCount: 0,
+      firstFrameAt: 0
+    }
+    const stallTimer = setInterval(() => {
+      if (diag.frameCount === 0) {
+        logger.warn('Agent run has produced no SSE frames yet (possible stall/hang)', {
+          sessionId,
+          agentKind: params.agentKind,
+          elapsedMs: Date.now() - runStartedAt
+        })
+      }
+    }, STALL_WARN_INTERVAL_MS)
 
     try {
       let resp: Response
@@ -508,15 +607,48 @@ class ConversationStore {
         } catch {
           /* ignore */
         }
+        logger.error('startRun: stream endpoint returned an error status', {
+          sessionId,
+          agentKind: params.agentKind,
+          status: resp.status,
+          detail
+        })
         throw new Error(detail || `HTTP ${resp.status}`)
       }
 
-      const { terminal } = await this.pump(state, resp, ac, pendingAnswerId)
+      const { terminal } = await this.pump(state, resp, ac, pendingAnswerId, diag)
+      logger.info(
+        'startRun: SSE stream ended',
+        {
+          sessionId,
+          agentKind: params.agentKind,
+          terminal,
+          frameCount: diag.frameCount,
+          durationMs: Date.now() - runStartedAt,
+          runStatus: state.runStatus
+        },
+        { logToMain: true }
+      )
       if (terminal) this.markTerminal(state, this.terminalStatus(state))
       // If the SSE closed early without a terminal frame, leave isSending true
       // so the user can reopen the session and resume via the active-run snapshot.
+      else
+        logger.warn('startRun: SSE closed without a terminal frame; run left pending for resume', {
+          sessionId,
+          agentKind: params.agentKind,
+          frameCount: diag.frameCount
+        })
     } catch (err) {
-      if ((err as Error)?.name === 'AbortError') return
+      if ((err as Error)?.name === 'AbortError') {
+        logger.info('startRun: aborted by user', { sessionId, agentKind: params.agentKind })
+        return
+      }
+      logger.error('startRun: agent run failed', err as Error, {
+        sessionId,
+        agentKind: params.agentKind,
+        frameCount: diag.frameCount,
+        elapsedMs: Date.now() - runStartedAt
+      })
       const target = state.messages.find((m) => m.id === state.currentAnswerId)
       if (target) {
         target.content =
@@ -527,6 +659,7 @@ class ConversationStore {
       }
       this.markTerminal(state, 'failed')
     } finally {
+      clearInterval(stallTimer)
       if (state.subscription === ac) state.subscription = null
       this.notify()
     }
@@ -557,7 +690,7 @@ class ConversationStore {
         sessionId
       })
     } catch (err) {
-      console.warn('Failed to cancel run', err)
+      logger.warn('Failed to cancel run', err as Error, { sessionId })
     }
     // Backend will emit a terminal `cancelled` frame the pump picks up. If there
     // is nothing the backend can act on, unstick the panel locally.

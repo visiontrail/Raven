@@ -97,6 +97,40 @@ describe('conversationStore.startRun', () => {
     expect(state.messages[1].content).not.toBe(THINKING_PLACEHOLDER)
   })
 
+  it('coalesces store notifications across a high-frequency stream', async () => {
+    // Regression: a real run emits thousands of SSE frames. Notifying React's
+    // useSyncExternalStore listeners once per frame mutates the store faster than
+    // a render can commit, which React aborts with "Maximum update depth
+    // exceeded" and kills the stream. notify() must coalesce.
+    const frames: object[] = [{ event: 'session', session_id: 's-burst', run_id: 'rb' }]
+    for (let i = 1; i <= 300; i++) {
+      frames.push({ type: 'answer_delta', run_id: 'rb', seq: i, text_chunk: 'x' })
+    }
+    frames.push({ type: 'run_complete', run_id: 'rb', seq: 301, final_text: 'done' })
+
+    const client = makeClient({
+      startProjectExpertRun: vi.fn().mockResolvedValue(sseResponse(frames))
+    })
+    conversationStore.setClient(client as never)
+
+    let notifications = 0
+    const unsub = conversationStore.subscribe(() => {
+      notifications++
+    })
+
+    await conversationStore.startRun('s-burst', { agentKind: 'project-expert', message: 'q', projectRepoId: 1 })
+    // Let the coalesced rAF/setTimeout flushes settle.
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    unsub()
+
+    const state = conversationStore.ensureState('s-burst')
+    expect(state.messages[1].content).toBe('done')
+    expect(state.runStatus).toBe('succeeded')
+    // 300+ frames must collapse into a tiny number of React notifications.
+    expect(notifications).toBeGreaterThan(0)
+    expect(notifications).toBeLessThan(20)
+  })
+
   it('supports a second turn reusing the same session id', async () => {
     const client = makeClient({
       startPackageSearchRun: vi

@@ -1,3 +1,4 @@
+import { loggerService } from '@logger'
 import type {
   AIServiceAgentKind,
   AIServiceConfig,
@@ -8,6 +9,8 @@ import type {
   UserAuthPayload,
   UserProfile
 } from '@renderer/types/aiServiceAgent'
+
+const logger = loggerService.withContext('AIServiceAgentClient')
 
 interface ApiEnvelope<T> {
   success?: boolean
@@ -180,17 +183,36 @@ export class AIServiceAgentClient {
   }
 
   /** Subscribe to an existing run's SSE stream. */
-  subscribeRun(runId: string, signal?: AbortSignal): Promise<Response> {
-    return fetch(`${this.baseUrl}/api/v1/ai-chat/chat/runs/${encodeURIComponent(runId)}/stream`, {
-      headers: this.headers(),
-      signal
-    }).catch((err) => {
-      if (err?.name === 'AbortError') throw err
+  async subscribeRun(runId: string, signal?: AbortSignal): Promise<Response> {
+    const url = `${this.baseUrl}/api/v1/ai-chat/chat/runs/${encodeURIComponent(runId)}/stream`
+    const startedAt = Date.now()
+    logger.info('subscribeRun: GET stream request', { runId, url, hasToken: !!this.token }, { logToMain: true })
+    try {
+      const res = await fetch(url, { headers: this.headers(), signal })
+      logger.info(
+        'subscribeRun: GET stream response',
+        {
+          runId,
+          status: res.status,
+          ok: res.ok,
+          contentType: res.headers?.get?.('content-type') ?? null,
+          latencyMs: Date.now() - startedAt
+        },
+        { logToMain: true }
+      )
+      return res
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') throw err
+      logger.error('subscribeRun: GET stream connection failed', err as Error, {
+        runId,
+        url,
+        latencyMs: Date.now() - startedAt
+      })
       throw new AIServiceConnectionError(this.baseUrl, err)
-    })
+    }
   }
 
-  startLogAnalysisRun(params: {
+  async startLogAnalysisRun(params: {
     message: string
     sessionId?: string
     projectRepoId?: number | null
@@ -207,15 +229,40 @@ export class AIServiceAgentClient {
     if (params.history && params.history.length) form.append('history', JSON.stringify(params.history))
     if (params.remember != null) form.append('remember', String(params.remember))
 
-    return fetch(`${this.baseUrl}/api/v1/ai-chat/log-analysis/stream`, {
-      method: 'POST',
-      headers: this.headers(),
-      body: form,
-      signal: params.signal
-    }).catch((err) => {
-      if (err.name === 'AbortError') throw err
+    const url = `${this.baseUrl}/api/v1/ai-chat/log-analysis/stream`
+    const startedAt = Date.now()
+    logger.info(
+      'startLogAnalysisRun: POST stream request',
+      {
+        url,
+        sessionId: params.sessionId,
+        projectRepoId: params.projectRepoId ?? null,
+        hasFile: !!params.file,
+        hasToken: !!this.token
+      },
+      { logToMain: true }
+    )
+    try {
+      const res = await fetch(url, { method: 'POST', headers: this.headers(), body: form, signal: params.signal })
+      logger.info(
+        'startLogAnalysisRun: POST stream response',
+        {
+          status: res.status,
+          ok: res.ok,
+          contentType: res.headers?.get?.('content-type') ?? null,
+          latencyMs: Date.now() - startedAt
+        },
+        { logToMain: true }
+      )
+      return res
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') throw err
+      logger.error('startLogAnalysisRun: POST stream connection failed', err as Error, {
+        url,
+        latencyMs: Date.now() - startedAt
+      })
       throw new AIServiceConnectionError(this.baseUrl, err)
-    })
+    }
   }
 
   startProjectExpertRun(params: {
@@ -240,7 +287,7 @@ export class AIServiceAgentClient {
     return this.startProjectBoundRun('package-search', params)
   }
 
-  private startProjectBoundRun(
+  private async startProjectBoundRun(
     path: 'project-expert' | 'package-search',
     params: {
       message: string
@@ -258,15 +305,36 @@ export class AIServiceAgentClient {
     if (params.history && params.history.length) form.append('history', JSON.stringify(params.history))
     if (params.remember != null) form.append('remember', String(params.remember))
 
-    return fetch(`${this.baseUrl}/api/v1/ai-chat/${path}/stream`, {
-      method: 'POST',
-      headers: this.headers(),
-      body: form,
-      signal: params.signal
-    }).catch((err) => {
-      if (err.name === 'AbortError') throw err
+    const url = `${this.baseUrl}/api/v1/ai-chat/${path}/stream`
+    const startedAt = Date.now()
+    logger.info(
+      'startProjectBoundRun: POST stream request',
+      { path, url, projectRepoId: params.projectRepoId, sessionId: params.sessionId, hasToken: !!this.token },
+      { logToMain: true }
+    )
+    try {
+      const res = await fetch(url, { method: 'POST', headers: this.headers(), body: form, signal: params.signal })
+      logger.info(
+        'startProjectBoundRun: POST stream response',
+        {
+          path,
+          status: res.status,
+          ok: res.ok,
+          contentType: res.headers?.get?.('content-type') ?? null,
+          latencyMs: Date.now() - startedAt
+        },
+        { logToMain: true }
+      )
+      return res
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') throw err
+      logger.error('startProjectBoundRun: POST stream connection failed', err as Error, {
+        path,
+        url,
+        latencyMs: Date.now() - startedAt
+      })
       throw new AIServiceConnectionError(this.baseUrl, err)
-    })
+    }
   }
 
   async cancelRun(params: {

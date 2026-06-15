@@ -10,19 +10,27 @@ import TraceStream from './TraceStream'
 
 interface Props {
   message: ChatEntry
+  /**
+   * Volatile fields are passed as primitive props (not read off `message`) so
+   * that `memo` actually re-renders this row when they change. The store mutates
+   * `message` in place, so its reference is stable and cannot drive updates.
+   */
+  content: string
+  traceRunning: boolean
+  traceCount: number
 }
 
-const MessageItem: FC<Props> = ({ message }) => {
+const MessageItem: FC<Props> = ({ message, content, traceRunning, traceCount }) => {
   if (message.role === 'user') {
     return (
       <UserRow>
-        <UserBubble>{message.content}</UserBubble>
+        <UserBubble>{content}</UserBubble>
       </UserRow>
     )
   }
 
-  const isThinking = message.content === THINKING_PLACEHOLDER
-  const hasTrace = (message.traceEvents && message.traceEvents.length > 0) || message.traceRunning
+  const isThinking = content === THINKING_PLACEHOLDER
+  const hasTrace = traceCount > 0 || traceRunning
 
   return (
     <AiRow>
@@ -31,12 +39,12 @@ const MessageItem: FC<Props> = ({ message }) => {
       </Avatar>
       <AiBody>
         <AiName>RAVENAI</AiName>
-        {hasTrace && <TraceStream events={message.traceEvents || []} running={!!message.traceRunning} />}
+        {hasTrace && <TraceStream events={message.traceEvents || []} running={traceRunning} eventCount={traceCount} />}
         {isThinking ? (
-          !message.traceRunning && <Thinking>正在思考…</Thinking>
+          !traceRunning && <Thinking>正在思考…</Thinking>
         ) : (
           <AiText className="markdown">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
           </AiText>
         )}
       </AiBody>
