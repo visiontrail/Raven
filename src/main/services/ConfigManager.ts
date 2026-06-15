@@ -251,7 +251,7 @@ export class ConfigManager {
     const stored = this.get<string>(ConfigKeys.RavenAIServiceHost)
     // Migrate old default to new IP if not explicitly set
     if (!stored || stored === 'localhost') {
-      return '172.16.9.224'
+      return '10.60.11.3'
     }
     return stored
   }

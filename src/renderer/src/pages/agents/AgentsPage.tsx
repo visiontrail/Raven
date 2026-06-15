@@ -1,6 +1,6 @@
 import { FC, useState } from 'react'
 
-import AIServiceWorkbench from './components/AIServiceWorkbench'
+import AgentChatWorkbench from './aiservice/AgentChatWorkbench'
 import TemplateAgentsView from './components/TemplateAgentsView'
 
 const AgentsPage: FC = () => {
@@ -10,7 +10,7 @@ const AgentsPage: FC = () => {
     return <TemplateAgentsView onSwitchToWorkbench={() => setView('workbench')} />
   }
 
-  return <AIServiceWorkbench onSwitchToTemplates={() => setView('templates')} />
+  return <AgentChatWorkbench onSwitchToTemplates={() => setView('templates')} />
 }
 
 export default AgentsPage

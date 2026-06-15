@@ -240,7 +240,7 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
     try {
       // Default HTTP configuration for package-server
       const defaultHttpConfig: HTTPConfig = {
-        url: 'http://172.16.9.224:8083/api/upload',
+        url: 'http://10.60.11.3:8083/api/upload',
         method: 'POST',
         headers: {
           'Content-Type': 'multipart/form-data'

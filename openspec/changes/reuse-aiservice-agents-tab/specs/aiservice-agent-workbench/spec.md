@@ -20,7 +20,7 @@ The system SHALL connect to RavenAIService through the locally configured host a
 
 #### Scenario: Use default local test endpoint
 - **WHEN** no RavenAIService host has been explicitly configured
-- **THEN** the system uses the existing local test default host and port returned by `ConfigManager`, currently `172.16.9.224:8085`
+- **THEN** the system uses the existing local test default host and port returned by `ConfigManager`, currently `10.60.11.3:8085`
 
 #### Scenario: Display connection target
 - **WHEN** the workbench renders
@@ -133,3 +133,59 @@ The system SHALL distinguish local AIService connection failures, authentication
 #### Scenario: SSE closes without terminal event
 - **WHEN** the SSE connection closes while the run is still non-terminal
 - **THEN** the system keeps the run resumable or queryable using the stored `session_id` and `run_id` when available
+
+### Requirement: Workbench authenticates against RavenAIService
+The system SHALL let the user sign in to the local RavenAIService so the workbench can reuse the user's server-side chat history.
+
+#### Scenario: Sign in with credentials
+- **WHEN** the user submits a username and password in the workbench login form
+- **THEN** the system calls `POST /api/v1/users/auth/login`, stores the returned bearer token via the RavenAIService config, and uses it for subsequent session, message, stream, cancel, and result requests
+
+#### Scenario: Not signed in
+- **WHEN** no RavenAIService token is available
+- **THEN** the system shows a login prompt and keeps the conversation history empty until the user signs in
+
+#### Scenario: Sign out
+- **WHEN** the user signs out
+- **THEN** the system clears the stored token and returns to the login prompt
+
+### Requirement: Sidebar selects agent and lists its conversation history
+The system SHALL present a left sidebar that lets the user pick an Agent and shows that Agent's past conversations.
+
+#### Scenario: Switch agent
+- **WHEN** the user selects an Agent in the sidebar (Log Analysis, Project Expert, or Package Search)
+- **THEN** the system filters the conversation history list to sessions whose latest run used that Agent and targets new conversations at that Agent
+
+#### Scenario: Open a past conversation
+- **WHEN** the user selects a conversation from the history list
+- **THEN** the system loads that session's messages from `GET /api/v1/users/chat-sessions/{id}/messages` and renders the full multi-turn thread
+
+#### Scenario: Start a new conversation
+- **WHEN** the user clicks new conversation
+- **THEN** the system clears the chat panel, keeps the selected Agent, and starts a fresh session id on the next send
+
+#### Scenario: Manage a conversation
+- **WHEN** the user renames, pins, or deletes a conversation
+- **THEN** the system calls the corresponding `chat-sessions` endpoint and refreshes the sidebar list
+
+### Requirement: Workbench supports continuous multi-turn conversation
+The system SHALL support multiple turns within a single conversation, mirroring the RavenAIService chat window.
+
+#### Scenario: Send a follow-up turn
+- **WHEN** the user sends another message in an existing conversation
+- **THEN** the system reuses the same `session_id`, includes prior turns as `history`, appends the new user message and a streamed assistant answer to the thread
+
+#### Scenario: Resume an in-flight run after switching back
+- **WHEN** the user reopens a conversation whose run is still running
+- **THEN** the system queries the active-run snapshot and re-subscribes to the run stream so the thread keeps updating
+
+### Requirement: Package Search Agent runs as a project-bound conversation
+The system SHALL support a Package Search Agent that shares the project-bound conversation contract.
+
+#### Scenario: Start Package Search with project
+- **WHEN** the user selects Package Search, selects a project repository, and submits a question
+- **THEN** the system sends a multipart `POST /api/v1/ai-chat/package-search/stream` request with `message`, `session_id`, `remember`, optional `history`, and `project_repo_id`
+
+#### Scenario: Start Package Search without project
+- **WHEN** the user submits a Package Search question without selecting a project repository
+- **THEN** the system blocks submission and prompts the user to select a project first

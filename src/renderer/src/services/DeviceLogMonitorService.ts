@@ -40,7 +40,7 @@ const DEFAULT_CONFIG: MonitorConfig = {
   enabled: true, // 默认启用
   interval: 30,
   autoUpload: true,
-  logServerUrl: 'http://172.16.9.224:8085/api/v1/logs/upload'
+  logServerUrl: 'http://10.60.11.3:8085/api/v1/logs/upload'
 }
 
 // 配置存储键

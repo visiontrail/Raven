@@ -12,7 +12,7 @@ const RefactorPackageServerView: FC<RefactorPackageServerViewProps> = () => {
   return (
     <ServerIframeView
       title="重构包服务器"
-      url="http://172.16.9.224:8083/"
+      url="http://10.60.11.3:8083/"
       iframeId="refactor-package-iframe"
       loadingText="正在加载重构包服务器..."
       errorText="重构包服务器加载失败"

@@ -20,7 +20,7 @@ const HTTPConfigModal: FC<HTTPConfigModalProps> = ({ visible, onOk, onCancel, lo
   useEffect(() => {
     if (visible) {
       form.setFieldsValue({
-        url: 'http://172.16.9.224:8083/api/upload',
+        url: 'http://10.60.11.3:8083/api/upload',
         method: 'POST',
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -105,7 +105,7 @@ const HTTPConfigModal: FC<HTTPConfigModalProps> = ({ visible, onOk, onCancel, lo
             { required: true, message: t('files.package.http_config_modal.url_required') },
             { type: 'url', message: t('files.package.http_config_modal.url_invalid') }
           ]}>
-          <Input placeholder="http://172.16.9.224:8083/api/upload" />
+          <Input placeholder="http://10.60.11.3:8083/api/upload" />
         </Form.Item>
 
         <Form.Item name="method" label={t('files.package.http_config_modal.method')} rules={[{ required: true }]}>

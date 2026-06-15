@@ -97,14 +97,16 @@ Chaterm is an AI-native SSH terminal (Vue 3 + Electron) embedded as a `<webview>
 
 #### AIService Agent Workbench (`/agents`)
 
-The Agents tab hosts an AIService Agent workbench that connects to a local RavenAIService instance for AI-powered code analysis:
+The Agents tab is a two-pane conversation workbench that mirrors the RavenAIService web chat, connecting to a local RavenAIService instance over HTTP. Left sidebar = Agent selector + that Agent's conversation history; right pane = the chat window (continuous multi-turn conversation, project selection, attachment upload, streamed answer + Agent trace).
 
-- **API Client** (`src/renderer/src/services/AIServiceAgentClient.ts`): Encapsulates REST calls to the local RavenAIService (project listing, log analysis, project expert), with Bearer token auth, multipart form uploads, and typed error classes (`AIServiceAuthError`, `AIServiceConnectionError`)
-- **SSE Parser** (`src/renderer/src/utils/sseParser.ts`): Parses Server-Sent Events from streaming endpoints, supporting `\n\n` / `\r\n\r\n` frame splitting and JSON data extraction
-- **Run State Hook** (`src/renderer/src/hooks/useAIServiceAgentRun.ts`): React hook managing agent run lifecycle (`idle → running → succeeded/failed/cancelled/stale`), SSE event application via `applyAIServiceAgentEvent()`, and abort/retry logic
-- **Agent Kinds**: `log-analysis` (upload log files for analysis) and `project-expert` (ask questions about a selected project repo)
-- **Configuration**: Base URL and token are read via `window.api.ravenAIService.getConfig()`, defaulting to `http://172.16.9.224:8085`
-- **Scope**: This workbench calls a running RavenAIService over HTTP — it does not run a local TypeScript SDK agent loop. The template-based agent management (user agents, import, create assistant) remains accessible alongside the workbench
+- **Container** (`src/renderer/src/pages/agents/aiservice/AgentChatWorkbench.tsx`): Boots the shared client, gates on RavenAIService login, and coordinates agent/session/composer state. `AgentSidebar` (agent + per-agent history), `ChatPanel` (topbar + thread + composer), `Composer`, `MessageItem`, `TraceStream`, and `LoginView` live alongside it.
+- **API Client** (`src/renderer/src/services/AIServiceAgentClient.ts`): REST calls to RavenAIService — login/profile, per-user `chat-sessions` (list/messages/delete/rename/pin), project listing, log-analysis / project-expert / package-search streams, run subscribe/active-run, cancel — with Bearer token auth, multipart uploads, and typed error classes (`AIServiceAuthError`, `AIServiceConnectionError`).
+- **SSE Parser** (`src/renderer/src/utils/sseParser.ts`): Parses Server-Sent Events from streaming endpoints, supporting `\n\n` / `\r\n\r\n` frame splitting and JSON data extraction.
+- **Conversation store** (`src/renderer/src/pages/agents/aiservice/conversationStore.ts`): Framework-agnostic multi-session store (consumed via `useSyncExternalStore`) ported from the web client's `conversationRuns`; keyed by `session_id` it holds messages/trace/run status, drives the SSE pump, multi-turn continuation, cancel/retry, and active-run resume.
+- **Auth & history**: The client has no unified account system, so the workbench signs in via `POST /api/v1/users/auth/login`; the token is persisted through `window.api.ravenAIService.setAuthToken` and reused for the authenticated session/message/stream endpoints, making the sidebar history match the web client.
+- **Agent Kinds**: `log-analysis` (optional project + log file upload), `project-expert` and `package-search` (project repo required).
+- **Configuration**: Base URL and token are read via `window.api.ravenAIService.getConfig()`, defaulting to `http://10.60.11.3:8085`.
+- **Scope**: This workbench calls a running RavenAIService over HTTP — it does not run a local TypeScript SDK agent loop. The template-based agent management (user agents, import, create assistant) remains accessible behind the "模板助手" entry.
 
 ### Key Patterns
 

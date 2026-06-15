@@ -23,9 +23,9 @@ describe('AIServiceAgentClient', () => {
 
   beforeEach(() => {
     client = new AIServiceAgentClient({
-      host: '172.16.9.224',
+      host: '10.60.11.3',
       port: 8085,
-      baseUrl: 'http://172.16.9.224:8085',
+      baseUrl: 'http://10.60.11.3:8085',
       hasToken: true,
       token: 'test-token'
     })

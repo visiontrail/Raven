@@ -78,7 +78,7 @@ const fileKey = `${file.path}_${file.size}_${file.modifiedTime.getTime()}`
 1. 从 FTP 服务器下载文件到本地临时目录
 2. 验证文件格式和大小（支持 .tgz 和 .tar.gz，最大 1GB）
 3. 自动识别日志类型（protocol/oam_antenna/full）
-4. 上传到日志服务器（`http://172.16.9.224:8085/api/v1/logs/upload`）
+4. 上传到日志服务器（`http://10.60.11.3:8085/api/v1/logs/upload`）
 5. 实时显示上传进度
 6. 上传完成后清理临时文件
 
@@ -120,7 +120,7 @@ const previousFilesRef = useRef<Map<string, DeviceLogFile>>(new Map()) // 文件
 
 ### 1. 网络要求
 - 确保能够访问 FTP 服务器（默认端口 10002）
-- 确保能够访问日志服务器（http://172.16.9.224:8085）
+- 确保能够访问日志服务器（http://10.60.11.3:8085）
 - 建议在稳定的网络环境下使用
 
 ### 2. 性能考虑

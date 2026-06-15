@@ -4,7 +4,7 @@
 - [x] 1.2 在 `packages/shared/IpcChannel.ts` 新增 RavenAIService 配置读取/更新 IPC channel
 - [x] 1.3 在 `src/main/ipc.ts` 注册 RavenAIService 配置 IPC handler，返回净化后的 `{ host, port, baseUrl, hasToken }`
 - [x] 1.4 在 `src/preload/index.ts` 暴露 `window.api.ravenAIService`，包含 `getConfig()` 与测试 token 更新能力
-- [x] 1.5 在 General Settings 或 Agents 工作台中展示当前 RavenAIService 本地 IP base URL，默认使用现有 `172.16.9.224:8085` 回落逻辑
+- [x] 1.5 在 General Settings 或 Agents 工作台中展示当前 RavenAIService 本地 IP base URL，默认使用现有 `10.60.11.3:8085` 回落逻辑
 
 ## 2. AIService API Client 与类型
 
@@ -42,12 +42,24 @@
 
 ## 5. 本地 RavenAIService 验证
 
-- [ ] 5.1 启动本地 IP RavenAIService，确认 `http://172.16.9.224:8085` 或配置 IP 可访问
+- [ ] 5.1 启动本地 IP RavenAIService，确认 `http://10.60.11.3:8085` 或配置 IP 可访问
 - [ ] 5.2 用测试 token 验证 `GET /api/v1/project-repos` 在 Raven Client 工作台中返回项目列表
 - [ ] 5.3 手动运行 Project Expert：选择项目、提交问题、看到 answer_delta、trace、terminal done
 - [ ] 5.4 手动运行 Log Analysis：上传日志文件、可选项目、提交分析、看到 trace 与最终答案
 - [ ] 5.5 手动验证取消：在 run 运行中点击取消，确认 run 状态变为 cancelled，后端不继续输出
 - [ ] 5.6 手动验证本地服务不可达、token 无效、项目缺失、SSE 中断时的错误提示
+
+## 7. 对话工作台重设计（左栏 Agent+历史 / 右栏连续对话）
+
+- [x] 7.1 扩展 `aiServiceAgent.ts` 类型：新增 `package-search` agent kind、`ChatSessionSummary`、`ChatMessageRecord`、`ChatEntry`、`ConversationState`、登录/用户信息与 history 负载类型
+- [x] 7.2 扩展 `AIServiceAgentClient`：`login()`/`getProfile()`、`listSessions()`/`fetchMessages()`/`deleteSession()`/`renameSession()`/`pinSession()`、`getActiveRun()`/`subscribeRun()`、`startPackageSearchRun()`，并修正 `listProjectRepos()` 读取 `data.data`
+- [x] 7.3 新增多会话对话 store（`useSyncExternalStore`），镜像 RavenAIService `conversationRuns`：按 session 维护 messages/状态/trace、SSE pump、续聊、cancel/retry、active-run 恢复
+- [x] 7.4 新增 RavenAIService 登录面板（用户名/密码登录、登出、token 持久化到 ConfigManager），未登录时对历史区做登录引导
+- [x] 7.5 新增左侧边栏：Agent 选择（日志分析/项目专家/包检索）+ 按 Agent 过滤的会话历史列表 + 新建/选择/删除/重命名会话
+- [x] 7.6 新增右侧对话窗口：topbar、消息线程（user/AI 气泡 + Markdown + trace 流）、欢迎态、加载态
+- [x] 7.7 新增 composer：自适应输入框、Agent 切换 chips、项目仓库选择、附件上传（日志分析）、发送/停止、连续多轮提交
+- [x] 7.8 将 `AgentsPage` 切换为新对话工作台容器，保留模板助手次级入口
+- [x] 7.9 单元测试覆盖：agent↔历史映射、多轮续聊、SSE 回答拼接、终态判定、取消调用
 
 ## 6. 质量门禁
 

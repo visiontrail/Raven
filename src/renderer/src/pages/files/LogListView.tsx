@@ -11,7 +11,7 @@ const LogListView: FC<LogListViewProps> = () => {
   return (
     <ServerIframeView
       title={t('files.logs')}
-      url="http://172.16.9.224:8085/logs"
+      url="http://10.60.11.3:8085/logs"
       iframeId="log-iframe"
       loadingText={t('files.loading_logs')}
       errorText={t('files.error_loading_logs')}

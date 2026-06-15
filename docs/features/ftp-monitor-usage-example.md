@@ -63,7 +63,7 @@
 # 场景：设备生成新的日志文件
 
 # Step 1: 在另一台机器上通过 FTP 客户端上传日志
-$ ftp 172.16.9.224 10002
+$ ftp 10.60.11.3 10002
 ftp> login anonymous anonymous
 ftp> cd /logs
 ftp> put device_stack_20251010_143022.tgz

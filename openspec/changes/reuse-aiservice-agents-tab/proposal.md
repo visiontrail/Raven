@@ -4,16 +4,19 @@ Raven Client 的 Agents 选项卡当前只是“提示词/助手模板商店”�
 
 ## What Changes
 
-- 将 Raven Client 的 `/agents` 从模板列表改造成 **AIService Agent 工作台**，首批提供“日志分析”和“项目专家”两个入口。
-- 工作台通过 RavenAIService 本地 IP 地址访问后端；测试阶段默认复用现有 `ConfigManager.getRavenAIServiceHost()` / `getRavenAIServicePort()` 配置（当前未配置时回落到局域网 IP `172.16.9.224:8085`），不接生产云端服务。
+- 将 Raven Client 的 `/agents` 从模板列表改造成 **AIService Agent 对话工作台**，提供“日志分析”“项目专家”“包检索”三个 Agent 入口。
+- 工作台采用与 RavenAIService Web 端一致的双栏布局：左侧边栏选择 Agent 并列出该 Agent 的历史会话，右侧为完整对话窗口（连续多轮对话、项目仓库选择、附件上传、流式回答与 Agent trace）。
+- 由于 Raven Client 当前没有与服务端一致的用户登录体系，本变更新增 RavenAIService 登录（`POST /api/v1/users/auth/login`），登录后复用后端按用户的会话历史与消息接口，使会话历史与 Web 端完全一致。
+- 工作台通过 RavenAIService 本地 IP 地址访问后端；测试阶段默认复用现有 `ConfigManager.getRavenAIServiceHost()` / `getRavenAIServicePort()` 配置（当前未配置时回落到局域网 IP `10.60.11.3:8085`），不接生产云端服务。
 - 新增 Raven Client 侧 AIService API 客户端，支持：
   - `POST /api/v1/ai-chat/log-analysis/stream`
   - `POST /api/v1/ai-chat/project-expert/stream`
   - `POST /api/v1/ai-chat/*/cancel`
   - `GET /api/v1/ai-chat/*/result`
   - 统一 run 订阅与取消接口（在后端返回 `run_id` 后使用 `/chat/runs/{run_id}/stream|cancel`）。
-- 新增 Agents 工作台 UI：Agent 选择、项目仓库选择、日志文件上传、问题输入、流式回答、Agent trace、运行状态、取消/重试、错误提示。
-- 项目专家必须选择 AIService 中登记的项目仓库；日志分析支持上传日志包，并可选关联项目仓库。
+- 新增 Agents 工作台 UI：左栏 Agent 选择 + 历史会话列表（按 Agent 过滤、新建会话、选择/删除/重命名会话），右栏对话窗口（连续多轮对话、项目仓库选择、日志文件上传、问题输入、流式回答、Agent trace、运行状态、取消/重试、错误提示）。
+- 连续对话：每轮发送时携带历史消息，单个会话内可多轮提问；切换会话时载入该会话历史并可续聊；运行中切走再切回可通过 active-run 快照恢复订阅。
+- 项目专家与包检索必须选择 AIService 中登记的项目仓库；日志分析支持上传日志包，并可选关联项目仓库。
 - 保留现有“添加/导入普通 Agent 模板”的数据与能力，但不再作为 `/agents` 首屏主体验；迁移为次级入口或“模板助手”分区。
 - **不做** Client 内 Claude Agent SDK TypeScript agent loop；本变更只复用 RavenAIService。
 

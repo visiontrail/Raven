@@ -184,7 +184,7 @@ function initDeviceLogMonitor() {
 
 ### 4. logServerUrl (日志服务器地址)
 - **类型**：string
-- **默认值**：`http://172.16.9.224:8085/api/v1/logs/upload`
+- **默认值**：`http://10.60.11.3:8085/api/v1/logs/upload`
 - **说明**：日志文件上传的API地址
 - **注意**：修改需要在代码中更改，暂不支持UI配置
 
@@ -291,7 +291,7 @@ function initDeviceLogMonitor() {
 3. 网络问题
 
 **解决方法**：
-1. 检查日志服务器地址：`http://172.16.9.224:8085/api/v1/logs/upload`
+1. 检查日志服务器地址：`http://10.60.11.3:8085/api/v1/logs/upload`
 2. 确认文件格式：仅支持 `.tgz` 和 `.tar.gz`
 3. 确认文件大小：不超过 1GB
 4. 查看控制台详细错误信息

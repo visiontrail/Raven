@@ -103,7 +103,7 @@ The Agents tab hosts an AIService Agent workbench that connects to a local Raven
 - **SSE Parser** (`src/renderer/src/utils/sseParser.ts`): Parses Server-Sent Events from streaming endpoints, supporting `\n\n` / `\r\n\r\n` frame splitting and JSON data extraction
 - **Run State Hook** (`src/renderer/src/hooks/useAIServiceAgentRun.ts`): React hook managing agent run lifecycle (`idle → running → succeeded/failed/cancelled/stale`), SSE event application via `applyAIServiceAgentEvent()`, and abort/retry logic
 - **Agent Kinds**: `log-analysis` (upload log files for analysis) and `project-expert` (ask questions about a selected project repo)
-- **Configuration**: Base URL and token are read via `window.api.ravenAIService.getConfig()`, defaulting to `http://172.16.9.224:8085`
+- **Configuration**: Base URL and token are read via `window.api.ravenAIService.getConfig()`, defaulting to `http://10.60.11.3:8085`
 - **Scope**: This workbench calls a running RavenAIService over HTTP — it does not run a local TypeScript SDK agent loop. The template-based agent management (user agents, import, create assistant) remains accessible alongside the workbench
 
 ### Key Patterns

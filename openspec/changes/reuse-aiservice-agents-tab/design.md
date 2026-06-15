@@ -11,7 +11,7 @@ RavenAIService 已经提供可复用的专业 Agent 能力：
 - `GET /api/v1/ai-chat/chat/runs/{run_id}/stream|cancel`：后端返回 `run_id` 后的统一订阅与取消。
 - `GET /api/v1/project-repos`：普通用户可读取的已启用项目仓库选项。
 
-测试阶段要求 Client 连接本地局域网 IP 上运行的 RavenAIService，而不是生产或云端服务。Raven Client 主进程已有 `ConfigManager.getRavenAIServiceHost()` / `getRavenAIServicePort()`，未配置时当前回落为 `172.16.9.224:8085`；Device Link 也复用该配置。Agents 工作台应复用这组 host/port，并新增必要的 renderer 访问方式与可选鉴权 token。
+测试阶段要求 Client 连接本地局域网 IP 上运行的 RavenAIService，而不是生产或云端服务。Raven Client 主进程已有 `ConfigManager.getRavenAIServiceHost()` / `getRavenAIServicePort()`，未配置时当前回落为 `10.60.11.3:8085`；Device Link 也复用该配置。Agents 工作台应复用这组 host/port，并新增必要的 renderer 访问方式与可选鉴权 token。
 
 ## Goals / Non-Goals
 
@@ -50,7 +50,7 @@ RavenAIService 已经提供可复用的专业 Agent 能力：
 
 ### D2: AIService 连接配置由主进程持有，renderer 只拿净化后的 base URL
 
-**选择：** 在主进程/预加载层暴露 AIService 配置读取接口，例如 `window.api.ravenAIService.getConfig()` 返回 `{ baseUrl, host, port }`，base URL 由 `ConfigManager.getRavenAIServiceHost()` 与 `getRavenAIServicePort()` 生成。测试阶段默认 `http://172.16.9.224:8085`，也允许设置为其它本地局域网 IP。
+**选择：** 在主进程/预加载层暴露 AIService 配置读取接口，例如 `window.api.ravenAIService.getConfig()` 返回 `{ baseUrl, host, port }`，base URL 由 `ConfigManager.getRavenAIServiceHost()` 与 `getRavenAIServicePort()` 生成。测试阶段默认 `http://10.60.11.3:8085`，也允许设置为其它本地局域网 IP。
 
 **理由：**
 - `ConfigManager` 已经是 RavenAIService endpoint 的事实来源，Device Link 与 Agent 工作台不应各自维护 host/port。
@@ -58,7 +58,7 @@ RavenAIService 已经提供可复用的专业 Agent 能力：
 - 后续可以在 Settings 里统一展示“RavenAIService 连接”。
 
 **替代方案：**
-- 在 renderer 硬编码 `http://172.16.9.224:8085`：最快，但换测试机就要改代码。
+- 在 renderer 硬编码 `http://10.60.11.3:8085`：最快，但换测试机就要改代码。
 - 复用任意 `Config_Get` 读取 key：可行但类型弱，容易泄漏未来敏感配置。
 
 ### D3: 测试阶段使用可配置 Bearer token，不做完整登录联动
@@ -144,7 +144,7 @@ RavenAIService 已经提供可复用的专业 Agent 能力：
 
 ## Risks / Trade-offs
 
-- **[本地 IP 不稳定]** 测试机器 IP 可能变化，默认 `172.16.9.224` 不一定适用于所有人 → 使用 `ConfigManager` 配置作为唯一来源，并在设置/工作台中展示当前 base URL 与连接测试。
+- **[本地 IP 不稳定]** 测试机器 IP 可能变化，默认 `10.60.11.3` 不一定适用于所有人 → 使用 `ConfigManager` 配置作为唯一来源，并在设置/工作台中展示当前 base URL 与连接测试。
 - **[AIService 鉴权未打通]** Client 目前没有 AIService 登录态 → 增加可配置 Bearer token；401/403 时明确提示用户配置测试 token。
 - **[SSE 中途断开]** 网络或代理可能断开流 → 保留 `sessionId/runId`，提供“重新订阅/查询结果”操作；后续可接 `/active-run`。
 - **[日志文件过大]** Renderer 直接 multipart 上传大文件可能卡 UI 或失败 → 依赖浏览器 FormData 流式上传能力；UI 显示文件大小，后端失败时保留文件选择以便重试。
@@ -159,6 +159,45 @@ RavenAIService 已经提供可复用的专业 Agent 能力：
 4. 接入项目仓库列表、日志分析运行、项目专家运行、取消/重试。
 5. 在本地 IP RavenAIService 上做手动闭环测试：连接、项目列表、项目专家问答、日志上传分析、取消。
 6. 若测试阶段需要回滚，可通过 feature flag 或路由分支恢复旧 `AgentsPage` 模板列表；Redux 中已有用户 Agent 数据不变。
+
+## Addendum: Conversation redesign (sidebar + multi-turn chat)
+
+The first iteration shipped a single-shot workbench (one question → one answer, no
+history). This addendum upgrades `/agents` to a full conversation experience that
+mirrors the RavenAIService Web chat.
+
+### D10: `/agents` becomes a two-pane conversation workbench
+
+Left sidebar = Agent selector (Log Analysis / Project Expert / Package Search) plus
+the selected Agent's conversation history; right pane = the chat window (topbar,
+message thread, composer). The template-assistant store is preserved behind a
+secondary entry. Reuses RavenAIService's chat layout idioms (welcome state, user/AI
+bubbles, trace stream, composer tool chips + project select + attachment + send/stop).
+
+### D11: Reuse the backend per-user session history via a client login
+
+Raven Client has no unified account system yet, so the workbench adds a RavenAIService
+login (`POST /api/v1/users/auth/login`). The returned bearer token is persisted through
+the existing `ConfigManager` RavenAIService token and reused for the authenticated
+session/message/stream endpoints. With a token, the sidebar history, `fetchMessages`,
+active-run resume, cancel and delete/rename/pin all match the Web client exactly.
+Without a token, the panel shows a login prompt and history stays empty.
+
+### D12: Multi-session, multi-turn conversation store
+
+Port `conversationRuns.ts` (Pinia) to a framework-agnostic store consumed via React
+`useSyncExternalStore`. State is keyed by `session_id`: messages, isSending, runStatus,
+activeRunId, runAgentKind, trace, pending-resume, AbortController. Each send reuses the
+session id and sends prior turns as `history`. Switching sessions loads DB messages +
+queries the active-run snapshot to resume an in-flight run. Non-serialisable values
+(File, AbortController) stay out of Redux by using the external store.
+
+### D13: Agent ↔ history mapping
+
+`ChatSessionSummary.run_agent_kind` (latest run's kind) is used to bucket sessions under
+each Agent in the sidebar. A session that has never run keeps its frontend-selected
+Agent. Backend kinds map: `log_analysis ↔ log-analysis`, `project_expert ↔ project-expert`,
+`package_search ↔ package-search`.
 
 ## Open Questions
 

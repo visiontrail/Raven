@@ -47,7 +47,7 @@ const getFTPConfig = () => {
 }
 
 // 日志服务器配置
-const LOG_SERVER_URL = 'http://172.16.9.224:8085/api/v1/logs/upload'
+const LOG_SERVER_URL = 'http://10.60.11.3:8085/api/v1/logs/upload'
 
 interface DeviceLogListViewProps {}
 

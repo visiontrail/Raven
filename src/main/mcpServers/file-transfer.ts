@@ -28,7 +28,7 @@ enum FTPUploadPathType {
  * FTP 配置（固化在代码中）
  */
 const FTP_CONFIG = {
-  host: '172.16.9.224', // temp for test
+  host: '10.60.11.3', // temp for test
   port: 10002,
   username: 'anonymous',
   password: 'anonymous'

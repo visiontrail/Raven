@@ -1,4 +1,19 @@
-import type { AIServiceAgentKind, AIServiceConfig, ProjectRepoOption } from '@renderer/types/aiServiceAgent'
+import type {
+  AIServiceAgentKind,
+  AIServiceConfig,
+  ChatMessageRecord,
+  ChatSessionSummary,
+  HistoryTurn,
+  ProjectRepoOption,
+  UserAuthPayload,
+  UserProfile
+} from '@renderer/types/aiServiceAgent'
+
+interface ApiEnvelope<T> {
+  success?: boolean
+  data?: T
+  message?: string
+}
 
 export class AIServiceAgentClient {
   private baseUrl: string
@@ -14,12 +29,24 @@ export class AIServiceAgentClient {
     this.token = config.token
   }
 
+  setToken(token?: string) {
+    this.token = token
+  }
+
+  getBaseUrl(): string {
+    return this.baseUrl
+  }
+
   private headers(): Record<string, string> {
     const h: Record<string, string> = {}
     if (this.token) {
       h['Authorization'] = `Bearer ${this.token}`
     }
     return h
+  }
+
+  private jsonHeaders(): Record<string, string> {
+    return { ...this.headers(), 'Content-Type': 'application/json' }
   }
 
   private async handleResponse<T>(res: Response): Promise<T> {
@@ -39,21 +66,136 @@ export class AIServiceAgentClient {
     return res.json() as Promise<T>
   }
 
+  // ---- auth ---------------------------------------------------------------
+
+  async login(username: string, password: string): Promise<UserAuthPayload> {
+    const res = await fetch(`${this.baseUrl}/api/v1/users/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    }).catch((err) => {
+      throw new AIServiceConnectionError(this.baseUrl, err)
+    })
+    const body = await this.handleResponse<ApiEnvelope<UserAuthPayload> | UserAuthPayload>(res)
+    const payload = 'token' in body ? (body as UserAuthPayload) : (body as ApiEnvelope<UserAuthPayload>).data
+    if (!payload?.token) throw new AIServiceError('登录失败：未返回访问令牌')
+    this.token = payload.token
+    return payload
+  }
+
+  async getProfile(): Promise<UserProfile> {
+    const res = await fetch(`${this.baseUrl}/api/v1/users/auth/me`, {
+      headers: this.headers()
+    }).catch((err) => {
+      throw new AIServiceConnectionError(this.baseUrl, err)
+    })
+    const body = await this.handleResponse<ApiEnvelope<UserProfile>>(res)
+    if (!body?.data) throw new AIServiceError('无法获取用户信息')
+    return body.data
+  }
+
+  // ---- project repos ------------------------------------------------------
+
   async listProjectRepos(): Promise<ProjectRepoOption[]> {
     const res = await fetch(`${this.baseUrl}/api/v1/project-repos?limit=200`, {
       headers: this.headers()
     }).catch((err) => {
       throw new AIServiceConnectionError(this.baseUrl, err)
     })
-    const data = await this.handleResponse<{ items: ProjectRepoOption[] } | ProjectRepoOption[]>(res)
-    return Array.isArray(data) ? data : data.items ?? []
+    const data = await this.handleResponse<
+      { data?: ProjectRepoOption[]; items?: ProjectRepoOption[] } | ProjectRepoOption[]
+    >(res)
+    if (Array.isArray(data)) return data
+    return data.data ?? data.items ?? []
+  }
+
+  // ---- chat sessions (per-user history) -----------------------------------
+
+  async listSessions(): Promise<ChatSessionSummary[]> {
+    const res = await fetch(`${this.baseUrl}/api/v1/users/chat-sessions`, {
+      headers: this.headers()
+    }).catch((err) => {
+      throw new AIServiceConnectionError(this.baseUrl, err)
+    })
+    const body = await this.handleResponse<ApiEnvelope<ChatSessionSummary[]>>(res)
+    return body?.data ?? []
+  }
+
+  async fetchMessages(sessionId: string): Promise<ChatMessageRecord[]> {
+    const res = await fetch(`${this.baseUrl}/api/v1/users/chat-sessions/${encodeURIComponent(sessionId)}/messages`, {
+      headers: this.headers()
+    }).catch((err) => {
+      throw new AIServiceConnectionError(this.baseUrl, err)
+    })
+    const body = await this.handleResponse<ApiEnvelope<ChatMessageRecord[]>>(res)
+    return body?.data ?? []
+  }
+
+  async deleteSession(sessionId: string): Promise<ChatSessionSummary[]> {
+    const res = await fetch(`${this.baseUrl}/api/v1/users/chat-sessions/${encodeURIComponent(sessionId)}`, {
+      method: 'DELETE',
+      headers: this.headers()
+    }).catch((err) => {
+      throw new AIServiceConnectionError(this.baseUrl, err)
+    })
+    const body = await this.handleResponse<ApiEnvelope<ChatSessionSummary[]>>(res)
+    return body?.data ?? []
+  }
+
+  async renameSession(sessionId: string, title: string): Promise<ChatSessionSummary[]> {
+    const res = await fetch(`${this.baseUrl}/api/v1/users/chat-sessions/${encodeURIComponent(sessionId)}/rename`, {
+      method: 'PATCH',
+      headers: this.jsonHeaders(),
+      body: JSON.stringify({ title })
+    }).catch((err) => {
+      throw new AIServiceConnectionError(this.baseUrl, err)
+    })
+    const body = await this.handleResponse<ApiEnvelope<ChatSessionSummary[]>>(res)
+    return body?.data ?? []
+  }
+
+  async pinSession(sessionId: string, pinned: boolean): Promise<ChatSessionSummary[]> {
+    const res = await fetch(`${this.baseUrl}/api/v1/users/chat-sessions/${encodeURIComponent(sessionId)}/pin`, {
+      method: 'PATCH',
+      headers: this.jsonHeaders(),
+      body: JSON.stringify({ pinned })
+    }).catch((err) => {
+      throw new AIServiceConnectionError(this.baseUrl, err)
+    })
+    const body = await this.handleResponse<ApiEnvelope<ChatSessionSummary[]>>(res)
+    return body?.data ?? []
+  }
+
+  // ---- run lifecycle ------------------------------------------------------
+
+  /** Query the active-run snapshot for a session. Returns the raw Response (may be 404). */
+  getActiveRun(sessionId: string, signal?: AbortSignal): Promise<Response> {
+    return fetch(`${this.baseUrl}/api/v1/ai-chat/chat/sessions/${encodeURIComponent(sessionId)}/active-run`, {
+      headers: this.headers(),
+      signal
+    }).catch((err) => {
+      if (err?.name === 'AbortError') throw err
+      throw new AIServiceConnectionError(this.baseUrl, err)
+    })
+  }
+
+  /** Subscribe to an existing run's SSE stream. */
+  subscribeRun(runId: string, signal?: AbortSignal): Promise<Response> {
+    return fetch(`${this.baseUrl}/api/v1/ai-chat/chat/runs/${encodeURIComponent(runId)}/stream`, {
+      headers: this.headers(),
+      signal
+    }).catch((err) => {
+      if (err?.name === 'AbortError') throw err
+      throw new AIServiceConnectionError(this.baseUrl, err)
+    })
   }
 
   startLogAnalysisRun(params: {
     message: string
     sessionId?: string
-    projectRepoId?: number
-    file?: File
+    projectRepoId?: number | null
+    file?: File | null
+    history?: HistoryTurn[]
     remember?: boolean
     signal?: AbortSignal
   }): Promise<Response> {
@@ -62,6 +204,7 @@ export class AIServiceAgentClient {
     if (params.sessionId) form.append('session_id', params.sessionId)
     if (params.projectRepoId != null) form.append('project_repo_id', String(params.projectRepoId))
     if (params.file) form.append('file', params.file)
+    if (params.history && params.history.length) form.append('history', JSON.stringify(params.history))
     if (params.remember != null) form.append('remember', String(params.remember))
 
     return fetch(`${this.baseUrl}/api/v1/ai-chat/log-analysis/stream`, {
@@ -79,16 +222,43 @@ export class AIServiceAgentClient {
     message: string
     projectRepoId: number
     sessionId?: string
+    history?: HistoryTurn[]
     remember?: boolean
     signal?: AbortSignal
   }): Promise<Response> {
+    return this.startProjectBoundRun('project-expert', params)
+  }
+
+  startPackageSearchRun(params: {
+    message: string
+    projectRepoId: number
+    sessionId?: string
+    history?: HistoryTurn[]
+    remember?: boolean
+    signal?: AbortSignal
+  }): Promise<Response> {
+    return this.startProjectBoundRun('package-search', params)
+  }
+
+  private startProjectBoundRun(
+    path: 'project-expert' | 'package-search',
+    params: {
+      message: string
+      projectRepoId: number
+      sessionId?: string
+      history?: HistoryTurn[]
+      remember?: boolean
+      signal?: AbortSignal
+    }
+  ): Promise<Response> {
     const form = new FormData()
     form.append('message', params.message)
     form.append('project_repo_id', String(params.projectRepoId))
     if (params.sessionId) form.append('session_id', params.sessionId)
+    if (params.history && params.history.length) form.append('history', JSON.stringify(params.history))
     if (params.remember != null) form.append('remember', String(params.remember))
 
-    return fetch(`${this.baseUrl}/api/v1/ai-chat/project-expert/stream`, {
+    return fetch(`${this.baseUrl}/api/v1/ai-chat/${path}/stream`, {
       method: 'POST',
       headers: this.headers(),
       body: form,
