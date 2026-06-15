@@ -63,6 +63,9 @@ const AgentChatWorkbench: FC<Props> = ({ onSwitchToTemplates }) => {
     (user: UserProfile) => {
       setProfile(user)
       setAuthError(null)
+      // Hydrate the user's locally cached history first so the sidebar is
+      // populated immediately, then merge in the authoritative server list.
+      conversationStore.attachUser(user.id)
       void conversationStore.loadSessions()
       void loadProjectRepos()
     },

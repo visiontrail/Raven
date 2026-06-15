@@ -1,6 +1,6 @@
 import type { AgentTraceEvent } from '@renderer/types/aiServiceAgent'
 import { Brain, ChevronDown, ChevronRight, CircleAlert, Info, Loader2, Wrench } from 'lucide-react'
-import { FC, useMemo, useState } from 'react'
+import { FC, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 
 interface Props {
@@ -20,6 +20,8 @@ type Row =
   | { kind: 'notice'; id: string; text: string }
   | { kind: 'status'; id: string; text: string }
   | { kind: 'error'; id: string; text: string }
+
+const AUTO_SCROLL_BOTTOM_THRESHOLD = 32
 
 function str(v: unknown): string {
   return typeof v === 'string' ? v : ''
@@ -110,18 +112,46 @@ const TraceStream: FC<Props> = ({ events, running, eventCount }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const rows = useMemo(() => buildRows(events), [events, eventCount])
   const [expanded, setExpanded] = useState(true)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const shouldAutoScrollRef = useRef(true)
+
+  const scrollToBottom = useCallback(() => {
+    const el = bodyRef.current
+    if (!el) return
+    el.scrollTop = el.scrollHeight
+  }, [])
+
+  const handleBodyScroll = useCallback(() => {
+    const el = bodyRef.current
+    if (!el) return
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+    shouldAutoScrollRef.current = distanceToBottom <= AUTO_SCROLL_BOTTOM_THRESHOLD
+  }, [])
+
+  const toggleExpanded = useCallback(() => {
+    setExpanded((value) => {
+      const next = !value
+      if (next) shouldAutoScrollRef.current = true
+      return next
+    })
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!expanded || !shouldAutoScrollRef.current) return
+    scrollToBottom()
+  }, [eventCount, expanded, rows.length, running, scrollToBottom])
 
   if (rows.length === 0 && !running) return null
 
   return (
     <Wrapper>
-      <Header onClick={() => setExpanded((v) => !v)}>
+      <Header onClick={toggleExpanded}>
         {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         {running ? <Loader2 size={13} className="spin" /> : null}
         <span>运行轨迹{rows.length ? ` · ${rows.length}` : ''}</span>
       </Header>
       {expanded && (
-        <Body>
+        <Body ref={bodyRef} onScroll={handleBodyScroll}>
           {rows.map((row) => (
             <RowItem key={row.id}>
               <RowIcon $kind={row.kind}>

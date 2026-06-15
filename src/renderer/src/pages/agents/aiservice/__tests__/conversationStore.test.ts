@@ -30,8 +30,23 @@ function makeClient(overrides: Record<string, unknown> = {}) {
 afterEach(() => {
   conversationStore.reset()
   conversationStore.setClient(null)
+  if (typeof localStorage !== 'undefined') localStorage.clear()
   vi.restoreAllMocks()
 })
+
+function makeSummary(id: string, overrides: Record<string, unknown> = {}) {
+  const now = new Date().toISOString()
+  return {
+    id,
+    title: id,
+    last_message_at: now,
+    message_count: 2,
+    created_at: now,
+    updated_at: now,
+    run_agent_kind: 'project_expert',
+    ...overrides
+  }
+}
 
 describe('agent kind mapping', () => {
   it('maps frontend <-> backend kinds', () => {
@@ -159,6 +174,101 @@ describe('conversationStore.startRun', () => {
     expect(state.messages).toHaveLength(4)
     expect(state.messages.map((m) => m.content)).toEqual(['q1', 'first', 'q2', 'second'])
     expect(client.startPackageSearchRun).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('conversationStore session history', () => {
+  it('keeps a finished session in the sidebar even when the server list omits it', async () => {
+    // Regression for the "history vanishes the moment the run completes" bug:
+    // markTerminal triggers a silent loadSessions, and the server may not have
+    // surfaced the just-finished session yet. It must not be wiped.
+    const client = makeClient({
+      listSessions: vi.fn().mockResolvedValue([]),
+      startProjectExpertRun: vi.fn().mockResolvedValue(
+        sseResponse([
+          { event: 'session', session_id: 'keep1', run_id: 'rk1' },
+          { type: 'answer_delta', run_id: 'rk1', seq: 1, text_chunk: 'hi' },
+          { type: 'run_complete', run_id: 'rk1', seq: 2, final_text: 'hi' }
+        ])
+      )
+    })
+    conversationStore.setClient(client as never)
+
+    await conversationStore.startRun('keep1', { agentKind: 'project-expert', message: 'q', projectRepoId: 1 })
+    // Let the fire-and-forget silent loadSessions inside markTerminal settle.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const kept = conversationStore.sessions.find((s) => s.id === 'keep1')
+    expect(kept).toBeTruthy()
+    expect(kept?.run_status).toBe('succeeded')
+  })
+
+  it('merges server sessions with local-only sessions on loadSessions', async () => {
+    const client = makeClient({ listSessions: vi.fn().mockResolvedValue([makeSummary('srv1')]) })
+    conversationStore.setClient(client as never)
+
+    const local = conversationStore.ensureState('loc1')
+    local.messages.push({ id: 'u', role: 'user', content: 'local question', kind: 'user' })
+    conversationStore.sessions = [makeSummary('loc1', { title: 'Local' })]
+
+    await conversationStore.loadSessions()
+
+    const ids = conversationStore.sessions.map((s) => s.id)
+    expect(ids).toContain('srv1')
+    expect(ids).toContain('loc1')
+  })
+
+  it('hydrates persisted sessions and messages on attachUser', () => {
+    const blob = {
+      v: 1,
+      sessions: [makeSummary('h1', { title: 'Cached' })],
+      messages: {
+        h1: [
+          { id: 'm1', role: 'user', content: 'hello' },
+          { id: 'm2', role: 'ai', content: 'world' }
+        ]
+      }
+    }
+    localStorage.setItem('raven-ai-conversations::u1', JSON.stringify(blob))
+
+    conversationStore.attachUser('u1')
+
+    expect(conversationStore.sessions.some((s) => s.id === 'h1')).toBe(true)
+    const state = conversationStore.ensureState('h1')
+    expect(state.messages.map((m) => m.content)).toEqual(['hello', 'world'])
+  })
+
+  it('persists a finished conversation so it survives a reset + re-attach', async () => {
+    const client = makeClient({
+      listSessions: vi.fn().mockResolvedValue([]),
+      startProjectExpertRun: vi.fn().mockResolvedValue(
+        sseResponse([
+          { event: 'session', session_id: 'persist1', run_id: 'rp1' },
+          { type: 'answer_delta', run_id: 'rp1', seq: 1, text_chunk: 'answer' },
+          { type: 'run_complete', run_id: 'rp1', seq: 2, final_text: 'answer' }
+        ])
+      )
+    })
+    conversationStore.setClient(client as never)
+    conversationStore.attachUser('u2')
+
+    await conversationStore.startRun('persist1', {
+      agentKind: 'project-expert',
+      message: 'my question',
+      projectRepoId: 1
+    })
+    // Allow the debounced persist write to flush.
+    await new Promise((resolve) => setTimeout(resolve, 600))
+
+    // Simulate logout (reset) then logging back in (attachUser).
+    conversationStore.reset()
+    expect(conversationStore.sessions).toHaveLength(0)
+    conversationStore.attachUser('u2')
+
+    const restored = conversationStore.sessions.find((s) => s.id === 'persist1')
+    expect(restored).toBeTruthy()
+    const state = conversationStore.ensureState('persist1')
+    expect(state.messages.map((m) => m.content)).toEqual(['my question', 'answer'])
   })
 })
 

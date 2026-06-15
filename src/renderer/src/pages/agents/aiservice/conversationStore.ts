@@ -19,6 +19,30 @@ const STALL_WARN_INTERVAL_MS = 15000
 
 export const THINKING_PLACEHOLDER = '__RAVEN_AI_THINKING__'
 
+/** localStorage key prefix for the per-user conversation history cache. */
+const STORAGE_PREFIX = 'raven-ai-conversations'
+/** Caps that keep the persisted blob comfortably under the localStorage quota. */
+const MAX_PERSISTED_SESSIONS = 100
+const MAX_PERSISTED_MESSAGES_PER_SESSION = 60
+const MAX_PERSISTED_CONTENT = 20000
+/** Debounce window for flushing the conversation cache to localStorage. */
+const PERSIST_DEBOUNCE_MS = 400
+
+/** Trimmed message kept in the localStorage cache (trace events are dropped). */
+interface PersistedMessage {
+  id: string
+  role: ChatEntry['role']
+  content: string
+  kind?: ChatEntry['kind']
+}
+
+/** Shape of the serialised conversation cache stored per user. */
+interface PersistedBlob {
+  v: 1
+  sessions: ChatSessionSummary[]
+  messages: Record<string, PersistedMessage[]>
+}
+
 /** Per-run diagnostic counters threaded through the SSE pump for logging. */
 interface PumpDiag {
   label: string
@@ -63,6 +87,9 @@ class ConversationStore {
   private listeners = new Set<() => void>()
   private version = 0
   private notifyScheduled = false
+  /** localStorage key for the active user's history cache; null when detached. */
+  private storageKey: string | null = null
+  private persistTimer: ReturnType<typeof setTimeout> | null = null
 
   readonly bySession: Record<string, ConversationState> = {}
   sessions: ChatSessionSummary[] = []
@@ -111,6 +138,139 @@ class ConversationStore {
 
   hasClient(): boolean {
     return !!this.client
+  }
+
+  // ---- local persistence --------------------------------------------------
+
+  /**
+   * Bind the store to a user's local history cache and hydrate it. Called on
+   * login/boot so the sidebar shows the user's prior conversations immediately,
+   * independently of the server round-trip. Scoped by base URL + user id so
+   * multiple accounts on one machine stay isolated.
+   */
+  attachUser(userId: string) {
+    const base = this.client?.getBaseUrl?.() ?? ''
+    this.storageKey = `${STORAGE_PREFIX}:${base}:${userId}`
+    this.hydrate()
+  }
+
+  private hydrate() {
+    if (!this.storageKey || typeof localStorage === 'undefined') return
+    let parsed: PersistedBlob | null = null
+    try {
+      const raw = localStorage.getItem(this.storageKey)
+      if (!raw) return
+      parsed = JSON.parse(raw) as PersistedBlob
+    } catch {
+      return
+    }
+    if (!parsed || !Array.isArray(parsed.sessions)) return
+    const known = new Set(this.sessions.map((s) => s.id))
+    const cached = parsed.sessions.filter((s) => s && s.id && !known.has(s.id))
+    if (cached.length) this.sessions = [...this.sessions, ...cached]
+    const messages = parsed.messages || {}
+    for (const [sid, msgs] of Object.entries(messages)) {
+      if (!Array.isArray(msgs) || msgs.length === 0) continue
+      const state = this.ensureState(sid)
+      if (state.messages.length === 0) {
+        state.messages = msgs.map((m) => ({
+          id: m.id || uuid(),
+          role: m.role,
+          content: m.content || '',
+          kind: m.kind
+        }))
+      }
+    }
+    this.notify()
+  }
+
+  private schedulePersist() {
+    if (!this.storageKey || this.persistTimer) return
+    this.persistTimer = setTimeout(() => {
+      this.persistTimer = null
+      this.persistNow()
+    }, PERSIST_DEBOUNCE_MS)
+  }
+
+  private persistNow() {
+    if (!this.storageKey || typeof localStorage === 'undefined') return
+    const sessions = this.sessions.slice(0, MAX_PERSISTED_SESSIONS)
+    const messages: Record<string, PersistedMessage[]> = {}
+    for (const session of sessions) {
+      const state = this.bySession[session.id]
+      if (!state || state.messages.length === 0) continue
+      const kept = state.messages
+        .slice(-MAX_PERSISTED_MESSAGES_PER_SESSION)
+        .filter((m) => m.content && m.content !== THINKING_PLACEHOLDER)
+        .map<PersistedMessage>((m) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content.length > MAX_PERSISTED_CONTENT ? m.content.slice(0, MAX_PERSISTED_CONTENT) : m.content,
+          kind: m.kind
+        }))
+      if (kept.length) messages[session.id] = kept
+    }
+    try {
+      const blob: PersistedBlob = { v: 1, sessions, messages }
+      localStorage.setItem(this.storageKey, JSON.stringify(blob))
+    } catch {
+      // Quota exceeded or serialization error: retry with the session list only
+      // so history navigation survives even when message bodies cannot be cached.
+      try {
+        const sessionsOnly: PersistedBlob = { v: 1, sessions, messages: {} }
+        localStorage.setItem(this.storageKey, JSON.stringify(sessionsOnly))
+      } catch {
+        /* give up silently; in-memory state is unaffected */
+      }
+    }
+  }
+
+  private readCachedMessages(sessionId: string): ChatEntry[] {
+    if (!this.storageKey || typeof localStorage === 'undefined') return []
+    try {
+      const raw = localStorage.getItem(this.storageKey)
+      if (!raw) return []
+      const parsed = JSON.parse(raw) as PersistedBlob
+      const msgs = parsed?.messages?.[sessionId]
+      if (!Array.isArray(msgs)) return []
+      return msgs.map((m) => ({ id: m.id || uuid(), role: m.role, content: m.content || '', kind: m.kind }))
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * Merge the authoritative server session list with locally-known sessions.
+   * Server rows win for matching ids; locally-originated sessions the server has
+   * not surfaced yet (a just-finished run, or history cached while the backend
+   * was unreachable / not persisting) are preserved so they never blink out of
+   * the sidebar.
+   */
+  private mergeSessions(serverSessions: ChatSessionSummary[]): ChatSessionSummary[] {
+    const serverIds = new Set(serverSessions.map((s) => s.id))
+    const localOnly = this.sessions.filter((s) => !serverIds.has(s.id) && this.hasLocalConversation(s.id))
+    return [...serverSessions, ...localOnly]
+  }
+
+  private hasLocalConversation(sessionId: string): boolean {
+    const state = this.bySession[sessionId]
+    if (!state) return false
+    return state.isSending || state.messages.some((m) => m.content && m.content !== THINKING_PLACEHOLDER)
+  }
+
+  /** Reflect a run's terminal state on its local sidebar entry, if present. */
+  private updateLocalSessionTerminal(sessionId: string, status: RunStatus) {
+    const index = this.sessions.findIndex((s) => s.id === sessionId)
+    if (index < 0) return
+    const state = this.bySession[sessionId]
+    const now = new Date().toISOString()
+    this.sessions[index] = {
+      ...this.sessions[index],
+      run_status: status,
+      run_updated_at: now,
+      last_message_at: now,
+      message_count: Math.max(this.sessions[index].message_count ?? 0, state?.messages.length ?? 0)
+    }
   }
 
   // ---- state helpers ------------------------------------------------------
@@ -206,7 +366,11 @@ class ConversationStore {
     state.currentAnswerId = null
     state.runAgentKind = null
     state.subscription = null
+    // Reflect completion on the local sidebar entry so the session survives even
+    // if the server list refresh below has not surfaced it yet.
+    this.updateLocalSessionTerminal(state.sessionId, status)
     this.notify()
+    this.schedulePersist()
     // Refresh the sidebar so a newly-persisted session/title appears.
     void this.loadSessions({ silent: true })
   }
@@ -438,6 +602,13 @@ class ConversationStore {
   reset() {
     for (const id of Object.keys(this.bySession)) this.clearSession(id)
     this.sessions = []
+    // Detach from the user's cache (without deleting it) so a logout neither
+    // wipes their persisted history nor lets a pending write target the wrong key.
+    this.storageKey = null
+    if (this.persistTimer) {
+      clearTimeout(this.persistTimer)
+      this.persistTimer = null
+    }
     this.notify()
   }
 
@@ -452,19 +623,33 @@ class ConversationStore {
     try {
       try {
         const records = await this.client.fetchMessages(sessionId)
-        state.messages = records.map((item) => ({
-          id: item.id || uuid(),
-          role: item.role,
-          content: item.content || '',
-          kind: item.role === 'user' ? 'user' : 'answer',
-          traceEvents: Array.isArray(item.trace_events) ? (item.trace_events as never[]) : undefined,
-          traceRunning: item.run_status === 'running'
-        }))
-        const lastWithAgent = [...records].reverse().find((m) => m.run_agent_kind)
-        if (lastWithAgent?.run_agent_kind) {
-          state.lastAgentKind = lastWithAgent.run_agent_kind as ConversationState['lastAgentKind']
+        if (records.length > 0) {
+          state.messages = records.map((item) => ({
+            id: item.id || uuid(),
+            role: item.role,
+            content: item.content || '',
+            kind: item.role === 'user' ? 'user' : 'answer',
+            traceEvents: Array.isArray(item.trace_events) ? (item.trace_events as never[]) : undefined,
+            traceRunning: item.run_status === 'running'
+          }))
+          const lastWithAgent = [...records].reverse().find((m) => m.run_agent_kind)
+          if (lastWithAgent?.run_agent_kind) {
+            state.lastAgentKind = lastWithAgent.run_agent_kind as ConversationState['lastAgentKind']
+          }
+          this.schedulePersist()
+        } else if (state.messages.length === 0) {
+          // Server holds no transcript for this session (e.g. not persisted
+          // server-side): fall back to the local cache so the panel is not blank.
+          const cached = this.readCachedMessages(sessionId)
+          if (cached.length) state.messages = cached
         }
+        // else: the server returned nothing but we already hold the transcript in
+        // memory (a just-finished run) — keep it rather than blanking the panel.
       } catch (err) {
+        if (state.messages.length === 0) {
+          const cached = this.readCachedMessages(sessionId)
+          if (cached.length) state.messages = cached
+        }
         logger.warn('Failed to load session messages', err as Error, { sessionId })
       }
 
@@ -590,6 +775,7 @@ class ConversationStore {
       agentKind: backendKind
     })
     this.notify()
+    this.schedulePersist()
 
     const ac = new AbortController()
     state.subscription = ac
@@ -752,8 +938,10 @@ class ConversationStore {
       this.notify()
     }
     try {
-      this.sessions = await this.client.listSessions()
+      const serverSessions = await this.client.listSessions()
+      this.sessions = this.mergeSessions(serverSessions)
       this.sessionsError = null
+      this.schedulePersist()
     } catch (err) {
       this.sessionsError = (err as Error)?.message || '加载会话历史失败'
     } finally {
@@ -764,19 +952,27 @@ class ConversationStore {
 
   async deleteSession(sessionId: string): Promise<void> {
     if (!this.client) return
-    this.sessions = await this.client.deleteSession(sessionId)
+    const serverSessions = await this.client.deleteSession(sessionId)
+    // Drop local state first so the merge does not resurrect the deleted session.
     this.clearSession(sessionId)
+    this.sessions = this.mergeSessions(serverSessions)
+    this.schedulePersist()
+    this.notify()
   }
 
   async renameSession(sessionId: string, title: string): Promise<void> {
     if (!this.client) return
-    this.sessions = await this.client.renameSession(sessionId, title)
+    const serverSessions = await this.client.renameSession(sessionId, title)
+    this.sessions = this.mergeSessions(serverSessions)
+    this.schedulePersist()
     this.notify()
   }
 
   async pinSession(sessionId: string, pinned: boolean): Promise<void> {
     if (!this.client) return
-    this.sessions = await this.client.pinSession(sessionId, pinned)
+    const serverSessions = await this.client.pinSession(sessionId, pinned)
+    this.sessions = this.mergeSessions(serverSessions)
+    this.schedulePersist()
     this.notify()
   }
 }
