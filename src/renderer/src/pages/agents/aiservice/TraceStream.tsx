@@ -111,9 +111,10 @@ const TraceStream: FC<Props> = ({ events, running, eventCount }) => {
   // mutation and flags it as unnecessary, hence the disable.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const rows = useMemo(() => buildRows(events), [events, eventCount])
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(() => running)
   const bodyRef = useRef<HTMLDivElement>(null)
   const shouldAutoScrollRef = useRef(true)
+  const previousRunningRef = useRef(running)
 
   const scrollToBottom = useCallback(() => {
     const el = bodyRef.current
@@ -135,6 +136,21 @@ const TraceStream: FC<Props> = ({ events, running, eventCount }) => {
       return next
     })
   }, [])
+
+  useLayoutEffect(() => {
+    const wasRunning = previousRunningRef.current
+    previousRunningRef.current = running
+
+    if (!wasRunning && running) {
+      shouldAutoScrollRef.current = true
+      setExpanded(true)
+      return
+    }
+
+    if (wasRunning && !running) {
+      setExpanded(false)
+    }
+  }, [running])
 
   useLayoutEffect(() => {
     if (!expanded || !shouldAutoScrollRef.current) return

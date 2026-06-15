@@ -248,12 +248,15 @@ export class ConfigManager {
 
   // Device Link: RavenAIService endpoint and device identity (defaults fall back to hostname)
   getRavenAIServiceHost(): string {
-    const stored = this.get<string>(ConfigKeys.RavenAIServiceHost)
-    // Migrate old default to new IP if not explicitly set
-    if (!stored || stored === 'localhost') {
-      return '10.60.11.3'
-    }
-    return stored
+    // TEMP(test): point Agent Workbench at local RavenAIService instead of 10.60.11.3.
+    // Revert this block to restore normal config-driven behavior.
+    return '127.0.0.1'
+    // const stored = this.get<string>(ConfigKeys.RavenAIServiceHost)
+    // // Migrate old default to new IP if not explicitly set
+    // if (!stored || stored === 'localhost') {
+    //   return '10.60.11.3'
+    // }
+    // return stored
   }
 
   setRavenAIServiceHost(value: string) {

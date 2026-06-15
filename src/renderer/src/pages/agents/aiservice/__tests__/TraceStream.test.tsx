@@ -4,10 +4,15 @@ import { describe, expect, it } from 'vitest'
 
 import TraceStream from '../TraceStream'
 
-function getTraceBody(): HTMLDivElement {
+function queryTraceBody(): HTMLDivElement | null {
   const header = screen.getByText(/运行轨迹/).closest('div')
   const body = header?.nextElementSibling
-  if (!(body instanceof HTMLDivElement)) {
+  return body instanceof HTMLDivElement ? body : null
+}
+
+function getTraceBody(): HTMLDivElement {
+  const body = queryTraceBody()
+  if (!body) {
     throw new Error('Trace stream body not found')
   }
   return body
@@ -56,9 +61,28 @@ describe('TraceStream', () => {
     setScrollMetrics(body, { scrollHeight: 800, clientHeight: 100, scrollTop: 700 })
     fireEvent.scroll(body)
 
-    events.push({ seq: 3, type: 'run_complete' })
+    events.push({ seq: 3, type: 'system_notice', detail: '生成候选结论' })
     setScrollMetrics(body, { scrollHeight: 900, clientHeight: 100, scrollTop: 700 })
-    rerender(<TraceStream events={events} running={false} eventCount={events.length} />)
+    rerender(<TraceStream events={events} running eventCount={events.length} />)
     expect(body.scrollTop).toBe(900)
+  })
+
+  it('collapses automatically when the run finishes and keeps manual reopen available', () => {
+    const events: AgentTraceEvent[] = [
+      { seq: 1, type: 'run_start' },
+      { seq: 2, type: 'system_notice', detail: '整理最终结论' }
+    ]
+    const { rerender } = render(<TraceStream events={events} running eventCount={events.length} />)
+    expect(queryTraceBody()).toBeInstanceOf(HTMLDivElement)
+
+    events.push({ seq: 3, type: 'run_complete' })
+    rerender(<TraceStream events={events} running={false} eventCount={events.length} />)
+    expect(queryTraceBody()).toBeNull()
+
+    fireEvent.click(screen.getByText(/运行轨迹/))
+    expect(queryTraceBody()).toBeInstanceOf(HTMLDivElement)
+
+    rerender(<TraceStream events={events} running={false} eventCount={events.length} />)
+    expect(queryTraceBody()).toBeInstanceOf(HTMLDivElement)
   })
 })
