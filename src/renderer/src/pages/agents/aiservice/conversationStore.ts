@@ -153,6 +153,47 @@ class ConversationStore {
     return 'succeeded'
   }
 
+  private titleFromMessage(message: string): string {
+    const title = (message || '').replace(/\s+/g, ' ').trim()
+    return title ? title.slice(0, 60) : '新对话'
+  }
+
+  private upsertLocalSession(
+    sessionId: string,
+    params: {
+      titleHint: string
+      messageCount: number
+      agentKind: ChatSessionSummary['run_agent_kind']
+    }
+  ) {
+    const now = new Date().toISOString()
+    const index = this.sessions.findIndex((s) => s.id === sessionId)
+    const existing = index >= 0 ? this.sessions[index] : null
+    const title =
+      existing?.title && existing.title.trim() && existing.title.trim() !== '新对话'
+        ? existing.title
+        : this.titleFromMessage(params.titleHint)
+    const next: ChatSessionSummary = {
+      ...(existing ?? {
+        id: sessionId,
+        created_at: now,
+        is_pinned: false,
+        pinned_at: null
+      }),
+      id: sessionId,
+      title,
+      last_message_at: now,
+      message_count: Math.max(existing?.message_count ?? 0, params.messageCount),
+      updated_at: now,
+      run_status: 'running',
+      run_agent_kind: params.agentKind,
+      run_started_at: existing?.run_started_at ?? now,
+      run_updated_at: now
+    }
+    if (index >= 0) this.sessions[index] = next
+    else this.sessions = [next, ...this.sessions]
+  }
+
   private markTerminal(state: ConversationState, status: RunStatus) {
     logger.info(
       'Run reached terminal state',
@@ -543,6 +584,11 @@ class ConversationStore {
     state.runAgentKind = backendKind
     state.lastAgentKind = backendKind
     state.lastProjectRepoId = params.projectRepoId ?? null
+    this.upsertLocalSession(sessionId, {
+      titleHint: userDisplay,
+      messageCount: state.messages.length,
+      agentKind: backendKind
+    })
     this.notify()
 
     const ac = new AbortController()
