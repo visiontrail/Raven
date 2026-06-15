@@ -1,6 +1,7 @@
 import { Alert, Button, Input, Tag } from 'antd'
 import { LogIn } from 'lucide-react'
 import { FC, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
 }
 
 const LoginView: FC<Props> = ({ baseUrl, loading, error, onLogin }) => {
+  const { t } = useTranslation()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
 
@@ -25,13 +27,13 @@ const LoginView: FC<Props> = ({ baseUrl, loading, error, onLogin }) => {
         <IconCircle>
           <LogIn size={22} />
         </IconCircle>
-        <CardTitle>登录 RavenAIService</CardTitle>
-        <CardSub>登录后即可使用智能体并同步你的会话历史。</CardSub>
+        <CardTitle>{t('agents.aiservice.login.title')}</CardTitle>
+        <CardSub>{t('agents.aiservice.login.subtitle')}</CardSub>
 
         <ConnRow>
-          <span>服务地址</span>
+          <span>{t('agents.aiservice.login.service_url')}</span>
           <Tag color="blue" style={{ margin: 0 }}>
-            {baseUrl || '未配置'}
+            {baseUrl || t('agents.aiservice.login.not_configured')}
           </Tag>
         </ConnRow>
 
@@ -39,7 +41,7 @@ const LoginView: FC<Props> = ({ baseUrl, loading, error, onLogin }) => {
 
         <Field>
           <Input
-            placeholder="用户名"
+            placeholder={t('agents.aiservice.login.username_placeholder')}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             onPressEnter={submit}
@@ -48,7 +50,7 @@ const LoginView: FC<Props> = ({ baseUrl, loading, error, onLogin }) => {
         </Field>
         <Field>
           <Input.Password
-            placeholder="密码"
+            placeholder={t('agents.aiservice.login.password_placeholder')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onPressEnter={submit}
@@ -56,7 +58,7 @@ const LoginView: FC<Props> = ({ baseUrl, loading, error, onLogin }) => {
         </Field>
 
         <Button type="primary" block loading={loading} disabled={!username.trim() || !password} onClick={submit}>
-          登录
+          {t('auth.login')}
         </Button>
       </Card>
     </Wrap>

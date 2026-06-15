@@ -23,6 +23,112 @@
       "title": "エージェントを作成",
       "unsaved_changes_warning": "未保存の変更があります。続行しますか？"
     },
+    "aiservice": {
+      "action": {
+        "delete": "削除",
+        "pin": "ピン留め",
+        "rename": "名前を変更",
+        "unpin": "ピン留め解除"
+      },
+      "agent": {
+        "log_analysis": {
+          "description": "ログアーカイブやテキストをアップロードし、例外、根本原因、修正案を特定します。プロジェクト連携は任意です。",
+          "name": "ログ分析"
+        },
+        "package_search": {
+          "description": "選択したプロジェクト内で依存パッケージ、バージョン、使い方を検索・推薦します。プロジェクト選択が必要です。",
+          "name": "パッケージ検索"
+        },
+        "project_expert": {
+          "description": "プロジェクトのコードとドキュメントに基づいてエンジニアリングの質問に回答します。プロジェクト選択が必要です。",
+          "name": "プロジェクト専門家"
+        }
+      },
+      "auth": {
+        "logout": "ログアウト"
+      },
+      "composer": {
+        "disclaimer": "RAVENAI は誤ることがあります。重要な情報は確認してください。",
+        "placeholder": "質問を入力…",
+        "placeholder_with_file": "問題を説明するか、ログをアップロードして送信…",
+        "project_optional_placeholder": "プロジェクトを関連付け（任意）",
+        "project_required_placeholder": "プロジェクトを選択（必須）",
+        "remove_file": "添付を削除",
+        "upload_tooltip": "ログファイル / アーカイブをアップロード"
+      },
+      "error": {
+        "connection": "RavenAIService（{{baseUrl}}）に接続できません。ローカルサービスが起動していることを確認してください。",
+        "load_sessions_failed": "会話履歴の読み込みに失敗しました",
+        "login_failed": "ログインに失敗しました。ユーザー名またはパスワードを確認してください。",
+        "profile_missing": "ユーザー情報を取得できません",
+        "token_missing": "ログインに失敗しました：アクセストークンが返されませんでした"
+      },
+      "login": {
+        "not_configured": "未設定",
+        "password_placeholder": "パスワード",
+        "service_url": "サービス URL",
+        "subtitle": "ログインするとエージェントを使用し、会話履歴を同期できます。",
+        "title": "RavenAIService にログイン",
+        "username_placeholder": "ユーザー名"
+      },
+      "message": {
+        "attachment": "添付: {{filename}}",
+        "cancelled": "ユーザーによりキャンセルされました。",
+        "default_log_prompt": "このログファイルを分析してください",
+        "empty_content": "（内容なし）",
+        "processing": "処理中...",
+        "project_required": "先にプロジェクトリポジトリを選択してください",
+        "run_error": "実行中にエラーが発生しました。後でもう一度お試しください。",
+        "run_failed": "実行に失敗しました：{{message}}",
+        "thinking": "考えています…"
+      },
+      "session": {
+        "delete_confirm": "「{{title}}」を削除しますか？この操作は元に戻せません。",
+        "delete_title": "会話を削除",
+        "empty": "会話はありません",
+        "message_count": "{{count}} 件",
+        "name_placeholder": "会話名を入力",
+        "new": "新しい会話",
+        "rename_title": "会話名を変更",
+        "untitled": "無題の会話"
+      },
+      "sidebar": {
+        "agents": "エージェント",
+        "history": "会話履歴"
+      },
+      "time": {
+        "days_ago": "{{count}} 日前",
+        "hours_ago": "{{count}} 時間前",
+        "just_now": "たった今",
+        "minutes_ago": "{{count}} 分前"
+      },
+      "title": "エージェントワークベンチ",
+      "trace": {
+        "badge": {
+          "error": "失敗",
+          "ok": "完了",
+          "running": "実行中"
+        },
+        "preparing": "準備中…",
+        "status": {
+          "cancelled": "キャンセル済み",
+          "error": "実行エラー",
+          "result_validation": "結果を検証中",
+          "run_complete": "実行完了",
+          "run_start": "実行開始"
+        },
+        "thinking": "思考",
+        "title": "実行トレース",
+        "tool": "ツール"
+      },
+      "user": {
+        "default": "ユーザー"
+      },
+      "welcome": {
+        "subtitle": "エージェントを選んで複数ターンの会話を開始し、プロジェクト選択や添付のアップロードができます。",
+        "title": "こんにちは、{{userName}}"
+      }
+    },
     "delete": {
       "popup": {
         "content": "このエージェントを削除してもよろしいですか？"

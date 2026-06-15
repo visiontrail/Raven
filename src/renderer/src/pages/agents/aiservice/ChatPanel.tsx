@@ -1,6 +1,8 @@
+import { getAIServiceAgentDescriptionLabel, getAIServiceAgentNameLabel } from '@renderer/i18n/label'
 import type { AIServiceAgentKind, ConversationState, ProjectRepoOption } from '@renderer/types/aiServiceAgent'
 import { Spin } from 'antd'
 import { FC, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import { AGENT_META_BY_KIND, AGENT_METAS } from './agentMeta'
@@ -42,6 +44,7 @@ const ChatPanel: FC<Props> = ({
   onSend,
   onStop
 }) => {
+  const { t } = useTranslation()
   const scrollRef = useRef<HTMLDivElement>(null)
   const messages = conversation?.messages || []
   const loading = !!conversation?.loadingMessages
@@ -64,8 +67,10 @@ const ChatPanel: FC<Props> = ({
       <TopBar>
         <Title>{title}</Title>
         <TopMeta>
-          {meta.name}
-          {!isWelcome && messages.length > 0 ? ` · ${messages.length} 条消息` : ''}
+          {getAIServiceAgentNameLabel(meta.kind)}
+          {!isWelcome && messages.length > 0
+            ? ` · ${t('agents.aiservice.session.message_count', { count: messages.length })}`
+            : ''}
         </TopMeta>
       </TopBar>
 
@@ -76,16 +81,16 @@ const ChatPanel: FC<Props> = ({
           </Centered>
         ) : isWelcome ? (
           <Welcome>
-            <WelcomeTitle>你好，{userName}</WelcomeTitle>
-            <WelcomeSub>选择一个智能体开始对话，可连续多轮提问、选择项目并上传附件。</WelcomeSub>
+            <WelcomeTitle>{t('agents.aiservice.welcome.title', { userName })}</WelcomeTitle>
+            <WelcomeSub>{t('agents.aiservice.welcome.subtitle')}</WelcomeSub>
             <CapGrid>
               {AGENT_METAS.map((m) => (
                 <CapCard key={m.kind} $active={m.kind === agentKind} onClick={() => onAgentChange(m.kind)}>
                   <CapLabel>
                     <m.icon size={15} />
-                    {m.name}
+                    {getAIServiceAgentNameLabel(m.kind)}
                   </CapLabel>
-                  <CapDesc>{m.description}</CapDesc>
+                  <CapDesc>{getAIServiceAgentDescriptionLabel(m.kind)}</CapDesc>
                 </CapCard>
               ))}
             </CapGrid>

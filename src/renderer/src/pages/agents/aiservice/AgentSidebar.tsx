@@ -1,8 +1,11 @@
 import Scrollbar from '@renderer/components/Scrollbar'
+import { getAIServiceAgentNameLabel } from '@renderer/i18n/label'
 import { type AIServiceAgentKind, backendToAgentKind, type ChatSessionSummary } from '@renderer/types/aiServiceAgent'
 import { Button, Dropdown, Empty, Input, Modal, Spin } from 'antd'
+import type { TFunction } from 'i18next'
 import { MessageSquarePlus, MoreHorizontal, Pin, RefreshCw } from 'lucide-react'
 import { FC, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import { AGENT_METAS } from './agentMeta'
@@ -21,19 +24,19 @@ interface Props {
   onPinSession: (id: string, pinned: boolean) => void
 }
 
-function relativeTime(iso?: string): string {
+function relativeTime(iso: string | undefined, t: TFunction, locale: string): string {
   if (!iso) return ''
   const ts = new Date(iso).getTime()
   if (Number.isNaN(ts)) return ''
   const diff = Date.now() - ts
   const min = Math.floor(diff / 60000)
-  if (min < 1) return '刚刚'
-  if (min < 60) return `${min} 分钟前`
+  if (min < 1) return t('agents.aiservice.time.just_now')
+  if (min < 60) return t('agents.aiservice.time.minutes_ago', { count: min })
   const hr = Math.floor(min / 60)
-  if (hr < 24) return `${hr} 小时前`
+  if (hr < 24) return t('agents.aiservice.time.hours_ago', { count: hr })
   const day = Math.floor(hr / 24)
-  if (day < 30) return `${day} 天前`
-  return new Date(ts).toLocaleDateString('zh-CN')
+  if (day < 30) return t('agents.aiservice.time.days_ago', { count: day })
+  return new Date(ts).toLocaleDateString(locale)
 }
 
 const AgentSidebar: FC<Props> = ({
@@ -49,6 +52,7 @@ const AgentSidebar: FC<Props> = ({
   onRenameSession,
   onPinSession
 }) => {
+  const { t, i18n } = useTranslation()
   const [renameTarget, setRenameTarget] = useState<ChatSessionSummary | null>(null)
   const [renameValue, setRenameValue] = useState('')
 
@@ -63,12 +67,13 @@ const AgentSidebar: FC<Props> = ({
   }, [sessions, agentKind])
 
   const confirmDelete = (s: ChatSessionSummary) => {
+    const title = s.title || t('agents.aiservice.session.untitled')
     Modal.confirm({
-      title: '删除会话',
-      content: `确定删除「${s.title || '未命名会话'}」吗？此操作不可恢复。`,
-      okText: '删除',
+      title: t('agents.aiservice.session.delete_title'),
+      content: t('agents.aiservice.session.delete_confirm', { title }),
+      okText: t('agents.aiservice.action.delete'),
       okButtonProps: { danger: true },
-      cancelText: '取消',
+      cancelText: t('common.cancel'),
       onOk: () => onDeleteSession(s.id)
     })
   }
@@ -88,12 +93,12 @@ const AgentSidebar: FC<Props> = ({
   return (
     <Container>
       <Section>
-        <SectionLabel>智能体</SectionLabel>
+        <SectionLabel>{t('agents.aiservice.sidebar.agents')}</SectionLabel>
         {AGENT_METAS.map((m) => (
           <AgentRow key={m.kind} $active={m.kind === agentKind} onClick={() => onAgentChange(m.kind)}>
             <m.icon size={16} />
             <AgentInfo>
-              <AgentName>{m.name}</AgentName>
+              <AgentName>{getAIServiceAgentNameLabel(m.kind)}</AgentName>
             </AgentInfo>
           </AgentRow>
         ))}
@@ -102,7 +107,7 @@ const AgentSidebar: FC<Props> = ({
       <Divider />
 
       <HistoryHeader>
-        <SectionLabel>会话历史</SectionLabel>
+        <SectionLabel>{t('agents.aiservice.sidebar.history')}</SectionLabel>
         <HeaderActions>
           <Button
             type="text"
@@ -115,7 +120,7 @@ const AgentSidebar: FC<Props> = ({
       </HistoryHeader>
 
       <NewChatButton type="default" icon={<MessageSquarePlus size={15} />} onClick={onNewChat}>
-        新建会话
+        {t('agents.aiservice.session.new')}
       </NewChatButton>
 
       <SessionList>
@@ -125,7 +130,7 @@ const AgentSidebar: FC<Props> = ({
           </Centered>
         ) : filtered.length === 0 ? (
           <Centered>
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无会话" />
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('agents.aiservice.session.empty')} />
           </Centered>
         ) : (
           filtered.map((s) => (
@@ -133,20 +138,24 @@ const AgentSidebar: FC<Props> = ({
               <SessionMain>
                 <SessionTitle>
                   {s.is_pinned && <Pin size={11} className="pin" />}
-                  {s.title || '未命名会话'}
+                  {s.title || t('agents.aiservice.session.untitled')}
                 </SessionTitle>
                 <SessionMeta>
-                  {relativeTime(s.last_message_at || s.updated_at)} · {s.message_count} 条
+                  {relativeTime(s.last_message_at || s.updated_at, t, i18n.language)} ·{' '}
+                  {t('agents.aiservice.session.message_count', { count: s.message_count })}
                 </SessionMeta>
               </SessionMain>
               <Dropdown
                 trigger={['click']}
                 menu={{
                   items: [
-                    { key: 'rename', label: '重命名' },
-                    { key: 'pin', label: s.is_pinned ? '取消置顶' : '置顶' },
+                    { key: 'rename', label: t('agents.aiservice.action.rename') },
+                    {
+                      key: 'pin',
+                      label: s.is_pinned ? t('agents.aiservice.action.unpin') : t('agents.aiservice.action.pin')
+                    },
                     { type: 'divider' },
-                    { key: 'delete', label: '删除', danger: true }
+                    { key: 'delete', label: t('agents.aiservice.action.delete'), danger: true }
                   ],
                   onClick: ({ key, domEvent }) => {
                     domEvent.stopPropagation()
@@ -168,19 +177,19 @@ const AgentSidebar: FC<Props> = ({
       </SessionList>
 
       <Modal
-        title="重命名会话"
+        title={t('agents.aiservice.session.rename_title')}
         open={!!renameTarget}
         onOk={commitRename}
         onCancel={() => setRenameTarget(null)}
-        okText="保存"
-        cancelText="取消"
+        okText={t('common.save')}
+        cancelText={t('common.cancel')}
         okButtonProps={{ disabled: !renameValue.trim() }}>
         <Input
           value={renameValue}
           onChange={(e) => setRenameValue(e.target.value)}
           onPressEnter={commitRename}
           maxLength={80}
-          placeholder="输入会话名称"
+          placeholder={t('agents.aiservice.session.name_placeholder')}
         />
       </Modal>
     </Container>

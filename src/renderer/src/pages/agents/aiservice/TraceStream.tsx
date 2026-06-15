@@ -1,6 +1,8 @@
 import type { AgentTraceEvent } from '@renderer/types/aiServiceAgent'
+import type { TFunction } from 'i18next'
 import { Brain, ChevronDown, ChevronRight, CircleAlert, Info, Loader2, Wrench } from 'lucide-react'
 import { FC, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 interface Props {
@@ -22,29 +24,58 @@ type Row =
   | { kind: 'error'; id: string; text: string }
 
 const AUTO_SCROLL_BOTTOM_THRESHOLD = 32
+const TECHNICAL_TRACE_VALUES = new Set([
+  'thinking_tokens',
+  'reasoning_tokens',
+  'reasoning_mode',
+  'thinking_budget',
+  'max_thinking_tokens'
+])
 
 function str(v: unknown): string {
   return typeof v === 'string' ? v : ''
 }
 
-function buildRows(events: AgentTraceEvent[]): Row[] {
+function isTechnicalTraceText(text: string): boolean {
+  return TECHNICAL_TRACE_VALUES.has(text.trim().toLowerCase())
+}
+
+function readableText(text: string): string {
+  const trimmed = text.trim()
+  return trimmed && !isTechnicalTraceText(trimmed) ? trimmed : ''
+}
+
+function buildRows(events: AgentTraceEvent[], t: TFunction): Row[] {
   const rows: Row[] = []
   const toolByStep = new Map<string, Extract<Row, { kind: 'tool' }>>()
-  const thinkByStep = new Map<string, Extract<Row, { kind: 'thinking' }>>()
+  const thinkByStep = new Map<string, { row?: Extract<Row, { kind: 'thinking' }>; text: string }>()
   let counter = 0
   const nextId = () => `r${counter++}`
+
+  const ensureThinkingRow = (stepId: string): Extract<Row, { kind: 'thinking' }> => {
+    let state = thinkByStep.get(stepId)
+    if (!state) {
+      state = { text: '' }
+      thinkByStep.set(stepId, state)
+    }
+    if (!state.row) {
+      state.row = { kind: 'thinking', id: nextId(), text: '' }
+      rows.push(state.row)
+    }
+    return state.row
+  }
 
   for (const ev of events) {
     const stepId = str(ev.step_id)
     switch (ev.type) {
       case 'run_start':
-        rows.push({ kind: 'status', id: nextId(), text: '开始运行' })
+        rows.push({ kind: 'status', id: nextId(), text: t('agents.aiservice.trace.status.run_start') })
         break
       case 'step_start': {
         const row: Extract<Row, { kind: 'tool' }> = {
           kind: 'tool',
           id: nextId(),
-          tool: str(ev.tool_name) || '工具',
+          tool: str(ev.tool_name) || t('agents.aiservice.trace.tool'),
           status: 'running',
           output: ''
         }
@@ -68,35 +99,41 @@ function buildRows(events: AgentTraceEvent[]): Row[] {
         break
       }
       case 'thinking_start': {
-        const row: Extract<Row, { kind: 'thinking' }> = { kind: 'thinking', id: nextId(), text: '' }
-        thinkByStep.set(stepId, row)
-        rows.push(row)
+        if (!thinkByStep.has(stepId)) thinkByStep.set(stepId, { text: '' })
         break
       }
       case 'thinking_delta': {
-        const row = thinkByStep.get(stepId)
-        if (row) row.text += str(ev.text_chunk)
+        const chunk = str(ev.text_chunk)
+        if (!chunk) break
+        const state = thinkByStep.get(stepId) || { text: '' }
+        state.text += chunk
+        thinkByStep.set(stepId, state)
+        const text = readableText(state.text)
+        if (text) ensureThinkingRow(stepId).text = text
         break
       }
       case 'thinking_end': {
-        const row = thinkByStep.get(stepId)
-        const text = str(ev.text)
-        if (row && text) row.text = text
+        const state = thinkByStep.get(stepId) || { text: '' }
+        const text = readableText(str(ev.text) || state.text)
+        if (text) ensureThinkingRow(stepId).text = text
         break
       }
       case 'system_notice': {
-        const text = str(ev.detail) || str(ev.subtype) || str(ev.kind)
+        const text = readableText(str(ev.detail) || str(ev.subtype) || str(ev.kind))
         if (text) rows.push({ kind: 'notice', id: nextId(), text })
         break
       }
+      case 'result_validation':
+        rows.push({ kind: 'status', id: nextId(), text: t('agents.aiservice.trace.status.result_validation') })
+        break
       case 'run_complete':
-        rows.push({ kind: 'status', id: nextId(), text: '运行完成' })
+        rows.push({ kind: 'status', id: nextId(), text: t('agents.aiservice.trace.status.run_complete') })
         break
       case 'cancelled':
-        rows.push({ kind: 'status', id: nextId(), text: '已取消' })
+        rows.push({ kind: 'status', id: nextId(), text: t('agents.aiservice.trace.status.cancelled') })
         break
       case 'error':
-        rows.push({ kind: 'error', id: nextId(), text: str(ev.message) || '运行出错' })
+        rows.push({ kind: 'error', id: nextId(), text: str(ev.message) || t('agents.aiservice.trace.status.error') })
         break
       default:
         break
@@ -106,11 +143,12 @@ function buildRows(events: AgentTraceEvent[]): Row[] {
 }
 
 const TraceStream: FC<Props> = ({ events, running, eventCount }) => {
+  const { t } = useTranslation()
   // `eventCount` is intentionally in the dep list: `events` is mutated in place,
   // so its reference alone never invalidates the memo. The linter can't see the
   // mutation and flags it as unnecessary, hence the disable.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const rows = useMemo(() => buildRows(events), [events, eventCount])
+  const rows = useMemo(() => buildRows(events, t), [events, eventCount, t])
   const [expanded, setExpanded] = useState(() => running)
   const bodyRef = useRef<HTMLDivElement>(null)
   const shouldAutoScrollRef = useRef(true)
@@ -164,7 +202,10 @@ const TraceStream: FC<Props> = ({ events, running, eventCount }) => {
       <Header onClick={toggleExpanded}>
         {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         {running ? <Loader2 size={13} className="spin" /> : null}
-        <span>运行轨迹{rows.length ? ` · ${rows.length}` : ''}</span>
+        <span>
+          {t('agents.aiservice.trace.title')}
+          {rows.length ? ` · ${rows.length}` : ''}
+        </span>
       </Header>
       {expanded && (
         <Body ref={bodyRef} onScroll={handleBodyScroll}>
@@ -183,7 +224,11 @@ const TraceStream: FC<Props> = ({ events, running, eventCount }) => {
                     <RowTitle>
                       {row.tool}
                       <RowBadge $status={row.status}>
-                        {row.status === 'running' ? '执行中' : row.status === 'ok' ? '完成' : '失败'}
+                        {row.status === 'running'
+                          ? t('agents.aiservice.trace.badge.running')
+                          : row.status === 'ok'
+                            ? t('agents.aiservice.trace.badge.ok')
+                            : t('agents.aiservice.trace.badge.error')}
                       </RowBadge>
                       {typeof row.duration === 'number' && <RowMeta>{row.duration.toFixed(1)}s</RowMeta>}
                     </RowTitle>
@@ -192,7 +237,7 @@ const TraceStream: FC<Props> = ({ events, running, eventCount }) => {
                 )}
                 {row.kind === 'thinking' && (
                   <>
-                    <RowTitle>思考</RowTitle>
+                    <RowTitle>{t('agents.aiservice.trace.thinking')}</RowTitle>
                     {row.text.trim() && <RowText className="dim">{row.text.trim().slice(0, 600)}</RowText>}
                   </>
                 )}
@@ -201,7 +246,7 @@ const TraceStream: FC<Props> = ({ events, running, eventCount }) => {
               </RowBody>
             </RowItem>
           ))}
-          {rows.length === 0 && running && <RowText className="dim">正在准备…</RowText>}
+          {rows.length === 0 && running && <RowText className="dim">{t('agents.aiservice.trace.preparing')}</RowText>}
         </Body>
       )}
     </Wrapper>

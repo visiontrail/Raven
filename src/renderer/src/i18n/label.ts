@@ -5,7 +5,8 @@
  */
 
 import { loggerService } from '@logger'
-import { ThinkingOption } from '@renderer/types'
+import type { ThinkingOption } from '@renderer/types'
+import type { AIServiceAgentKind } from '@renderer/types/aiServiceAgent'
 
 import i18n from './index'
 
@@ -148,6 +149,26 @@ const sidebarIconKeyMap = {
 
 export const getSidebarIconLabel = (key: string): string => {
   return getLabel(key, sidebarIconKeyMap)
+}
+
+const aiServiceAgentNameKeyMap = {
+  'log-analysis': 'agents.aiservice.agent.log_analysis.name',
+  'package-search': 'agents.aiservice.agent.package_search.name',
+  'project-expert': 'agents.aiservice.agent.project_expert.name'
+} as const
+
+export const getAIServiceAgentNameLabel = (key: AIServiceAgentKind): string => {
+  return getLabel(key, aiServiceAgentNameKeyMap)
+}
+
+const aiServiceAgentDescriptionKeyMap = {
+  'log-analysis': 'agents.aiservice.agent.log_analysis.description',
+  'package-search': 'agents.aiservice.agent.package_search.description',
+  'project-expert': 'agents.aiservice.agent.project_expert.description'
+} as const
+
+export const getAIServiceAgentDescriptionLabel = (key: AIServiceAgentKind): string => {
+  return getLabel(key, aiServiceAgentDescriptionKeyMap)
 }
 
 const shortcutKeyMap = {

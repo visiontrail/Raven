@@ -1,5 +1,6 @@
 import { loggerService } from '@logger'
 import { Navbar, NavbarCenter } from '@renderer/components/app/Navbar'
+import i18n from '@renderer/i18n'
 import { AIServiceAgentClient, AIServiceConnectionError } from '@renderer/services/AIServiceAgentClient'
 import {
   type AIServiceAgentKind,
@@ -12,6 +13,7 @@ import { uuid } from '@renderer/utils'
 import { Button, Dropdown, Spin, Tag } from 'antd'
 import { LogOut, User } from 'lucide-react'
 import { FC, useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import { AGENT_META_BY_KIND } from './agentMeta'
@@ -23,11 +25,8 @@ import { useConversation, useSessions } from './useConversation'
 
 const logger = loggerService.withContext('AgentChatWorkbench')
 
-interface Props {
-  onSwitchToTemplates: () => void
-}
-
-const AgentChatWorkbench: FC<Props> = ({ onSwitchToTemplates }) => {
+const AgentChatWorkbench: FC = () => {
+  const { t } = useTranslation()
   const clientRef = useRef<AIServiceAgentClient | null>(null)
 
   const [config, setConfig] = useState<AIServiceConfig | null>(null)
@@ -90,7 +89,7 @@ const AgentChatWorkbench: FC<Props> = ({ onSwitchToTemplates }) => {
             onAuthenticated(user)
           } catch (err) {
             if (err instanceof AIServiceConnectionError) {
-              setAuthError(`无法连接到 RavenAIService（${cfg.baseUrl}），请确认本地服务已启动。`)
+              setAuthError(i18n.t('agents.aiservice.error.connection', { baseUrl: cfg.baseUrl }))
             }
             // Stale / invalid token: fall back to the login screen.
             client.setToken(undefined)
@@ -117,14 +116,14 @@ const AgentChatWorkbench: FC<Props> = ({ onSwitchToTemplates }) => {
       } catch (err) {
         setAuthError(
           err instanceof AIServiceConnectionError
-            ? `无法连接到 RavenAIService（${config?.baseUrl}），请确认本地服务已启动。`
-            : (err as Error)?.message || '登录失败，请检查用户名或密码。'
+            ? t('agents.aiservice.error.connection', { baseUrl: config?.baseUrl })
+            : (err as Error)?.message || t('agents.aiservice.error.login_failed')
         )
       } finally {
         setAuthLoading(false)
       }
     },
-    [config?.baseUrl, onAuthenticated]
+    [config?.baseUrl, onAuthenticated, t]
   )
 
   const handleLogout = useCallback(async () => {
@@ -183,7 +182,7 @@ const AgentChatWorkbench: FC<Props> = ({ onSwitchToTemplates }) => {
 
     if (meta.projectRepo === 'required' && projectRepoId == null) {
       logger.warn('handleSend blocked: project repo required but none selected', { agentKind })
-      window.message?.warning({ content: '请先选择一个项目仓库', key: 'project-required' })
+      window.message?.warning({ content: t('agents.aiservice.message.project_required'), key: 'project-required' })
       void loadProjectRepos()
       return
     }
@@ -205,7 +204,7 @@ const AgentChatWorkbench: FC<Props> = ({ onSwitchToTemplates }) => {
       projectRepoId,
       file: fileToSend
     })
-  }, [agentKind, input, selectedFile, projectRepoId, sessionId, loadProjectRepos])
+  }, [agentKind, input, selectedFile, projectRepoId, sessionId, loadProjectRepos, t])
 
   const handleStop = useCallback(() => {
     if (sessionId) void conversationStore.cancelActiveRun(sessionId)
@@ -219,8 +218,10 @@ const AgentChatWorkbench: FC<Props> = ({ onSwitchToTemplates }) => {
     [sessionId]
   )
 
-  const title = sessionId ? sessions.find((s) => s.id === sessionId)?.title || '未命名会话' : '新对话'
-  const userName = profile?.display_name || profile?.username || '用户'
+  const title = sessionId
+    ? sessions.find((s) => s.id === sessionId)?.title || t('agents.aiservice.session.untitled')
+    : t('agents.aiservice.session.new')
+  const userName = profile?.display_name || profile?.username || t('agents.aiservice.user.default')
 
   if (bootLoading) {
     return (
@@ -236,14 +237,14 @@ const AgentChatWorkbench: FC<Props> = ({ onSwitchToTemplates }) => {
     <Container>
       <Navbar>
         <NavbarCenter style={{ borderRight: 'none', justifyContent: 'space-between' }}>
-          <span>智能体工作台</span>
+          <span>{t('agents.aiservice.title')}</span>
           <Right>
             {config && <Tag color="blue">{config.baseUrl}</Tag>}
             {profile ? (
               <Dropdown
                 trigger={['click']}
                 menu={{
-                  items: [{ key: 'logout', label: '退出登录', icon: <LogOut size={14} /> }],
+                  items: [{ key: 'logout', label: t('agents.aiservice.auth.logout'), icon: <LogOut size={14} /> }],
                   onClick: ({ key }) => key === 'logout' && handleLogout()
                 }}>
                 <Button type="text" size="small" icon={<User size={14} />}>
@@ -251,9 +252,6 @@ const AgentChatWorkbench: FC<Props> = ({ onSwitchToTemplates }) => {
                 </Button>
               </Dropdown>
             ) : null}
-            <Button type="text" size="small" onClick={onSwitchToTemplates}>
-              模板助手
-            </Button>
           </Right>
         </NavbarCenter>
       </Navbar>

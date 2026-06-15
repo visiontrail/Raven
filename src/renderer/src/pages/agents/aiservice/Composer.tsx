@@ -2,6 +2,7 @@ import type { AIServiceAgentKind, ProjectRepoOption } from '@renderer/types/aiSe
 import { Input, Select, Tooltip } from 'antd'
 import { Paperclip, Send, Square, X } from 'lucide-react'
 import { FC, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
 import { ACCEPTED_LOG_EXTENSIONS, AGENT_META_BY_KIND } from './agentMeta'
@@ -39,6 +40,7 @@ const Composer: FC<Props> = ({
   onStop,
   disabled
 }) => {
+  const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const meta = AGENT_META_BY_KIND[agentKind]
   const projectRequired = meta.projectRepo === 'required'
@@ -65,7 +67,10 @@ const Composer: FC<Props> = ({
           <FileChip>
             <Paperclip size={13} />
             <span>{selectedFile.name}</span>
-            <button type="button" onClick={() => onFileChange(null)} aria-label="移除附件">
+            <button
+              type="button"
+              onClick={() => onFileChange(null)}
+              aria-label={t('agents.aiservice.composer.remove_file')}>
               <X size={12} />
             </button>
           </FileChip>
@@ -75,7 +80,11 @@ const Composer: FC<Props> = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={meta.supportsFile ? '描述问题，或上传日志后直接发送…' : '输入你的问题…'}
+          placeholder={
+            meta.supportsFile
+              ? t('agents.aiservice.composer.placeholder_with_file')
+              : t('agents.aiservice.composer.placeholder')
+          }
           autoSize={{ minRows: 2, maxRows: 8 }}
           variant="borderless"
           disabled={disabled}
@@ -84,7 +93,7 @@ const Composer: FC<Props> = ({
         <Row>
           {meta.supportsFile && (
             <>
-              <Tooltip title="上传日志文件 / 归档">
+              <Tooltip title={t('agents.aiservice.composer.upload_tooltip')}>
                 <IconBtn type="button" onClick={() => fileInputRef.current?.click()} disabled={disabled}>
                   <Paperclip size={15} />
                 </IconBtn>
@@ -101,7 +110,11 @@ const Composer: FC<Props> = ({
 
           <Select
             size="small"
-            placeholder={projectRequired ? '选择项目（必选）' : '关联项目（可选）'}
+            placeholder={
+              projectRequired
+                ? t('agents.aiservice.composer.project_required_placeholder')
+                : t('agents.aiservice.composer.project_optional_placeholder')
+            }
             value={projectRepoId}
             onChange={(v) => onProjectRepoChange(v ?? null)}
             options={projectRepos.map((r) => ({ value: r.id, label: `${r.project_name}（${r.project_code}）` }))}
@@ -127,7 +140,7 @@ const Composer: FC<Props> = ({
           )}
         </Row>
       </Box>
-      <Hint>RAVENAI 可能会出错，请核对重要信息。</Hint>
+      <Hint>{t('agents.aiservice.composer.disclaimer')}</Hint>
     </Wrap>
   )
 }

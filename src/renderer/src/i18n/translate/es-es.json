@@ -23,6 +23,112 @@
       "title": "Crear agente inteligente",
       "unsaved_changes_warning": "Tiene contenido no guardado, ¿está seguro de que desea cerrar?"
     },
+    "aiservice": {
+      "action": {
+        "delete": "Delete",
+        "pin": "Pin",
+        "rename": "Rename",
+        "unpin": "Unpin"
+      },
+      "agent": {
+        "log_analysis": {
+          "description": "Upload log archives or text to identify exceptions, root causes, and fixes. Project linking is optional.",
+          "name": "Log Analysis"
+        },
+        "package_search": {
+          "description": "Search and recommend dependencies, versions, and usage in the selected project. A project is required.",
+          "name": "Package Search"
+        },
+        "project_expert": {
+          "description": "Answer engineering questions from project code and documentation. A project is required.",
+          "name": "Project Expert"
+        }
+      },
+      "auth": {
+        "logout": "Log out"
+      },
+      "composer": {
+        "disclaimer": "RAVENAI can make mistakes. Check important information.",
+        "placeholder": "Ask your question…",
+        "placeholder_with_file": "Describe the issue, or upload logs and send…",
+        "project_optional_placeholder": "Link project (optional)",
+        "project_required_placeholder": "Select project (required)",
+        "remove_file": "Remove attachment",
+        "upload_tooltip": "Upload log file / archive"
+      },
+      "error": {
+        "connection": "Cannot connect to RavenAIService ({{baseUrl}}). Make sure the local service is running.",
+        "load_sessions_failed": "Failed to load conversation history",
+        "login_failed": "Login failed. Check your username or password.",
+        "profile_missing": "Unable to get user information",
+        "token_missing": "Login failed: access token was not returned"
+      },
+      "login": {
+        "not_configured": "Not configured",
+        "password_placeholder": "Password",
+        "service_url": "Service URL",
+        "subtitle": "Sign in to use agents and sync your conversation history.",
+        "title": "Sign in to RavenAIService",
+        "username_placeholder": "Username"
+      },
+      "message": {
+        "attachment": "Attachment: {{filename}}",
+        "cancelled": "Cancelled by user.",
+        "default_log_prompt": "Please analyze this log file",
+        "empty_content": "(No content)",
+        "processing": "Processing...",
+        "project_required": "Please select a project repository first",
+        "run_error": "The run encountered an error. Please try again later.",
+        "run_failed": "Run failed: {{message}}",
+        "thinking": "Thinking…"
+      },
+      "session": {
+        "delete_confirm": "Delete “{{title}}”? This cannot be undone.",
+        "delete_title": "Delete conversation",
+        "empty": "No conversations",
+        "message_count": "{{count}} messages",
+        "name_placeholder": "Enter conversation name",
+        "new": "New conversation",
+        "rename_title": "Rename conversation",
+        "untitled": "Untitled conversation"
+      },
+      "sidebar": {
+        "agents": "Agents",
+        "history": "Conversation History"
+      },
+      "time": {
+        "days_ago": "{{count}} days ago",
+        "hours_ago": "{{count}} hours ago",
+        "just_now": "Just now",
+        "minutes_ago": "{{count}} minutes ago"
+      },
+      "title": "Agent Workbench",
+      "trace": {
+        "badge": {
+          "error": "Failed",
+          "ok": "Done",
+          "running": "Running"
+        },
+        "preparing": "Preparing…",
+        "status": {
+          "cancelled": "Cancelled",
+          "error": "Run error",
+          "result_validation": "Validating result",
+          "run_complete": "Run complete",
+          "run_start": "Run started"
+        },
+        "thinking": "Thinking",
+        "title": "Run Trace",
+        "tool": "Tool"
+      },
+      "user": {
+        "default": "User"
+      },
+      "welcome": {
+        "subtitle": "Choose an agent to start a multi-turn conversation, select projects, and upload attachments.",
+        "title": "Hello, {{userName}}"
+      }
+    },
     "delete": {
       "popup": {
         "content": "¿Está seguro de que desea eliminar este agente inteligente?"
@@ -1950,8 +2056,8 @@
       "noComponents": "Seleccione al menos un componente para empaquetar.",
       "noPackageType": "El tipo de paquete no está definido, no se puede empaquetar.",
       "noPackageVersion": "Ingrese la versión del paquete.",
-      "selectFile": "No se pudo seleccionar el archivo",
-      "rarNotFullySupported": "Los archivos RAR no son totalmente compatibles. Descomprímelos primero y luego selecciona el archivo correspondiente."
+      "rarNotFullySupported": "Los archivos RAR no son totalmente compatibles. Descomprímelos primero y luego selecciona el archivo correspondiente.",
+      "selectFile": "No se pudo seleccionar el archivo"
     },
     "infoPreview": "Vista previa de información",
     "isPatch": "¿Es un paquete PATCH?",

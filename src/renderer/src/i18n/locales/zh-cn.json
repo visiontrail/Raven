@@ -23,6 +23,112 @@
       "title": "创建智能体",
       "unsaved_changes_warning": "你有未保存的内容，确定要关闭吗？"
     },
+    "aiservice": {
+      "action": {
+        "delete": "删除",
+        "pin": "置顶",
+        "rename": "重命名",
+        "unpin": "取消置顶"
+      },
+      "agent": {
+        "log_analysis": {
+          "description": "上传日志包或文本，定位异常、根因与修复建议，可选关联项目。",
+          "name": "日志分析"
+        },
+        "package_search": {
+          "description": "在所选项目中检索与推荐依赖包、版本与用法，需先选择项目。",
+          "name": "包检索"
+        },
+        "project_expert": {
+          "description": "基于项目仓库代码与文档回答工程问题，需先选择项目。",
+          "name": "项目专家"
+        }
+      },
+      "auth": {
+        "logout": "退出登录"
+      },
+      "composer": {
+        "disclaimer": "RAVENAI 可能会出错，请核对重要信息。",
+        "placeholder": "输入你的问题…",
+        "placeholder_with_file": "描述问题，或上传日志后直接发送…",
+        "project_optional_placeholder": "关联项目（可选）",
+        "project_required_placeholder": "选择项目（必选）",
+        "remove_file": "移除附件",
+        "upload_tooltip": "上传日志文件 / 归档"
+      },
+      "error": {
+        "connection": "无法连接到 RavenAIService（{{baseUrl}}），请确认本地服务已启动。",
+        "load_sessions_failed": "加载会话历史失败",
+        "login_failed": "登录失败，请检查用户名或密码。",
+        "profile_missing": "无法获取用户信息",
+        "token_missing": "登录失败：未返回访问令牌"
+      },
+      "login": {
+        "not_configured": "未配置",
+        "password_placeholder": "密码",
+        "service_url": "服务地址",
+        "subtitle": "登录后即可使用智能体并同步你的会话历史。",
+        "title": "登录 RavenAIService",
+        "username_placeholder": "用户名"
+      },
+      "message": {
+        "attachment": "附件: {{filename}}",
+        "cancelled": "已被用户取消。",
+        "default_log_prompt": "请分析这个日志文件",
+        "empty_content": "（无内容）",
+        "processing": "正在处理...",
+        "project_required": "请先选择一个项目仓库",
+        "run_error": "运行出现错误，请稍后重试。",
+        "run_failed": "运行失败：{{message}}",
+        "thinking": "正在思考…"
+      },
+      "session": {
+        "delete_confirm": "确定删除「{{title}}」吗？此操作不可恢复。",
+        "delete_title": "删除会话",
+        "empty": "暂无会话",
+        "message_count": "{{count}} 条",
+        "name_placeholder": "输入会话名称",
+        "new": "新建会话",
+        "rename_title": "重命名会话",
+        "untitled": "未命名会话"
+      },
+      "sidebar": {
+        "agents": "智能体",
+        "history": "会话历史"
+      },
+      "time": {
+        "days_ago": "{{count}} 天前",
+        "hours_ago": "{{count}} 小时前",
+        "just_now": "刚刚",
+        "minutes_ago": "{{count}} 分钟前"
+      },
+      "title": "智能体工作台",
+      "trace": {
+        "badge": {
+          "error": "失败",
+          "ok": "完成",
+          "running": "执行中"
+        },
+        "preparing": "正在准备…",
+        "status": {
+          "cancelled": "已取消",
+          "error": "运行出错",
+          "result_validation": "校验结果",
+          "run_complete": "运行完成",
+          "run_start": "开始运行"
+        },
+        "thinking": "思考",
+        "title": "运行轨迹",
+        "tool": "工具"
+      },
+      "user": {
+        "default": "用户"
+      },
+      "welcome": {
+        "subtitle": "选择一个智能体开始对话，可连续多轮提问、选择项目并上传附件。",
+        "title": "你好，{{userName}}"
+      }
+    },
     "delete": {
       "popup": {
         "content": "确定要删除此智能体吗？"

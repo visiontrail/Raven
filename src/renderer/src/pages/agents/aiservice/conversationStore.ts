@@ -1,4 +1,5 @@
 import { loggerService } from '@logger'
+import i18n from '@renderer/i18n'
 import { AIServiceAgentClient, AIServiceConnectionError } from '@renderer/services/AIServiceAgentClient'
 import {
   agentKindToBackend,
@@ -51,7 +52,7 @@ interface PumpDiag {
   firstFrameAt: number
 }
 
-const DEFAULT_LOG_MESSAGE = '请分析这个日志文件'
+const getDefaultLogMessage = () => i18n.t('agents.aiservice.message.default_log_prompt')
 
 const DEVICE_TRACE_TYPES = new Set([
   'run_start',
@@ -315,7 +316,7 @@ class ConversationStore {
 
   private titleFromMessage(message: string): string {
     const title = (message || '').replace(/\s+/g, ' ').trim()
-    return title ? title.slice(0, 60) : '新对话'
+    return title ? title.slice(0, 60) : i18n.t('agents.aiservice.session.new')
   }
 
   private upsertLocalSession(
@@ -330,7 +331,7 @@ class ConversationStore {
     const index = this.sessions.findIndex((s) => s.id === sessionId)
     const existing = index >= 0 ? this.sessions[index] : null
     const title =
-      existing?.title && existing.title.trim() && existing.title.trim() !== '新对话'
+      existing?.title && existing.title.trim() && existing.title.trim() !== i18n.t('agents.aiservice.session.new')
         ? existing.title
         : this.titleFromMessage(params.titleHint)
     const next: ChatSessionSummary = {
@@ -405,8 +406,8 @@ class ConversationStore {
 
     if (type === 'log_analysis_status') {
       const target = this.ensureAnswerMessage(state, answerId)
-      const statusText = (payload?.message as string) || '正在处理...'
-      target.content = `**日志分析 Agent**\n\n${statusText}`
+      const statusText = (payload?.message as string) || i18n.t('agents.aiservice.message.processing')
+      target.content = `**${i18n.t('agents.aiservice.agent.log_analysis.name')}**\n\n${statusText}`
       return
     }
     if (type === 'log_analysis_context') return
@@ -474,7 +475,9 @@ class ConversationStore {
       }
     } else if (type === 'done') {
       if (typeof payload?.answer === 'string' && payload.answer) target.content = (payload.answer as string).trimStart()
-      else if (!target.content || target.content === THINKING_PLACEHOLDER) target.content = '（无内容）'
+      else if (!target.content || target.content === THINKING_PLACEHOLDER) {
+        target.content = i18n.t('agents.aiservice.message.empty_content')
+      }
       const result = payload?.result as Payload | undefined
       const resultStatus = String(result?.status || '').toLowerCase()
       if (resultStatus === 'cancelled') state.runStatus = 'cancelled'
@@ -484,7 +487,7 @@ class ConversationStore {
       target.traceRunning = false
     } else if (type === 'error') {
       const backendMsg = typeof payload?.message === 'string' ? (payload.message as string).trim() : ''
-      target.content = backendMsg || '运行出现错误，请稍后重试。'
+      target.content = backendMsg || i18n.t('agents.aiservice.message.run_error')
       state.runStatus = 'failed'
       target.traceRunning = false
     }
@@ -750,7 +753,9 @@ class ConversationStore {
       { logToMain: true }
     )
     const userDisplay = params.file
-      ? `${params.message || DEFAULT_LOG_MESSAGE}\n\n附件: ${params.file.name}`
+      ? `${params.message || getDefaultLogMessage()}\n\n${i18n.t('agents.aiservice.message.attachment', {
+          filename: params.file.name
+        })}`
       : params.message
 
     state.messages.push({ id: uuid(), role: 'user', content: userDisplay, kind: 'user' })
@@ -781,7 +786,7 @@ class ConversationStore {
     state.subscription = ac
 
     // Watchdog: surface a stalled run (no SSE frames arriving) in the logs so a
-    // silent "正在准备…" hang is diagnosable instead of invisible.
+    // Surface a stalled "preparing" state in logs so it is diagnosable instead of invisible.
     const diag: PumpDiag = {
       label: `startRun:${params.agentKind}:${sessionId}`,
       startedAt: runStartedAt,
@@ -885,8 +890,8 @@ class ConversationStore {
       if (target) {
         target.content =
           err instanceof AIServiceConnectionError
-            ? `无法连接到 RavenAIService（${err.baseUrl}），请确认本地服务已启动。`
-            : `运行失败：${(err as Error)?.message || String(err)}`
+            ? i18n.t('agents.aiservice.error.connection', { baseUrl: err.baseUrl })
+            : i18n.t('agents.aiservice.message.run_failed', { message: (err as Error)?.message || String(err) })
         target.traceRunning = false
       }
       this.markTerminal(state, 'failed')
@@ -901,7 +906,7 @@ class ConversationStore {
     const answerId = state.currentAnswerId
     const target = answerId ? state.messages.find((m) => m.id === answerId) : null
     if (target) {
-      if (target.content === THINKING_PLACEHOLDER) target.content = '已被用户取消。'
+      if (target.content === THINKING_PLACEHOLDER) target.content = i18n.t('agents.aiservice.message.cancelled')
       target.traceRunning = false
     }
     this.abortSubscription(state.sessionId)
@@ -943,7 +948,7 @@ class ConversationStore {
       this.sessionsError = null
       this.schedulePersist()
     } catch (err) {
-      this.sessionsError = (err as Error)?.message || '加载会话历史失败'
+      this.sessionsError = (err as Error)?.message || i18n.t('agents.aiservice.error.load_sessions_failed')
     } finally {
       this.sessionsLoading = false
       this.notify()

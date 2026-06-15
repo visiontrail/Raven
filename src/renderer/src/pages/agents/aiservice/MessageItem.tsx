@@ -1,6 +1,7 @@
 import type { ChatEntry } from '@renderer/types/aiServiceAgent'
 import { Bot } from 'lucide-react'
 import { FC, memo } from 'react'
+import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import styled from 'styled-components'
@@ -21,6 +22,8 @@ interface Props {
 }
 
 const MessageItem: FC<Props> = ({ message, content, traceRunning, traceCount }) => {
+  const { t } = useTranslation()
+
   if (message.role === 'user') {
     return (
       <UserRow>
@@ -41,7 +44,7 @@ const MessageItem: FC<Props> = ({ message, content, traceRunning, traceCount }) 
         <AiName>RAVENAI</AiName>
         {hasTrace && <TraceStream events={message.traceEvents || []} running={traceRunning} eventCount={traceCount} />}
         {isThinking ? (
-          !traceRunning && <Thinking>正在思考…</Thinking>
+          !traceRunning && <Thinking>{t('agents.aiservice.message.thinking')}</Thinking>
         ) : (
           <AiText className="markdown">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>

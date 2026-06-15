@@ -1,4 +1,5 @@
 import { loggerService } from '@logger'
+import i18n from '@renderer/i18n'
 import type {
   AIServiceAgentKind,
   AIServiceConfig,
@@ -81,7 +82,7 @@ export class AIServiceAgentClient {
     })
     const body = await this.handleResponse<ApiEnvelope<UserAuthPayload> | UserAuthPayload>(res)
     const payload = 'token' in body ? (body as UserAuthPayload) : (body as ApiEnvelope<UserAuthPayload>).data
-    if (!payload?.token) throw new AIServiceError('登录失败：未返回访问令牌')
+    if (!payload?.token) throw new AIServiceError(i18n.t('agents.aiservice.error.token_missing'))
     this.token = payload.token
     return payload
   }
@@ -93,7 +94,7 @@ export class AIServiceAgentClient {
       throw new AIServiceConnectionError(this.baseUrl, err)
     })
     const body = await this.handleResponse<ApiEnvelope<UserProfile>>(res)
-    if (!body?.data) throw new AIServiceError('无法获取用户信息')
+    if (!body?.data) throw new AIServiceError(i18n.t('agents.aiservice.error.profile_missing'))
     return body.data
   }
 
@@ -222,7 +223,7 @@ export class AIServiceAgentClient {
     signal?: AbortSignal
   }): Promise<Response> {
     const form = new FormData()
-    form.append('message', params.message || '请分析这个日志文件')
+    form.append('message', params.message || i18n.t('agents.aiservice.message.default_log_prompt'))
     if (params.sessionId) form.append('session_id', params.sessionId)
     if (params.projectRepoId != null) form.append('project_repo_id', String(params.projectRepoId))
     if (params.file) form.append('file', params.file)
