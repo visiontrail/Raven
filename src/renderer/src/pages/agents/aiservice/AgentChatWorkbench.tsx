@@ -320,6 +320,10 @@ const Right = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
+  /* The Navbar is a window drag region (-webkit-app-region: drag), which
+     otherwise swallows clicks on the user dropdown. Opt back into pointer
+     events for the interactive controls. */
+  -webkit-app-region: no-drag;
 `
 
 export default AgentChatWorkbench

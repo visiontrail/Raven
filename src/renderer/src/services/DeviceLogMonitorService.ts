@@ -888,6 +888,16 @@ class DeviceLogMonitorService {
   async initialize(): Promise<void> {
     console.log('[DeviceLogMonitorService] 应用启动初始化')
 
+    // 日志服务器地址从中心 RavenAIService 配置派生，跟随智能体工作台相同的主机切换，
+    // 避免硬编码主机；配置不可用时沿用现有地址作为兜底。
+    try {
+      const { baseUrl } = await window.api.ravenAIService.getConfig()
+      this.config.logServerUrl = `${baseUrl.replace(/\/+$/, '')}/api/v1/logs/upload`
+      console.log('[DeviceLogMonitorService] 日志服务器地址:', this.config.logServerUrl)
+    } catch (error) {
+      console.warn('[DeviceLogMonitorService] 解析 RavenAIService 配置失败，沿用现有日志服务器地址', error)
+    }
+
     // 如果配置为启用，则自动启动监控
     if (this.config.enabled && this.config.autoUpload) {
       await this.start()

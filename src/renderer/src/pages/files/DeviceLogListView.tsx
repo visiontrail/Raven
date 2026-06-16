@@ -46,9 +46,6 @@ const getFTPConfig = () => {
   }
 }
 
-// 日志服务器配置
-const LOG_SERVER_URL = 'http://10.60.11.3:8085/api/v1/logs/upload'
-
 interface DeviceLogListViewProps {}
 
 const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
@@ -248,8 +245,12 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
     logType: 'protocol' | 'oam_antenna' | 'full' = 'protocol',
     onProgress?: (progress: number) => void
   ) => {
+    // Resolve the log-server endpoint from the configured RavenAIService base URL
+    // so it follows the same host switch as the Agent workbench.
+    const { baseUrl } = await window.api.ravenAIService.getConfig()
+    const logServerUrl = `${baseUrl.replace(/\/+$/, '')}/api/v1/logs/upload`
     console.log(`[DeviceLogUpload] 开始上传到日志服务器: ${fileName}`)
-    console.log(`[DeviceLogUpload] 目标URL: ${LOG_SERVER_URL}`)
+    console.log(`[DeviceLogUpload] 目标URL: ${logServerUrl}`)
     console.log(`[DeviceLogUpload] 文件大小: ${fileBlob.size} bytes (${(fileBlob.size / 1024 / 1024).toFixed(2)} MB)`)
     console.log(`[DeviceLogUpload] 文件类型: ${fileBlob.type || 'unknown'}`)
 
@@ -376,7 +377,7 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
 
       console.log(`[DeviceLogUpload] 准备发送请求:`)
       console.log(`[DeviceLogUpload] - 方法: POST`)
-      console.log(`[DeviceLogUpload] - URL: ${LOG_SERVER_URL}`)
+      console.log(`[DeviceLogUpload] - URL: ${logServerUrl}`)
       console.log(`[DeviceLogUpload] - Content-Type: multipart/form-data (自动设置)`)
       console.log(`[DeviceLogUpload] - 文件参数名: file`)
       console.log(`[DeviceLogUpload] - 文件名: ${fileName}`)
@@ -386,7 +387,7 @@ const DeviceLogListView: FC<DeviceLogListViewProps> = () => {
       console.log(`[DeviceLogUpload] - 超时时间: ${xhr.timeout}ms`)
 
       // 发送请求
-      xhr.open('POST', LOG_SERVER_URL)
+      xhr.open('POST', logServerUrl)
       xhr.send(formData)
 
       console.log(`[DeviceLogUpload] HTTP请求已发送，等待服务器响应...`)

@@ -1,12 +1,19 @@
 import { ReloadOutlined } from '@ant-design/icons'
 import { Button, Flex, Spin } from 'antd'
 import { FileText } from 'lucide-react'
-import { FC, ReactNode, useState } from 'react'
+import { FC, ReactNode, useEffect, useState } from 'react'
 import styled from 'styled-components'
 
 interface ServerIframeViewProps {
   title: ReactNode
-  url: string
+  /**
+   * Path (and optional query) appended to the configured RavenAIService base
+   * URL, e.g. `/logs?embed=1`. The base URL is resolved at runtime from
+   * `window.api.ravenAIService.getConfig()` so these embedded pages follow the
+   * same server switch as the Agent workbench (currently pointed at local for
+   * testing).
+   */
+  path: string
   iframeId: string
   loadingText: ReactNode
   errorText: ReactNode
@@ -17,7 +24,7 @@ interface ServerIframeViewProps {
 
 const ServerIframeView: FC<ServerIframeViewProps> = ({
   title,
-  url,
+  path,
   iframeId,
   loadingText,
   errorText,
@@ -25,8 +32,35 @@ const ServerIframeView: FC<ServerIframeViewProps> = ({
   retryLabel,
   icon = <FileText size={16} />
 }) => {
+  const [url, setUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+
+  // Resolve the iframe URL from the configured RavenAIService base URL so it
+  // follows the same host switch as the Agent workbench instead of being pinned
+  // to a hardcoded server.
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(false)
+    setUrl(null)
+    window.api.ravenAIService
+      .getConfig()
+      .then((config) => {
+        if (cancelled) return
+        const base = config.baseUrl.replace(/\/+$/, '')
+        const suffix = path.startsWith('/') ? path : `/${path}`
+        setUrl(`${base}${suffix}`)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setError(true)
+        setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [path])
 
   const handleReload = () => {
     setLoading(true)
@@ -76,13 +110,15 @@ const ServerIframeView: FC<ServerIframeViewProps> = ({
             </Button>
           </ErrorContainer>
         )}
-        <StyledIframe
-          id={iframeId}
-          src={url}
-          onLoad={handleIframeLoad}
-          onError={handleIframeError}
-          style={{ display: loading || error ? 'none' : 'block' }}
-        />
+        {url && (
+          <StyledIframe
+            id={iframeId}
+            src={url}
+            onLoad={handleIframeLoad}
+            onError={handleIframeError}
+            style={{ display: loading || error ? 'none' : 'block' }}
+          />
+        )}
       </IframeContainer>
     </Container>
   )

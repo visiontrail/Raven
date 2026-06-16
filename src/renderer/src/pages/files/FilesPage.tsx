@@ -24,11 +24,35 @@ import RefactorPackageServerView from './RefactorPackageServerView'
 type SortField = 'created_at' | 'size' | 'name'
 type SortOrder = 'asc' | 'desc'
 
+// keyv key used to remember the last-selected file category across navigation/sessions
+const FILE_TYPE_STORAGE_KEY = 'files:active-type'
+
 const FilesPage: FC = () => {
   const { t } = useTranslation()
-  const [fileType, setFileType] = useState<string>('document')
+
+  const menuItems = [
+    { key: FileTypes.DOCUMENT, label: t('files.document'), icon: <FileIcon size={16} /> },
+    { key: FileTypes.TEXT, label: t('files.text'), icon: <FileTypeIcon size={16} /> },
+    { key: FileTypes.PACKAGE, label: t('files.packages'), icon: <Package size={16} /> },
+    { key: 'refactor-packages', label: t('files.refactor_packages'), icon: <Package size={16} /> },
+    { key: 'logs', label: t('files.logs'), icon: <FileText size={16} /> }
+    // { key: 'device-logs', label: t('files.device_logs'), icon: <FileText size={16} /> }
+  ]
+
+  // Restore the last-selected category (falling back to Document when the stored
+  // value is missing or no longer valid) so re-entering the Files tab keeps the
+  // user's previous selection instead of resetting to the first item.
+  const [fileType, setFileType] = useState<string>(() => {
+    const saved = window.keyv.get(FILE_TYPE_STORAGE_KEY)
+    return menuItems.some((item) => item.key === saved) ? (saved as string) : FileTypes.DOCUMENT
+  })
   const [sortField, setSortField] = useState<SortField>('created_at')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
+
+  const handleSelectFileType = (key: string) => {
+    setFileType(key)
+    window.keyv.set(FILE_TYPE_STORAGE_KEY, key)
+  }
 
   const files = useLiveQuery<FileMetadata[]>(() => {
     if (fileType === 'all') {
@@ -72,15 +96,6 @@ const FilesPage: FC = () => {
     }
   })
 
-  const menuItems = [
-    { key: FileTypes.DOCUMENT, label: t('files.document'), icon: <FileIcon size={16} /> },
-    { key: FileTypes.TEXT, label: t('files.text'), icon: <FileTypeIcon size={16} /> },
-    { key: FileTypes.PACKAGE, label: t('files.packages'), icon: <Package size={16} /> },
-    { key: 'refactor-packages', label: t('files.refactor_packages'), icon: <Package size={16} /> },
-    { key: 'logs', label: t('files.logs'), icon: <FileText size={16} /> }
-    // { key: 'device-logs', label: t('files.device_logs'), icon: <FileText size={16} /> }
-  ]
-
   return (
     <Container>
       <Navbar>
@@ -94,7 +109,7 @@ const FilesPage: FC = () => {
               icon={item.icon}
               title={item.label}
               active={fileType === item.key}
-              onClick={() => setFileType(item.key as FileTypes)}
+              onClick={() => handleSelectFileType(item.key)}
             />
           ))}
         </SideNav>

@@ -238,9 +238,11 @@ const PackageDetailView: FC<PackageDetailViewProps> = ({ package: pkg, onClose, 
   // Handle upload to server (HTTP)
   const handleUploadToServer = async () => {
     try {
-      // Default HTTP configuration for package-server
+      // Resolve the package-server endpoint from the configured RavenAIService
+      // base URL so it follows the same host switch as the Agent workbench.
+      const { baseUrl } = await window.api.ravenAIService.getConfig()
       const defaultHttpConfig: HTTPConfig = {
-        url: 'http://10.60.11.3:8083/api/upload',
+        url: `${baseUrl.replace(/\/+$/, '')}/api/upload`,
         method: 'POST',
         headers: {
           'Content-Type': 'multipart/form-data'
