@@ -116,6 +116,12 @@ Raven 是一个 React 19 + Electron 37 + Redux Toolkit 的多窗口桌面客户�
 
 **理由：** 不破坏 Raven 现有 vite 配置；Chaterm 上游同步只需要重跑子模块构建。
 
+### D11: Agent 命令执行复用可见 xterm 会话
+
+**选择：** 嵌入模式下，Agent 的 `execute_command` 不再调用主进程 `RemoteTerminalManager.runCommand()` 创建后台执行流，而是通过一个不参与聊天渲染的 `command_execution` ask 消息通知 Chaterm renderer。renderer 将命令写入当前活动且主机匹配的 xterm；现有 command marker 负责采集远端回显，并以带 `suppressChatMessage` 标志的结构化 tool result 回传 Agent loop。
+
+**理由：** 复用真实终端输入、回显、shell prompt 与人工操作完全相同的链路，用户能观察并随时介入；结构化结果仍可进入 Agent 上下文。审批消息继续使用现有 `command` ask，隐藏执行消息不进入右侧聊天历史。若活动终端不匹配目标主机，则显式失败，避免在错误服务器执行或形成“看似可见、实际后台执行”的分叉状态。
+
 ## Risks / Trade-offs
 
 - **[GPL-3.0 链接性传染]** Chaterm 主进程模块以 `require()` 形式被 Raven 主进程链接，Electron 同包发布通常被认定为衍生作品 → Raven 整体可能被要求按 GPL-3.0 发布。**Mitigation:** 本设计的实施前置条件是 Chaterm 团队提供商业/双重授权或法务结论；若无法解决，备选方案是 D2 中提到的 child_process 进程隔离（仍有争议但风险降低），最坏情况下回退到自研 SSH 模块。

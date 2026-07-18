@@ -122,3 +122,10 @@
 - [x] 10.2 在 `CLAUDE.md` / `AGENTS.md` 的 "Architecture Overview" 章节补充 Chaterm 嵌入与 LLM 桥的简介与目录指引
 - [x] 10.3 在仓库根的 `NOTICE` / `LICENSES/` 目录加入 Chaterm 的 GPL-3.0 与 Cline Apache-2.0 文本与归属
 - [x] 10.4 Release notes：列出 Terminal 标签、AI 模型复用、设置项 `terminal.enabled` 的新增说明
+
+## 11. Agent 可见式终端执行
+
+- [x] 11.1 新增不参与右侧聊天渲染的 `command_execution` 请求与结构化 tool-result 回传协议
+- [x] 11.2 嵌入模式下把 Agent `execute_command` 从后台 SSH exec 切换到当前匹配主机的可见 xterm 会话，保留原审批语义
+- [x] 11.3 抑制可见终端执行产生的右侧 Command / OUTPUT 卡片，并补充主机不匹配保护与聚焦单测
+- [x] 11.4 使用 `yarn dev` 启动 Raven，通过 Computer Use 在 Terminal 页完成 Agent 实际执行验证

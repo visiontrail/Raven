@@ -125,3 +125,26 @@ macOS 签名/公证流程 MUST 覆盖 Chaterm 引入的所有本机二进制（`
 
 - **WHEN** 用户在设置中关闭 `terminal.enabled`
 - **THEN** 已建立的 SSH 会话 MUST 被断开，sqlite 句柄 MUST 被关闭，`chaterm:*` channel handlers MUST 被卸载
+
+---
+
+### Requirement: Visible Agent Terminal Execution
+
+嵌入式 Chaterm 的 Agent 模式 SHALL 通过用户当前可见的 SSH 终端会话执行 `execute_command`，不得使用与左侧 xterm 脱离的后台 SSH exec 通道。命令 MUST 作为终端输入写入并执行，远端回显 MUST 原样出现在同一个终端区域。右侧 Agent 面板 SHALL 只保留需要用户处理的审批消息与任务最终结果，不得为可见终端执行重复渲染 `command` / `command_output` 卡片。
+
+终端采集到的输出 SHALL 以结构化 tool result 回传给 Agent loop，确保后续推理可以继续使用执行结果；该内部回传不得再次显示为右侧聊天消息。目标主机与当前活动终端不一致或没有可用终端时 MUST 返回明确的 tool error，不得静默改用后台执行。
+
+#### Scenario: Agent 执行无需审批的命令
+
+- **WHEN** Agent 在嵌入模式下执行一个已获自动批准的 `execute_command`
+- **THEN** 命令被写入当前匹配主机的 xterm 并执行，命令和实时输出只出现在终端区域，右侧不出现 Command 或 OUTPUT 卡片
+
+#### Scenario: Agent 执行需要审批的命令
+
+- **WHEN** Agent 请求执行需要用户批准的命令
+- **THEN** 右侧显示审批界面；用户批准后命令被写入左侧终端并执行，右侧后续只显示任务最终结果
+
+#### Scenario: 当前终端与目标主机不匹配
+
+- **WHEN** Agent 的 `execute_command.ip` 与当前活动 SSH 终端主机不一致
+- **THEN** 执行请求 MUST 失败并把结构化错误返回 Agent，不得在错误主机执行，也不得回退到隐藏的后台 SSH 通道
