@@ -247,6 +247,110 @@ describe('ChatermBridgeService', () => {
     expect(events.at(-1)).toEqual({ type: 'end', finishReason: 'stop' })
   })
 
+  const textOf = (events: BridgeStreamEvent[]): string =>
+    events
+      .filter((event): event is Extract<BridgeStreamEvent, { type: 'text' }> => event.type === 'text')
+      .map((event) => event.delta)
+      .join('')
+
+  it('unwraps a JSON-encoded content-parts array returned in one chunk', async () => {
+    mocks.providers = [openAIProvider]
+    mocks.defaultModel = { id: 'gpt-4.1' }
+    const answer = '当前活跃端口：\n| 端口 | 进程 |\n|------|------|\n| 22 | ssh |'
+    const wrapped = JSON.stringify([{ type: 'text', text: answer }])
+    mocks.openAIStreamFactory.mockResolvedValue(
+      createOpenAIStream([
+        { choices: [{ delta: { content: wrapped } }] },
+        { choices: [{ delta: {}, finish_reason: 'stop' }], usage: { prompt_tokens: 3, completion_tokens: 9 } }
+      ])
+    )
+
+    chatermBridgeService.start()
+    const events = await execute({
+      requestId: 'openai-wrapped-1',
+      modelId: 'gpt-4.1',
+      messages: [{ role: 'user', content: 'ports' }]
+    })
+
+    expect(textOf(events)).toBe(answer)
+    expect(textOf(events)).not.toContain('"type"')
+  })
+
+  it('unwraps a content-parts array streamed across multiple chunks', async () => {
+    mocks.providers = [openAIProvider]
+    mocks.defaultModel = { id: 'gpt-4.1' }
+    const answer = 'Ports:\n| port | proc |\n|------|------|\n| 22 | ssh |'
+    const wrapped = JSON.stringify([{ type: 'text', text: answer }])
+    const fragments = [wrapped.slice(0, 5), wrapped.slice(5, 21), wrapped.slice(21)]
+    mocks.openAIStreamFactory.mockResolvedValue(
+      createOpenAIStream([
+        ...fragments.map((content) => ({ choices: [{ delta: { content } }] })),
+        { choices: [{ delta: {}, finish_reason: 'stop' }] }
+      ])
+    )
+
+    chatermBridgeService.start()
+    const events = await execute({
+      requestId: 'openai-wrapped-2',
+      modelId: 'gpt-4.1',
+      messages: [{ role: 'user', content: 'ports' }]
+    })
+
+    expect(textOf(events)).toBe(answer)
+  })
+
+  it('extracts text from a structured content-parts array delta', async () => {
+    mocks.providers = [openAIProvider]
+    mocks.defaultModel = { id: 'gpt-4.1' }
+    mocks.openAIStreamFactory.mockResolvedValue(
+      createOpenAIStream([
+        {
+          choices: [
+            {
+              delta: {
+                content: [
+                  { type: 'text', text: 'hello ' },
+                  { type: 'text', text: 'world' }
+                ]
+              }
+            }
+          ]
+        },
+        { choices: [{ delta: {}, finish_reason: 'stop' }] }
+      ])
+    )
+
+    chatermBridgeService.start()
+    const events = await execute({
+      requestId: 'openai-array-1',
+      modelId: 'gpt-4.1',
+      messages: [{ role: 'user', content: 'hi' }]
+    })
+
+    expect(textOf(events)).toBe('hello world')
+  })
+
+  it('passes through plain-text answers that begin with a bracket', async () => {
+    mocks.providers = [openAIProvider]
+    mocks.defaultModel = { id: 'gpt-4.1' }
+    const answer = '[1, 2, 3] is the JSON array example you asked about.'
+    mocks.openAIStreamFactory.mockResolvedValue(
+      createOpenAIStream([
+        { choices: [{ delta: { content: answer } }] },
+        { choices: [{ delta: {}, finish_reason: 'stop' }] }
+      ])
+    )
+
+    chatermBridgeService.start()
+    const events = await execute({
+      requestId: 'openai-bracket-1',
+      modelId: 'gpt-4.1',
+      messages: [{ role: 'user', content: 'json' }]
+    })
+
+    expect(textOf(events)).toBe(answer)
+  })
+
   it('keeps concurrent OpenAI request streams isolated by requestId', async () => {
     mocks.providers = [openAIProvider]
     mocks.openAIStreamFactory.mockImplementation((params) =>

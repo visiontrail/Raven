@@ -56,6 +56,113 @@ const parseToolInput = (inputJson: string): unknown => {
   }
 }
 
+/** Start of a JSON-encoded "content parts" array (e.g. `[{"type":"text",...`). */
+const CONTENT_PARTS_START = /^\s*\[\s*\{\s*"type"\s*:\s*"(?:text|reasoning|thinking)"/
+/** Characters to buffer before classifying a `[`-leading text stream. */
+const CONTENT_PARTS_CLASSIFY_MIN = 32
+
+/** Text of a single content part: the part itself when a string, else its `text` field. */
+const partText = (part: unknown): string => {
+  if (typeof part === 'string') return part
+  if (part && typeof part === 'object' && typeof (part as { text?: unknown }).text === 'string') {
+    return (part as { text: string }).text
+  }
+  return ''
+}
+
+/**
+ * Coerce a raw `delta.content` value into plain text. Handles plain strings and
+ * structured content-part arrays (`[{ type: 'text', text: '...' }]`).
+ */
+const coerceContentToText = (content: unknown): string => {
+  if (typeof content === 'string') return content
+  if (Array.isArray(content)) return content.map(partText).join('')
+  return ''
+}
+
+/**
+ * Extract concatenated text from a JSON-encoded content-parts array string.
+ * Returns null when the string is not a parseable content-parts array.
+ */
+const extractContentPartsText = (raw: string): string | null => {
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return null
+    return parsed.map(partText).join('')
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Normalizes streamed assistant text into plain-text deltas.
+ *
+ * Most providers stream `delta.content` as plain text, forwarded as-is. Some
+ * OpenAI-compatible gateways (observed with certain DeepSeek deployments) instead
+ * return the whole message as a JSON-encoded content-parts array, e.g.
+ *   [{"type":"text","text":"...\n| a | b |\n..."}]
+ * Forwarding that verbatim breaks downstream Markdown rendering — tables, headings
+ * and newlines arrive as literal JSON text. When the stream begins with that shape
+ * we buffer it and emit the unwrapped text once the full array has arrived; plain
+ * text is still streamed incrementally.
+ */
+class StreamTextNormalizer {
+  private decided = false
+  private wrapped = false
+  private buffer = ''
+
+  constructor(private readonly emit: (delta: string) => void) {}
+
+  push(content: unknown): void {
+    const piece = coerceContentToText(content)
+    if (!piece) return
+
+    if (this.decided) {
+      if (this.wrapped) this.buffer += piece
+      else this.emit(piece)
+      return
+    }
+
+    this.buffer += piece
+    const trimmed = this.buffer.replace(/^\s+/, '')
+    if (trimmed.length === 0) return
+    // A content-parts array always begins with '['. Anything else is plain text.
+    if (trimmed[0] !== '[') {
+      this.flushPlain()
+      return
+    }
+    // Leading '[': wait until we have enough characters to classify reliably.
+    if (trimmed.length < CONTENT_PARTS_CLASSIFY_MIN) return
+    this.classify()
+  }
+
+  /** Flush any buffered text once the stream has ended. */
+  end(): void {
+    if (!this.decided) this.classify()
+    if (this.wrapped && this.buffer) {
+      this.emit(extractContentPartsText(this.buffer) ?? this.buffer)
+      this.buffer = ''
+    }
+  }
+
+  private classify(): void {
+    this.decided = true
+    if (CONTENT_PARTS_START.test(this.buffer)) {
+      this.wrapped = true
+      return
+    }
+    this.flushPlain()
+  }
+
+  private flushPlain(): void {
+    this.decided = true
+    if (this.buffer) {
+      this.emit(this.buffer)
+      this.buffer = ''
+    }
+  }
+}
+
 class ChatermBridgeService {
   private readonly inFlight = new Map<string, InFlightRequest>()
   private started = false
@@ -340,6 +447,7 @@ class ChatermBridgeService {
     const client = new OpenAI({ apiKey, baseURL, dangerouslyAllowBrowser: true })
     const toolsByIndex = new Map<number, ToolAccumulator>()
     let finishReason: FinishReason = 'stop'
+    const textNormalizer = new StreamTextNormalizer((delta) => dispatch({ type: 'text', delta }))
 
     const messages: OpenAI.ChatCompletionMessageParam[] = []
     if (req.systemPrompt) {
@@ -375,8 +483,7 @@ class ChatermBridgeService {
         })
       }
       const choice = chunk.choices[0]
-      const delta = choice?.delta?.content
-      if (delta) dispatch({ type: 'text', delta })
+      textNormalizer.push(choice?.delta?.content)
       // Reasoning models (e.g. GLM, DeepSeek-R1 behind OpenAI-compatible gateways)
       // stream their thinking in non-standard delta fields. Forward them so the
       // consumer sees activity — otherwise it may hit its first-event timeout
@@ -419,6 +526,8 @@ class ChatermBridgeService {
     }
 
     if (!signal.aborted) {
+      // Emit any text held back while classifying a content-parts stream.
+      textNormalizer.end()
       for (const tool of toolsByIndex.values()) {
         if (!tool.ended) {
           tool.ended = true
