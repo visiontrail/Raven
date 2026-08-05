@@ -2,6 +2,15 @@
 
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
+## Use git!
+Every implementation task that changes files MUST end with a git commit before the final response.
+
+- Inspect `git status` before editing and treat pre-existing or concurrent changes as user-owned.
+- Review the final diff and run proportionate verification before committing.
+- Stage only files or hunks that belong to the current task. Never bundle unrelated changes unless the user explicitly asks.
+- Use a concise descriptive commit message on `main`, report the commit hash, and do not push, amend, or rewrite history unless asked.
+- Read-only tasks and tasks with no file changes do not create empty commits.
+
 ## Development Commands
 
 ### Environment Setup
