@@ -251,7 +251,7 @@ export class ConfigManager {
     const environmentHost = process.env.RAVEN_AI_SERVICE_HOST?.trim()
     if (environmentHost) return environmentHost
     const stored = this.get<string>(ConfigKeys.RavenAIServiceHost)?.trim()
-    return stored || '10.60.11.3'
+    return stored || '127.0.0.1'
   }
 
   setRavenAIServiceHost(value: string) {

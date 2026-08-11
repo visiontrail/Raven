@@ -22,7 +22,29 @@ describe('RavenAccountGate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     account.profile = null
+    account.login.mockResolvedValue(undefined)
     account.register.mockResolvedValue(undefined)
+  })
+
+  it('removes the startup overlay and keeps the login form operable', async () => {
+    const startupOverlay = document.createElement('div')
+    startupOverlay.id = 'spinner'
+    document.body.appendChild(startupOverlay)
+
+    render(
+      <RavenAccountGate>
+        <div>application shell</div>
+      </RavenAccountGate>
+    )
+
+    expect(document.getElementById('spinner')).not.toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Raven' })).toBeInTheDocument()
+
+    fireEvent.change(screen.getByPlaceholderText('ravenAccount.username'), { target: { value: 'raven-user' } })
+    fireEvent.change(screen.getByPlaceholderText('ravenAccount.password'), { target: { value: 'secret' } })
+    fireEvent.click(screen.getByRole('button', { name: 'ravenAccount.login' }))
+
+    await waitFor(() => expect(account.login).toHaveBeenCalledWith('raven-user', 'secret'))
   })
 
   it('collects the shared RavenAIService registration fields', async () => {

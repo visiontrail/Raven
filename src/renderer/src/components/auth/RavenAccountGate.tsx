@@ -1,6 +1,7 @@
+import { AppLogo } from '@renderer/config/env'
 import { useRavenAccount } from '@renderer/context/RavenAccountContext'
 import { Alert, Button, Input, Segmented, Spin, Tag } from 'antd'
-import { Bot, LogIn, UserPlus } from 'lucide-react'
+import { LogIn, UserPlus } from 'lucide-react'
 import { type PropsWithChildren, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
@@ -17,6 +18,13 @@ export default function RavenAccountGate({ children }: PropsWithChildren) {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [localError, setLocalError] = useState<string | null>(null)
+
+  useEffect(() => {
+    // The account gate renders before the authenticated app shell, so it must
+    // retire the static startup overlay itself. Otherwise the overlay remains
+    // above the form and intercepts every pointer event until after login.
+    document.getElementById('spinner')?.remove()
+  }, [])
 
   useEffect(() => {
     if (!profile) return
@@ -76,7 +84,7 @@ export default function RavenAccountGate({ children }: PropsWithChildren) {
       <Card>
         <Brand>
           <BrandIcon>
-            <Bot size={26} />
+            <BrandLogo src={AppLogo} alt="Raven" draggable={false} />
           </BrandIcon>
           <div>
             <Title>{t('ravenAccount.title')}</Title>
@@ -200,11 +208,20 @@ const Brand = styled.div`
 const BrandIcon = styled.div`
   width: 48px;
   height: 48px;
+  flex: 0 0 48px;
   border-radius: 14px;
-  display: grid;
-  place-items: center;
-  color: white;
+  overflow: hidden;
   background: var(--color-primary);
+`
+
+const BrandLogo = styled.img`
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  user-select: none;
+  pointer-events: none;
 `
 
 const Title = styled.h1`
