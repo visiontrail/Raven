@@ -248,15 +248,10 @@ export class ConfigManager {
 
   // Device Link: RavenAIService endpoint and device identity (defaults fall back to hostname)
   getRavenAIServiceHost(): string {
-    // TEMP(test): point Agent Workbench at local RavenAIService instead of 10.60.11.3.
-    // Revert this block to restore normal config-driven behavior.
-    return '127.0.0.1'
-    // const stored = this.get<string>(ConfigKeys.RavenAIServiceHost)
-    // // Migrate old default to new IP if not explicitly set
-    // if (!stored || stored === 'localhost') {
-    //   return '10.60.11.3'
-    // }
-    // return stored
+    const environmentHost = process.env.RAVEN_AI_SERVICE_HOST?.trim()
+    if (environmentHost) return environmentHost
+    const stored = this.get<string>(ConfigKeys.RavenAIServiceHost)?.trim()
+    return stored || '10.60.11.3'
   }
 
   setRavenAIServiceHost(value: string) {
@@ -264,6 +259,10 @@ export class ConfigManager {
   }
 
   getRavenAIServicePort(): number {
+    const environmentPort = Number(process.env.RAVEN_AI_SERVICE_PORT)
+    if (Number.isInteger(environmentPort) && environmentPort > 0 && environmentPort <= 65535) {
+      return environmentPort
+    }
     return this.get<number>(ConfigKeys.RavenAIServicePort, 8085)
   }
 
@@ -280,6 +279,8 @@ export class ConfigManager {
   }
 
   getRavenAIServiceBaseUrl(): string {
+    const environmentUrl = process.env.RAVEN_AI_SERVICE_BASE_URL?.trim().replace(/\/+$/, '')
+    if (environmentUrl) return environmentUrl
     const host = this.getRavenAIServiceHost()
     const port = this.getRavenAIServicePort()
     return `http://${host}:${port}`

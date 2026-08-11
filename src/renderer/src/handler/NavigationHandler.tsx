@@ -15,7 +15,7 @@ const NavigationHandler: React.FC = () => {
       if (location.pathname.startsWith('/settings')) {
         return
       }
-      navigate('/settings/provider')
+      navigate('/settings/general')
     },
     {
       splitKey: '!',

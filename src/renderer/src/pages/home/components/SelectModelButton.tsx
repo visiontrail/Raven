@@ -1,13 +1,10 @@
 import ModelAvatar from '@renderer/components/Avatar/ModelAvatar'
-import SelectModelPopup from '@renderer/components/Popups/SelectModelPopup'
 import { isLocalAi } from '@renderer/config/env'
-import { isWebSearchModel } from '@renderer/config/models'
 import { useAssistant } from '@renderer/hooks/useAssistant'
 import { getProviderName } from '@renderer/services/ProviderService'
 import { Assistant } from '@renderer/types'
 import { Button } from 'antd'
-import { ChevronsUpDown } from 'lucide-react'
-import { FC, useEffect, useRef } from 'react'
+import { FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
@@ -16,32 +13,8 @@ interface Props {
 }
 
 const SelectModelButton: FC<Props> = ({ assistant }) => {
-  const { model, updateAssistant } = useAssistant(assistant.id)
+  const { model } = useAssistant(assistant.id)
   const { t } = useTranslation()
-  const timerRef = useRef<NodeJS.Timeout>(undefined)
-
-  const onSelectModel = async (event: React.MouseEvent<HTMLElement>) => {
-    event.currentTarget.blur()
-    const selectedModel = await SelectModelPopup.show({ model })
-    if (selectedModel) {
-      // 避免更新数据造成关闭弹框的卡顿
-      clearTimeout(timerRef.current)
-      timerRef.current = setTimeout(() => {
-        const enabledWebSearch = isWebSearchModel(selectedModel)
-        updateAssistant({
-          ...assistant,
-          model: selectedModel,
-          enableWebSearch: enabledWebSearch && assistant.enableWebSearch
-        })
-      }, 200)
-    }
-  }
-
-  useEffect(() => {
-    return () => {
-      clearTimeout(timerRef.current)
-    }
-  }, [])
 
   if (isLocalAi) {
     return null
@@ -50,14 +23,13 @@ const SelectModelButton: FC<Props> = ({ assistant }) => {
   const providerName = getProviderName(model?.provider)
 
   return (
-    <DropdownButton size="small" type="text" onClick={onSelectModel}>
+    <DropdownButton size="small" type="text" disabled>
       <ButtonContent>
         <ModelAvatar model={model} size={20} />
         <ModelName>
           {model ? model.name : t('button.select_model')} {providerName ? ' | ' + providerName : ''}
         </ModelName>
       </ButtonContent>
-      <ChevronsUpDown size={14} color="var(--color-icon)" />
     </DropdownButton>
   )
 }

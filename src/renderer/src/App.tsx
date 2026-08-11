@@ -12,10 +12,12 @@ import { PersistGate } from 'redux-persist/integration/react'
 
 import ChatermWebviewHost from './components/app/ChatermWebviewHost'
 import Sidebar from './components/app/Sidebar'
+import RavenAccountGate from './components/auth/RavenAccountGate'
 import TopViewContainer from './components/TopView'
 import AntdProvider from './context/AntdProvider'
 import { CodeStyleProvider } from './context/CodeStyleProvider'
 import { NotificationProvider } from './context/NotificationProvider'
+import { RavenAccountProvider } from './context/RavenAccountContext'
 import StyleSheetManager from './context/StyleSheetManager'
 import { ThemeProvider } from './context/ThemeProvider'
 import NavigationHandler from './handler/NavigationHandler'
@@ -59,27 +61,31 @@ function App(): React.ReactElement {
             <NotificationProvider>
               <CodeStyleProvider>
                 <PersistGate loading={null} persistor={persistor}>
-                  <AppInitializer />
-                  <TopViewContainer>
-                    <HashRouter>
-                      <NavigationHandler />
-                      <Sidebar />
-                      <React.Suspense fallback={<div>Loading...</div>}>
-                        <Routes>
-                          <Route path="/" element={<HomePage />} />
-                          <Route path="/agents" element={<AgentsPage />} />
-                          <Route path="/files" element={<FilesPage />} />
-                          <Route path="/knowledge" element={<KnowledgePage />} />
-                          <Route path="/packager/*" element={<PackagerPage />} />
-                          <Route path="/settings/*" element={<SettingsPage />} />
-                          {/* §6.1/6.2: Terminal tab — ChatermWebviewHost renders the webview */}
-                          <Route path="/terminal" element={<TerminalPage />} />
-                        </Routes>
-                      </React.Suspense>
-                      {/* §6.4: Persistent webview host outside Routes keeps SSH sessions alive */}
-                      <ChatermWebviewHost />
-                    </HashRouter>
-                  </TopViewContainer>
+                  <RavenAccountProvider>
+                    <RavenAccountGate>
+                      <AppInitializer />
+                      <TopViewContainer>
+                        <HashRouter>
+                          <NavigationHandler />
+                          <Sidebar />
+                          <React.Suspense fallback={<div>Loading...</div>}>
+                            <Routes>
+                              <Route path="/" element={<HomePage />} />
+                              <Route path="/agents" element={<AgentsPage />} />
+                              <Route path="/files" element={<FilesPage />} />
+                              <Route path="/knowledge" element={<KnowledgePage />} />
+                              <Route path="/packager/*" element={<PackagerPage />} />
+                              <Route path="/settings/*" element={<SettingsPage />} />
+                              {/* §6.1/6.2: Terminal tab — ChatermWebviewHost renders the webview */}
+                              <Route path="/terminal" element={<TerminalPage />} />
+                            </Routes>
+                          </React.Suspense>
+                          {/* §6.4: Persistent webview host outside Routes keeps SSH sessions alive */}
+                          <ChatermWebviewHost />
+                        </HashRouter>
+                      </TopViewContainer>
+                    </RavenAccountGate>
+                  </RavenAccountProvider>
                 </PersistGate>
               </CodeStyleProvider>
             </NotificationProvider>

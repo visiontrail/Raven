@@ -2337,6 +2337,34 @@
     "zhinao": "360智脳",
     "zhipu": "智譜AI"
   },
+  "ravenAccount": {
+    "booting": "セッションを確認し、サービスモデルを同期しています…",
+    "confirm_password": "パスワードを確認",
+    "display_name": "表示名（任意）",
+    "email": "メール",
+    "error": {
+      "capabilities_missing": "RavenAIService に利用可能な AI モデルが設定されていません",
+      "connection": "RavenAIService（{{baseUrl}}）に接続できません",
+      "not_ready": "RavenAIService クライアントが初期化されていません",
+      "session_expired": "Raven セッションの有効期限が切れました。もう一度ログインしてください。",
+      "unknown": "ログインまたはモデル同期に失敗しました"
+    },
+    "login": "ログインしてモデルを同期",
+    "login_tab": "ログイン",
+    "model_sync_pending": "サービスモデルの同期を待機中",
+    "not_configured": "未設定",
+    "password": "パスワード",
+    "privacy": "アシスタントの内容は RavenAIService が設定した Provider に直接送信されます。RavenAIService は利用量のみを記録し、会話内容は記録しません。",
+    "register": "登録してログイン",
+    "register_tab": "登録",
+    "service": "サービス URL",
+    "subtitle": "RavenAIService 管理のモデル機能とルーティングを使用します",
+    "title": "Raven にログイン",
+    "username": "ユーザー名",
+    "validation": {
+      "password_mismatch": "パスワードが一致しません"
+    }
+  },
   "restore": {
     "confirm": {
       "button": "バックアップファイルを選択",

@@ -1,7 +1,17 @@
 import { loggerService } from '@logger'
 import { combineReducers, configureStore } from '@reduxjs/toolkit'
 import { useDispatch, useSelector, useStore } from 'react-redux'
-import { FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, REHYDRATE } from 'redux-persist'
+import {
+  createTransform,
+  FLUSH,
+  PAUSE,
+  PERSIST,
+  persistReducer,
+  persistStore,
+  PURGE,
+  REGISTER,
+  REHYDRATE
+} from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
 
 import storeSyncService from '../services/StoreSyncService'
@@ -58,12 +68,29 @@ const rootReducer = combineReducers({
   translate
 })
 
-const persistedReducer = persistReducer(
+export type RootState = ReturnType<typeof rootReducer>
+
+// Provider credentials are delivered by RavenAIService and live only in the
+// dedicated runtime. Redact both writes and legacy rehydration as defense in
+// depth; synchronized Redux provider metadata always carries an empty apiKey.
+const redactLlmCredentials = (state: any) => ({
+  ...state,
+  providers: Array.isArray(state?.providers)
+    ? state.providers.map((provider: any) => ({ ...provider, apiKey: '' }))
+    : []
+})
+
+const llmCredentialRedactionTransform = createTransform(redactLlmCredentials, redactLlmCredentials, {
+  whitelist: ['llm']
+})
+
+const persistedReducer = persistReducer<RootState>(
   {
     key: 'cherry-studio',
     storage,
     version: 136,
     blacklist: ['runtime', 'messages', 'messageBlocks', 'tabs'],
+    transforms: [llmCredentialRedactionTransform],
     migrate
   },
   rootReducer
@@ -97,7 +124,6 @@ const store = configureStore({
   devTools: true
 })
 
-export type RootState = ReturnType<typeof rootReducer>
 export type AppDispatch = typeof store.dispatch
 
 export const persistor = persistStore(store)

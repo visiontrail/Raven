@@ -127,6 +127,57 @@ export interface UserAuthPayload {
   user: UserProfile
 }
 
+export interface UserRegistrationRequest {
+  username: string
+  password: string
+  display_name?: string
+  email: string
+}
+
+export interface RavenClientAIRouteCapabilities {
+  image_input: boolean
+  document_input: boolean
+  tool_use: boolean
+  partial_streaming: boolean
+  thinking_budget: boolean
+}
+
+export interface RavenClientAIRoute {
+  slot: 'primary' | 'backup'
+  provider: string
+  base_url: string
+  api_key: string
+  model: string
+  small_fast_model?: string | null
+  capabilities: RavenClientAIRouteCapabilities
+}
+
+export interface RavenClientAICapabilitySnapshot {
+  revision: string
+  issued_at: number
+  expires_at: number
+  refresh_after_seconds: number
+  routes: RavenClientAIRoute[]
+}
+
+export interface RavenClientAIUsageReport {
+  invocation_id: string
+  slot: 'primary' | 'backup'
+  provider: string
+  model: string
+  status: 'succeeded' | 'failed' | 'cancelled' | 'timeout'
+  outcome?: 'ok' | 'slow' | 'timeout' | 'hard_failure'
+  tokens: {
+    input_tokens: number
+    output_tokens: number
+    cache_read_tokens: number
+    cache_write_tokens: number
+  }
+  duration_ms?: number
+  ttft_ms?: number
+  error_kind?: string
+}
+
 export interface AIServiceConfig {
   host: string
   port: number

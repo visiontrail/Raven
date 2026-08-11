@@ -174,19 +174,22 @@ class ChatermBridgeService {
 
     const ipc = window.electron.ipcRenderer
 
-    const removeListModels = ipc.on(INTERNAL_CHANNELS.ListModels, (_event, payload: { replyChannel: string; defaultOnly?: boolean }) => {
-      try {
-        if (payload.defaultOnly) {
-          ipc.send(payload.replyChannel, { modelId: getDefaultModel()?.id ?? null })
-          return
+    const removeListModels = ipc.on(
+      INTERNAL_CHANNELS.ListModels,
+      (_event, payload: { replyChannel: string; defaultOnly?: boolean }) => {
+        try {
+          if (payload.defaultOnly) {
+            ipc.send(payload.replyChannel, { modelId: getDefaultModel()?.id ?? null })
+            return
+          }
+          const models = this.buildAvailableModels()
+          ipc.send(payload.replyChannel, models)
+        } catch (err) {
+          logger.error('ChatermBridgeService: listModels failed', err as Error)
+          ipc.send(payload.replyChannel, payload.defaultOnly ? { modelId: null } : [])
         }
-        const models = this.buildAvailableModels()
-        ipc.send(payload.replyChannel, models)
-      } catch (err) {
-        logger.error('ChatermBridgeService: listModels failed', err as Error)
-        ipc.send(payload.replyChannel, payload.defaultOnly ? { modelId: null } : [])
       }
-    })
+    )
 
     const removeExecute = ipc.on(INTERNAL_CHANNELS.Execute, (_event, req: CreateMessageRequest) => {
       void this.handleExecute(req)
@@ -308,7 +311,7 @@ class ChatermBridgeService {
   private async streamCompletion(
     req: CreateMessageRequest,
     modelId: string,
-    provider: ReturnType<typeof getProviderByModelId>,
+    provider: NonNullable<ReturnType<typeof getProviderByModelId>>,
     signal: AbortSignal,
     dispatch: (event: BridgeStreamEvent) => void
   ): Promise<FinishReason> {
@@ -488,7 +491,8 @@ class ChatermBridgeService {
       // stream their thinking in non-standard delta fields. Forward them so the
       // consumer sees activity — otherwise it may hit its first-event timeout
       // while the model is still reasoning.
-      const reasoningDelta = (choice?.delta as { reasoning_content?: string; reasoning?: string } | undefined)?.reasoning_content ??
+      const reasoningDelta =
+        (choice?.delta as { reasoning_content?: string; reasoning?: string } | undefined)?.reasoning_content ??
         (choice?.delta as { reasoning?: string } | undefined)?.reasoning
       if (reasoningDelta) dispatch({ type: 'reasoning', delta: reasoningDelta })
       for (const call of choice?.delta?.tool_calls ?? []) {

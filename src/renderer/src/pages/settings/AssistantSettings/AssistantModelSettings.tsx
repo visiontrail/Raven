@@ -3,7 +3,6 @@ import ModelAvatar from '@renderer/components/Avatar/ModelAvatar'
 import EditableNumber from '@renderer/components/EditableNumber'
 import { DeleteIcon, ResetIcon } from '@renderer/components/Icons'
 import { HStack } from '@renderer/components/Layout'
-import SelectModelPopup from '@renderer/components/Popups/SelectModelPopup'
 import Selector from '@renderer/components/Selector'
 import { DEFAULT_CONTEXTCOUNT, DEFAULT_TEMPERATURE, MAX_CONTEXT_COUNT } from '@renderer/config/constant'
 import { useTimer } from '@renderer/hooks/useTimer'
@@ -13,7 +12,7 @@ import { modalConfirm } from '@renderer/utils'
 import { Button, Col, Divider, Input, InputNumber, Row, Select, Slider, Switch, Tooltip } from 'antd'
 import { isNull } from 'lodash'
 import { PlusIcon } from 'lucide-react'
-import { FC, useCallback, useEffect, useRef, useState } from 'react'
+import { FC, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 
@@ -23,14 +22,13 @@ interface Props {
   updateAssistantSettings: (settings: Partial<AssistantSettings>) => void
 }
 
-const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateAssistantSettings }) => {
+const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistantSettings }) => {
   const [temperature, setTemperature] = useState(assistant?.settings?.temperature ?? DEFAULT_TEMPERATURE)
   const [contextCount, setContextCount] = useState(assistant?.settings?.contextCount ?? DEFAULT_CONTEXTCOUNT)
   const [enableMaxTokens, setEnableMaxTokens] = useState(assistant?.settings?.enableMaxTokens ?? false)
   const [maxTokens, setMaxTokens] = useState(assistant?.settings?.maxTokens ?? 0)
   const [streamOutput, setStreamOutput] = useState(assistant?.settings?.streamOutput ?? true)
   const [toolUseMode, setToolUseMode] = useState(assistant?.settings?.toolUseMode ?? 'prompt')
-  const [defaultModel, setDefaultModel] = useState(assistant?.defaultModel)
   const [topP, setTopP] = useState(assistant?.settings?.topP ?? 1)
   const [enableTopP, setEnableTopP] = useState(assistant?.settings?.enableTopP ?? true)
   const [customParameters, setCustomParameters] = useState<AssistantSettingCustomParameters[]>(
@@ -180,27 +178,6 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
     })
   }
 
-  const onSelectModel = useCallback(async () => {
-    const currentModel = defaultModel ? assistant?.model : undefined
-    const selectedModel = await SelectModelPopup.show({ model: currentModel })
-    if (selectedModel) {
-      setDefaultModel(selectedModel)
-      updateAssistant({
-        ...assistant,
-        model: selectedModel,
-        defaultModel: selectedModel
-      })
-      // TODO: 需要根据配置来设置默认值
-      if (selectedModel.name.includes('kimi-k2')) {
-        setTemperature(0.6)
-        setTimeoutTimer('onSelectModel_1', () => updateAssistantSettings({ temperature: 0.6 }), 500)
-      } else if (selectedModel.name.includes('moonshot')) {
-        setTemperature(0.3)
-        setTimeoutTimer('onSelectModel_2', () => updateAssistantSettings({ temperature: 0.3 }), 500)
-      }
-    }
-  }, [assistant, defaultModel, setTimeoutTimer, updateAssistant, updateAssistantSettings])
-
   useEffect(() => {
     return () => updateAssistantSettings({ customParameters: customParametersRef.current })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -217,22 +194,10 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
         <Label>{t('assistants.settings.default_model')}</Label>
         <HStack alignItems="center" gap={5}>
           <ModelSelectButton
-            icon={defaultModel ? <ModelAvatar model={defaultModel} size={20} /> : <PlusIcon size={18} />}
-            onClick={onSelectModel}>
-            <ModelName>{defaultModel ? defaultModel.name : t('agents.edit.model.select.title')}</ModelName>
+            icon={assistant.model ? <ModelAvatar model={assistant.model} size={20} /> : undefined}
+            disabled>
+            <ModelName>{assistant.model?.name || t('ravenAccount.model_sync_pending')}</ModelName>
           </ModelSelectButton>
-          {defaultModel && (
-            <Button
-              color="danger"
-              variant="filled"
-              icon={<DeleteIcon size={14} className="lucide-custom" />}
-              onClick={() => {
-                setDefaultModel(undefined)
-                updateAssistant({ ...assistant, defaultModel: undefined })
-              }}
-              danger
-            />
-          )}
         </HStack>
       </HStack>
       <Divider style={{ margin: '10px 0' }} />

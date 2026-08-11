@@ -22,6 +22,8 @@ import type {
 } from '@renderer/types'
 import { uuid } from '@renderer/utils'
 
+import { ravenClientAICredentialVault } from './RavenClientAICredentialVault'
+
 const logger = loggerService.withContext('AssistantService')
 
 export const DEFAULT_ASSISTANT_SETTINGS: AssistantSettings = {
@@ -277,19 +279,21 @@ export function getTranslateModel() {
 export function getAssistantProvider(assistant: Assistant): Provider {
   const providers = store.getState().llm.providers
   const provider = providers.find((p) => p.id === assistant.model?.provider)
-  return provider || getDefaultProvider()
+  return ravenClientAICredentialVault.resolveProvider(provider) || provider || getDefaultProvider()
 }
 
 export function getProviderByModel(model?: Model): Provider {
   const providers = store.getState().llm.providers
   const providerId = model ? model.provider : getDefaultProvider().id
-  return providers.find((p) => p.id === providerId) as Provider
+  const provider = providers.find((p) => p.id === providerId)
+  return (ravenClientAICredentialVault.resolveProvider(provider) || provider) as Provider
 }
 
 export function getProviderByModelId(modelId?: string) {
   const providers = store.getState().llm.providers
   const _modelId = modelId || getDefaultModel().id
-  return providers.find((p) => p.models.find((m) => m.id === _modelId)) as Provider
+  const provider = providers.find((p) => p.models.find((m) => m.id === _modelId))
+  return ravenClientAICredentialVault.resolveProvider(provider) || provider
 }
 
 export const getAssistantSettings = (assistant: Assistant): AssistantSettings => {

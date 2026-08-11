@@ -43,10 +43,7 @@ describe('AIServiceAgentClient', () => {
       const fetchSpy = mockFetch({ json: vi.fn().mockResolvedValue([]) })
       globalThis.fetch = fetchSpy
       c.listProjectRepos()
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'http://localhost:8085/api/v1/project-repos?limit=200',
-        expect.anything()
-      )
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:8085/api/v1/project-repos?limit=200', expect.anything())
     })
 
     it('should update baseUrl on updateConfig', () => {
@@ -59,10 +56,7 @@ describe('AIServiceAgentClient', () => {
         hasToken: false
       })
       client.listProjectRepos()
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'http://10.0.0.1:9000/api/v1/project-repos?limit=200',
-        expect.anything()
-      )
+      expect(fetchSpy).toHaveBeenCalledWith('http://10.0.0.1:9000/api/v1/project-repos?limit=200', expect.anything())
     })
   })
 
@@ -87,6 +81,89 @@ describe('AIServiceAgentClient', () => {
       globalThis.fetch = fetchSpy
       await c.listProjectRepos()
       expect(fetchSpy.mock.calls[0][1]?.headers).toEqual({})
+    })
+  })
+
+  describe('Raven account and Assistant runtime', () => {
+    it('registers a shared RavenAIService account and reuses its token', async () => {
+      const auth = {
+        token: 'registered-token',
+        expires_at: 2_000_000_000,
+        user: { id: 7, username: 'raven-user', display_name: 'Raven User', role: 'user', is_active: true }
+      }
+      const fetchSpy = vi
+        .fn<typeof globalThis.fetch>()
+        .mockResolvedValueOnce({ ok: true, status: 200, json: vi.fn().mockResolvedValue({ data: auth }) } as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: vi.fn().mockResolvedValue({ data: auth.user })
+        } as any)
+      globalThis.fetch = fetchSpy
+
+      await client.register({
+        username: 'raven-user',
+        password: 'strong-password',
+        display_name: 'Raven User',
+        email: 'raven@example.test'
+      })
+      await client.getProfile()
+
+      expect(fetchSpy.mock.calls[0]).toEqual([
+        'http://10.60.11.3:8085/api/v1/users/auth/register',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            username: 'raven-user',
+            password: 'strong-password',
+            display_name: 'Raven User',
+            email: 'raven@example.test'
+          })
+        })
+      ])
+      expect(fetchSpy.mock.calls[1][1]?.headers).toEqual({ Authorization: 'Bearer registered-token' })
+    })
+
+    it('loads an authenticated no-store capability snapshot', async () => {
+      const snapshot = {
+        revision: 'rev-1',
+        issued_at: 100,
+        expires_at: 200,
+        refresh_after_seconds: 60,
+        routes: [{ slot: 'primary', provider: 'anthropic', model: 'model-a' }]
+      }
+      const fetchSpy = mockFetch({ json: vi.fn().mockResolvedValue({ data: snapshot }) })
+      globalThis.fetch = fetchSpy
+
+      await expect(client.getClientAICapabilities()).resolves.toEqual(snapshot)
+      expect(fetchSpy).toHaveBeenCalledWith('http://10.60.11.3:8085/api/v1/client-ai/capabilities', {
+        headers: { Authorization: 'Bearer test-token', 'Cache-Control': 'no-cache' },
+        cache: 'no-store'
+      })
+    })
+
+    it('reports only the caller-provided content-free usage envelope', async () => {
+      const fetchSpy = mockFetch({
+        json: vi.fn().mockResolvedValue({ data: { invocation_id: 'inv-1' } })
+      })
+      globalThis.fetch = fetchSpy
+      const payload = {
+        invocation_id: 'inv-1',
+        slot: 'primary' as const,
+        provider: 'anthropic',
+        model: 'model-a',
+        status: 'succeeded' as const,
+        outcome: 'ok' as const,
+        tokens: { input_tokens: 12, output_tokens: 4, cache_read_tokens: 0, cache_write_tokens: 0 },
+        duration_ms: 350
+      }
+
+      await client.reportClientAIUsage(payload)
+
+      const request = fetchSpy.mock.calls[0]
+      expect(request[0]).toBe('http://10.60.11.3:8085/api/v1/client-ai/usage')
+      expect(JSON.parse(String(request[1]?.body))).toEqual(payload)
+      expect(String(request[1]?.body)).not.toMatch(/prompt|message|content/i)
     })
   })
 
@@ -128,7 +205,7 @@ describe('AIServiceAgentClient', () => {
       globalThis.fetch = mockFetch()
       await client.startLogAnalysisRun({ message: '' })
       const msgCall = formAppendSpy.mock.calls.find((c) => c[0] === 'message')
-      expect(msgCall?.[1]).toBe('请分析这个日志文件')
+      expect(['请分析这个日志文件', 'Please analyze this log file']).toContain(msgCall?.[1])
     })
 
     it('startProjectExpertRun should include project_repo_id', async () => {
@@ -233,7 +310,12 @@ describe('AIServiceAgentClient', () => {
       globalThis.fetch = vi.fn().mockImplementation(() => {
         callCount++
         if (callCount === 1) {
-          return Promise.resolve({ ok: false, status: 404, statusText: 'Not Found', json: vi.fn().mockResolvedValue({}) })
+          return Promise.resolve({
+            ok: false,
+            status: 404,
+            statusText: 'Not Found',
+            json: vi.fn().mockResolvedValue({})
+          })
         }
         return Promise.resolve({ ok: true, status: 200, json: vi.fn().mockResolvedValue({}) })
       }) as typeof globalThis.fetch

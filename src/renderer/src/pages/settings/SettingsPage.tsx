@@ -1,18 +1,15 @@
 import { GlobalOutlined } from '@ant-design/icons'
 import { Navbar, NavbarCenter } from '@renderer/components/app/Navbar'
 import Scrollbar from '@renderer/components/Scrollbar'
-import ModelSettings from '@renderer/pages/settings/ModelSettings/ModelSettings'
 import { Divider as AntDivider } from 'antd'
 import {
   Brain,
-  Cloud,
   Command,
   FileCode,
   Hammer,
   HardDrive,
   Info,
   MonitorCog,
-  Package,
   PictureInPicture2,
   Settings2,
   TextCursorInput,
@@ -20,7 +17,7 @@ import {
 } from 'lucide-react'
 import { FC } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, Route, Routes, useLocation } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import styled from 'styled-components'
 
 import AboutSettings from './AboutSettings'
@@ -29,7 +26,6 @@ import GeneralSettings from './GeneralSettings'
 import MCPSettings from './MCPSettings'
 import MemorySettings from './MemorySettings'
 import PreprocessSettings from './PreprocessSettings'
-import ProvidersList from './ProviderSettings'
 import QuickAssistantSettings from './QuickAssistantSettings'
 import QuickPhraseSettings from './QuickPhraseSettings'
 import ShortcutSettings from './ShortcutSettings'
@@ -48,19 +44,6 @@ const SettingsPage: FC = () => {
       </Navbar>
       <ContentContainer id="content-container">
         <SettingMenus>
-          <MenuItemLink to="/settings/provider">
-            <MenuItem className={isRoute('/settings/provider')}>
-              <Cloud size={18} />
-              {t('settings.provider.title')}
-            </MenuItem>
-          </MenuItemLink>
-          <MenuItemLink to="/settings/model">
-            <MenuItem className={isRoute('/settings/model')}>
-              <Package size={18} />
-              {t('settings.model')}
-            </MenuItem>
-          </MenuItemLink>
-          <Divider />
           <MenuItemLink to="/settings/general">
             <MenuItem className={isRoute('/settings/general')}>
               <Settings2 size={18} />
@@ -139,8 +122,9 @@ const SettingsPage: FC = () => {
         </SettingMenus>
         <SettingContent>
           <Routes>
-            <Route path="provider" element={<ProvidersList />} />
-            <Route path="model" element={<ModelSettings />} />
+            <Route index element={<Navigate to="general" replace />} />
+            <Route path="provider" element={<Navigate to="/settings/general" replace />} />
+            <Route path="model" element={<Navigate to="/settings/general" replace />} />
             <Route path="websearch" element={<WebSearchSettings />} />
             <Route path="preprocess" element={<PreprocessSettings />} />
             <Route path="quickphrase" element={<QuickPhraseSettings />} />
@@ -151,6 +135,7 @@ const SettingsPage: FC = () => {
             <Route path="shortcut" element={<ShortcutSettings />} />
             <Route path="quickAssistant" element={<QuickAssistantSettings />} />
             <Route path="about" element={<AboutSettings />} />
+            <Route path="*" element={<Navigate to="/settings/general" replace />} />
           </Routes>
         </SettingContent>
       </ContentContainer>

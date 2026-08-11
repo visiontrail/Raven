@@ -65,7 +65,7 @@ const getTabIcon = (tabId: string): React.ReactNode | undefined => {
   }
 }
 
-let lastSettingsPath = '/settings/provider'
+let lastSettingsPath = '/settings/general'
 const specialTabs = ['launchpad', 'settings']
 
 const TabsContainer: React.FC<TabsContainerProps> = ({ children }) => {

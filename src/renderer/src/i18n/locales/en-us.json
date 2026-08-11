@@ -2337,6 +2337,34 @@
     "zhinao": "360AI",
     "zhipu": "ZHIPU AI"
   },
+  "ravenAccount": {
+    "booting": "Validating your session and syncing service models…",
+    "confirm_password": "Confirm password",
+    "display_name": "Display name (optional)",
+    "email": "Email",
+    "error": {
+      "capabilities_missing": "RavenAIService has no usable AI model configured",
+      "connection": "Cannot connect to RavenAIService ({{baseUrl}})",
+      "not_ready": "The RavenAIService client is not initialized",
+      "session_expired": "Your Raven session expired. Please sign in again.",
+      "unknown": "Login or model synchronization failed"
+    },
+    "login": "Sign in and sync models",
+    "login_tab": "Sign in",
+    "model_sync_pending": "Waiting for service model sync",
+    "not_configured": "Not configured",
+    "password": "Password",
+    "privacy": "Assistant content goes directly to the provider configured by RavenAIService. RavenAIService records account usage only, not Assistant conversation content.",
+    "register": "Register and sign in",
+    "register_tab": "Register",
+    "service": "Service URL",
+    "subtitle": "Use RavenAIService-managed model capabilities and routing",
+    "title": "Sign in to Raven",
+    "username": "Username",
+    "validation": {
+      "password_mismatch": "The passwords do not match"
+    }
+  },
   "restore": {
     "confirm": {
       "button": "Select Backup File",

@@ -2337,6 +2337,34 @@
     "zhinao": "360AI",
     "zhipu": "ZHIPU AI"
   },
+  "ravenAccount": {
+    "booting": "Проверка сеанса и синхронизация моделей сервиса…",
+    "confirm_password": "Подтвердите пароль",
+    "display_name": "Отображаемое имя (необязательно)",
+    "email": "Электронная почта",
+    "error": {
+      "capabilities_missing": "В RavenAIService не настроена доступная модель ИИ",
+      "connection": "Не удается подключиться к RavenAIService ({{baseUrl}})",
+      "not_ready": "Клиент RavenAIService не инициализирован",
+      "session_expired": "Срок действия сеанса Raven истек. Войдите снова.",
+      "unknown": "Не удалось войти или синхронизировать модель"
+    },
+    "login": "Войти и синхронизировать модели",
+    "login_tab": "Вход",
+    "model_sync_pending": "Ожидание синхронизации модели сервиса",
+    "not_configured": "Не настроено",
+    "password": "Пароль",
+    "privacy": "Содержимое Ассистента отправляется напрямую провайдеру, настроенному RavenAIService. RavenAIService записывает только использование учетной записи, но не содержимое диалога.",
+    "register": "Зарегистрироваться и войти",
+    "register_tab": "Регистрация",
+    "service": "URL сервиса",
+    "subtitle": "Используйте модели и маршрутизацию под управлением RavenAIService",
+    "title": "Вход в Raven",
+    "username": "Имя пользователя",
+    "validation": {
+      "password_mismatch": "Пароли не совпадают"
+    }
+  },
   "restore": {
     "confirm": {
       "button": "Выбрать файл резервной копии",

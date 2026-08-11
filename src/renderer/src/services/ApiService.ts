@@ -60,7 +60,6 @@ import { findLast, isEmpty, takeRight } from 'lodash'
 
 import AiProvider from '../aiCore'
 import {
-  getAssistantProvider,
   getAssistantSettings,
   getDefaultAssistant,
   getDefaultModel,
@@ -75,9 +74,32 @@ import {
   filterUsefulMessages,
   filterUserRoleStartMessages
 } from './MessagesService'
+import { executeRavenClientAIRoutes } from './RavenClientAIRouteExecutor'
+import { ravenClientAIRuntime } from './RavenClientAIRuntime'
 import WebSearchService from './WebSearchService'
 
 const logger = loggerService.withContext('ApiService')
+
+const SERVICE_COMMIT_CHUNKS = new Set<ChunkType>([
+  ChunkType.TEXT_START,
+  ChunkType.TEXT_DELTA,
+  ChunkType.TEXT_COMPLETE,
+  ChunkType.THINKING_START,
+  ChunkType.THINKING_DELTA,
+  ChunkType.THINKING_COMPLETE,
+  ChunkType.MCP_TOOL_CREATED,
+  ChunkType.MCP_TOOL_PENDING,
+  ChunkType.MCP_TOOL_IN_PROGRESS,
+  ChunkType.MCP_TOOL_COMPLETE,
+  ChunkType.LLM_WEB_SEARCH_IN_PROGRESS,
+  ChunkType.LLM_WEB_SEARCH_COMPLETE,
+  ChunkType.IMAGE_CREATED,
+  ChunkType.IMAGE_DELTA,
+  ChunkType.IMAGE_COMPLETE,
+  ChunkType.AUDIO_START,
+  ChunkType.AUDIO_DELTA,
+  ChunkType.AUDIO_COMPLETE
+])
 
 // TODO：考虑拆开
 async function fetchExternalTool(
@@ -474,9 +496,6 @@ export async function fetchChatCompletion({
     logger.warn('Failed to append time/device context to system prompt', e as Error)
   }
 
-  const provider = getAssistantProvider(assistant)
-  const AI = new AiProvider(provider)
-
   // Make sure that 'Clear Context' works for all scenarios including external tool and normal chat.
   const filteredMessages1 = filterAfterContextClearMessages(messages)
 
@@ -535,7 +554,8 @@ export async function fetchChatCompletion({
     enableWebSearch,
     enableUrlContext,
     enableGenerateImage,
-    topicId: lastUserMessage.topicId
+    topicId: lastUserMessage.topicId,
+    shouldThrow: true
   }
 
   const requestOptions = {
@@ -548,7 +568,27 @@ export async function fetchChatCompletion({
     processConversationMemory(messages, assistant)
   }
 
-  return await AI.completionsForTrace(completionsParams, requestOptions)
+  await ravenClientAIRuntime.ensureFresh()
+  const routes = ravenClientAIRuntime.getRoutes()
+  return executeRavenClientAIRoutes({
+    routes,
+    runAttempt: (route, onChunk) => {
+      const routedAssistant: Assistant = { ...assistant, model: ravenClientAIRuntime.getModel(route) }
+      const AI = new AiProvider(ravenClientAIRuntime.getProvider(route))
+      return AI.completionsForTrace({ ...completionsParams, assistant: routedAssistant, onChunk }, requestOptions)
+    },
+    onChunk: onChunkReceived,
+    isCommitChunk: (chunk) => SERVICE_COMMIT_CHUNKS.has(chunk.type),
+    isTerminalChunk: (chunk) =>
+      chunk.type === ChunkType.LLM_RESPONSE_COMPLETE || chunk.type === ChunkType.BLOCK_COMPLETE,
+    readUsage: (chunk) => {
+      const response = (chunk as any).response
+      return { usage: response?.usage, metrics: response?.metrics }
+    },
+    reportUsage: (payload) => ravenClientAIRuntime.reportUsage(payload),
+    refreshRoutes: () => ravenClientAIRuntime.refresh('failure'),
+    newInvocationId: uuid
+  })
 }
 
 /**

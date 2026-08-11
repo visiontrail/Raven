@@ -7,8 +7,11 @@ import type {
   ChatSessionSummary,
   HistoryTurn,
   ProjectRepoOption,
+  RavenClientAICapabilitySnapshot,
+  RavenClientAIUsageReport,
   UserAuthPayload,
-  UserProfile
+  UserProfile,
+  UserRegistrationRequest
 } from '@renderer/types/aiServiceAgent'
 
 const logger = loggerService.withContext('AIServiceAgentClient')
@@ -87,6 +90,21 @@ export class AIServiceAgentClient {
     return payload
   }
 
+  async register(payload: UserRegistrationRequest): Promise<UserAuthPayload> {
+    const res = await fetch(`${this.baseUrl}/api/v1/users/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch((err) => {
+      throw new AIServiceConnectionError(this.baseUrl, err)
+    })
+    const body = await this.handleResponse<ApiEnvelope<UserAuthPayload> | UserAuthPayload>(res)
+    const auth = 'token' in body ? (body as UserAuthPayload) : (body as ApiEnvelope<UserAuthPayload>).data
+    if (!auth?.token) throw new AIServiceError(i18n.t('agents.aiservice.error.token_missing'))
+    this.token = auth.token
+    return auth
+  }
+
   async getProfile(): Promise<UserProfile> {
     const res = await fetch(`${this.baseUrl}/api/v1/users/auth/me`, {
       headers: this.headers()
@@ -96,6 +114,33 @@ export class AIServiceAgentClient {
     const body = await this.handleResponse<ApiEnvelope<UserProfile>>(res)
     if (!body?.data) throw new AIServiceError(i18n.t('agents.aiservice.error.profile_missing'))
     return body.data
+  }
+
+  // ---- RavenClient direct AI runtime ------------------------------------
+
+  async getClientAICapabilities(): Promise<RavenClientAICapabilitySnapshot> {
+    const res = await fetch(`${this.baseUrl}/api/v1/client-ai/capabilities`, {
+      headers: { ...this.headers(), 'Cache-Control': 'no-cache' },
+      cache: 'no-store'
+    }).catch((err) => {
+      throw new AIServiceConnectionError(this.baseUrl, err)
+    })
+    const body = await this.handleResponse<ApiEnvelope<RavenClientAICapabilitySnapshot>>(res)
+    if (!body?.data?.routes?.length) {
+      throw new AIServiceError(i18n.t('ravenAccount.error.capabilities_missing'), res.status)
+    }
+    return body.data
+  }
+
+  async reportClientAIUsage(payload: RavenClientAIUsageReport): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/api/v1/client-ai/usage`, {
+      method: 'POST',
+      headers: this.jsonHeaders(),
+      body: JSON.stringify(payload)
+    }).catch((err) => {
+      throw new AIServiceConnectionError(this.baseUrl, err)
+    })
+    await this.handleResponse<ApiEnvelope<{ invocation_id: string }>>(res)
   }
 
   // ---- project repos ------------------------------------------------------

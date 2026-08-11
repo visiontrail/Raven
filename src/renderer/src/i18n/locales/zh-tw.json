@@ -2337,6 +2337,34 @@
     "zhinao": "360 智腦",
     "zhipu": "智譜 AI"
   },
+  "ravenAccount": {
+    "booting": "正在驗證登入並同步服務端模型…",
+    "confirm_password": "確認密碼",
+    "display_name": "顯示名稱（選填）",
+    "email": "電子郵件",
+    "error": {
+      "capabilities_missing": "RavenAIService 尚未設定可用的 AI 模型",
+      "connection": "無法連線至 RavenAIService（{{baseUrl}}）",
+      "not_ready": "RavenAIService 用戶端尚未初始化",
+      "session_expired": "Raven 登入已過期，請重新登入。",
+      "unknown": "登入或模型同步失敗"
+    },
+    "login": "登入並同步模型",
+    "login_tab": "登入",
+    "model_sync_pending": "等待服務端模型同步",
+    "not_configured": "未設定",
+    "password": "密碼",
+    "privacy": "助手內容會直接傳送至 RavenAIService 設定的模型 Provider；RavenAIService 僅記錄帳號用量，不記錄助手對話內容。",
+    "register": "註冊並登入",
+    "register_tab": "註冊",
+    "service": "服務位址",
+    "subtitle": "使用 RavenAIService 統一管理的模型能力與路由",
+    "title": "登入 Raven",
+    "username": "使用者名稱",
+    "validation": {
+      "password_mismatch": "兩次輸入的密碼不一致"
+    }
+  },
   "restore": {
     "confirm": {
       "button": "選擇備份檔案",

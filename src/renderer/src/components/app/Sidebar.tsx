@@ -1,6 +1,7 @@
 import EmojiAvatar from '@renderer/components/Avatar/EmojiAvatar'
 import { isMac } from '@renderer/config/constant'
 import { UserAvatar } from '@renderer/config/env'
+import { useRavenAccount } from '@renderer/context/RavenAccountContext'
 import { useTheme } from '@renderer/context/ThemeProvider'
 import useAvatar from '@renderer/hooks/useAvatar'
 import { useFullscreen } from '@renderer/hooks/useFullscreen'
@@ -12,14 +13,26 @@ import { useSettings } from '@renderer/hooks/useSettings'
 import { getSidebarIconLabel, getThemeModeLabel } from '@renderer/i18n/label'
 import { ThemeMode } from '@renderer/types'
 import { isEmoji } from '@renderer/utils'
-import { Avatar, Tooltip } from 'antd'
-import { FileSearch, Folder, MessageSquare, Monitor, Moon, Package, Settings, Sparkle, Sun, TerminalSquare } from 'lucide-react'
+import { Avatar, Dropdown, Tooltip } from 'antd'
+import {
+  FileSearch,
+  Folder,
+  LogOut,
+  MessageSquare,
+  Monitor,
+  Moon,
+  Package,
+  Settings,
+  Sparkle,
+  Sun,
+  TerminalSquare,
+  User
+} from 'lucide-react'
 import { FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
 
-import UserPopup from '../Popups/UserPopup'
 import { SidebarOpenedMinappTabs, SidebarPinnedApps } from './PinnedMinapps'
 
 const Sidebar: FC = () => {
@@ -34,8 +47,8 @@ const Sidebar: FC = () => {
   const { theme, settedTheme, toggleTheme } = useTheme()
   const avatar = useAvatar()
   const { t } = useTranslation()
-
-  const onEditUser = () => UserPopup.show()
+  const { profile, logout } = useRavenAccount()
+  const userName = profile?.display_name || profile?.username || t('agents.aiservice.user.default')
 
   const backgroundColor = useNavBackgroundColor()
 
@@ -53,13 +66,25 @@ const Sidebar: FC = () => {
       $isFullscreen={isFullscreen}
       id="app-sidebar"
       style={{ backgroundColor, zIndex: minappShow ? 10000 : 'initial' }}>
-      {isEmoji(avatar) ? (
-        <EmojiAvatar onClick={onEditUser} className="sidebar-avatar" size={31} fontSize={18}>
-          {avatar}
-        </EmojiAvatar>
-      ) : (
-        <AvatarImg src={avatar || UserAvatar} draggable={false} className="nodrag" onClick={onEditUser} />
-      )}
+      <Dropdown
+        trigger={['click']}
+        placement="bottomLeft"
+        menu={{
+          items: [
+            { key: 'account', label: userName, icon: <User size={14} />, disabled: true },
+            { type: 'divider' },
+            { key: 'logout', label: t('agents.aiservice.auth.logout'), icon: <LogOut size={14} />, danger: true }
+          ],
+          onClick: ({ key }) => key === 'logout' && void logout()
+        }}>
+        {isEmoji(avatar) ? (
+          <EmojiAvatar className="sidebar-avatar" size={31} fontSize={18}>
+            {avatar}
+          </EmojiAvatar>
+        ) : (
+          <AvatarImg src={avatar || UserAvatar} draggable={false} className="nodrag" />
+        )}
+      </Dropdown>
       <MainMenusContainer>
         <Menus onClick={hideMinappPopup}>
           <MainMenus />
@@ -93,7 +118,7 @@ const Sidebar: FC = () => {
           <StyledLink
             onClick={async () => {
               hideMinappPopup()
-              await to('/settings/provider')
+              await to('/settings/general')
             }}>
             <Icon theme={theme} className={pathname.startsWith('/settings') && !minappShow ? 'active' : ''}>
               <Settings size={20} className="icon" />
