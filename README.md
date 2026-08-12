@@ -1,109 +1,137 @@
-<div align="right" >
-  <details>
-    <summary >🌐 Language</summary>
-    <div>
-      <div align="right">
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=en">English</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=zh-CN">简体中文</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=zh-TW">繁體中文</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=ja">日本語</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=ko">한국어</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=hi">हिन्दी</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=th">ไทย</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=fr">Français</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=de">Deutsch</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=es">Español</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=it">Italiano</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=ru">Русский</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=pt">Português</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=nl">Nederlands</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=pl">Polski</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=ar">العربية</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=fa">فارسی</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=tr">Türkçe</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=vi">Tiếng Việt</a></p>
-        <p><a href="https://openaitx.github.io/view.html?user=CherryHQ&project=cherry-studio&lang=id">Bahasa Indonesia</a></p>
-      </div>
-    </div>
-  </details>
-</div>
-
 <h1 align="center">
-  <a href="https://github.com/CherryHQ/cherry-studio/releases">
-    <img src="./build/icon.png" width="120" height="120" alt="Raven Logo" /><br>
-  </a>
+  <img src="./build/icon.png" width="120" height="120" alt="Raven logo" /><br>
+  RavenClient
 </h1>
 
-<p align="center">English | <a href="./docs/README.zh.md">中文</a> | <a href="https://cherry-ai.com">Official Site</a> | <a href="https://docs.cherry-ai.com/cherry-studio-wen-dang/en-us">Documents</a> | <a href="./docs/dev.md">Development</a> | <a href="https://github.com/CherryHQ/cherry-studio/issues">Feedback</a><br></p>
+<p align="center">
+  The desktop client built specifically for RavenAIService
+</p>
 
-# 🚀 Raven - The Intelligent AI Platform
+<p align="center">
+  English | <a href="./docs/README.zh.md">简体中文</a> | <a href="./docs/dev.md">Development</a> | <a href="https://github.com/visiontrail/RavenClient/issues">Feedback</a>
+</p>
 
-Raven is a comprehensive, multi-modal AI platform built to revolutionize your productivity. Originally conceptualized for the satellite communications domain, Raven has evolved into a fully generalized, cross-platform AI assistant. By integrating advanced natural language processing, extensive knowledge management (RAG), built-in AI terminal (Chaterm), and the Model Context Protocol (MCP), Raven acts as a centralized hub for all your intelligent workflows.
+## Overview
 
-## 🎯 Platform Architecture
+RavenClient is the cross-platform desktop workspace for **RavenAIService**. The service is the source of truth for accounts, available AI models, credentials, projects, conversations, Agent runs, and service-side data; the client provides the native chat, knowledge, file, packaging, and terminal experiences on Windows, macOS, and Linux.
 
-Raven consists of two main components:
-- **RavenClient**: A powerful desktop application (Windows, macOS, Linux) built on Electron and React. It serves as your daily driver for interacting with AI models, managing knowledge, and running terminal sessions.
-- **RavenAIService**: The robust cloud backend service (Python/FastAPI) that powers cloud synchronization, centralized model management, enterprise-grade RAG processing, and shared MCP servers.
+RavenClient is no longer designed as a standalone, general-purpose multi-provider client. A compatible and reachable RavenAIService deployment is required to sign in and use AI features. Users do not configure provider API keys or models in the desktop application.
 
-## 🌟 Key Features
+## Client–Service Architecture
 
-### 1. 💬 Ultimate AI Chat Experience
-- **Multi-Provider Support**: Seamlessly integrate with OpenAI, Anthropic (Claude), Google Gemini, DeepSeek, Ollama, and more.
-- **Custom AI Agents**: Create, manage, and interact with specialized AI personas tailored to your workflow.
-- **Multi-Modal Capabilities**: Process text, images, office documents, and PDFs in a unified chat interface.
+```text
+RavenClient
+├── Raven account login and registration ───────┐
+├── Assistant chat and model execution ─────────┤
+├── Server-backed Agent workbench ──────────────┤── RavenAIService
+├── Project, package, and log views ────────────┤   (identity, models,
+└── Embedded Chaterm AI bridge ─────────────────┘    Agents, projects, data)
 
-### 2. 📚 Advanced Knowledge Management (RAG)
-- **Local & Cloud Vector Search**: Build powerful knowledge bases from your documents.
-- **Multiple Parsers**: Intelligent document parsing including OCR support for scanned PDFs and images.
-- **Seamless Chat Integration**: Automatically retrieve context from your knowledge bases during conversations.
+Local desktop capabilities: UI state, local files and knowledge bases,
+native OS integration, SSH sessions, and embedded Chaterm runtime.
+```
 
-### 3. 💻 AI-Powered Terminal (Chaterm)
-- **Embedded SSH Terminal**: Manage your servers directly within Raven using the integrated Chaterm.
-- **Smart Command Assistance**: Ask the AI to generate, explain, or debug terminal commands directly in the terminal interface.
-- **Unified LLM Bridge**: Chaterm utilizes Raven's core AI provider configurations, ensuring secure and centralized API key management.
+After authentication, RavenClient fetches a time-limited model capability snapshot from RavenAIService. The snapshot defines the primary and backup routes, model capabilities, and fast model. Provider credentials are kept in memory, refreshed automatically, cleared on logout or expiry, and never exposed in the public Redux provider state. Assistant and Terminal usage is reported back to the service.
 
-### 4. ⚙️ Model Context Protocol (MCP) Ecosystem
-- **Extensible Tooling**: Connect Raven to external systems, databases, and APIs through MCP.
-- **Server Registry**: Manage local and remote MCP servers through the centralized registry.
+## Features
 
-### 5. 🔄 Cloud Sync & Backend Integration
-- **RavenAIService Integration**: Synchronize your conversations, prompts, and settings across multiple devices.
-- **Centralized Management**: Perfect for teams wanting to manage AI usage, shared knowledge bases, and API configurations centrally.
+### Unified Raven Account
 
-## 🛠️ Technology Stack
+- Application-wide login and registration gate backed by RavenAIService.
+- Persisted session restoration, explicit logout, expired-session handling, and connection retry.
+- One account and one service endpoint shared by Assistant chat, Agents, files, logs, packages, and Terminal AI.
 
-**Client (RavenClient)**
-- Electron + React + TypeScript
-- Redux Toolkit for State Management
-- SQLite / Local Storage
+### Centrally Managed AI
 
-**Server (RavenAIService)**
-- Python + FastAPI
-- PostgreSQL + pgvector for Embeddings
-- Redis + Celery for Async Tasks
+- Assistant models and capabilities are synchronized from RavenAIService after login.
+- Automatic capability refresh on a schedule and when the application regains focus.
+- Primary/backup route failover before response output begins.
+- Centralized usage and failure reporting without local provider configuration.
 
-## 🚀 Getting Started
+### RavenAIService Agent Workbench
 
-### Development Environment
+- **Project Expert** for repository-aware technical questions.
+- **Log Analysis** with optional project context and log/archive upload.
+- **Package Search** for project package discovery.
+- Server-Sent Events (SSE) streaming for answers, reasoning, plans, tool activity, and execution traces.
+- Server-backed conversation history with multi-turn continuation, rename, pin, delete, cancel, and active-run resume.
 
-**Prerequisites:**
-- Node.js v22.x.x or higher
-- Yarn 4.9.1 (Setup: `corepack enable && corepack prepare yarn@4.9.1 --activate`)
+### AI-Powered Terminal
 
-**Installation & Execution:**
+- Embedded [Chaterm](https://github.com/visiontrail/ChatermForRaven) with SSH/SFTP, jump hosts, Kubernetes exec, and multi-panel sessions.
+- AI command generation, explanation, troubleshooting, and Agent actions use RavenAIService-managed models through Raven's guarded LLM bridge.
+- Agent commands run in the visible terminal; reasoning streams and OpenAI-compatible content-part streams are normalized for display.
+- Terminal sessions remain alive while switching tabs, and the embedded UI follows Raven's theme.
+
+See [Terminal documentation](./docs/terminal-tab.md) for implementation and usage details.
+
+### Desktop Engineering Workspace
+
+- Assistant chat with multimodal input, local knowledge bases, document parsing, OCR, web search, memory, and MCP tools.
+- File management plus RavenAIService-backed log, package, and refactoring views that follow the configured service endpoint.
+- Product-specific package-building workflows and native desktop integrations.
+
+## Requirements
+
+- A compatible RavenAIService instance and a valid Raven account.
+- Node.js 22 or later.
+- Yarn 4.9.1.
+- Git submodules for the embedded Chaterm runtime.
+
+## Development Setup
+
 ```bash
+git clone --recurse-submodules git@github.com:visiontrail/RavenClient.git
+cd RavenClient
+corepack enable
+corepack prepare yarn@4.9.1 --activate
 yarn install
+```
+
+RavenClient connects to `http://127.0.0.1:8085` by default. Point it to another RavenAIService deployment with one of these configurations before starting the app:
+
+```bash
+# Complete URL (takes precedence)
+export RAVEN_AI_SERVICE_BASE_URL=http://your-raven-service:8085
+
+# Or configure host and port separately
+export RAVEN_AI_SERVICE_HOST=your-raven-service
+export RAVEN_AI_SERVICE_PORT=8085
+
 yarn dev
 ```
 
-### Build Platforms
-- Windows: `yarn build:win`
-- macOS: `yarn build:mac`
-- Linux: `yarn build:linux`
+The service URL is resolved centrally, so Agent, log, package, and embedded service pages all switch together.
 
-## 🤝 Contributing
-We welcome contributions to make Raven even better! Whether you're interested in improving the UI, adding new MCP servers, or enhancing the backend service, your PRs are always welcome.
+## Common Commands
 
-## 📄 License
-This project is licensed under the GPL-3.0 License.
+| Command | Purpose |
+| --- | --- |
+| `yarn dev` | Start Electron in development mode |
+| `yarn debug` | Start with debugging enabled |
+| `yarn test` | Run Vitest tests |
+| `yarn test:e2e` | Run Playwright end-to-end tests |
+| `yarn typecheck` | Type-check main and renderer processes |
+| `yarn lint` | Lint, type-check, and validate translations |
+| `yarn build` | Build the application |
+| `yarn build:win` | Package for Windows |
+| `yarn build:mac` | Package for macOS |
+| `yarn build:linux` | Package for Linux |
+
+Production builds compile and package the Chaterm submodule automatically. If the submodule is missing, initialize it with `git submodule update --init --recursive`.
+
+## Technology
+
+- Electron 41, React 19, and TypeScript.
+- Electron Vite, Redux Toolkit, Redux Persist, and styled-components.
+- Vitest and Playwright.
+- Embedded Vue-based Chaterm runtime connected through sender-validated Electron IPC.
+- RavenAIService REST APIs and SSE streams.
+
+## Contributing
+
+Changes should preserve the RavenClient–RavenAIService contract and keep account, model, Agent, and service-endpoint behavior aligned with the backend. See [Development](./docs/dev.md) and [AGENTS.md](./AGENTS.md) before submitting a pull request.
+
+## License
+
+This project is licensed under the [GPL-3.0 License](./LICENSE).
