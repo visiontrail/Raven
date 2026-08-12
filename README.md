@@ -13,9 +13,15 @@
 
 ## Overview
 
-RavenClient is the cross-platform desktop workspace for **RavenAIService**. The service is the source of truth for accounts, available AI models, credentials, projects, conversations, Agent runs, and service-side data; the client provides the native chat, knowledge, file, packaging, and terminal experiences on Windows, macOS, and Linux.
+RavenClient is the cross-platform desktop workspace for **[RavenAIService](https://github.com/visiontrail/RavenAIService)**. RavenAIService is the backend control plane and business service: it is the source of truth for accounts, available AI models, credentials, projects, conversations, Agent runs, and service-side data. RavenClient is its native desktop interface, providing chat, knowledge, file, packaging, and terminal experiences on Windows, macOS, and Linux.
 
 RavenClient is no longer designed as a standalone, general-purpose multi-provider client. A compatible and reachable RavenAIService deployment is required to sign in and use AI features. Users do not configure provider API keys or models in the desktop application.
+
+The two repositories are developed as a paired system:
+
+- **[RavenAIService](https://github.com/visiontrail/RavenAIService)** owns authentication, model routing, Agent orchestration, project metadata, server-side conversations, and centralized usage records.
+- **RavenClient** owns the Electron desktop shell, local workspace capabilities, user interaction, native operating-system integration, and the embedded Chaterm terminal.
+- They communicate through authenticated REST APIs, SSE event streams, and the RavenClient AI capability contract. Client and service versions should therefore remain API-compatible.
 
 ## Client–Service Architecture
 

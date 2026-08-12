@@ -13,9 +13,15 @@
 
 ## 项目定位
 
-RavenClient 是 **RavenAIService** 的跨平台桌面工作台。账号、可用 AI 模型、访问凭据、项目、会话、智能体任务和服务端数据均以 RavenAIService 为准；客户端则在 Windows、macOS 和 Linux 上提供原生的对话、知识库、文件、打包与终端体验。
+RavenClient 是 **[RavenAIService](https://github.com/visiontrail/RavenAIService)** 的跨平台桌面工作台。RavenAIService 是后端控制面与业务服务，负责账号、可用 AI 模型、访问凭据、项目、会话、智能体任务和服务端数据；RavenClient 则是它的原生桌面交互端，在 Windows、macOS 和 Linux 上提供对话、知识库、文件、打包与终端体验。
 
 RavenClient 已不再定位为可独立运行的通用多模型客户端。登录和使用 AI 功能必须连接兼容且可访问的 RavenAIService，用户无需、也不再通过桌面端自行配置模型服务商 API Key 或模型。
+
+两个仓库共同组成一套配套系统：
+
+- **[RavenAIService](https://github.com/visiontrail/RavenAIService)** 负责身份认证、模型路由、智能体编排、项目元数据、服务端会话和集中用量记录。
+- **RavenClient** 负责 Electron 桌面外壳、本地工作台能力、用户交互、操作系统原生集成和内嵌 Chaterm 终端。
+- 两者通过认证 REST API、SSE 事件流和 RavenClient AI 能力契约进行通信，因此客户端与服务端版本应保持接口兼容。
 
 ## 客户端与服务端架构
 
