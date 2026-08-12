@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  English | <a href="./docs/README.zh.md">简体中文</a> | <a href="./docs/dev.md">Development</a> | <a href="https://github.com/visiontrail/RavenClient/issues">Feedback</a>
+  English | <a href="./docs/README.zh.md">简体中文</a> | <a href="./docs/dev.md">Development</a>
 </p>
 
 ## Overview
