@@ -4,7 +4,7 @@
 </h1>
 
 <p align="center">
-  专为 RavenAIService 构建的桌面客户端
+  Raven 智能测试平台的原生桌面工作台
 </p>
 
 <p align="center">
@@ -13,15 +13,17 @@
 
 ## 项目定位
 
-RavenClient 是 **[RavenAIService](https://github.com/visiontrail/RavenAIService)** 的跨平台桌面工作台。RavenAIService 是后端控制面与业务服务，负责账号、可用 AI 模型、访问凭据、项目、会话、智能体任务和服务端数据；RavenClient 则是它的原生桌面交互端，在 Windows、macOS 和 Linux 上提供对话、知识库、文件、打包与终端体验。
+RavenClient 是 Raven 智能测试平台的跨平台桌面工作台，**[RavenAIService](https://github.com/visiontrail/RavenAIService)** 则是该平台的核心服务仓库。RavenAIService 以项目为主线，将专业 Agent、日志、连接设备、代码仓库、软件包与发布资产串联为完整的智能测试流程；RavenClient 为 Windows、macOS 和 Linux 用户提供原生入口，并把平台的服务端能力与本地对话、知识库、文件和终端体验结合起来。
 
-RavenClient 已不再定位为可独立运行的通用多模型客户端。登录和使用 AI 功能必须连接兼容且可访问的 RavenAIService，用户无需、也不再通过桌面端自行配置模型服务商 API Key 或模型。
+RavenAIService 不只是一个 API 后端。其仓库同时包含 FastAPI 业务服务、Vue Web 控制台、多 Agent 引擎，以及用于异步日志处理和 AI 分析的 Celery/Redis 任务体系。平台以项目作为组织单元，将日志、代码仓库、Agent 技能、分析结论、软件包和设备操作纳入统一上下文；RavenClient 通过接口和流式 Agent 工作流使用这些能力，不在本地重复实现平台逻辑。
+
+因此，RavenClient 不定位为可独立运行的通用多模型客户端。登录和使用 AI 功能必须连接兼容且可访问的 RavenAIService，模型服务商与凭据由平台集中管理，无需在桌面端自行配置。
 
 两个仓库共同组成一套配套系统：
 
-- **[RavenAIService](https://github.com/visiontrail/RavenAIService)** 负责身份认证、模型路由、智能体编排、项目元数据、服务端会话和集中用量记录。
-- **RavenClient** 负责 Electron 桌面外壳、本地工作台能力、用户交互、操作系统原生集成和内嵌 Chaterm 终端。
-- 两者通过认证 REST API、SSE 事件流和 RavenClient AI 能力契约进行通信，因此客户端与服务端版本应保持接口兼容。
+- **[RavenAIService](https://github.com/visiontrail/RavenAIService)** 是平台核心，负责身份与模型路由、项目级日志/仓库/Agent 技能、多 Agent 执行与会话状态、设备连接、软件包与发布资产，以及集中用量数据。
+- **RavenClient** 是平台的原生客户端，负责 Electron 桌面外壳、本地工作区与知识能力、桌面交互、操作系统集成和内嵌 Chaterm 终端。
+- RavenClient 通过认证 REST API、SSE 事件流和 RavenClient AI 能力契约，呈现代码专家、日志分析、包检索、日志与软件包页面及托管模型调用等 RavenAIService 工作流，因此客户端与服务端版本应保持接口兼容。
 
 ## 客户端与服务端架构
 
@@ -31,11 +33,14 @@ RavenClient
 ├── 助手对话与模型调用 ───────────────────────┤
 ├── 服务端智能体工作台 ───────────────────────┤── RavenAIService
 ├── 项目、软件包与日志页面 ───────────────────┤   （身份、模型、
-└── 内嵌 Chaterm AI 桥接 ─────────────────────┘    智能体、项目、数据）
+└── 内嵌 Chaterm AI 桥接 ─────────────────────┘    项目上下文、Agent、
+                                                    日志、设备与资产）
 
 本地桌面能力：界面状态、本地文件与知识库、操作系统集成、
 SSH 会话以及内嵌 Chaterm 运行时。
 ```
+
+RavenAIService 还提供独立的浏览器控制台，以及通用 Agent 路由、设备操作、Bug 修复辅助、平台管理和发布管理等更多工作流。RavenClient 是与其互补的桌面入口，并不替代 RavenAIService 或它的 Web 控制台。
 
 认证成功后，RavenClient 会从 RavenAIService 获取带有效期的模型能力快照，其中包含主备路由、模型能力和快速模型。服务商凭据仅保存在内存中，客户端会自动刷新，并在退出登录或凭据过期时清除；公开的 Redux 服务商状态中不会保存密钥。助手与终端的 AI 用量会统一回报给服务端。
 

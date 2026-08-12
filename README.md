@@ -4,7 +4,7 @@
 </h1>
 
 <p align="center">
-  The desktop client built specifically for RavenAIService
+  The native desktop workspace for the Raven intelligent testing platform
 </p>
 
 <p align="center">
@@ -13,15 +13,17 @@
 
 ## Overview
 
-RavenClient is the cross-platform desktop workspace for **[RavenAIService](https://github.com/visiontrail/RavenAIService)**. RavenAIService is the backend control plane and business service: it is the source of truth for accounts, available AI models, credentials, projects, conversations, Agent runs, and service-side data. RavenClient is its native desktop interface, providing chat, knowledge, file, packaging, and terminal experiences on Windows, macOS, and Linux.
+RavenClient is the cross-platform desktop workspace for the Raven intelligent testing platform, whose core service repository is **[RavenAIService](https://github.com/visiontrail/RavenAIService)**. RavenAIService brings project context, specialized Agents, logs, connected devices, code repositories, software packages, and release assets into one testing workflow. RavenClient provides a native Windows, macOS, and Linux entry point to that platform, combining its server-backed capabilities with local chat, knowledge, file, and terminal experiences.
 
-RavenClient is no longer designed as a standalone, general-purpose multi-provider client. A compatible and reachable RavenAIService deployment is required to sign in and use AI features. Users do not configure provider API keys or models in the desktop application.
+RavenAIService is more than an API backend. Its repository contains the FastAPI business service, a Vue web console, a multi-Agent engine, and Celery/Redis workers for asynchronous log processing and AI analysis. Projects are the organizing unit: each project can bring together logs, repositories, Agent skills, analysis results, packages, and device operations. RavenClient consumes the relevant APIs and streaming Agent workflows rather than duplicating that platform logic locally.
+
+RavenClient is therefore not designed as a standalone, general-purpose multi-provider client. A compatible and reachable RavenAIService deployment is required to sign in and use AI features. Model providers and credentials are managed centrally instead of being configured in the desktop application.
 
 The two repositories are developed as a paired system:
 
-- **[RavenAIService](https://github.com/visiontrail/RavenAIService)** owns authentication, model routing, Agent orchestration, project metadata, server-side conversations, and centralized usage records.
-- **RavenClient** owns the Electron desktop shell, local workspace capabilities, user interaction, native operating-system integration, and the embedded Chaterm terminal.
-- They communicate through authenticated REST APIs, SSE event streams, and the RavenClient AI capability contract. Client and service versions should therefore remain API-compatible.
+- **[RavenAIService](https://github.com/visiontrail/RavenAIService)** is the platform core. It owns identity and model routing; project-scoped logs, repositories, and Agent skills; multi-Agent execution and conversation state; device links; package and release assets; and centralized usage data.
+- **RavenClient** is a native platform client. It owns the Electron shell, local workspace and knowledge capabilities, desktop interaction, operating-system integration, and the embedded Chaterm terminal.
+- RavenClient exposes selected RavenAIService workflows—including Project Expert, Log Analysis, Package Search, log and package views, and managed model execution—through authenticated REST APIs, SSE event streams, and the RavenClient AI capability contract. Client and service versions should therefore remain API-compatible.
 
 ## Client–Service Architecture
 
@@ -31,11 +33,14 @@ RavenClient
 ├── Assistant chat and model execution ─────────┤
 ├── Server-backed Agent workbench ──────────────┤── RavenAIService
 ├── Project, package, and log views ────────────┤   (identity, models,
-└── Embedded Chaterm AI bridge ─────────────────┘    Agents, projects, data)
+└── Embedded Chaterm AI bridge ─────────────────┘    project context, Agents,
+                                                      logs, devices, assets)
 
 Local desktop capabilities: UI state, local files and knowledge bases,
 native OS integration, SSH sessions, and embedded Chaterm runtime.
 ```
+
+RavenAIService also has its own browser-based console and additional platform workflows, such as general Agent routing, device operations, bug-fix assistance, administration, and release management. RavenClient is a complementary desktop surface, not a replacement for the service or its web console.
 
 After authentication, RavenClient fetches a time-limited model capability snapshot from RavenAIService. The snapshot defines the primary and backup routes, model capabilities, and fast model. Provider credentials are kept in memory, refreshed automatically, cleared on logout or expiry, and never exposed in the public Redux provider state. Assistant and Terminal usage is reported back to the service.
 
