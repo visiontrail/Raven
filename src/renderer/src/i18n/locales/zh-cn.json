@@ -500,6 +500,7 @@
       }
     },
     "message": {
+      "model_meta": "模型：{{model}}",
       "new": {
         "branch": {
           "created": "新分支已创建",

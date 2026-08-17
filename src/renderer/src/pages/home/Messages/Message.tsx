@@ -119,6 +119,9 @@ const MessageItem: FC<Props> = ({
 
   const isLastMessage = index === 0 || !!isGrouped
   const isAssistantMessage = message.role === 'assistant'
+  const responseModelName = model?.name || getMessageModelId(message)
+  const showResponseModel =
+    isAssistantMessage && message.status === 'success' && !isStreaming && Boolean(responseModelName)
   const showMenubar = !hideMenuBar && !isStreaming && !message.status.includes('ing') && !isEditing
 
   const messageHighlightHandler = useCallback(
@@ -213,6 +216,11 @@ const MessageItem: FC<Props> = ({
                 <MessageContent message={message} />
               </MessageErrorBoundary>
             </MessageContentContainer>
+            {showResponseModel && (
+              <ResponseModelMeta data-testid="assistant-response-model">
+                {t('chat.message.model_meta', { model: responseModelName })}
+              </ResponseModelMeta>
+            )}
             {showMenubar && (
               <MessageFooter className="MessageFooter" $isLastMessage={isLastMessage} $messageStyle={messageStyle}>
                 <MessageMenubar
@@ -280,6 +288,14 @@ const MessageFooter = styled.div<{ $isLastMessage: boolean; $messageStyle: 'plai
   gap: 10px;
   margin-left: 46px;
   margin-top: 3px;
+`
+
+const ResponseModelMeta = styled.div`
+  margin-top: 8px;
+  margin-left: 46px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-text-3);
 `
 
 const NewContextMessage = styled.div<{ isMultiSelectMode: boolean }>`

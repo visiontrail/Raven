@@ -500,6 +500,7 @@
       }
     },
     "message": {
+      "model_meta": "Модель: {{model}}",
       "new": {
         "branch": {
           "created": "Новая ветка создана",

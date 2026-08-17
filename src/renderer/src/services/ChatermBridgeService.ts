@@ -14,9 +14,12 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { loggerService } from '@logger'
-import { isEmbeddingModel, isFunctionCallingModel, isRerankModel, isVisionModel } from '@renderer/config/models'
-import { getDefaultModel, getProviderByModelId } from '@renderer/services/AssistantService'
-import store from '@renderer/store'
+import { serviceProviderId } from '@renderer/services/RavenClientAICredentialVault'
+import { executeRavenClientAIRoutes } from '@renderer/services/RavenClientAIRouteExecutor'
+import { ravenClientAIRuntime } from '@renderer/services/RavenClientAIRuntime'
+import type { Provider } from '@renderer/types'
+import type { RavenClientAIRoute } from '@renderer/types/aiServiceAgent'
+import { uuid } from '@renderer/utils'
 import {
   AvailableModel,
   BridgeStreamEvent,
@@ -27,12 +30,6 @@ import {
 import OpenAI from 'openai'
 
 const logger = loggerService.withContext('ChatermBridgeService')
-
-/** Provider types with full tool-calling support in v1. */
-const V1_FULL_TOOL_TYPES = new Set(['anthropic', 'openai', 'openai-response', 'azure-openai', 'mistral'])
-
-/** Provider types kept in list but capabilities.tools=false for v1 gray. */
-const V1_GRAY_TYPES = new Set(['gemini', 'vertexai', 'qwenlm', 'aws-bedrock'])
 
 interface InFlightRequest {
   abortController: AbortController
@@ -179,7 +176,7 @@ class ChatermBridgeService {
       (_event, payload: { replyChannel: string; defaultOnly?: boolean }) => {
         try {
           if (payload.defaultOnly) {
-            ipc.send(payload.replyChannel, { modelId: getDefaultModel()?.id ?? null })
+            ipc.send(payload.replyChannel, { modelId: this.getDefaultModelId() })
             return
           }
           const models = this.buildAvailableModels()
@@ -219,35 +216,25 @@ class ChatermBridgeService {
   // ---------- model listing ----------
 
   private buildAvailableModels(): AvailableModel[] {
-    const providers = store.getState().llm.providers
-    const models: AvailableModel[] = []
+    const primary = ravenClientAIRuntime.getRoutes()[0]
+    if (!primary) return []
 
-    for (const provider of providers) {
-      if (!provider.enabled) continue
-      const apiKey = (provider.apiKey ?? '').split(',')[0].trim()
-      if (!apiKey) continue
-
-      const isFullTool = V1_FULL_TOOL_TYPES.has(provider.type)
-      const isGray = V1_GRAY_TYPES.has(provider.type)
-
-      for (const model of provider.models ?? []) {
-        // Skip embedding / reranking models
-        if (isEmbeddingModel(model) || isRerankModel(model)) continue
-
-        models.push({
-          providerId: provider.id,
-          modelId: model.id,
-          displayName: model.name,
-          capabilities: {
-            tools: isFullTool ? isFunctionCallingModel(model) : isGray ? false : false,
-            vision: isVisionModel(model),
-            streaming: true
-          }
-        })
+    return [
+      ...new Set([primary.model, primary.small_fast_model].filter((model): model is string => Boolean(model)))
+    ].map((modelId) => ({
+      providerId: serviceProviderId(primary.slot),
+      modelId,
+      displayName: modelId,
+      capabilities: {
+        tools: primary.capabilities.tool_use,
+        vision: primary.capabilities.image_input,
+        streaming: primary.capabilities.partial_streaming
       }
-    }
+    }))
+  }
 
-    return models
+  private getDefaultModelId(): string | null {
+    return ravenClientAIRuntime.getRoutes()[0]?.model ?? null
   }
 
   // ---------- execute ----------
@@ -264,19 +251,13 @@ class ChatermBridgeService {
       send(event)
     }
 
-    const modelId = req.modelId ?? getDefaultModel().id
-    const provider = getProviderByModelId(modelId)
+    let modelId = req.modelId
 
     logger.info('ChatermBridgeService: execute started', {
       requestId: req.requestId,
       modelId,
       messageCount: req.messages?.length ?? 0
     })
-
-    if (!provider) {
-      dispatch({ type: 'end', finishReason: 'error', error: 'provider not found for model' })
-      return
-    }
 
     const abortController = new AbortController()
     this.inFlight.set(req.requestId, {
@@ -285,7 +266,36 @@ class ChatermBridgeService {
     })
 
     try {
-      const finishReason = await this.streamCompletion(req, modelId, provider, abortController.signal, dispatch)
+      await ravenClientAIRuntime.ensureFresh()
+      const routes = this.routesForRequestedModel(ravenClientAIRuntime.getRoutes(), modelId)
+      modelId = routes[0]?.model
+      const finishReason = await executeRavenClientAIRoutes({
+        routes,
+        onRouteSelected: (route) => dispatch({ type: 'start', modelId: route.model, createdAt: Date.now() }),
+        runAttempt: (route, onEvent) =>
+          this.streamCompletion(
+            req,
+            route.model,
+            ravenClientAIRuntime.getProvider(route),
+            abortController.signal,
+            onEvent
+          ),
+        onChunk: dispatch,
+        isCommitChunk: (event) =>
+          (event.type === 'text' && Boolean(event.delta)) ||
+          (event.type === 'reasoning' && Boolean(event.delta)) ||
+          event.type === 'tool_use_start' ||
+          event.type === 'tool_use_delta' ||
+          event.type === 'tool_use_end',
+        isTerminalChunk: (event) => event.type === 'usage',
+        readUsage: (event) =>
+          event.type === 'usage'
+            ? { usage: { input_tokens: event.inputTokens, output_tokens: event.outputTokens } }
+            : {},
+        reportUsage: (payload) => ravenClientAIRuntime.reportUsage(payload),
+        refreshRoutes: () => ravenClientAIRuntime.refresh('failure'),
+        newInvocationId: uuid
+      })
       dispatch({
         type: 'end',
         finishReason: abortController.signal.aborted ? 'abort' : finishReason
@@ -308,10 +318,24 @@ class ChatermBridgeService {
     }
   }
 
+  private routesForRequestedModel(routes: RavenClientAIRoute[], requestedModelId?: string): RavenClientAIRoute[] {
+    if (!routes.length) throw new Error('RavenAIService returned no usable model route')
+    const primary = routes[0]
+    const useSmallFastModel =
+      Boolean(primary.small_fast_model) &&
+      requestedModelId === primary.small_fast_model &&
+      requestedModelId !== primary.model
+
+    return routes.map((route) => ({
+      ...route,
+      model: useSmallFastModel ? route.small_fast_model || route.model : route.model
+    }))
+  }
+
   private async streamCompletion(
     req: CreateMessageRequest,
     modelId: string,
-    provider: NonNullable<ReturnType<typeof getProviderByModelId>>,
+    provider: Provider,
     signal: AbortSignal,
     dispatch: (event: BridgeStreamEvent) => void
   ): Promise<FinishReason> {

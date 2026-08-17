@@ -349,7 +349,18 @@ const fetchAndProcessAssistantResponseImpl = async (
     const result = await fetchChatCompletion({
       messages: messagesForContext,
       assistant: assistant,
-      onChunkReceived: streamProcessorCallbacks
+      onChunkReceived: streamProcessorCallbacks,
+      onModelResolved: async (model) => {
+        const modelUpdates = { model, modelId: model.id }
+        dispatch(
+          newMessagesActions.updateMessage({
+            topicId,
+            messageId: assistantMsgId,
+            updates: modelUpdates
+          })
+        )
+        await saveUpdatesToDB(assistantMsgId, topicId, modelUpdates, [])
+      }
     })
     endSpan({
       topicId,

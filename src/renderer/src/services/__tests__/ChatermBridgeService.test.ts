@@ -1,11 +1,12 @@
-import { INTERNAL_CHANNELS, type BridgeStreamEvent, type CreateMessageRequest } from '@shared/chaterm-bridge'
+import { type BridgeStreamEvent, type CreateMessageRequest, INTERNAL_CHANNELS } from '@shared/chaterm-bridge'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   providers: [] as any[],
-  defaultModel: { id: 'claude-3-5-sonnet' },
   anthropicStreamFactory: vi.fn(),
-  openAIStreamFactory: vi.fn()
+  openAIStreamFactory: vi.fn(),
+  reportUsage: vi.fn().mockResolvedValue(undefined),
+  refreshRoutes: vi.fn().mockResolvedValue(undefined)
 }))
 
 vi.mock('@renderer/store', () => ({
@@ -18,11 +19,30 @@ vi.mock('@renderer/store', () => ({
   }
 }))
 
-vi.mock('@renderer/services/AssistantService', () => ({
-  getDefaultModel: vi.fn(() => mocks.defaultModel),
-  getProviderByModelId: vi.fn((modelId: string) => {
-    return mocks.providers.find((provider) => provider.models?.some((model: any) => model.id === modelId)) ?? null
-  })
+vi.mock('@renderer/services/RavenClientAIRuntime', () => ({
+  ravenClientAIRuntime: {
+    ensureFresh: vi.fn().mockResolvedValue(undefined),
+    getRoutes: vi.fn(() =>
+      mocks.providers.map((provider, index) => ({
+        slot: index === 0 ? 'primary' : 'backup',
+        provider: provider.name || provider.id,
+        base_url: provider.apiHost,
+        api_key: provider.apiKey,
+        model: provider.models[0].id,
+        small_fast_model: provider.models[1]?.id || null,
+        capabilities: {
+          image_input: false,
+          document_input: false,
+          tool_use: true,
+          partial_streaming: true,
+          thinking_budget: false
+        }
+      }))
+    ),
+    getProvider: vi.fn((route) => mocks.providers[route.slot === 'primary' ? 0 : 1] || mocks.providers[0]),
+    reportUsage: mocks.reportUsage,
+    refresh: mocks.refreshRoutes
+  }
 }))
 
 vi.mock('@renderer/config/models', () => ({
@@ -59,6 +79,15 @@ const anthropicProvider = {
   apiKey: 'anthropic-key',
   apiHost: 'https://api.anthropic.test',
   models: [{ id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet' }]
+}
+
+const backupAnthropicProvider = {
+  ...anthropicProvider,
+  id: 'anthropic-backup',
+  name: 'backup-provider',
+  apiKey: 'backup-key',
+  apiHost: 'https://backup.anthropic.test',
+  models: [{ id: 'claude-backup', name: 'Claude Backup' }]
 }
 
 const openAIProvider = {
@@ -136,9 +165,10 @@ describe('ChatermBridgeService', () => {
       }
     }
     mocks.providers = []
-    mocks.defaultModel = { id: 'claude-3-5-sonnet' }
     mocks.anthropicStreamFactory.mockReset()
     mocks.openAIStreamFactory.mockReset()
+    mocks.reportUsage.mockClear()
+    mocks.refreshRoutes.mockClear()
   })
 
   afterEach(() => {
@@ -146,11 +176,27 @@ describe('ChatermBridgeService', () => {
   })
 
   it('responds to default model lookup with the renderer default model id', () => {
+    mocks.providers = [anthropicProvider]
     chatermBridgeService.start()
 
     listeners[INTERNAL_CHANNELS.ListModels]({}, { replyChannel: 'reply:default', defaultOnly: true })
 
     expect(send).toHaveBeenCalledWith('reply:default', { modelId: 'claude-3-5-sonnet' })
+  })
+
+  it('lists synced RavenAIService models even though the Redux-safe provider has no API key', () => {
+    mocks.providers = [{ ...anthropicProvider, apiKey: '' }]
+    chatermBridgeService.start()
+
+    listeners[INTERNAL_CHANNELS.ListModels]({}, { replyChannel: 'reply:models' })
+
+    expect(send).toHaveBeenCalledWith('reply:models', [
+      expect.objectContaining({
+        providerId: 'raven-service-primary',
+        modelId: 'claude-3-5-sonnet',
+        displayName: 'claude-3-5-sonnet'
+      })
+    ])
   })
 
   it('maps Anthropic text, tool calls, usage, and finish reason', async () => {
@@ -186,9 +232,44 @@ describe('ChatermBridgeService', () => {
     expect(events.at(-1)).toEqual({ type: 'end', finishReason: 'tool_use' })
   })
 
+  it('uses the shared RavenAIService route order and exposes the model that actually answered', async () => {
+    mocks.providers = [{ ...anthropicProvider, name: 'primary-provider' }, backupAnthropicProvider]
+    mocks.anthropicStreamFactory.mockImplementation((_params, options) => {
+      if (options.apiKey === 'anthropic-key') {
+        return {
+          [Symbol.asyncIterator]: () => ({
+            next: vi.fn().mockRejectedValue(new Error('primary network unavailable'))
+          }),
+          finalMessage: vi.fn()
+        }
+      }
+      return createAnthropicStream([
+        { type: 'content_block_delta', delta: { type: 'text_delta', text: 'backup answer' } }
+      ])
+    })
+
+    chatermBridgeService.start()
+    const events = await execute({
+      requestId: 'fallback-1',
+      modelId: 'claude-3-5-sonnet',
+      messages: [{ role: 'user', content: 'route this' }]
+    })
+
+    expect(events.filter((event) => event.type === 'start').map((event) => event.modelId)).toEqual([
+      'claude-3-5-sonnet',
+      'claude-backup'
+    ])
+    expect(events).toContainEqual({ type: 'text', delta: 'backup answer' })
+    expect(events.at(-1)).toEqual({ type: 'end', finishReason: 'stop' })
+    expect(mocks.refreshRoutes).toHaveBeenCalledOnce()
+    expect(mocks.reportUsage).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ slot: 'backup', model: 'claude-backup', status: 'succeeded' })
+    )
+  })
+
   it('maps OpenAI text, tool calls, usage, and finish reason', async () => {
     mocks.providers = [openAIProvider]
-    mocks.defaultModel = { id: 'gpt-4.1' }
     mocks.openAIStreamFactory.mockResolvedValue(
       createOpenAIStream([
         { choices: [{ delta: { content: 'checking' } }] },
@@ -255,7 +336,6 @@ describe('ChatermBridgeService', () => {
 
   it('unwraps a JSON-encoded content-parts array returned in one chunk', async () => {
     mocks.providers = [openAIProvider]
-    mocks.defaultModel = { id: 'gpt-4.1' }
     const answer = '当前活跃端口：\n| 端口 | 进程 |\n|------|------|\n| 22 | ssh |'
     const wrapped = JSON.stringify([{ type: 'text', text: answer }])
     mocks.openAIStreamFactory.mockResolvedValue(
@@ -278,7 +358,6 @@ describe('ChatermBridgeService', () => {
 
   it('unwraps a content-parts array streamed across multiple chunks', async () => {
     mocks.providers = [openAIProvider]
-    mocks.defaultModel = { id: 'gpt-4.1' }
     const answer = 'Ports:\n| port | proc |\n|------|------|\n| 22 | ssh |'
     const wrapped = JSON.stringify([{ type: 'text', text: answer }])
     const fragments = [wrapped.slice(0, 5), wrapped.slice(5, 21), wrapped.slice(21)]
@@ -301,7 +380,6 @@ describe('ChatermBridgeService', () => {
 
   it('extracts text from a structured content-parts array delta', async () => {
     mocks.providers = [openAIProvider]
-    mocks.defaultModel = { id: 'gpt-4.1' }
     mocks.openAIStreamFactory.mockResolvedValue(
       createOpenAIStream([
         {
@@ -332,7 +410,6 @@ describe('ChatermBridgeService', () => {
 
   it('passes through plain-text answers that begin with a bracket', async () => {
     mocks.providers = [openAIProvider]
-    mocks.defaultModel = { id: 'gpt-4.1' }
     const answer = '[1, 2, 3] is the JSON array example you asked about.'
     mocks.openAIStreamFactory.mockResolvedValue(
       createOpenAIStream([

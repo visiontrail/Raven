@@ -3,6 +3,7 @@ import { isAbortError } from '@renderer/utils/error'
 
 interface ExecuteOptions<TChunk, TResult> {
   routes: RavenClientAIRoute[]
+  onRouteSelected?: (route: RavenClientAIRoute) => Promise<void> | void
   runAttempt: (route: RavenClientAIRoute, onChunk: (chunk: TChunk) => void) => Promise<TResult>
   onChunk: (chunk: TChunk) => void
   isCommitChunk: (chunk: TChunk) => boolean
@@ -68,6 +69,7 @@ export async function executeRavenClientAIRoutes<TChunk, TResult>(
       else options.onChunk(chunk)
     }
     try {
+      await options.onRouteSelected?.(route)
       const result = await options.runAttempt(route, onAttemptChunk)
       terminalChunks.forEach(options.onChunk)
       await options.reportUsage({

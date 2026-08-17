@@ -500,6 +500,7 @@
       }
     },
     "message": {
+      "model_meta": "モデル：{{model}}",
       "new": {
         "branch": {
           "created": "新しいブランチが作成されました",

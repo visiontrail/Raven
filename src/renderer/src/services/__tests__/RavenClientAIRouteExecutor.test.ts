@@ -24,6 +24,7 @@ const route = (slot: 'primary' | 'backup'): RavenClientAIRoute => ({
 function options(runAttempt: any) {
   return {
     routes: [route('primary'), route('backup')],
+    onRouteSelected: vi.fn().mockResolvedValue(undefined),
     runAttempt,
     onChunk: vi.fn(),
     isCommitChunk: (chunk: TestChunk) => chunk.type === 'text',
@@ -52,6 +53,7 @@ describe('executeRavenClientAIRoutes', () => {
 
     await expect(executeRavenClientAIRoutes<TestChunk, string>(subject)).resolves.toBe('backup-result')
     expect(runAttempt.mock.calls.map((call) => call[0].slot)).toEqual(['primary', 'backup'])
+    expect(subject.onRouteSelected.mock.calls.map((call) => call[0].slot)).toEqual(['primary', 'backup'])
     expect(subject.refreshRoutes).toHaveBeenCalledOnce()
     expect(subject.onChunk.mock.calls.map((call) => call[0].type)).toEqual(['created', 'created', 'text', 'complete'])
     expect(subject.reportUsage).toHaveBeenNthCalledWith(

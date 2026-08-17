@@ -500,6 +500,7 @@
       }
     },
     "message": {
+      "model_meta": "Model: {{model}}",
       "new": {
         "branch": {
           "created": "New Branch Created",

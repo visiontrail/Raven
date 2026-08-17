@@ -449,11 +449,13 @@ async function fetchExternalTool(
 export async function fetchChatCompletion({
   messages,
   assistant,
-  onChunkReceived
+  onChunkReceived,
+  onModelResolved
 }: {
   messages: Message[]
   assistant: Assistant
   onChunkReceived: (chunk: Chunk) => void
+  onModelResolved?: (model: Model) => Promise<void> | void
   // TODO
   // onChunkStatus: (status: 'searching' | 'processing' | 'success' | 'error') => void
 }) {
@@ -572,6 +574,7 @@ export async function fetchChatCompletion({
   const routes = ravenClientAIRuntime.getRoutes()
   return executeRavenClientAIRoutes({
     routes,
+    onRouteSelected: (route) => onModelResolved?.(ravenClientAIRuntime.getModel(route)),
     runAttempt: (route, onChunk) => {
       const routedAssistant: Assistant = { ...assistant, model: ravenClientAIRuntime.getModel(route) }
       const AI = new AiProvider(ravenClientAIRuntime.getProvider(route))
